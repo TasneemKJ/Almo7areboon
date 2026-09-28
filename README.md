@@ -1,62 +1,57 @@
 # Almo7areboon
 
-**Work-in-progress checkpoint — 2026-09-28.** This commit preserves the implementation so far. The current suite has 37 passing and 6 failing tests; the production build is blocked by unfinished battle-progression types. The 30-card module is implemented but not yet connected to gameplay. See [verification status](docs/VERIFICATION.md). The requested full clone is not complete.
+A mobile-first, portrait web recreation of the **We Are Warriors!** core loop, built with TypeScript, Phaser 3 and Vite. The source and vector artwork are original.
 
-A portrait, mobile-first web recreation of the core **We Are Warriors!** battle loop. Built with TypeScript, Phaser 3, and Vite, with original vector artwork and no external asset requests.
+## Current delivery
 
-## Play locally
+The deterministic core, 30-card collection, progression, save recovery and interface integration are implemented. The final local suite has **82 passing tests** and the production build succeeds. This is **not** a verified pixel-exact clone or a complete recreation of the reference's live-service systems.
 
-Requires Node.js 22.18+ (Node 24+ recommended).
+Rendered browser, screenshot, touch-device and Safari verification remain pending because the available browser route was blocked. Component tests and CSS/source checks do not replace those checks. See [verification](docs/VERIFICATION.md) and the [40-pass record](docs/ITERATIONS.md).
+
+## Run locally
+
+Use Node.js 22.18+ (Node 24 is also suitable).
 
 ```sh
 npm ci
 npm run dev
-```
-
-Open the URL printed by Vite. To play on a phone, connect the phone to the same Wi-Fi and use the printed Network URL. The game fits a portrait phone and is centered on desktop.
-
-```sh
-npm test       # deterministic combat, economy, progression, and save tests
-npm run build # TypeScript validation and optimized production output
+npm test
+npm run build
 npm run preview
 ```
 
-Upload the generated `dist/` directory to a static host to publish. No server, accounts, keys, or database are required. Publication is not performed by these commands.
+Serve the generated `dist/` directory on a static HTTP host. Opening `index.html` directly with a `file:` URL is not the supported route. No accounts, API keys, database or backend are required. These commands do not publish the game.
 
-## Controls and game loop
+## Play
 
-- Tap **Battle**, let food accumulate, and tap a troop to deploy it.
-- Warriors automatically march, fight, and attack the opposing base. Combine a front line with ranged troops.
-- Buy **Food Production** and **Base Health** upgrades using coins. Battle earnings remain after defeat.
-- Unlock the ranged and heavy troops for 150 and 400 coins.
-- **Freeze**, **Meteor**, and **Food Drop** are each usable once per battle.
-- Destroying the enemy base advances the opposing age. Use **Evolution** to upgrade your own army.
-- Six ages have 18 unit appearances and six base designs. Finishing the final enemy age begins a harder timeline.
-- Complete quests to earn gems; spend gems on passive cards. Duplicates raise a card's level.
-- Settings include sound and 1×/2× speed. Background tabs and open menus pause the simulation.
+Tap **Battle**, accumulate food, then tap a troop to deploy it. Troops march, fight and attack bases automatically. Combine melee or heavy troops with ranged support. Coins earned during defeat remain available for production, base health and troop upgrades.
 
-Keyboard: `1` / `2` / `3` deploy troops; `Q` / `W` / `E` use skills; `Space` pauses when focus is outside a button. `Escape` closes regular dialogs.
+Victory unlocks the next opponent. **Choose a battle** replays unlocked opponents while ready. **Evolution** strengthens your own army but clears coins, upgrades, troop unlocks and unlocked battles; its confirmation explains exactly what resets. Finishing the final opponent begins a harder timeline.
 
-## Source layout
+The 30-card collection applies passive bonuses automatically. Summon packs contain 1, 10 or 50 cards, cost earned gems and use a saved random stream. Duplicates advance levels. The interface shows rarity odds, duplicate progress and the arithmetic safety cap. There are no real-money purchases.
 
-| Path | Responsibility |
-| --- | --- |
-| `src/game/types.ts` | Shared simulation/presentation contract |
-| `src/game/data.ts` | Era/unit tuning, upgrade prices, cards, quests |
-| `src/game/simulation.ts` | Deterministic fixed-step battle and progression |
-| `src/game/save.ts` | Versioned, validated browser-local progress |
-| `src/view/art.ts` | Original troops, bases, and SVG portraits |
-| `src/view/battlefield.ts` | Phaser environment, animation, and effects |
-| `src/main.ts` | Touch UI, dialogs, screen navigation, input, persistence |
-| `src/style.css` | Responsive portrait interface |
-| `tests/game.test.ts` | Gameplay and save invariants |
+Freeze, Meteor and Food Drop can each be used once per battle. A Meteor without enemies and a Food Drop at full storage do not consume the skill. Result screens show real deployment, damage, food, kill and army-size statistics.
 
-## Save behavior
+Settings include sound, 1x/2x speed, reduced motion, JSON save export and confirmed import. Keyboard: **1/2/3** deploy; **Q/W/E** use skills; **Space** starts or pauses outside a button; **Escape** closes ordinary dialogs. Menus, other screens and hidden tabs pause combat without canceling a manual pause.
 
-Progress is stored under `almo7areboon.save.v1` in this browser's local storage. Coins, gems, upgrades, cards, quests, and age progress persist. An unfinished battle restarts from its ready state after a reload; earned coins remain. Clearing site data clears progress. Invalid or unavailable stored data falls back safely to a fresh profile; storage failure shows a notice.
+## Saves
 
-## Fidelity and scope
+The storage key remains `almo7areboon.save.v1` for compatibility, but its profile schema is version 2. Six-card prototype saves migrate to the 30-card collection. A separate validated backup can recover a corrupt primary save. Unknown future save versions are protected from overwrite.
 
-The reference's food-to-troop economy, automatic base combat, melee/ranged/heavy choices, age evolution, upgrade loop, cards, skills, and portrait cartoon presentation are recreated here. The artwork and source are original. Exact proprietary tuning, source code, audio, sprites, full card collection, live events, ads, purchases, and backend services are not included. Balance values are exposed in `data.ts`; this is a playable recreation, not a byte-for-byte or verified pixel-exact copy.
+An unfinished battle reloads ready while preserving already earned coins. An unacknowledged victory reloads its result without awarding rewards again. Import validates first, asks before replacement and changes the active game only after storage succeeds. Export provides a separate backup; clearing browser site data otherwise removes local progress.
+
+## Source boundaries
+
+- `src/game/`: typed deterministic combat, economy, cards, statistics, saves and backup transactions.
+- `src/view/`: original vector art, Phaser rendering, combat feedback and optional synthesized sound.
+- `src/ui/`: screen templates, pause ownership, modal/focus helpers, cached DOM updates and responsive additions.
+- `src/main.ts`: input, screen navigation and lifecycle integration.
+- `tests/`: simulation, progression, persistence, components, audio failures and explicit source/CSS contracts.
+
+GitHub Actions runs tests and the production build with read-only repository permissions. The `almo7areboon-web-build` artifact is published only when both checks succeed; this is a downloadable artifact, not a deployment.
+
+## Fidelity and limits
+
+Food-to-troop combat, melee/ranged/heavy choices, six eras with 18 appearances, evolution, upgrades, cards and skills are recreated. Original hidden tuning is not available: era rewards, later-age balance and some card curves remain provisional. Heroes, runes, dungeons, events, full timeline content, ads, purchases and backend services are not included. Phaser's vendor bundle still produces a size warning; low-end device performance is unmeasured.
 
 Reference: [We Are Warriors! on Google Play](https://play.google.com/store/apps/details?id=com.vjsjlqvlmp.wearewarriors&hl=en_GB).
