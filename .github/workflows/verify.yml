@@ -1,0 +1,42 @@
+name: Verify game
+on:
+  push:
+    branches: [main, feat/finish-core-40-passes]
+  pull_request:
+  workflow_dispatch:
+permissions:
+  contents: read
+jobs:
+  verify:
+    runs-on: ubuntu-latest
+    timeout-minutes: 10
+    steps:
+      - uses: actions/checkout@v4
+        with:
+          persist-credentials: false
+      - uses: actions/setup-node@v4
+        with:
+          node-version: '22'
+          cache: npm
+      - run: npm ci
+      - name: Test simulation
+        id: tests
+        continue-on-error: true
+        run: npm test
+      - name: Production build
+        id: build
+        continue-on-error: true
+        run: npm run build
+      - name: Package reproducible verification workspace
+        if: always()
+        run: |
+          tar --exclude='.git' --exclude='dist' -czf "$RUNNER_TEMP/game-workspace.tar.gz" .
+      - uses: actions/upload-artifact@v4
+        if: always()
+        with:
+          name: game-workspace
+          path: ${{ runner.temp }}/game-workspace.tar.gz
+          retention-days: 3
+      - name: Require passing checks
+        if: steps.tests.outcome != 'success' || steps.build.outcome != 'success'
+        run: exit 1
