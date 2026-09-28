@@ -1,6 +1,8 @@
-import { ERAS, CARD_DEFS, QUESTS, baseUpgradeCost, cardBonus, foodRate, foodUpgradeCost, unlockCost } from './data.ts';
+import { battleStats } from './statistics.ts';
+import { cardPackCost, drawCard, nextCardRandom } from './cards.ts';
+import { ERAS, QUESTS, eraEconomyScale, baseUpgradeCost, cardBonus, foodRate, foodUpgradeCost, unlockCost } from './data.ts';
 import { defaultProfile, loadProfile } from './save.ts';
-import type { Action, BattleState, GameEvent, GamePort, Profile, Side, Skill, Unit, UnitKind } from './types.ts';
+import type { Action, BattleState, DeploymentStatus, GameEvent, GamePort, Profile, Side, Skill, Unit, UnitKind } from './types.ts';
 
 const FIXED_STEP = 1 / 60;
 const WAVES: { time: number; kinds: UnitKind[] }[] = [
@@ -20,23 +22,45 @@ export class Game implements GamePort {
   private enemyLane = 0;
   private accumulator = 0;
   private damageEarnings = 0;
+  private rewardRemainder = 0;
+  private tickBonuses: ReturnType<typeof cardBonus> | null = null;
+  private bonuses() { return this.tickBonuses ?? cardBonus(this.profile); }
 
   constructor(profile: Profile = defaultProfile()) {
     this.profile = loadProfile({ getItem: () => JSON.stringify(profile) });
     this.state = this.newBattle();
+    const victory = this.profile.pendingVictory;
+    if (victory) {
+      this.state.phase = 'won';
+      this.state.stats = battleStats(victory.stats);
+      this.state.enemyHp = 0;
+      this.state.playerHp = Math.min(this.state.playerMaxHp, victory.playerHp);
+      this.state.earned = victory.earned;
+      this.state.time = victory.seconds;
+      this.state.wave = this.state.totalWaves;
+    }
   }
 
   private newBattle(): BattleState {
+    this.events = [];
+    this.nextId = 1;
     const playerHp = this.baseHealth();
     const enemyHp = Math.round(160 * 1.65 ** this.profile.enemyAge * this.timelinePower());
     this.accumulator = 0;
     this.damageEarnings = 0;
+    this.rewardRemainder = 0;
     this.playerLane = 0;
     this.enemyLane = 0;
-    return { phase: 'ready', paused: false, time: 0, food: 6, playerHp, playerMaxHp: playerHp, enemyHp, enemyMaxHp: enemyHp, units: [], wave: 0, totalWaves: WAVES.length, earned: 0, freezeUntil: 0, skillsUsed: [] };
+    return { stats: battleStats(), phase: 'ready', paused: false, time: 0, food: 6, playerHp, playerMaxHp: playerHp, enemyHp, enemyMaxHp: enemyHp, units: [], wave: 0, totalWaves: WAVES.length, earned: 0, freezeUntil: 0, skillsUsed: [] };
   }
 
-  private baseHealth(): number { return Math.round(180 * 1.65 ** this.profile.age * (1 + this.profile.baseLevel * 0.4)); }
+  private baseHealth(): number { return Math.round(180 * 1.65 ** this.profile.age * (1 + this.profile.baseLevel * 0.4) * this.bonuses().base); }
+  private refreshBaseHealth(): void {
+    const nextMaxHp = this.baseHealth();
+    this.state.playerHp = this.state.phase === 'lost' ? 0 : Math.max(0, Math.min(nextMaxHp, this.state.playerHp + nextMaxHp - this.state.playerMaxHp));
+    this.state.playerMaxHp = nextMaxHp;
+  }
+
   private timelinePower(): number { return 1 + (this.profile.timeline - 1) * 0.22; }
   private isActive(): boolean { return this.state.phase === 'running' && !this.state.paused; }
   private canPrepare(): boolean { return this.state.phase !== 'running' || this.state.paused; }
@@ -52,53 +76,70 @@ export class Game implements GamePort {
         this.state.paused = !this.state.paused;
         return true;
       case 'spawn':
-        if (!this.isActive() || ![0, 1, 2].includes(action.kind) || !this.profile.unlocked[action.kind]) return false;
-        if (this.state.food < ERAS[this.profile.age].units[action.kind].cost) return false;
+        if (!this.deploymentStatus(action.kind).allowed) return false;
         if (!this.spawn('player', action.kind)) return false;
         this.state.food -= ERAS[this.profile.age].units[action.kind].cost;
         this.profile.deployed++;
+        this.state.stats.deployed++;
+        this.state.stats.foodSpent += ERAS[this.profile.age].units[action.kind].cost;
+        this.state.stats.peakArmy = Math.max(this.state.stats.peakArmy, this.state.units.filter(unit => unit.side === 'player' && unit.hp > 0).length);
         return true;
       case 'skill': return this.skill(action.skill);
       case 'retry':
         if (this.state.phase !== 'lost' && this.state.phase !== 'won') return false;
+        this.profile.pendingVictory = null;
         this.state = this.newBattle();
         return true;
       case 'next':
         if (this.state.phase !== 'won') return false;
-        if (this.profile.enemyAge < 5) this.profile.enemyAge++;
+        this.profile.pendingVictory = null;
+        if (this.profile.enemyAge < 5) {
+          this.profile.enemyAge++;
+          this.profile.furthestBattle = Math.max(this.profile.furthestBattle, this.profile.enemyAge);
+        }
         else {
           this.profile.timeline = Math.min(1000, this.profile.timeline + 1);
           this.profile.enemyAge = 0;
+          this.profile.furthestBattle = 0;
+          this.profile.coins = 0;
           this.profile.age = 0;
           this.profile.foodLevel = 0;
           this.profile.baseLevel = 0;
           this.profile.unlocked = [true, false, false];
-          this.profile.gems += 100;
+          this.profile.gems = Math.min(1e7, this.profile.gems + 100);
         }
         this.state = this.newBattle();
         return true;
+      case 'select-battle':
+        if (this.state.phase !== 'ready' || !Number.isInteger(action.battle) || action.battle < 0 || action.battle > this.profile.furthestBattle) return false;
+        this.profile.enemyAge = action.battle;
+        this.state = this.newBattle();
+        return true;
       case 'unlock':
-        if (![1, 2].includes(action.kind) || this.profile.unlocked[action.kind] || !this.spend(unlockCost(action.kind))) return false;
+        if (![1, 2].includes(action.kind) || this.profile.unlocked[action.kind] || !this.spend(unlockCost(action.kind, this.profile))) return false;
         this.profile.unlocked[action.kind] = true;
         this.events.push({ type: 'upgrade' });
         return true;
       case 'upgrade': {
+        if (!this.upgradeStatus(action.stat).allowed) return false;
         if (action.stat === 'food') {
           if (this.profile.foodLevel >= 100 || !this.spend(foodUpgradeCost(this.profile))) return false;
           this.profile.foodLevel++;
         } else if (action.stat === 'base') {
           if (this.profile.baseLevel >= 100 || !this.spend(baseUpgradeCost(this.profile))) return false;
           this.profile.baseLevel++;
-          const nextMaxHp = this.baseHealth();
-          this.state.playerHp += nextMaxHp - this.state.playerMaxHp;
-          this.state.playerMaxHp = nextMaxHp;
+          this.refreshBaseHealth();
         } else return false;
         this.events.push({ type: 'upgrade' });
         return true;
       }
       case 'evolve':
         if (this.state.phase === 'running' || this.profile.age >= 5 || this.profile.age > this.profile.enemyAge || !this.spend(ERAS[this.profile.age].evolveCost)) return false;
+        this.profile.pendingVictory = null;
         this.profile.age++;
+        this.profile.coins = 0;
+        this.profile.enemyAge = 0;
+        this.profile.furthestBattle = 0;
         this.profile.foodLevel = 0;
         this.profile.baseLevel = 0;
         this.profile.unlocked = [true, false, false];
@@ -106,21 +147,38 @@ export class Game implements GamePort {
         this.events.push({ type: 'evolve' });
         return true;
       case 'summon': {
-        if (!this.canPrepare() || this.profile.gems < 100) return false;
-        const total = this.profile.cards.reduce((sum, n) => sum + n, 0);
-        // A fixed shuffle is reproducible in saves and tests without random state.
-        const index = [0, 1, 3, 2, 5, 4][total % CARD_DEFS.length];
-        if (this.profile.cards[index] >= 1000) return false;
-        this.profile.gems -= 100;
-        this.profile.cards[index]++;
-        this.events.push({ type: 'upgrade', amount: index });
+        const count = action.count ?? 1;
+        if (!this.canPrepare() || ![1, 10, 50].includes(count)) return false;
+        const cost = cardPackCost(count);
+        if (this.profile.gems < cost) return false;
+        // Stage the entire pack before touching the wallet or saved random stream.
+        const cards = [...this.profile.cards];
+        const indices: number[] = [];
+        let seed = this.profile.summonSeed;
+        let draws = this.profile.summonCount;
+        for (let i = 0; i < count; i++) {
+          const rarity = nextCardRandom(seed);
+          const choice = nextCardRandom(rarity.seed);
+          const index = drawCard(draws, rarity.value, choice.value, cards);
+          if (index < 0 || cards[index] >= 1000) return false;
+          cards[index]++;
+          indices.push(index);
+          seed = choice.seed;
+          draws = Math.min(1e9, draws + 1);
+        }
+        this.profile.gems -= cost;
+        this.profile.cards = cards;
+        this.refreshBaseHealth();
+        this.profile.summonSeed = seed;
+        this.profile.summonCount = draws;
+        this.events.push({ type: 'upgrade', amount: indices[0], cardIndices: indices });
         return true;
       }
       case 'claim': {
         const quest = QUESTS.find(q => q.id === action.id);
         if (!quest || this.profile.claimed.includes(quest.id) || this.profile[quest.stat] < quest.target) return false;
         this.profile.claimed.push(quest.id);
-        this.profile.gems += quest.reward;
+        this.profile.gems = Math.min(1e7, this.profile.gems + quest.reward);
         this.events.push({ type: 'upgrade' });
         return true;
       }
@@ -134,41 +192,80 @@ export class Game implements GamePort {
     return true;
   }
 
+  upgradeStatus(stat: 'food' | 'base'): { allowed: boolean; reason: 'available' | 'coins' | 'max' | 'invalid'; cost: number | null; nextValue: number | null } {
+    if (stat !== 'food' && stat !== 'base') return { allowed: false, reason: 'invalid', cost: null, nextValue: null };
+    const level = stat === 'food' ? this.profile.foodLevel : this.profile.baseLevel;
+    if (level >= 100) return { allowed: false, reason: 'max', cost: null, nextValue: null };
+    const cost = stat === 'food' ? foodUpgradeCost(this.profile) : baseUpgradeCost(this.profile);
+    const nextValue = stat === 'food' ? (0.8 + (level + 1) * 0.14) * this.bonuses().food : Math.round(180 * 1.65 ** this.profile.age * (1 + (level + 1) * 0.4) * this.bonuses().base);
+    return { allowed: this.profile.coins >= cost, reason: this.profile.coins >= cost ? 'available' : 'coins', cost, nextValue };
+  }
+
+  waveStatus() {
+    const next = WAVES[this.state.wave];
+    const enemiesRemaining = this.state.units.filter(unit => unit.side === 'enemy' && unit.hp > 0).length;
+    return { spawned: this.state.wave, total: WAVES.length, nextIn: next ? Math.max(0, next.time - this.state.time) : null, enemiesRemaining, cleared: !next && enemiesRemaining === 0 };
+  }
+
+  deploymentStatus(kind: UnitKind): DeploymentStatus {
+    const status = (reason: DeploymentStatus['reason'], missingFood = 0, waitSeconds = 0): DeploymentStatus => ({ allowed: reason === 'available', reason, missingFood, waitSeconds });
+    if (![0, 1, 2].includes(kind)) return status('invalid');
+    if (!this.profile.unlocked[kind]) return status('locked');
+    if (this.state.phase !== 'running') return status('ready');
+    if (this.state.paused) return status('paused');
+    if (this.state.units.filter(unit => unit.side === 'player' && unit.hp > 0).length >= 60) return status('capacity');
+    if (!this.findSpawnSpot('player')) return status('blocked');
+    const missing = Math.max(0, ERAS[this.profile.age].units[kind].cost - this.state.food);
+    return missing > 0 ? status('food', missing, missing / foodRate(this.profile)) : status('available');
+  }
+
+  private findSpawnSpot(side: Side): { lane: number; x: number } | null {
+    const nextLane = side === 'player' ? this.playerLane : this.enemyLane;
+    for (let attempt = 0; attempt < 3; attempt++) {
+      const lane = (nextLane + attempt) % 3;
+      const sameLane = this.state.units.filter(unit => unit.side === side && unit.lane === lane && unit.hp > 0);
+      const x = side === 'player' ? Math.min(140, ...sameLane.map(unit => unit.x - 24)) : Math.max(860, ...sameLane.map(unit => unit.x + 24));
+      if (side === 'enemy' || x >= 92) return { lane, x };
+    }
+    return null;
+  }
+
   private spawn(side: Side, kind: UnitKind): boolean {
-    if (this.state.units.filter(u => u.side === side).length >= 60) return false;
+    if (this.state.units.filter(unit => unit.side === side && unit.hp > 0).length >= 60) return false;
+    const spot = this.findSpawnSpot(side);
+    if (!spot) return false;
+    const { lane, x } = spot;
     const age = side === 'player' ? this.profile.age : this.profile.enemyAge;
     const def = ERAS[age].units[kind];
-    const nextLane = side === 'player' ? this.playerLane : this.enemyLane;
-    let lane = nextLane % 3;
-    let x = side === 'player' ? 140 : 860;
-    // Put waiting troops behind the last body, keeping deployment stacks readable.
-    for (let attempt = 0; attempt < 3; attempt++) {
-      lane = (nextLane + attempt) % 3;
-      const sameLane = this.state.units.filter(u => u.side === side && u.lane === lane && u.hp > 0);
-      x = side === 'player' ? Math.min(140, ...sameLane.map(u => u.x - 24)) : Math.max(860, ...sameLane.map(u => u.x + 24));
-      if (side === 'enemy' || x >= 92) break;
-    }
-    if (side === 'player' && x < 92) return false;
     if (side === 'player') this.playerLane = lane + 1;
     else this.enemyLane = lane + 1;
-    const healthBonus = side === 'player' ? cardBonus(this.profile).health : this.timelinePower() * 0.94;
+    const healthBonus = side === 'player' ? this.bonuses().health : this.timelinePower() * 0.94;
     const hp = Math.round(def.hp * healthBonus);
     this.state.units.push({ id: this.nextId++, side, kind, age, x, lane, hp, maxHp: hp, attackTimer: 0, attacking: false, hitFlash: 0 });
     this.events.push({ type: 'spawn', x, lane, side });
     return true;
   }
 
-  private skill(skill: Skill): boolean {
+  canUseSkill(skill: Skill): boolean {
     if (!this.isActive() || !['food', 'freeze', 'meteor'].includes(skill) || this.state.skillsUsed.includes(skill)) return false;
+    if (skill === 'food' && this.state.food >= 99) return false;
+    if (skill === 'meteor' && !this.state.units.some(unit => unit.side === 'enemy' && unit.hp > 0)) return false;
+    return true;
+  }
+
+  private skill(skill: Skill): boolean {
+    if (!this.canUseSkill(skill)) return false;
+    const foodGain = Math.min(10, 99 - this.state.food);
     this.state.skillsUsed.push(skill);
+    this.state.stats.skillsCast++;
     if (skill === 'food') this.state.food = Math.min(99, this.state.food + 10);
     if (skill === 'freeze') this.state.freezeUntil = this.state.time + 7;
     if (skill === 'meteor') {
-      const damage = 36 * 1.65 ** this.profile.age * cardBonus(this.profile).damage;
+      const damage = 36 * 1.65 ** this.profile.age * this.bonuses().damage;
       for (const unit of this.state.units) if (unit.side === 'enemy' && unit.hp > 0) this.hurt(unit, damage);
       this.state.units = this.state.units.filter(u => u.hp > 0);
     }
-    this.events.push({ type: 'skill', skill });
+    this.events.push({ type: 'skill', skill, amount: skill === 'food' ? foodGain : undefined });
     return true;
   }
 
@@ -178,13 +275,14 @@ export class Game implements GamePort {
     this.accumulator += Math.min(dt, 0.25);
     while (this.accumulator + 1e-9 >= FIXED_STEP && this.isActive()) {
       this.accumulator -= FIXED_STEP;
-      this.tick(FIXED_STEP);
+      this.tickBonuses = cardBonus(this.profile);
+      try { this.tick(FIXED_STEP); } finally { this.tickBonuses = null; }
     }
   }
 
   private tick(dt: number): void {
     this.state.time += dt;
-    this.state.food = Math.min(99, this.state.food + foodRate(this.profile) * dt);
+    this.state.food = Math.min(99, this.state.food + (0.8 + this.profile.foodLevel * 0.14) * this.bonuses().food * dt);
     this.state.units = this.state.units.filter(u => u.hp > 0);
     if (this.checkEnd()) return;
     const wave = WAVES[this.state.wave];
@@ -194,7 +292,7 @@ export class Game implements GamePort {
     }
 
     // Front bodies move first so the spacing check sees their new positions.
-    const actors = [...this.state.units].sort((a, b) => a.side === b.side ? (a.side === 'player' ? b.x - a.x : a.x - b.x) : a.id - b.id);
+    const actors = [...this.state.units].sort((a, b) => a.side === b.side ? ((a.side === 'player' ? b.x - a.x : a.x - b.x) || a.id - b.id) : (a.side === 'player' ? -1 : 1));
     for (const unit of actors) {
       if (unit.hp <= 0) continue;
       unit.hitFlash = Math.max(0, unit.hitFlash - dt);
@@ -205,7 +303,7 @@ export class Game implements GamePort {
       const direction = unit.side === 'player' ? 1 : -1;
       const targets = this.state.units.filter(other => other.side !== unit.side && other.hp > 0);
       const distance = (other: Unit) => Math.hypot(other.x - unit.x, (other.lane - unit.lane) * 10);
-      const target = targets.sort((a, b) => distance(a) - distance(b))[0];
+      const target = targets.sort((a, b) => (distance(a) - distance(b)) || a.id - b.id)[0];
       const baseX = unit.side === 'player' ? 910 : 90;
       const targetInRange = target && distance(target) <= def.range;
       const baseInRange = Math.abs(baseX - unit.x) <= def.range;
@@ -213,11 +311,10 @@ export class Game implements GamePort {
         unit.attacking = true;
         if (unit.attackTimer <= 0) {
           unit.attackTimer = def.interval;
-          const power = unit.side === 'player' ? cardBonus(this.profile).damage : this.timelinePower() * 0.94;
+          const power = unit.side === 'player' ? this.bonuses().damage : this.timelinePower() * 0.94;
           const damage = def.damage * power;
-          if (targetInRange) this.hurt(target, damage);
-          else this.hurtBase(unit.side, damage);
-          this.events.push({ type: 'hit', x: targetInRange ? target.x : baseX, lane: targetInRange ? target.lane : unit.lane, side: unit.side, amount: damage });
+          const actual = targetInRange ? this.hurt(target, damage) : this.hurtBase(unit.side, damage);
+          this.events.push({ type: 'hit', x: targetInRange ? target.x : baseX, lane: targetInRange ? target.lane : unit.lane, side: unit.side, amount: actual, source: { id: unit.id, x: unit.x, lane: unit.lane, side: unit.side, age: unit.age, kind: unit.kind }, target: targetInRange ? 'unit' : 'base' });
         }
       } else {
         let nextX = unit.x + def.speed * direction * dt;
@@ -233,34 +330,52 @@ export class Game implements GamePort {
     this.state.units = this.state.units.filter(u => u.hp > 0);
   }
 
-  private hurt(unit: Unit, damage: number): void {
-    if (unit.hp <= 0) return;
-    unit.hp = Math.max(0, unit.hp - damage);
+  private hurt(unit: Unit, damage: number): number {
+    if (unit.hp <= 0) return 0;
+    const actual = Math.min(unit.hp, damage);
+    if (unit.side === 'enemy') this.state.stats.damageDealt += actual;
+    else this.state.stats.damageTaken += actual;
+    unit.hp = Math.max(0, unit.hp - actual);
     unit.hitFlash = 0.16;
     if (unit.hp === 0) {
       this.events.push({ type: 'death', x: unit.x, lane: unit.lane, side: unit.side });
       if (unit.side === 'enemy') {
         this.profile.kills++;
+        this.state.stats.kills++;
         this.reward(Math.round((12 + unit.kind * 9) * (1 + unit.age * 0.5)), unit.x);
       }
     }
+    return actual;
   }
 
-  private hurtBase(attacker: Side, damage: number): void {
+  private hurtBase(attacker: Side, damage: number): number {
     if (attacker === 'player') {
       const actual = Math.min(this.state.enemyHp, damage);
       this.state.enemyHp = Math.max(0, this.state.enemyHp - actual);
+      this.state.stats.damageDealt += actual;
       this.damageEarnings += actual * 0.3;
       const coins = Math.floor(this.damageEarnings);
       this.damageEarnings -= coins;
       if (coins) this.reward(coins, 910);
-    } else this.state.playerHp = Math.max(0, this.state.playerHp - damage);
+      return actual;
+    } else {
+      const actual = Math.min(this.state.playerHp, damage);
+      this.state.stats.damageTaken += actual;
+      this.state.playerHp = Math.max(0, this.state.playerHp - actual);
+      return actual;
+    }
   }
 
   private reward(coins: number, x?: number): void {
-    this.profile.coins = Math.min(1e9, this.profile.coins + coins);
-    this.state.earned += coins;
-    this.events.push({ type: 'coin', x, amount: coins });
+    if (!Number.isFinite(coins) || coins <= 0) return;
+    const scaled = coins * eraEconomyScale(this.profile.enemyAge) * this.bonuses().coins + this.rewardRemainder;
+    const whole = Math.floor(scaled + 1e-9);
+    this.rewardRemainder = Math.max(0, scaled - whole);
+    const credited = Math.min(whole, Math.max(0, 1e9 - this.profile.coins));
+    if (credited <= 0) return;
+    this.profile.coins += credited;
+    this.state.earned = Math.min(1e9, this.state.earned + credited);
+    this.events.push({ type: 'coin', x, amount: credited });
   }
 
   private checkEnd(): boolean {
@@ -276,7 +391,8 @@ export class Game implements GamePort {
       this.state.phase = 'won';
       this.profile.wins++;
       this.reward(120 * (1 + this.profile.enemyAge), 910);
-      this.profile.gems += 10;
+      this.profile.gems = Math.min(1e7, this.profile.gems + 10);
+      this.profile.pendingVictory = { stats: { ...this.state.stats }, timeline: this.profile.timeline, battle: this.profile.enemyAge, earned: this.state.earned, seconds: this.state.time, playerHp: this.state.playerHp };
       this.events.push({ type: 'win' });
       return true;
     }

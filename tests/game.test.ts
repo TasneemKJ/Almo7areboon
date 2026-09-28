@@ -13,7 +13,7 @@ function unit(id: number, side: 'player' | 'enemy', x: number, hp = 26, kind: 0 
   return { id, side, kind, age: 0, x, lane: 0, hp, maxHp: hp, attackTimer: 0, attacking: false, hitFlash: 0 };
 }
 
-test('ready battle waits for start; food is spent once and locked units cannot deploy', () => {
+ test('ready battle waits for start; food is spent once and locked units cannot deploy', () => {
   const game = new Game();
   advance(game, 2);
   assert.equal(game.state.food, 6);
@@ -30,7 +30,7 @@ test('ready battle waits for start; food is spent once and locked units cannot d
   assert.ok(Math.abs(game.state.food - 1.6) < 0.02);
 });
 
-test('pause freezes all battle state and rejects combat actions', () => {
+ test('pause freezes all battle state and rejects combat actions', () => {
   const game = new Game();
   game.dispatch({ type: 'start' });
   game.dispatch({ type: 'pause' });
@@ -44,7 +44,7 @@ test('pause freezes all battle state and rejects combat actions', () => {
   assert.ok(game.state.time > 0.9);
 });
 
-test('invalid delta time never corrupts a battle', () => {
+ test('invalid delta time never corrupts a battle', () => {
   const game = new Game();
   game.dispatch({ type: 'start' });
   for (const dt of [NaN, Infinity, -1, 0]) game.step(dt);
@@ -52,7 +52,7 @@ test('invalid delta time never corrupts a battle', () => {
   assert.equal(game.state.food, 6);
 });
 
-test('friendly bodies cannot overtake or overlap in their lane', () => {
+ test('friendly bodies cannot overtake or overlap in their lane', () => {
   const game = new Game();
   game.dispatch({ type: 'start' });
   game.state.units = [unit(90, 'player', 300, 100, 2), unit(91, 'player', 265)];
@@ -61,7 +61,7 @@ test('friendly bodies cannot overtake or overlap in their lane', () => {
   assert.ok(front.x - rear.x >= 21.9);
 });
 
-test('ranged units attack at a distance and defeated targets cannot retaliate', () => {
+ test('ranged units attack at a distance and defeated targets cannot retaliate', () => {
   const game = new Game();
   game.dispatch({ type: 'start' });
   game.state.units = [unit(90, 'player', 450, 20, 1), unit(91, 'enemy', 535, 1)];
@@ -75,7 +75,7 @@ test('ranged units attack at a distance and defeated targets cannot retaliate', 
   assert.equal(game.profile.coins, coins);
 });
 
-test('dead units are removed before attacking and cannot deal damage', () => {
+ test('dead units are removed before attacking and cannot deal damage', () => {
   const game = new Game();
   game.dispatch({ type: 'start' });
   game.state.units = [unit(90, 'enemy', 150, 0), unit(91, 'player', 145, 20)];
@@ -83,7 +83,7 @@ test('dead units are removed before attacking and cannot deal damage', () => {
   assert.equal(game.state.units.find(u => u.id === 91)?.hp, 20);
 });
 
-test('finite enemy waves produce a loss without player deployment', () => {
+ test('finite enemy waves produce a loss without player deployment', () => {
   const game = new Game();
   game.dispatch({ type: 'start' });
   advance(game, 240);
@@ -93,7 +93,7 @@ test('finite enemy waves produce a loss without player deployment', () => {
   assert.equal(game.dispatch({ type: 'next' }), false);
 });
 
-test('victory pays exactly once and battle damage earnings survive retry', () => {
+ test('victory pays exactly once and battle damage earnings survive retry', () => {
   const game = new Game();
   game.dispatch({ type: 'start' });
   game.state.enemyHp = 1;
@@ -113,7 +113,7 @@ test('victory pays exactly once and battle damage earnings survive retry', () =>
   assert.equal(game.dispatch({ type: 'next' }), false);
 });
 
-test('retry preserves earnings and resets battle-only resources and skills', () => {
+ test('retry preserves earnings and resets battle-only resources and skills', () => {
   const game = new Game();
   game.dispatch({ type: 'start' });
   game.dispatch({ type: 'skill', skill: 'food' });
@@ -130,7 +130,7 @@ test('retry preserves earnings and resets battle-only resources and skills', () 
   assert.equal(game.profile.coins, coins);
 });
 
-test('skills can be used once each; freeze pauses enemy motion but not food', () => {
+ test('skills can be used once each; freeze pauses enemy motion but not food', () => {
   const game = new Game();
   game.dispatch({ type: 'start' });
   game.state.units = [unit(90, 'enemy', 600)];
@@ -146,7 +146,7 @@ test('skills can be used once each; freeze pauses enemy motion but not food', ()
   assert.equal(game.dispatch({ type: 'skill', skill: 'meteor' }), false);
 });
 
-test('purchases enforce funds and consume their prices only once', () => {
+ test('purchases enforce funds and consume their prices only once', () => {
   const game = new Game();
   assert.equal(game.dispatch({ type: 'unlock', kind: 1 }), false);
   game.profile.coins = 1000;
@@ -167,7 +167,7 @@ test('purchases enforce funds and consume their prices only once', () => {
   assert.ok(game.state.playerMaxHp > hp);
 });
 
-test('paused battle menus allow purchases but evolution waits for battle end', () => {
+ test('paused battle menus allow purchases but evolution waits for battle end', () => {
   const game = new Game();
   game.profile.coins = 2000;
   game.dispatch({ type: 'start' });
@@ -179,7 +179,7 @@ test('paused battle menus allow purchases but evolution waits for battle end', (
   assert.equal(game.state.paused, true);
 });
 
-test('visible battle upgrades and unlocks work without pausing; base upgrades retain prior damage', () => {
+ test('visible battle upgrades and unlocks work without pausing; base upgrades retain prior damage', () => {
   const game = new Game();
   game.profile.coins = 1000;
   game.dispatch({ type: 'start' });
@@ -193,23 +193,23 @@ test('visible battle upgrades and unlocks work without pausing; base upgrades re
   assert.equal(game.state.phase, 'running');
 });
 
-test('evolution is reachable early, consumes cost, and resets age-specific upgrades', () => {
+ test('evolution requires its configured cost and resets the age economy', () => {
   const game = new Game();
-  game.profile.coins = 2000;
+  game.profile.coins = ERAS[0].evolveCost + 2000;
   game.profile.foodLevel = 4;
   game.profile.baseLevel = 2;
   game.profile.unlocked = [true, true, true];
   const cost = ERAS[0].evolveCost;
   assert.equal(game.dispatch({ type: 'evolve' }), true);
   assert.equal(game.profile.age, 1);
-  assert.equal(game.profile.coins, 2000 - cost);
+  assert.equal(game.profile.coins, 0);
   assert.equal(game.profile.foodLevel, 0);
   assert.equal(game.profile.baseLevel, 0);
   assert.deepEqual(game.profile.unlocked, [true, false, false]);
   assert.equal(game.dispatch({ type: 'evolve' }), false);
 });
 
-test('sixth enemy age victory advances timeline and resets the campaign', () => {
+ test('sixth enemy age victory advances timeline and resets the campaign', () => {
   const profile = defaultProfile();
   profile.age = 5;
   profile.enemyAge = 5;
@@ -227,7 +227,7 @@ test('sixth enemy age victory advances timeline and resets the campaign', () => 
   assert.ok(game.profile.gems > 100);
 });
 
-test('summoning and quest rewards cannot be collected without currency or twice', () => {
+ test('summoning and quest rewards cannot be collected without currency or twice', () => {
   const game = new Game();
   const before = cardBonus(game.profile);
   assert.equal(game.dispatch({ type: 'summon' }), true);
@@ -244,7 +244,7 @@ test('summoning and quest rewards cannot be collected without currency or twice'
   assert.equal(game.dispatch({ type: 'claim', id: 'unknown' }), false);
 });
 
-test('same actions and elapsed frames produce deterministic battle results', () => {
+ test('same actions and elapsed frames produce deterministic battle results', () => {
   const games = [new Game(), new Game()];
   for (const game of games) {
     game.dispatch({ type: 'start' });
@@ -258,7 +258,7 @@ test('same actions and elapsed frames produce deterministic battle results', () 
   assert.deepEqual(games[0].profile, games[1].profile);
 });
 
-test('save round trip retains progress without sharing default arrays', () => {
+ test('save round trip retains progress without sharing default arrays', () => {
   const profile = defaultProfile();
   profile.coins = 123;
   profile.unlocked[1] = true;
@@ -270,7 +270,7 @@ test('save round trip retains progress without sharing default arrays', () => {
   assert.deepEqual(loadProfile(storage), profile);
 });
 
-test('corrupt, future-version, absent and unavailable saves recover safely', () => {
+ test('corrupt, future-version, absent and unavailable saves recover safely', () => {
   for (const raw of [null, '{broken', 'null', '[]', '{"version":99,"coins":900}']) {
     assert.deepEqual(loadProfile({ getItem: () => raw }), defaultProfile());
   }
@@ -278,7 +278,7 @@ test('corrupt, future-version, absent and unavailable saves recover safely', () 
   assert.equal(saveProfile(defaultProfile(), { setItem: () => { throw new Error('quota'); } }), false);
 });
 
-test('persisted values are validated, bounded and sanitized before gameplay', () => {
+ test('persisted values are validated, bounded and sanitized before gameplay', () => {
   const dirty = { version: 1, age: 999, enemyAge: -5, timeline: 1e100, coins: -100, gems: '999', foodLevel: 1e99, baseLevel: 2.8, unlocked: [false, 'yes', true], cards: [2, -3, 1e99, 'bad'], kills: 3.9, wins: -7, deployed: Infinity, claimed: ['first-blood', 'first-blood', 'evil'], sound: 'false' };
   const profile = loadProfile({ getItem: () => JSON.stringify(dirty) });
   assert.equal(profile.age, 5);
@@ -289,10 +289,11 @@ test('persisted values are validated, bounded and sanitized before gameplay', ()
   assert.ok(profile.foodLevel <= 100);
   assert.equal(profile.baseLevel, 2);
   assert.deepEqual(profile.unlocked, [true, false, true]);
-  assert.equal(profile.cards.length, 6);
+  assert.equal(profile.cards.length, 30);
   assert.equal(profile.cards[1], 0);
   assert.equal(profile.cards[3], 0);
-  assert.ok(profile.cards[2] <= 1000);
+  assert.equal(profile.cards[18], 2);
+  assert.equal(profile.cards[8], 1000);
   assert.deepEqual(profile.claimed, ['first-blood']);
   assert.equal(profile.sound, true);
   const game = new Game(profile);

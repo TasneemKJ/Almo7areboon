@@ -117,9 +117,18 @@ function normalizedRoll(value: number): number {
   return typeof value === 'number' && Number.isFinite(value) ? Math.max(0, Math.min(1 - Number.EPSILON, value)) : 0;
 }
 
+/** Storage-cap protection removes unavailable cards, without unlocking new rarities. */
+export function availableSummonOdds(draws: number, copies?: readonly number[]): [number, number, number, number] {
+  const weights = summonLevel(draws).odds.map((weight, rarity) =>
+    CARD_DEFS.some((card, index) => card.rarity === RARITIES[rarity] && (!copies || (copies[index] ?? 0) < 1000)) ? weight : 0);
+  const total = weights.reduce((sum, weight) => sum + weight, 0);
+  return weights.map(weight => total ? weight / total * 100 : 0) as [number, number, number, number];
+}
+
 /** Draws means completed draws BEFORE this draw. Randomness is supplied by the caller. */
-export function drawCard(draws: number, rarityRoll: number, cardRoll: number): number {
-  const { odds } = summonLevel(draws);
+export function drawCard(draws: number, rarityRoll: number, cardRoll: number, copies?: readonly number[]): number {
+  const odds = copies ? availableSummonOdds(draws, copies) : summonLevel(draws).odds;
+  if (!odds.some(weight => weight > 0)) return -1;
   // One rounded reference row totals 99.9%; normalize its weights instead of
   // incorrectly assigning the missing 0.1% to the rarest card category.
   const roll = normalizedRoll(rarityRoll) * odds.reduce((sum, chance) => sum + chance, 0);
@@ -129,7 +138,7 @@ export function drawCard(draws: number, rarityRoll: number, cardRoll: number): n
     cumulative += odds[rarityIndex];
     if (roll < cumulative) break;
   }
-  const pool = CARD_DEFS.map((definition, index) => ({ definition, index })).filter(({ definition }) => definition.rarity === RARITIES[rarityIndex]);
+  const pool = CARD_DEFS.map((definition, index) => ({ definition, index })).filter(({ definition, index }) => definition.rarity === RARITIES[rarityIndex] && (!copies || (copies[index] ?? 0) < 1000));
   return pool[Math.floor(normalizedRoll(cardRoll) * pool.length)].index;
 }
 
@@ -140,4 +149,14 @@ export function cardPackCost(count: 1 | 10 | 50): number {
     case 50: return 4600;
     default: throw new RangeError('Card packs contain 1, 10, or 50 cards.');
   }
+}
+
+/** A saved xorshift32 stream makes each paid draw reproducible across reloads. */
+export function nextCardRandom(seed: number): { seed: number; value: number } {
+  let next = (nonnegativeInteger(seed) >>> 0) || 0x6d2b79f5;
+  next ^= next << 13;
+  next ^= next >>> 17;
+  next ^= next << 5;
+  next >>>= 0;
+  return { seed: next, value: next / 0x100000000 };
 }
