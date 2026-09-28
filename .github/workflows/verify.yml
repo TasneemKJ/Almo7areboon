@@ -22,11 +22,22 @@ jobs:
       - name: Test simulation
         id: tests
         continue-on-error: true
-        run: npm test
+        run: |
+          set -o pipefail
+          npm test | tee verification-tests.log
       - name: Production build
         id: build
         continue-on-error: true
-        run: npm run build
+        run: |
+          set -o pipefail
+          npm run build | tee verification-build.log
+      - name: Publish verified web build
+        if: steps.tests.outcome == 'success' && steps.build.outcome == 'success'
+        uses: actions/upload-artifact@v4
+        with:
+          name: almo7areboon-web-build
+          path: dist/
+          retention-days: 7
       - name: Package reproducible verification workspace
         if: always()
         run: |

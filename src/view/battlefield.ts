@@ -1,5 +1,7 @@
 import Phaser from 'phaser';
-import type { GameEvent, GamePort, Unit } from '../game/types';
+import { reducedMotion, projectileForHit } from './combat-feedback.ts';
+import { compactNumber } from '../ui/battle-hud.ts';
+import type { BattleState, GameEvent, GamePort, Unit } from '../game/types';
 import { circle, drawBase, drawTroop, ellipse, line, poly } from './art';
 
 const W=450,H=430;
@@ -8,7 +10,7 @@ const worldY=(lane:number)=>276+lane*13;
 type Particle={x:number;y:number;vx:number;vy:number;life:number;max:number;size:number;color:number;kind:'dust'|'spark'|'coin'|'ice'};
 type Bolt={x:number;y:number;tx:number;ty:number;life:number;max:number;side:'player'|'enemy';age:number;kind:Unit['kind']};
 type Floater={text:Phaser.GameObjects.Text;life:number;max:number;startY:number};
-type UnitView={body:Phaser.GameObjects.Graphics;shadow:Phaser.GameObjects.Graphics;lastAttackTimer:number;lastDust:number};
+type UnitView={body:Phaser.GameObjects.Graphics;shadow:Phaser.GameObjects.Graphics;lastDust:number};
 
 function noise(n:number):number { const s=Math.sin(n*127.1+3.18)*43758.5453;return s-Math.floor(s); }
 function tuft(g:Phaser.GameObjects.Graphics,x:number,y:number,s=1,c=0x78ad40):void {
@@ -29,8 +31,9 @@ function tree(g:Phaser.GameObjects.Graphics,x:number,y:number,s=1):void {
 }
 
 /** Phaser is a presentation adapter; the deterministic game owns every rule. */
-export function mountBattlefield(element:HTMLElement,game:GamePort,onFrame:()=>void,onEvents:(events:GameEvent[])=>void):{destroy():void} {
+export function mountBattlefield(element:HTMLElement,game:GamePort,onFrame:()=>void,onEvents:(events:GameEvent[])=>void,options:{isVisible?:()=>boolean}={}):{destroy():void} {
   let disposed=false;
+  const motionQuery=window.matchMedia('(prefers-reduced-motion: reduce)');
   class Battlefield extends Phaser.Scene {
     private world!:Phaser.GameObjects.Container;
     private terrain!:Phaser.GameObjects.Graphics;
@@ -52,6 +55,8 @@ export function mountBattlefield(element:HTMLElement,game:GamePort,onFrame:()=>v
     private elapsed=0;
     private freezeAlpha=0;
     private meteorAlpha=0;
+    private reduced=false;
+    private lastState:BattleState|null=null;
 
     constructor(){super('battlefield');}
     create():void {
@@ -163,7 +168,7 @@ export function mountBattlefield(element:HTMLElement,game:GamePort,onFrame:()=>v
         g.fillStyle(0xf4f2d6,1);g.fillRoundedRect(x-29,212,58,11,4);
         const fill=56*Math.max(0,Math.min(1,hp/max));if(fill>0){g.fillStyle(color,1);g.fillRoundedRect(x-28,213,fill,9,3);g.fillStyle(0xffffff,.2);g.fillRoundedRect(x-27,213,Math.max(1,fill-2),3,2);}
       }
-      this.pHp.setText(`${Math.max(0,Math.ceil(s.playerHp))}`);this.eHp.setText(`${Math.max(0,Math.ceil(s.enemyHp))}`);
+      this.pHp.setText(compactNumber(s.playerHp));this.eHp.setText(compactNumber(s.enemyHp));
       for(const u of s.units){
         if(u.hp>=u.maxHp)continue;
         const x=worldX(u.x),y=worldY(u.lane)-(u.kind===2?(u.age===1?70:59):49),width=u.kind===2?27:22;
@@ -180,22 +185,19 @@ export function mountBattlefield(element:HTMLElement,game:GamePort,onFrame:()=>v
         ids.add(u.id);let v=this.unitViews.get(u.id);
         if(!v){
           const shadow=this.add.graphics();this.world.add(shadow);
-          const body=this.add.graphics();this.world.add(body);v={body,shadow,lastAttackTimer:0,lastDust:0};this.unitViews.set(u.id,v);
+          const body=this.add.graphics();this.world.add(body);v={body,shadow,lastDust:0};this.unitViews.set(u.id,v);
         }
         const x=worldX(u.x),y=worldY(u.lane),frozen=u.side==='enemy'&&game.state.freezeUntil>game.state.time;
         const scythe=u.age===1&&u.kind===2,size=scythe?1.22:1;
         v.shadow.clear();ellipse(v.shadow,x,y+2,u.kind===2?(scythe?28:43):20,u.kind===2?10:6,0x796b44,.23);
-        v.body.setPosition(x,y+(u.attacking||frozen?0:Math.abs(Math.sin(game.state.time*11+u.id))*.7));v.body.setScale((u.side==='player'?1:-1)*size,size);
-        drawTroop(v.body,u.age,u.kind,u.side,frozen?0:game.state.time+u.id*.2,u.attacking,u.hitFlash>0);
+        v.body.setPosition(x,y+(this.reduced||u.attacking||frozen?0:Math.abs(Math.sin(game.state.time*11+u.id))*.7));v.body.setScale((u.side==='player'?1:-1)*size,size);
+        drawTroop(v.body,u.age,u.kind,u.side,this.reduced||frozen?0:game.state.time+u.id*.2,u.attacking,u.hitFlash>0);
         v.body.setAlpha(frozen?.72:1);
         // Simple scene ordering follows the three ground lanes.
         this.world.bringToTop(v.shadow);this.world.bringToTop(v.body);
         if(!game.state.paused&&game.state.phase==='running'&&!frozen){
           if(!u.attacking&&game.state.time-v.lastDust>.48){v.lastDust=game.state.time;if(!(u.age===5&&u.kind===2))this.emit(x,y,1,0xd6c69a,'dust',.35);}
-          const firesProjectile=u.kind===1||(u.kind===2&&u.age>=3)||(u.kind===0&&u.age===4);
-          if(u.attacking&&firesProjectile&&u.attackTimer>v.lastAttackTimer+.01)this.shoot(u);
         }
-        v.lastAttackTimer=u.attackTimer;
       }
       for(const [id,v] of this.unitViews){if(!ids.has(id)){v.body.destroy();v.shadow.destroy();this.unitViews.delete(id);}}
       const ready=game.state.phase==='ready';
@@ -208,16 +210,18 @@ export function mountBattlefield(element:HTMLElement,game:GamePort,onFrame:()=>v
       this.world.bringToTop(this.ui);this.world.bringToTop(this.fx);this.world.bringToTop(this.pHp);this.world.bringToTop(this.eHp);
       for(const f of this.floaters)this.world.bringToTop(f.text);
     }
-    private shoot(u:Unit):void {
-      const enemy=game.state.units.filter(v=>v.side!==u.side).sort((a,b)=>Math.abs(a.x-u.x)-Math.abs(b.x-u.x))[0];
-      const tx=enemy?worldX(enemy.x):u.side==='player'?407:43,ty=enemy?worldY(enemy.lane)-19:270;
+    private shoot(shot:NonNullable<ReturnType<typeof projectileForHit>>):void {
+      const u=shot.source;
+      const tx=worldX(shot.targetX),ty=shot.base?270:worldY(shot.targetLane)-19;
       const heavy=u.kind===2,muzzle=heavy?33:u.age>=3?36:18;
       const x=worldX(u.x)+(u.side==='player'?muzzle:-muzzle),y=worldY(u.lane)-(heavy?(u.age===5?14:u.age===4?29:24):25);
       const duration=u.age===5?.16:u.age>=3?.22:.34;
       this.bolts.push({x,y,tx,ty,life:duration,max:duration,side:u.side,age:u.age,kind:u.kind});
+      if(this.bolts.length>80)this.bolts.shift();
       if(u.age>=3)this.emit(x,y,heavy?5:2,u.age===5?0xa1f7ff:0xffd481,'spark',.15);
     }
     private emit(x:number,y:number,count:number,color:number,kind:Particle['kind']='spark',life=.5):void {
+      if(this.reduced)return;
       for(let i=0;i<count;i++){
         const angle=noise(this.elapsed*55+i*13)*Math.PI*2,speed=kind==='dust'?8:kind==='coin'?27:28+noise(i+this.elapsed)*30;
         this.particles.push({x,y,vx:Math.cos(angle)*speed,vy:Math.sin(angle)*speed-(kind==='coin'?40:10),life:life*(.7+noise(i+6)*.6),max:life,size:kind==='coin'?3:kind==='dust'?3.5:1.3+noise(i+7)*2,color,kind});
@@ -228,22 +232,24 @@ export function mountBattlefield(element:HTMLElement,game:GamePort,onFrame:()=>v
       const x=worldX(e.x??500),y=worldY(e.lane??1);
       if(e.type==='spawn')this.emit(x,y,6,0xd6c598,'dust',.6);
       if(e.type==='hit'){
+        const shot=projectileForHit(e);if(shot&&!this.reduced)this.shoot(shot);
         this.emit(x,y-20,5,0xffefb2,'spark',.28);
-        if(e.amount)this.floatText(x+(noise(this.elapsed)*14-7),y-48,`${Math.ceil(e.amount)}`,'#fff8e6',.62,12);
+        if(e.amount)this.floatText(x+(noise(this.elapsed)*14-7),y-48,compactNumber(e.amount),'#fff8e6',.62,12);
       }
-      if(e.type==='death'){this.emit(x,y-12,8,0xe5d3a8,'dust',.6);this.emit(x,y-13,4,0xffd468,'coin',.65);}
-      if(e.type==='coin'&&e.amount)this.floatText(x,y-34,`+${e.amount}`,'#ffe174',.85,12);
+      if(e.type==='death'){this.emit(x,y-12,8,0xe5d3a8,'dust',.6);if(e.side==='enemy')this.emit(x,y-13,4,0xffd468,'coin',.65);}
+      if(e.type==='coin'&&e.amount)this.floatText(x,y-34,`+${compactNumber(e.amount)}`,'#ffe174',.85,12);
       if(e.type==='win'){for(let i=0;i<50;i++)this.emit(400,245,1,i%2?0xffdc76:0xffffff,'spark',1.4);}
       if(e.type==='lose')this.emit(37,267,25,0x9f977f,'dust',1.1);
       if(e.type==='skill'){
         if(e.skill==='freeze'){this.freezeAlpha=.6;for(let i=0;i<22;i++)this.emit(150+noise(i+9)*270,250+noise(i+72)*65,1,0xc9f7ff,'ice',1.1);}
-        if(e.skill==='meteor'){this.meteorAlpha=.85;this.cameras.main.shake(170,.0025);for(let i=0;i<32;i++)this.emit(280+noise(i+34)*110,275+noise(i+64)*30,1,i%2?0xffa14b:0xffe39b,'spark',1);}
-        if(e.skill==='food')this.floatText(225,201,'+ FOOD','#fff1ba',1,21);
+        if(e.skill==='meteor'){this.meteorAlpha=.85;if(!this.reduced)this.cameras.main.shake(170,.0025);for(let i=0;i<32;i++)this.emit(280+noise(i+34)*110,275+noise(i+64)*30,1,i%2?0xffa14b:0xffe39b,'spark',1);}
+        if(e.skill==='food')this.floatText(225,201,`+${Number((e.amount??10).toFixed(1))} FOOD`,'#fff1ba',1,21);
       }
     }
     private floatText(x:number,y:number,value:string,color:string,life:number,size:number):void {
       const text=this.add.text(x,y,value,{fontFamily:'Nunito, Arial, sans-serif',fontSize:`${size}px`,fontStyle:'bold',color,stroke:'#61513b',strokeThickness:2}).setOrigin(.5);
       this.world.add(text);this.floaters.push({text,life,max:life,startY:y});
+      if(this.floaters.length>30)this.floaters.shift()?.text.destroy();
     }
     private effects(dt:number):void {
       const g=this.fx;g.clear();
@@ -275,15 +281,31 @@ export function mountBattlefield(element:HTMLElement,game:GamePort,onFrame:()=>v
         }
       }
       this.bolts=this.bolts.filter(b=>b.life>0);
-      for(const f of this.floaters){f.life-=dt;const p=1-f.life/f.max;f.text.setY(f.startY-p*24).setAlpha(Math.min(1,Math.max(0,f.life/f.max*2)));if(f.life<=0)f.text.destroy();}
+      for(const f of this.floaters){f.life-=dt;const p=1-f.life/f.max;f.text.setY(f.startY-(this.reduced?0:p*24)).setAlpha(Math.min(1,Math.max(0,f.life/f.max*2)));if(f.life<=0)f.text.destroy();}
       this.floaters=this.floaters.filter(f=>f.life>0);
       this.freezeAlpha=Math.max(0,this.freezeAlpha-dt*.8);if(this.freezeAlpha>0){g.fillStyle(0xb4f0fc,this.freezeAlpha*.18);g.fillRect(0,0,W,H);}
       this.meteorAlpha=Math.max(0,this.meteorAlpha-dt*1.9);if(this.meteorAlpha>0){g.fillStyle(0xffdc94,this.meteorAlpha*.2);g.fillRect(0,0,W,H);}
     }
+    private resetEffects():void {
+      for(const floater of this.floaters)floater.text.destroy();
+      this.floaters=[];this.particles=[];this.bolts=[];this.freezeAlpha=0;this.meteorAlpha=0;
+    }
     update(_time:number,delta:number):void {
       if(disposed||!this.world)return;
-      const dt=Math.min(.05,delta/1000);this.elapsed+=dt;
-      game.step(dt);const events=game.drainEvents();for(const e of events)this.event(e);if(events.length)onEvents(events);
+      const dt=Math.min(.05,Math.max(0,delta/1000));
+      game.step(dt);
+      const events=game.drainEvents();
+      if(events.length)onEvents(events);
+      if(options.isVisible&&!options.isVisible()){onFrame();return;}
+      if(this.lastState!==game.state){
+        this.lastState=game.state;this.resetEffects();
+        for(const view of this.unitViews.values()){view.body.destroy();view.shadow.destroy();}
+        this.unitViews.clear();
+      }
+      const reduce=reducedMotion(game.profile.motion,motionQuery.matches);
+      if(reduce&&!this.reduced)this.resetEffects();this.reduced=reduce;
+      if(!game.state.paused&&!this.reduced)this.elapsed+=dt;
+      for(const event of events)this.event(event);
       this.bases();this.ambient();this.updateUnits();this.healthBars();this.effects(game.state.paused?0:dt);onFrame();
     }
   }
@@ -292,5 +314,5 @@ export function mountBattlefield(element:HTMLElement,game:GamePort,onFrame:()=>v
   renderer.canvas.setAttribute('aria-label','Battlefield: your warriors march from the blue base toward the enemy red base.');
   renderer.canvas.setAttribute('role','img');
   const observer=new ResizeObserver(()=>{if(!disposed&&element.clientWidth>0&&element.clientHeight>0)renderer.scale.resize(element.clientWidth,element.clientHeight);});observer.observe(element);
-  return {destroy(){disposed=true;observer.disconnect();renderer.destroy(true);}};
+  return {destroy(){if(disposed)return;disposed=true;observer.disconnect();renderer.destroy(true);}};
 }
