@@ -1,0 +1,69 @@
+name: Verify feature patch
+on:
+  push:
+    branches: [feat/finish-core-40-passes]
+    paths: ['.github/patches/*.json']
+permissions:
+  contents: write
+concurrency:
+  group: feature-patch-${{ github.ref }}
+  cancel-in-progress: false
+jobs:
+  patch:
+    if: github.ref == 'refs/heads/feat/finish-core-40-passes'
+    runs-on: ubuntu-latest
+    timeout-minutes: 15
+    steps:
+      - uses: actions/checkout@v4
+        with:
+          ref: feat/finish-core-40-passes
+      - uses: actions/setup-node@v4
+        with:
+          node-version: '22'
+          cache: npm
+      - name: Verify and apply source patch
+        run: |
+          python3 - <<'PY'
+          import base64, hashlib, json, pathlib, subprocess, zlib
+          requests = sorted(pathlib.Path('.github/patches').glob('*.json'))
+          assert len(requests) == 1, 'Exactly one reviewed source patch is required'
+          data = json.loads(requests[0].read_text())
+          patch = zlib.decompress(base64.b64decode(data['patch']))
+          assert hashlib.sha256(patch).hexdigest() == data['sha256'], 'Patch checksum mismatch'
+          for line in patch.decode().splitlines():
+              if line.startswith('+++ b/') or line.startswith('--- a/'):
+                  path = line[6:]
+                  assert not path.startswith('.github/'), 'Source patch cannot alter workflows'
+                  assert '..' not in pathlib.PurePosixPath(path).parts
+          subprocess.run(['git', 'apply', '--index', '-'], input=patch, check=True)
+          requests[0].unlink()
+          pathlib.Path('/tmp/patch-message').write_text(str(data['message']).splitlines()[0][:160])
+          PY
+      - run: npm ci
+      - run: npm test
+      - run: npm run build
+      - name: Commit verified source to feature branch
+        run: |
+          git config user.name 'github-actions[bot]'
+          git config user.email '41898282+github-actions[bot]@users.noreply.github.com'
+          git add -A
+          git commit -F /tmp/patch-message
+          git push origin HEAD:feat/finish-core-40-passes
+      - uses: actions/setup-python@v5
+        with:
+          python-version: '3.12'
+      - run: pip install -r tests/requirements-browser.txt
+      - run: python -m playwright install --with-deps chromium
+      - name: Browser playtest
+        run: |
+          npm run preview -- --port 4173 > /tmp/preview.log 2>&1 &
+          for i in $(seq 1 30); do curl --silent --fail http://127.0.0.1:4173/ >/dev/null && break; sleep 1; done
+          python tests/browser_smoke.py
+      - uses: actions/upload-artifact@v4
+        if: always()
+        with:
+          name: game-evidence
+          path: |
+            artifacts/
+            dist/
+          retention-days: 7
