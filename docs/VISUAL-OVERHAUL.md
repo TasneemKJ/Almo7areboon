@@ -16,7 +16,7 @@ No files under `src/game` were changed. The existing gameplay and save suite is 
 
 ## Evidence
 
-- `npm test`: **109 passed, 0 failed** on the current local tree.
+- `npm test`: **115 passed, 0 failed** on the current local tree.
 - `npm run build`: TypeScript and Vite production build passed.
 - `git diff --check`: clean.
 - First visual checkpoint `df53471eaaa56801e759b64cd598aa9e23c92d81` also passed GitHub Actions run `36501123490`. A newer commit's CI result must be checked separately.
@@ -33,6 +33,8 @@ No files under `src/game` were changed. The existing gameplay and save suite is 
 6. Generic glowing projectiles did not communicate weapon type. The renderer now paints tested weapon-specific glyph geometry.
 7. Portrait labels and crest/weapon tips shared the same vertical band. CSS now reserves separate art space between labels and prices; this is source-contract verification, not a browser-layout result.
 8. Defeated sprites disappeared before delayed projectile impacts. A bounded, view-only residue lasts at most 0.28 seconds, pauses with the scene and disposes on expiry, eviction, reset or reduced motion. Four tests exercise this lifecycle.
+
+9. The six battlefields shared one generic floating-mote treatment after the static background pass. A presentation-only atmosphere model now gives each era its own bounded motion language behind the bases: Stone fireflies, Farm pollen, Spartan gulls, Renaissance embers, Modern windblown leaves and Space starlight. Reduced motion freezes these accents into a small static composition instead of removing visual identity, and malformed timing/viewport inputs fail soft without touching simulation state. A standalone composited keyframe board was inspected to keep fireflies/stars accent-sized; this is asset/presentation QA, not an in-game screenshot.
 
 ## Repeatable standalone asset QA
 
