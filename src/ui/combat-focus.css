@@ -57,3 +57,41 @@
  .upgrade-label { font-size:10px; }
  .buy-button { min-width:55px; }
 }
+
+/* The painted chapter uses book lettering and ink-edged, softly uneven cards. */
+#app[data-art-style="storybook"] .stage h1,
+#app[data-art-style="storybook"] .big-button,
+#app[data-art-style="storybook"] .unit-name,
+#app[data-art-style="storybook"] .pause-banner {
+ font-family:Georgia,'Palatino Linotype',serif;
+ font-weight:700;
+}
+#app[data-art-style="storybook"] .stage h1 {
+ text-shadow:0 2px 0 #182b31,0 4px 14px #101f2bd9;
+}
+#app[data-art-style="storybook"] .scene-name {
+ font-family:Georgia,'Palatino Linotype',serif;
+ font-style:italic;
+}
+#app[data-art-style="storybook"] .deployment {
+ background:linear-gradient(180deg,#334347,#1d3038);
+}
+#app[data-art-style="storybook"] .unit-card {
+ border-color:#aa9976;
+ border-radius:15px 12px 17px 11px;
+ background:radial-gradient(ellipse at 50% 72%,#788476 0%,#465953 52%,#293b42 100%);
+ box-shadow:0 3px 0 #13262c,inset 0 0 0 1px #d4c69d29;
+}
+#app[data-art-style="storybook"] .unit-card::after {
+ border-radius:12px 9px 14px 8px;
+ border-color:#d9cda84a;
+}
+#app[data-art-style="storybook"] .unit-card.affordable {
+ border-color:#f3dba5;
+ box-shadow:0 3px 0 #13262c,inset 0 0 0 1px #f3dba56b;
+}
+#app[data-art-style="storybook"] .unit-price { background:#213338; }
+#app[data-art-style="storybook"] .big-button {
+ border-radius:16px 13px 18px 12px;
+ text-shadow:0 1px #fff1c18c;
+}
