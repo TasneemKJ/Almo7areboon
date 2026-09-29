@@ -1,5 +1,6 @@
 import {CARD_DEFS} from '../game/cards.ts';
 import {path as p,ellipse as e,rect as r,line as l,gradient,documentSvg,dataSvg} from './illustration-kit.ts';
+import {cardFrameSvg} from './card-frame.ts';
 const gold='url(#gold)',metal='url(#metal)',warm='url(#warm)',blue='url(#blue)';
 const wheel=(x:number,y:number,radius:number)=>e(x,y,radius,radius,gold,'#354f55',2)+e(x,y,radius*.65,radius*.65,'#6d857e')+l(`M${x-radius*.7} ${y}h${radius*1.4}M${x} ${y-radius*.7}v${radius*1.4}`,'#f3e1ac',3);
 const vial=()=>p('M51 36H78V48L86 66V94Q63 105 43 94V66L51 48Z',metal)+p('M46 76Q64 67 82 76V92Q65 99 46 92Z',blue)+r(49,30,31,11,3,warm)+l('M50 64V75','#fff9d2',3);
@@ -44,6 +45,7 @@ export function cardIllustration(index:number):string {
  let value=cache.get(index);if(value)return value;
  const color=CARD_DEFS[index].color;
  const defs=gradient('gold','#fff0b5','#ca9950')+gradient('metal','#f3f0cf','#9bbfb9')+gradient('warm','#d6b077','#936e4c')+gradient('blue','#97dacf','#477d89');
- value=dataSvg(documentSvg(128,128,`<g opacity=".18">${e(64,63,54,54,color)}</g>${e(64,65,49,49,'none',color,1)}<g opacity=".15">${e(64,111,38,5,'#173a45')}</g>${object(index)}${p('M105 21l2 5 5 2-5 2-2 5-2-5-5-2 5-2Z','#fff0bd','none',0)}`,defs));
+ const rarity=CARD_DEFS[index].rarity;
+ value=dataSvg(documentSvg(128,128,`${cardFrameSvg(rarity,color)}<g opacity=".1">${e(64,62,43,43,color)}</g><g data-layer="card-object">${object(index)}</g>`,defs));
  cache.set(index,value);return value;
 }

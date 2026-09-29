@@ -81,3 +81,9 @@ Ten connected refinements are now implemented toward forty. No scheduler; render
 Added a bounded view-only gesture model over existing sprite frames: melee commits forward, ranged attacks recoil while staying upright, and heavy units compress. Faction direction mirrors the same geometry; reduced motion is neutral. Five regressions RED→GREEN; full suite 219/219 and production build passed. Details: [11-character-gesture.md](11-character-gesture.md).
 
 Eleven connected refinements are now implemented toward forty. No scheduler; browser/mobile acceptance remains open.
+
+
+## 12 — Collectible art hierarchy
+Added a shared rarity-frame grammar around all 30 original collectible objects: protected central negative space, grounded plinth/shadow, and progressively stronger common/rare/epic/legendary ornament. Collection and summon surfaces expose the same rarity metadata. Five regressions RED→GREEN; full suite 224/224, production build passed, and standalone asset QA still reports 30 cards with zero errors. Details: [12-card-art-hierarchy.md](12-card-art-hierarchy.md).
+
+Twelve connected refinements are now implemented toward forty. No scheduler; rendered mobile acceptance remains open.
