@@ -25,7 +25,7 @@ type TroopView={body:ImageOrFallback;x:number;y:number;side:Side;dustAt:number};
 type Spark={x:number;y:number;vx:number;vy:number;life:number;max:number;size:number;color:number;dust:boolean};
 type Bolt={from:{x:number;y:number};to:{x:number;y:number};life:number;max:number;arc:number;age:number;kind:Unit['kind'];side:Side;heavy:boolean;damage:number;meteor?:boolean;targetBase?:boolean;targetSide?:Side;targetAge?:number};
 type Ring={x:number;y:number;life:number;max:number;radius:number;color:number};
-type Floater={text:Phaser.GameObjects.Text;life:number;max:number;startY:number};
+type Floater={text:Phaser.GameObjects.Text;life:number;max:number;startY:number;banner:boolean};
 type AttackCue={x:number;y:number;lane:number;age:number;kind:Unit['kind'];side:Side;life:number;max:number};
 type ImpactCue={x:number;y:number;age:number;kind:Unit['kind'];side:Side;life:number;max:number};
 type Flare={x:number;y:number;life:number;max:number;radius:number;color:number};
@@ -350,7 +350,7 @@ export function mountBattlefield(element:HTMLElement,game:GamePort,onFrame:()=>v
    this.emit(x,y,critical?(heavy?13:9):(heavy?9:6),palette.debris,true,critical?.5:.36);
    this.ring(x,y,targetSide==='player'?0x8fe7f0:0xffbb8b,heavy?29:18);
    this.flare(x,y,heavy?34:22,targetSide==='player'?0x7fdcff:0xffa060,heavy?.34:.24);
-   if(amount>0)this.floatText(x,y-17,compactNumber(amount));
+   if(amount>0)this.floatText(x,y-17,compactNumber(amount),'#fff1c8',false,heavy);
    if(heavy&&!this.reduce)this.cameras.main.shake(55,.0012);
   }
   private drawAttackCues(dt:number):void {
@@ -425,7 +425,7 @@ export function mountBattlefield(element:HTMLElement,game:GamePort,onFrame:()=>v
     g.fillStyle(0x203d43,.7);g.fillRoundedRect(x-w/2-1,y-1,w+2,5,2);
     g.fillStyle(unit.side==='player'?0x9de6ef:0xffb18a,1);const fill=w*Math.max(0,unit.hp/unit.maxHp);if(fill>.1)g.fillRoundedRect(x-w/2,y,fill,3,1);
    }
-   if(s.freezeUntil>s.time){g.lineStyle(2,0xa8f8ef,.65);g.lineBetween(95,this.layout.groundY+34,355,this.layout.groundY+34);}
+   if(s.freezeUntil>s.time){const y=this.layout.groundY+12;g.fillStyle(0xbff6ff,.1);g.fillEllipse(300,y,260,34,24);g.lineStyle(1.5,0xd6fbff,.55);g.strokeEllipse(300,y,250,30,24);}
   }
   private emit(x:number,y:number,count:number,color:number,dust=false,life=.36):void {
    if(this.reduce)return;
@@ -437,15 +437,18 @@ export function mountBattlefield(element:HTMLElement,game:GamePort,onFrame:()=>v
    if(this.reduce)return;
    this.rings.push({x,y,life:.32,max:.32,radius,color});if(this.rings.length>24)this.rings.shift();
   }
-  private floatText(x:number,y:number,value:string,color='#fff1c8',large=false):void {
+  private floatText(x:number,y:number,value:string,color='#fff1c8',large=false,heavy=false):void {
    const life=large?1.05:.62;
-   const text=this.add.text(Math.max(22,Math.min(428,x)),y,value,{fontFamily:'Trebuchet MS, Arial, sans-serif',fontSize:large?'19px':'12px',fontStyle:'bold',color,stroke:'#23404a',strokeThickness:3}).setOrigin(.5);
-   this.world.add(text);this.floaters.push({text,life,max:life,startY:y});if(this.floaters.length>24)this.floaters.shift()?.text.destroy();
+   const text=this.add.text(Math.max(22,Math.min(428,x)),y,value,{fontFamily:'Trebuchet MS, Arial, sans-serif',fontSize:large?'22px':heavy?'15px':'13px',fontStyle:'bold',color,stroke:'#132a33',strokeThickness:large?5:3}).setOrigin(.5).setShadow(0,2,'#08171d',large?6:3,true,true);
+   this.world.add(text);this.floaters.push({text,life,max:life,startY:y,banner:large});
+   // Skill and reward banners never compete with damage numbers for the 24 recycled slots.
+   const numbers=this.floaters.filter(f=>!f.banner);
+   if(numbers.length>24){const oldest=numbers[0];oldest.text.destroy();this.floaters.splice(this.floaters.indexOf(oldest),1);}
   }
   private impact(x:number,y:number,amount:number,age:number,kind:Unit['kind'],side:Side,heavy=kind===2):void {
    this.impactCues.push({x,y,age,kind,side,life:heavy?.3:.24,max:heavy?.3:.24});if(this.impactCues.length>54)this.impactCues.shift();
    this.flare(x,y,heavy?22:13,side==='player'?0xbfefff:0xffc890,heavy?.26:.18);
-   if(amount>0)this.floatText(x,y-15,compactNumber(amount));
+   if(amount>0)this.floatText(x,y-15,compactNumber(amount),'#fff1c8',false,heavy);
   }
   private event(e:GameEvent):void {
    const x=xAt(e.x??500),y=this.yAt(e.lane??1);
@@ -469,7 +472,11 @@ export function mountBattlefield(element:HTMLElement,game:GamePort,onFrame:()=>v
    if(e.type==='evolve')this.ring(225,this.layout.groundY,0xd2f9d8,200);
    if(e.type==='skill'){
     if(e.skill==='food'){this.floatText(225,this.layout.groundY-85,`+${Number((e.amount??10).toFixed(1))} FOOD`,'#fff0ae',true);this.ring(119,this.layout.groundY,0xc6ef9f,55);}
-    if(e.skill==='freeze'){this.floatText(225,this.layout.groundY-90,'FROZEN','#b8f9ff',true);for(const view of this.units.values())if(view.side==='enemy'){this.ring(view.x,view.y-18,0xa4efff,35);this.emit(view.x,view.y-25,8,0xb2f5f3,false,.65);}}
+    if(e.skill==='freeze'){
+     this.floatText(225,this.layout.groundY-90,'FROZEN','#d6fcff',true);
+     if(!this.reduce)this.cameras.main.flash(220,170,240,255);
+     for(const view of this.units.values())if(view.side==='enemy'){this.ring(view.x,view.y-18,0xa4efff,35);this.emit(view.x,view.y-25,12,0xd8fbff,false,.8);this.flare(view.x,view.y-20,34,0x9ff4ff,.6);}
+    }
     if(e.skill==='meteor'){
      if(this.reduce){this.floatText(225,this.layout.groundY-85,'METEOR','#ffd6a5',true);return;}
      const targets=[...this.units.values()].filter(v=>v.side==='enemy').slice(0,6);

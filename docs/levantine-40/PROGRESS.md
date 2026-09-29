@@ -122,3 +122,7 @@ Seventeen connected refinements are now implemented toward forty. No scheduler; 
 Added a per-chapter colour grade, stage vignette and key-light rays baked into the static art, cool/ember team beacons, per-troop additive team halos, lit projectiles and impact flares, and foreground mist. A devil's-advocate review rejected bloom, a camera post pass (−20% fps) and per-frame vignette layers (they darkened the outposts), so the finished pass costs ~10% fps under software GL. Eleven new tests; full suite 263/263, build passed. This is the first batch with rendered-browser evidence (headless Chromium, all six chapters, zero page errors). Details: [18-cinematic-grade.md](18-cinematic-grade.md).
 
 Eighteen connected refinements are now implemented toward forty. Real-device and Safari acceptance remain open.
+
+
+## 19 — Combat feedback punch and chapter-aware HUD
+A playtest audit of #18 found skill banners being evicted by damage numbers in large fights, a hairline-only freeze marker, small damage numbers, chapter-blind deploy cards, and a pale road in bright chapters. All five are fixed; five new tests, 268/268, build passed. Details: [19-feedback-punch.md](19-feedback-punch.md).
