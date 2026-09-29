@@ -1,5 +1,6 @@
 import { ERAS, unlockCost } from '../game/data.ts';
 import type { Profile, UnitKind } from '../game/types.ts';
+import { unitPresentationName } from './chapter-presentation.ts';
 import { icon } from '../view/icons.ts';
 type MarkupTarget = Pick<HTMLElement, 'innerHTML'>;
 
@@ -10,8 +11,8 @@ export function createArmyUpdater(targets: { units: MarkupTarget; skills: Markup
     const unitsChanged = nextArmyKey !== armyKey;
     if (unitsChanged) {
       targets.units.innerHTML = ERAS[profile.age].units.map((unit, index) => {
-        const kind = index as UnitKind, unlocked = profile.unlocked[index], cost = unlockCost(kind, profile);
-        return `<button class="unit-card ${unlocked ? '' : 'locked'}" data-unit="${index}" aria-label="${unlocked ? `Deploy ${unit.name}, ${unit.cost} food` : `Unlock ${unit.name}, ${cost} coins`}"><span class="unit-role">${unit.role}</span><span class="unit-name">${unit.name}</span><img alt="" src="${portrait(profile.age, kind)}"/><span class="unit-price">${unlocked ? icon('food') + unit.cost : icon('lock') + `<span>${formatCost(cost)}</span>` + icon('coin')}</span><span class="unit-fill"></span></button>`;
+        const kind = index as UnitKind, unlocked = profile.unlocked[index], cost = unlockCost(kind, profile), name = unitPresentationName(profile.age, kind);
+        return `<button class="unit-card ${unlocked ? '' : 'locked'}" data-unit="${index}" aria-label="${unlocked ? `Deploy ${name}, ${unit.cost} food` : `Unlock ${name}, ${cost} coins`}"><span class="unit-role">${unit.role}</span><span class="unit-name">${name}</span><img alt="" src="${portrait(profile.age, kind)}"/><span class="unit-price">${unlocked ? icon('food') + unit.cost : icon('lock') + `<span>${formatCost(cost)}</span>` + icon('coin')}</span><span class="unit-fill"></span></button>`;
       }).join('');
       armyKey = nextArmyKey;
     }

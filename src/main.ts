@@ -7,7 +7,7 @@ import { exportBackup, importBackup, restoreBackup } from './game/backup.ts';
 import type { Action, GameEvent, GamePort, Profile, Skill, UnitKind } from './game/types.ts';
 import { mountBattlefield } from './view/battlefield.ts';
 import { unitPortrait } from './view/unit-illustrations.ts';
-import { visualEra } from './view/visual-theme.ts';
+import { chapterPresentation, unitPresentationName } from './ui/chapter-presentation.ts';
 import { evolutionScreenHtml } from './ui/evolution-screen.ts';
 import { icon } from './view/icons.ts';
 import { sound, unlockAudio, suspendAudio, disposeAudio } from './view/audio.ts';
@@ -88,8 +88,8 @@ function update(force=false){
   const now=performance.now();if(!force&&now-lastUpdate<80)return;lastUpdate=now;
   const p=game.profile,s=game.state;
   textIfChanged($('coins'),money(p.coins));textIfChanged($('gems'),money(p.gems));
-  textIfChanged($('timeline'),`TIMELINE ${p.timeline} · BATTLE ${p.enemyAge+1}`);textIfChanged($('age-title'),ERAS[p.age].name);
-  textIfChanged($('scene-name'),visualEra(p.age).scene);
+  textIfChanged($('timeline'),`TIMELINE ${p.timeline} · BATTLE ${p.enemyAge+1}`);textIfChanged($('age-title'),chapterPresentation(p.age).title);
+  textIfChanged($('scene-name'),chapterPresentation(p.age).subtitle);
   textIfChanged($('food-count'),Math.floor(s.food).toString());$('food-fill').style.width=`${s.food>=99?100:(s.food%1)*100}%`;
   textIfChanged($('production'),`${foodRate(p).toFixed(2)}/sec`);
   const food=game.upgradeStatus('food'),base=game.upgradeStatus('base');
@@ -197,7 +197,7 @@ lifetime.listen<MouseEvent>(root,'click',e=>{
   const button=e.target instanceof Element?e.target.closest<HTMLButtonElement>('button'):null;
   if(!button||button.disabled)return;unlockAudio(game.profile.sound);
   if(button.dataset.tab){switchTab(button.dataset.tab);return;}
-  if(button.dataset.unit!==undefined){const kind=Number(button.dataset.unit) as UnitKind;if(!game.profile.unlocked[kind]){if(action({type:'unlock',kind}))toast(`${ERAS[game.profile.age].units[kind].name} unlocked!`);}else action({type:'spawn',kind});return;}
+  if(button.dataset.unit!==undefined){const kind=Number(button.dataset.unit) as UnitKind;if(!game.profile.unlocked[kind]){if(action({type:'unlock',kind}))toast(`${unitPresentationName(game.profile.age,kind)} unlocked!`);}else action({type:'spawn',kind});return;}
   if(button.dataset.skill){action({type:'skill',skill:button.dataset.skill as Skill});return;}
   if(button.dataset.claim){if(action({type:'claim',id:button.dataset.claim}))showQuests();return;}
   if(button.dataset.battle!==undefined){if(action({type:'select-battle',battle:Number(button.dataset.battle)}))closeModal();return;}
@@ -212,7 +212,7 @@ lifetime.listen<MouseEvent>(root,'click',e=>{
     case 'upgrade-base':action({type:'upgrade',stat:'base'});break;
     case 'battles':showModal('battles',battleSelectionHtml(game.profile,game.state));break;
     case 'evolve':{const html=evolutionDialogHtml(game.profile,game.state);if(html)showModal('evolve',html);break;}
-    case 'confirm-evolve':if(action({type:'evolve'})){closeModal(false);switchTab('battle');toast(`Welcome to the ${ERAS[game.profile.age].name}!`);}break;
+    case 'confirm-evolve':if(action({type:'evolve'})){closeModal(false);switchTab('battle');toast(`Entering ${chapterPresentation(game.profile.age).title}.`);}break;
     case 'next':case 'retry':if(action({type:button.dataset.command})){closeModal(false);manualPaused=false;switchTab('battle');}break;
     case 'pause':if(game.state.phase==='running'){manualPaused=!manualPaused;syncPause();update(true);}break;
     case 'speed':game.profile.speed=game.profile.speed===1?2:1;persist();update(true);if(modal==='settings')showSettings();break;
@@ -239,7 +239,7 @@ lifetime.listen<Event>(root,'change',async e=>{
     if(lifetime.disposed||version!==modalVersion||modal!=='settings')return;
     if(!decoded.ok){toast(decoded.error);input.value='';return;}
     pendingImport=decoded.profile;
-    showModal('import',`<h2 id="dialog-title">Replace this save?</h2><p>Import timeline ${pendingImport.timeline}, ${ERAS[pendingImport.age].name}, with ${money(pendingImport.coins)} coins.</p><p>Your current progress in this browser will be replaced. Export it first to keep a separate copy.</p><button class="big-button blue" data-command="confirm-import">REPLACE WITH THIS SAVE</button><button class="big-button secondary" data-command="close">CANCEL</button>`);
+    showModal('import',`<h2 id="dialog-title">Replace this save?</h2><p>Import timeline ${pendingImport.timeline}, ${chapterPresentation(pendingImport.age).title}, with ${money(pendingImport.coins)} coins.</p><p>Your current progress in this browser will be replaced. Export it first to keep a separate copy.</p><button class="big-button blue" data-command="confirm-import">REPLACE WITH THIS SAVE</button><button class="big-button secondary" data-command="close">CANCEL</button>`);
   }catch{toast('The selected file could not be read. Your current game was not changed.');}
 });
 lifetime.listen<KeyboardEvent>(document,'keydown',e=>{
