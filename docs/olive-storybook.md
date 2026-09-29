@@ -13,7 +13,7 @@ All six poses share one scale and foot baseline. Fieldhand's source row divider 
 ## Verification
 
 - Local: 275 tests passed; production build passed.
-- Browser capture suite expanded from seven to eleven states: real evolution UI from First Fires to Olive Terraces (including different player/enemy chapters), second-chapter ready at 390px and 320px, and all three roles deployed through normal controls.
+- Browser capture suite expanded from seven to twelve states: real evolution UI from First Fires to Olive Terraces (including different player/enemy chapters), second-chapter ready at 390px and 320px, and all three roles deployed through normal controls, and a later clash. All three narrow-screen portraits are checked against their price bars.
 - Browser results and skeptical review are recorded on the PR before merge. Save fixtures unlock the requested view; they are explicitly fixtures, not evidence of a full campaign run.
 
 ## Remaining scope

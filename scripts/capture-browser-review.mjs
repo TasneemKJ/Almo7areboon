@@ -120,6 +120,8 @@ try {
  await farm.setViewportSize({width:320,height:640});
  const farmOverflow=await farm.evaluate(()=>document.documentElement.scrollWidth>innerWidth);
  assert.equal(farmOverflow,false,'Olive Terraces must fit 320px');
+ const farmCards=await farm.locator('.unit-card').evaluateAll(cards=>cards.map(card=>({left:card.getBoundingClientRect().left,right:card.getBoundingClientRect().right,image:card.querySelector('img').getBoundingClientRect().bottom,price:card.querySelector('.unit-price').getBoundingClientRect().top})));
+ for(const card of farmCards){assert.ok(card.left>=0&&card.right<=321,'farm card stays in viewport');assert.ok(card.image<=card.price+1,'farm portrait clears its price');}
  await farm.screenshot({path:`${output}/10-olive-ready-320.png`});
  await farm.setViewportSize({width:390,height:844});
  await farm.getByRole('button',{name:/^BATTLE/}).click();
@@ -127,11 +129,13 @@ try {
  for(const name of ['Fieldhand','Slinger','Harvester'])await farm.getByRole('button',{name:new RegExp(`Deploy ${name}`)}).click();
  await farm.waitForTimeout(8000);
  await farm.screenshot({path:`${output}/11-olive-all-roles-390.png`});
+ await farm.waitForTimeout(20000);
+ await farm.screenshot({path:`${output}/12-olive-clash-390.png`});
  assert.equal(await farm.evaluate(()=>window.__visualFallback),undefined);
  await olive.close();
  assert.deepEqual(errors,[],`browser errors: ${errors.join('; ')}`);
  assert.deepEqual(assetFailures,[],'all storybook asset requests succeeded');
- console.log(JSON.stringify({density,screenshots:11,narrowControls:layout.length,errors,assetFailures},null,2));
+ console.log(JSON.stringify({density,screenshots:12,narrowControls:layout.length,errors,assetFailures},null,2));
 } finally {
  await browser?.close();
  server.kill('SIGTERM');
