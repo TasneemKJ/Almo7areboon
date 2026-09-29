@@ -16,7 +16,7 @@ No files under `src/game` were changed. The existing gameplay and save suite is 
 
 ## Evidence
 
-- `npm test`: **135 passed, 0 failed** on the current local tree.
+- `npm test`: **139 passed, 0 failed** on the current local tree.
 - `npm run build`: TypeScript and Vite production build passed.
 - `git diff --check`: clean.
 - First visual checkpoint `df53471eaaa56801e759b64cd598aa9e23c92d81` passed GitHub Actions run `36501123490`; atmosphere checkpoint `87714e9a4c4c7f48621789312a522c8543e276bf` passed run `36509123095`; base-destruction checkpoint `252a721d687ec5507f365a5570b99a74763f2995` passed run `36513906661`. A newly published commit still requires its own exact-head CI result.
@@ -44,6 +44,8 @@ No files under `src/game` were changed. The existing gameplay and save suite is 
 
 13. The three combat lanes still read as nearly parallel rows because every troop and contact shadow had the same apparent distance from the camera. A presentation-only lane-perspective model now recedes the back lane and brings the front lane forward with a restrained 0.93× / 1.00× / 1.07× scale stack. Contact shadows, hit cues, projectile launch height and unit health-bar offsets follow the same perspective so effects stay attached to their actors; heavy units retain their existing size advantage. Simulation x/y, collision, target selection and saves remain untouched. A standalone six-era before/after formation board was rasterized and inspected to confirm the depth change remains subtle enough to preserve silhouettes; it is asset/presentation QA, not a browser gameplay screenshot. Four regressions cover scale ordering, heavy/light relationships, malformed lane inputs and renderer integration.
 
+14. The illustrated worlds contained a layer named `foreground`, but it was flattened into the same Phaser texture as the sky and ground, so those plants, masonry edges and crystals could never actually pass in front of bases or troop silhouettes. The battlefield asset path now keeps the default full illustration for DOM/evolution artwork while loading a dedicated transparent foreground strip for gameplay. That strip shares the exact ground-anchored crop transform, sits after the army layer but before hit cues/health/effects, and uses six era-specific silhouettes: jungle fronds and rocks, wheat, olive branches and marble, ivy/parapets, pine/field cover and alien crystals. The transparent strips are rasterized at 450×220 rather than duplicating six full 900×1000 worlds; the complete initial manifest remains under the existing 42 MB decoded-RGBA arithmetic guardrail. Four regressions cover layer separation, crop registration, manifest/memory bounds and renderer ordering. Standalone art QA now also checks all six foreground overlays are nonempty. This creates real scene occlusion while keeping combat cues above the frame; it remains asset/presentation QA rather than browser-layout evidence.
+
 ## Repeatable standalone asset QA
 
 ```sh
@@ -53,7 +55,7 @@ python scripts/verify-art.py artifacts/visual-assets
 
 The Python checker requires Pillow and CairoSVG in the local QA environment; neither is an application dependency. It never opens a browser or accesses a game URL.
 
-The latest raster run checked **216 faction/pose images, 36 sprite sheets, 12 bases and 30 card illustrations**, with zero recorded errors. It checks two-pixel sampling margins, nonempty artwork and atlas/standalone alpha differences with a tolerance of three intensity levels. Contact shadows are checked structurally. Preview boards and before/after comparisons are production-asset reviews, not in-game screenshots.
+The latest raster run checked **216 faction/pose images, 36 sprite sheets, 12 bases, six transparent foreground overlays and 30 card illustrations**, with zero recorded errors. It checks two-pixel sampling margins, nonempty artwork and atlas/standalone alpha differences with a tolerance of three intensity levels. Contact shadows are checked structurally. Preview boards and before/after comparisons are production-asset reviews, not in-game screenshots.
 
 ## Remaining limits
 

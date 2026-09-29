@@ -2,7 +2,7 @@
 import {mkdirSync,writeFileSync} from 'node:fs';
 import {resolve} from 'node:path';
 import {unitSvg,unitSheetSvg} from '../src/view/unit-illustrations.ts';
-import {landscapeSvg,baseSvg} from '../src/view/world-illustrations.ts';
+import {landscapeSvg,foregroundSvg,baseSvg} from '../src/view/world-illustrations.ts';
 import {cardIllustration} from '../src/view/card-illustrations.ts';
 import {CARD_DEFS,ERAS} from '../src/game/data.ts';
 const destination=resolve(process.argv[2]||'artifacts/visual-assets');
@@ -10,6 +10,7 @@ mkdirSync(destination,{recursive:true});
 const frames=[],bases=[];
 for(let age=0;age<6;age++){
  writeFileSync(`${destination}/world-${age}.svg`,landscapeSvg(age));
+ writeFileSync(`${destination}/foreground-${age}.svg`,foregroundSvg(age));
  writeFileSync(`${destination}/base-${age}.svg`,baseSvg(age,'player'));
  for(const side of ['player','enemy']){
   const svg=baseSvg(age,side);bases.push({age,side,svg});

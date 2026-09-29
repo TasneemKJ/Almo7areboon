@@ -68,7 +68,7 @@ test('passive cards have 30 different object illustrations rather than repeated 
 });
 test('the texture manifest has unique keys and a bounded initial decoded pixel budget',async()=>{
  const m=await moduleAt('visual-assets');const entries=m.visualAssets();
- assert.equal(entries.length,54);assert.equal(new Set(entries.map((x:any)=>x.key)).size,54);
+ assert.equal(entries.length,60);assert.equal(new Set(entries.map((x:any)=>x.key)).size,60);
  let pixels=0;
  for(const entry of entries){assert.match(entry.url,/^data:image\/svg\+xml/);pixels+=entry.width*entry.height;assert.ok(entry.width<=1024&&entry.height<=1024);}
  assert.ok(pixels*4<42_000_000,`uncompressed texture budget ${pixels*4}`);

@@ -27,16 +27,80 @@ function citadel(){
  return `<g opacity=".9">${town}${r(247,290,48,172,2,'#b7a09a','none',0)}${p('M239 292l31-50 33 50Z','#695a74','none',0)}${r(263,315,14,23,6,'#e7c99f','none',0)}${r(720,330,51,125,2,'#bbaa9e','none',0)}${p('M711 330l34-47 37 47Z','#735c74','none',0)}${p('M225 433L797 431 797 494 225 492Z','#a79890','none',0)}${Array.from({length:23},(_,i)=>r(229+i*25,421,12,20,0,'#b8a49b','none',0)).join('')}</g>`;
 }
 function foreground(age:number){
- let leaves='';
- const color=age===5?'#283d62':age===3?'#3b5d57':'#285747',highlight=age===5?'#688aa6':'#56886a';
- for(const side of [0,1])for(let i=0;i<6;i++){
-  const x=side===0?i*17-34:900-i*17+34,y=948+i*8,dx=side===0?55+i*13:-55-i*13;
-  leaves+=p(`M${x} ${y}Q${x+dx*.4} ${y-130} ${x+dx} ${y-187}Q${x+dx*.8} ${y-61} ${x} ${y}Z`,i%2?highlight:color,'none',0)+l(`M${x} ${y}Q${x+dx*.6} ${y-96} ${x+dx*.85} ${y-151}`,age===5?'#77b8bc':'#7ea879',1.5);
+ const bottom=(color:string)=>p('M0 956Q165 982 302 968Q493 994 628 971Q785 958 900 939V1000H0Z',color,'none',0);
+ if(age===0){
+  let art=bottom('#244f45');
+  for(const side of [0,1])for(let i=0;i<5;i++){
+   const x=side===0?-18+i*23:918-i*23,dir=side===0?1:-1,top=610+i*23;
+   art+=p(`M${x} 968Q${x+dir*22} ${900-i*6} ${x+dir*(63+i*12)} ${top}Q${x+dir*54} 905 ${x+dir*4} 982Z`,i%2?'#4f8864':'#326d55','none',0);
+   art+=l(`M${x+dir*4} 970Q${x+dir*30} 890 ${x+dir*(55+i*8)} ${top+22}`,'#8aaa72',2);
+  }
+  return `<g data-layer="foreground" data-era="stone">${art}${e(55,954,36,13,'#596c53')}${e(846,958,42,14,'#52664f')}</g>`;
  }
- return `<g data-layer="foreground">${leaves}${p('M0 954Q193 982 290 966Q492 998 609 969Q797 958 900 934V1000H0Z',color,'none',0)}</g>`;
+ if(age===1){
+  let art=bottom('#6f713e');
+  for(const side of [0,1])for(let i=0;i<8;i++){
+   const x=side===0?8+i*17:892-i*17,dir=side===0?1:-1,h=238+(i%3)*28;
+   art+=l(`M${x} 974Q${x+dir*5} ${928-h*.35} ${x+dir*(10+i%2*5)} ${974-h}`,'#b89948',3);
+   art+=p(`M${x+dir*(10+i%2*5)} ${974-h}q${dir*18}-8 ${dir*24} 4q${-dir*18} 9 ${-dir*24} 2Z`,'#e5ca72','none',0);
+   art+=p(`M${x+dir*8} ${952-h*.3}q${dir*14}-6 ${dir*20} 3q${-dir*13} 8 ${-dir*20} 2Z`,'#cfb45e','none',0);
+  }
+  return `<g data-layer="foreground" data-era="farm">${art}${p('M0 973Q66 949 133 970V1000H0Z','#8a7d43','none',0)}${p('M767 971Q840 947 900 970V1000H767Z','#8a7d43','none',0)}</g>`;
+ }
+ if(age===2){
+  let art=bottom('#4f6956');
+  for(const side of [0,1]){
+   const x=side===0?18:882,dir=side===0?1:-1;
+   art+=l(`M${x} 983Q${x+dir*35} 807 ${x+dir*73} 630`,'#6f6b50',6);
+   for(let i=0;i<7;i++){
+    const bx=x+dir*(26+i*8),by=900-i*34;
+    art+=e(bx+dir*12,by,17,6,i%2?'#758866':'#8f9c70','none',0)+e(bx-dir*3,by+8,14,5,'#697d5c','none',0);
+   }
+  }
+  art+=r(19,944,67,32,2,'#b8b5a0','#747967',1)+r(815,946,61,30,2,'#aaa998','#747967',1)+l('M24 956H80M820 958H871','#dfd6bb',2);
+  return `<g data-layer="foreground" data-era="spartan">${art}</g>`;
+ }
+ if(age===3){
+  let art=bottom('#374f4d');
+  for(const side of [0,1]){
+   const x=side===0?5:895,dir=side===0?1:-1;
+   art+=l(`M${x} 995Q${x+dir*31} 808 ${x+dir*83} 615`,'#6c6256',5);
+   for(let i=0;i<8;i++){
+    const bx=x+dir*(20+i*9),by=918-i*38;
+    art+=p(`M${bx} ${by}q${dir*17}-14 ${dir*31}-2q${-dir*13} 17 ${-dir*31} 9Z`,i%2?'#8e7265':'#5f7765','none',0);
+   }
+  }
+  art+=r(0,964,96,36,0,'#5b5b55','none',0)+r(804,965,96,35,0,'#555a58','none',0);
+  for(const x of [14,44,74,819,849,879])art+=l(`M${x} 968v30`,'#74746d',2);
+  return `<g data-layer="foreground" data-era="renaissance">${art}</g>`;
+ }
+ if(age===4){
+  let art=bottom('#304c45');
+  for(const side of [0,1])for(let i=0;i<6;i++){
+   const x=side===0?5+i*19:895-i*19,dir=side===0?1:-1,h=228+i*15;
+   art+=p(`M${x} 988L${x+dir*7} ${988-h}L${x+dir*14} 988Z`,i%2?'#516b54':'#3d5c4d','none',0);
+   art+=l(`M${x+dir*7} ${988-h+6}l${dir*18} 14M${x+dir*7} ${988-h+21}l${-dir*15} 12M${x+dir*8} ${988-h+38}l${dir*17} 12`,'#80906c',2);
+  }
+  art+=r(19,950,72,24,7,'#7f8d74','#4d6257',1)+r(809,952,72,23,7,'#788774','#4d6257',1);
+  return `<g data-layer="foreground" data-era="modern">${art}</g>`;
+ }
+ let art=bottom('#223553');
+ for(const side of [0,1])for(let i=0;i<5;i++){
+  const x=side===0?4+i*22:896-i*22,dir=side===0?1:-1,h=230+i*24;
+  art+=p(`M${x} 982L${x+dir*(14+i*2)} ${982-h}L${x+dir*(32+i*3)} 982Z`,i%2?'#507696':'#3e5d84','#6da5a7',1.2);
+  art+=p(`M${x+dir*(15+i*2)} ${982-h+6}L${x+dir*(20+i*2)} ${982-h+31}L${x+dir*(10+i*2)} ${982-h+31}Z`,'#9be8d7','none',0);
+ }
+ art+=l('M20 975Q119 945 189 973M711 974Q786 946 884 974','#70a3a7',2);
+ return `<g data-layer="foreground" data-era="space">${art}</g>`;
+}
+
+export function foregroundSvg(age:number):string {
+ age=Number.isInteger(age)&&age>=0&&age<6?age:0;
+ const body=foreground(age);
+ return `<svg xmlns="http://www.w3.org/2000/svg" width="450" height="220" viewBox="0 560 900 440">${body}</svg>`;
 }
 /** A hand-authored composition per era; the combat lane is always unobstructed. */
-export function landscapeSvg(age:number):string {
+export function landscapeSvg(age:number,includeForeground=true):string {
  const t=visualEra(age);const actual=['Stone Age','Farm Age','Spartan Age','Renaissance','Modern Age','Space Age'].indexOf(t.name);age=actual;
  const defs=gradient('sky',t.sky[0],t.sky[1])+gradient('far',t.far,t.sky[1])+gradient('ridge',t.ridge,t.far)+gradient('meadow',t.light,t.ground)+gradient('earth',t.ground,t.soil)+gradient('lane',t.path,age===5?'#55748b':'#bba278')+gradient('leaf',age===5?'#739aab':age===3?'#d39c80':'#77ad6e',age===5?'#3e567d':'#376c58')+`<radialGradient id="sun"><stop stop-color="#fff7cf" stop-opacity=".55"/><stop offset="1" stop-color="#fff3bb" stop-opacity="0"/></radialGradient>`;
  let out=`<g data-layer="sky">${r(0,0,900,1000,0,'url(#sky)','none',0)}`;
@@ -88,7 +152,7 @@ export function landscapeSvg(age:number):string {
  if(age===2)out+=p('M211 832L225 823 225 812 246 812 246 823 257 832 253 862 217 862Z','#c99469','#706c4c',2)+l('M222 837H249M223 842H248','#e3bf7b',3);
  if(age===3)out+=e(715,839,35,17,'#967e6c')+l('M684 838H745M714 824V853','#c0a27d',3);
  if(age===4)out+=r(209,829,42,22,3,'#708267','#465d54',2)+l('M213 832L247 847M248 832L213 847','#a4b38e',2);
- return documentSvg(900,1000,out+foreground(age),defs);
+ return documentSvg(900,1000,out+(includeForeground?foreground(age):''),defs);
 }
 export function baseSvg(age:number,side:Side):string {
  age=Number.isInteger(age)&&age>=0&&age<6?age:0;

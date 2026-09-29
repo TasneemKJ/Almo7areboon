@@ -12,6 +12,8 @@ export const ART_WIDTH=450;
 export const LANDSCAPE_WIDTH=900;
 export const LANDSCAPE_HEIGHT=1000;
 export const LANDSCAPE_GROUND_Y=660;
+export const FOREGROUND_SOURCE_Y=560;
+export const FOREGROUND_SOURCE_HEIGHT=440;
 export function arenaLayout(width:number,height:number) {
   const w=Number.isFinite(width)&&width>0?width:450;
   const h=Number.isFinite(height)&&height>0?height:430;
@@ -43,6 +45,17 @@ export function landscapePlacement(width:number,height:number,groundY?:number) {
     scaleY:scale,
     width:scaledWidth,
     height:scaledHeight,
+  };
+}
+/** Foreground overlay follows the exact world crop, but occupies only the lower art strip. */
+export function foregroundPlacement(width:number,height:number,groundY?:number) {
+  const world=landscapePlacement(width,height,groundY);
+  return {
+    x:world.x,
+    y:world.y+FOREGROUND_SOURCE_Y*world.scale,
+    scale:world.scale,
+    width:LANDSCAPE_WIDTH*world.scale,
+    height:FOREGROUND_SOURCE_HEIGHT*world.scale,
   };
 }
 /** All world actors and illustrated scenery preserve their authored proportions. */

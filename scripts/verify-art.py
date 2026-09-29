@@ -47,11 +47,15 @@ def main(directory: Path) -> int:
             errors.append({'base': [base['age'], base['side']], 'problem': 'sampling margin', 'bounds': box})
         if 'opacity=".25"' not in base['svg']:
             errors.append({'base': [base['age'], base['side']], 'problem': 'missing contact shadow'})
+    for age in range(6):
+        foreground = directory / f'foreground-{age}.svg'
+        if not foreground.exists() or not bounds(raster(foreground.read_text())):
+            errors.append({'foreground': age, 'problem': 'empty foreground overlay'})
     for card in manifest['cards']:
         if not bounds(raster(card['svg'])):
             errors.append({'card': card['name'], 'problem': 'empty image'})
     result = {'kind': 'standalone asset QA, not browser verification', 'frames': frame_count,
-              'sheets': len(sheets), 'bases': len(manifest['bases']), 'cards': len(manifest['cards']),
+              'sheets': len(sheets), 'bases': len(manifest['bases']), 'foregrounds': 6, 'cards': len(manifest['cards']),
               'errors': errors}
     (directory / 'asset-verification.json').write_text(json.dumps(result, indent=2) + '\n')
     print(json.dumps(result, indent=2))
