@@ -1,3 +1,4 @@
+import {storybookArt} from './storybook-art.ts';
 import type {Side,UnitKind} from '../game/types.ts';
 import {path as p,ellipse as e,rect as r,line as l,gradient,documentSvg,dataSvg,INK} from './illustration-kit.ts';
 import {garmentSvg,headwearSvg,clothingPalette,skinPalette} from './levantine-wardrobe.ts';
@@ -104,6 +105,7 @@ export function unitSheetSvg(age:number,kind:UnitKind,side:Side):string {
 const portraits=new Map<string,string>();
 /** Battle sheets and DOM portraits use the same source, colors and anchor. */
 export function unitPortrait(age:number,kind:UnitKind):string {
- if(age===0&&[0,1,2].includes(kind))return `/art/storybook/${['pathkeeper','thrower','rider'][kind]}-portrait.webp`;
+ const art=storybookArt(age);
+ if(art&&[0,1,2].includes(kind))return `${art.folder}/${art.roles[kind]}-portrait.webp`;
  const key=`${age}:${kind}`;let value=portraits.get(key);if(!value){value=dataSvg(unitSvg(age,kind));portraits.set(key,value);}return value;
 }

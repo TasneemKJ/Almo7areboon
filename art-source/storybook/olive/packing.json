@@ -1,0 +1,158 @@
+[
+  {
+    "name": "fieldhand",
+    "frames": 6,
+    "frameWidth": 224,
+    "frameHeight": 192,
+    "footBaseline": 181,
+    "sharedScale": 0.3161094224924012,
+    "sourceBounds": [
+      {
+        "left": 77,
+        "right": 470,
+        "top": 8,
+        "bottom": 499,
+        "anchor": 217
+      },
+      {
+        "left": 586,
+        "right": 958,
+        "top": 9,
+        "bottom": 495,
+        "anchor": 747
+      },
+      {
+        "left": 1129,
+        "right": 1512,
+        "top": 8,
+        "bottom": 501,
+        "anchor": 1264
+      },
+      {
+        "left": 49,
+        "right": 479,
+        "top": 506,
+        "bottom": 997,
+        "anchor": 226.5
+      },
+      {
+        "left": 551,
+        "right": 934,
+        "top": 504,
+        "bottom": 997,
+        "anchor": 745
+      },
+      {
+        "left": 980,
+        "right": 1528,
+        "top": 531,
+        "bottom": 996,
+        "anchor": 1199
+      }
+    ]
+  },
+  {
+    "name": "slinger",
+    "frames": 6,
+    "frameWidth": 224,
+    "frameHeight": 192,
+    "footBaseline": 181,
+    "sharedScale": 0.32098765432098764,
+    "sourceBounds": [
+      {
+        "left": 102,
+        "right": 378,
+        "top": 10,
+        "bottom": 506,
+        "anchor": 235.5
+      },
+      {
+        "left": 590,
+        "right": 965,
+        "top": 10,
+        "bottom": 505,
+        "anchor": 768.5
+      },
+      {
+        "left": 1108,
+        "right": 1466,
+        "top": 13,
+        "bottom": 510,
+        "anchor": 1292
+      },
+      {
+        "left": 55,
+        "right": 458,
+        "top": 518,
+        "bottom": 1004,
+        "anchor": 246
+      },
+      {
+        "left": 500,
+        "right": 945,
+        "top": 524,
+        "bottom": 1005,
+        "anchor": 746
+      },
+      {
+        "left": 979,
+        "right": 1523,
+        "top": 566,
+        "bottom": 1004,
+        "anchor": 1199
+      }
+    ]
+  },
+  {
+    "name": "harvester",
+    "frames": 6,
+    "frameWidth": 224,
+    "frameHeight": 192,
+    "footBaseline": 181,
+    "sharedScale": 0.3473895582329317,
+    "sourceBounds": [
+      {
+        "left": 77,
+        "right": 403,
+        "top": 9,
+        "bottom": 504,
+        "anchor": 247
+      },
+      {
+        "left": 558,
+        "right": 967,
+        "top": 10,
+        "bottom": 504,
+        "anchor": 757
+      },
+      {
+        "left": 1082,
+        "right": 1502,
+        "top": 12,
+        "bottom": 508,
+        "anchor": 1298
+      },
+      {
+        "left": 61,
+        "right": 466,
+        "top": 512,
+        "bottom": 1009,
+        "anchor": 250.5
+      },
+      {
+        "left": 534,
+        "right": 969,
+        "top": 512,
+        "bottom": 1009,
+        "anchor": 751.5
+      },
+      {
+        "left": 992,
+        "right": 1523,
+        "top": 558,
+        "bottom": 1005,
+        "anchor": 1231.5
+      }
+    ]
+  }
+]

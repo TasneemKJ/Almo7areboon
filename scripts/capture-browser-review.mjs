@@ -84,9 +84,54 @@ try {
  await army.waitForTimeout(20000);
  await army.screenshot({path:`${output}/07-clash-fixture-390.png`});
  await showcase.close();
+ // Save fixtures expose later chapters; transitions and deployment still use real UI actions.
+ const chapter=await browser.newContext({viewport:{width:390,height:844},deviceScaleFactor:2});
+ await chapter.addInitScript(()=>{
+  document.addEventListener('visual-fallback',()=>{window.__visualFallback=true;});
+  localStorage.setItem('almo7areboon.save.v1',JSON.stringify({version:2,timeline:1,age:0,enemyAge:0,coins:2500,cards:[],unlocked:[true,true,true],sound:false}));
+ });
+ const journey=await chapter.newPage();journey.on('pageerror',error=>errors.push(error.message));
+ journey.on('response',response=>{if(response.url().includes('/art/storybook/')&&!response.ok())assetFailures.push(`${response.status()} ${response.url()}`);});
+ await journey.goto('http://127.0.0.1:4173/',{waitUntil:'networkidle'});
+ await journey.waitForFunction(()=>!document.querySelector('.world-loader'));
+ await journey.getByRole('button',{name:'Evolution',exact:true}).click();
+ assert.ok(await journey.locator('.era-landscape').nth(1).getAttribute('src')==='/art/storybook/olive/village.webp');
+ await journey.locator('[data-command="evolve"]').click();
+ await journey.getByRole('button',{name:'EVOLVE TO OLIVE TERRACES',exact:true}).click();
+ await journey.waitForFunction(()=>document.querySelector('.game-shell').dataset.era==='1');
+ assert.equal(await journey.locator('#app').getAttribute('data-art-style'),'storybook');
+ await journey.getByRole('button',{name:/Deploy Fieldhand/}).waitFor();
+ await journey.screenshot({path:`${output}/08-evolution-mixed-chapters-390.png`});
+ assert.equal(await journey.evaluate(()=>window.__visualFallback),undefined);
+ await chapter.close();
+ const olive=await browser.newContext({viewport:{width:390,height:844},deviceScaleFactor:2});
+ await olive.addInitScript(()=>{
+  document.addEventListener('visual-fallback',()=>{window.__visualFallback=true;});
+  localStorage.setItem('almo7areboon.save.v1',JSON.stringify({version:2,timeline:1,age:1,enemyAge:1,furthestBattle:1,coins:0,cards:[],unlocked:[true,true,true],sound:false}));
+ });
+ const farm=await olive.newPage();farm.on('pageerror',error=>errors.push(error.message));
+ farm.on('response',response=>{if(response.url().includes('/art/storybook/')&&!response.ok())assetFailures.push(`${response.status()} ${response.url()}`);});
+ await farm.goto('http://127.0.0.1:4173/',{waitUntil:'networkidle'});
+ await farm.waitForFunction(()=>!document.querySelector('.world-loader'));
+ const farmPortraits=await farm.locator('.unit-card img').evaluateAll(images=>images.map(img=>({src:img.getAttribute('src'),ready:img.complete&&img.naturalWidth>0})));
+ assert.equal(farmPortraits.length,3);
+ assert.ok(farmPortraits.every(p=>p.ready&&p.src.includes('/art/storybook/olive/')));
+ await farm.screenshot({path:`${output}/09-olive-ready-390.png`});
+ await farm.setViewportSize({width:320,height:640});
+ const farmOverflow=await farm.evaluate(()=>document.documentElement.scrollWidth>innerWidth);
+ assert.equal(farmOverflow,false,'Olive Terraces must fit 320px');
+ await farm.screenshot({path:`${output}/10-olive-ready-320.png`});
+ await farm.setViewportSize({width:390,height:844});
+ await farm.getByRole('button',{name:/^BATTLE/}).click();
+ await farm.getByRole('button',{name:/Food drop/i}).click();
+ for(const name of ['Fieldhand','Slinger','Harvester'])await farm.getByRole('button',{name:new RegExp(`Deploy ${name}`)}).click();
+ await farm.waitForTimeout(8000);
+ await farm.screenshot({path:`${output}/11-olive-all-roles-390.png`});
+ assert.equal(await farm.evaluate(()=>window.__visualFallback),undefined);
+ await olive.close();
  assert.deepEqual(errors,[],`browser errors: ${errors.join('; ')}`);
  assert.deepEqual(assetFailures,[],'all storybook asset requests succeeded');
- console.log(JSON.stringify({density,screenshots:7,narrowControls:layout.length,errors,assetFailures},null,2));
+ console.log(JSON.stringify({density,screenshots:11,narrowControls:layout.length,errors,assetFailures},null,2));
 } finally {
  await browser?.close();
  server.kill('SIGTERM');
