@@ -1,0 +1,68 @@
+{
+  "kind": "source pixel checks, not game/browser verification",
+  "compositions": 18,
+  "reduced_compositions": 6,
+  "road_mask": [
+    0,
+    615,
+    900,
+    760
+  ],
+  "scenes": [
+    {
+      "age": 0,
+      "road_change": 0,
+      "times": [
+        0,
+        10,
+        20
+      ]
+    },
+    {
+      "age": 1,
+      "road_change": 0,
+      "times": [
+        0,
+        10,
+        20
+      ]
+    },
+    {
+      "age": 2,
+      "road_change": 0,
+      "times": [
+        0,
+        10,
+        20
+      ]
+    },
+    {
+      "age": 3,
+      "road_change": 0,
+      "times": [
+        0,
+        10,
+        20
+      ]
+    },
+    {
+      "age": 4,
+      "road_change": 0,
+      "times": [
+        0,
+        10,
+        20
+      ]
+    },
+    {
+      "age": 5,
+      "road_change": 0,
+      "times": [
+        0,
+        10,
+        20
+      ]
+    }
+  ],
+  "errors": []
+}
