@@ -1,0 +1,124 @@
+/* Crafted interface layer: ornament follows structure, never the playfield. */
+:root {
+ --craft-brass-hi:#f4dfaa;
+ --craft-brass:#b7955f;
+ --craft-brass-shadow:#6c5438;
+ --craft-stone:#71857c;
+ --craft-paper-line:#d8cfad;
+ --craft-ink:#203f49;
+}
+
+/* Paper gets directional grain from color alone: no bitmap texture or network asset. */
+.upgrades, .secondary-screen {
+ background-color:var(--paper);
+ background-image:
+  linear-gradient(112deg,rgba(255,255,238,.28),transparent 27%,rgba(119,108,78,.035) 58%,transparent 81%),
+  linear-gradient(180deg,rgba(88,100,77,.018),rgba(255,255,255,.025));
+}
+
+/* A single brass seam tells the eye where the tactical surface begins. */
+.deployment::before {
+ content:'';
+ position:absolute;
+ left:12px;
+ right:12px;
+ top:1px;
+ height:2px;
+ border-radius:2px;
+ pointer-events:none;
+ background:linear-gradient(90deg,transparent,var(--craft-brass-shadow) 12%,var(--craft-brass-hi) 50%,var(--craft-brass-shadow) 88%,transparent);
+ opacity:.68;
+}
+
+/* Unit cards keep their silhouette window; ornament lives on the frame. */
+.unit-card::after {
+ content:'';
+ position:absolute;
+ inset:4px;
+ z-index:0;
+ border:1px solid rgba(244,223,170,.24);
+ border-radius:9px;
+ box-shadow:inset 0 0 0 1px rgba(31,65,72,.18);
+ pointer-events:none;
+}
+.unit-card.affordable {
+ box-shadow:0 3px 0 #122d3d,inset 0 0 0 1px rgba(244,223,170,.48),inset 0 1px rgba(255,246,210,.45);
+}
+.unit-price {
+ border-top-color:rgba(244,223,170,.34);
+ box-shadow:inset 0 1px rgba(14,45,56,.28);
+}
+
+/* Heading ornament is a structural rule, not a decorative panel. */
+.screen-heading h2::after {
+ content:'';
+ display:block;
+ width:58px;
+ height:2px;
+ margin:9px auto 0;
+ border-radius:2px;
+ background:linear-gradient(90deg,transparent,var(--craft-brass),var(--craft-brass-hi),var(--craft-brass),transparent);
+ opacity:.78;
+}
+
+/* Enamel controls gain material depth from edge light and a darker foot. */
+.currency {
+ border-color:rgba(244,223,170,.42);
+ background-image:linear-gradient(145deg,rgba(255,244,206,.08),transparent 38%,rgba(3,27,38,.12));
+ box-shadow:inset 0 1px rgba(255,245,210,.24),inset 0 -1px rgba(4,29,40,.4),0 3px 0 rgba(12,37,48,.68);
+}
+.square-button, .battle-toggles button {
+ border-color:rgba(209,215,181,.52);
+ background-image:linear-gradient(145deg,rgba(255,246,215,.09),transparent 45%,rgba(5,32,42,.12));
+ box-shadow:inset 0 1px rgba(246,231,188,.18),0 3px 0 #153541;
+}
+.skill-circle {
+ background-image:linear-gradient(145deg,rgba(255,245,215,.11),transparent 42%,rgba(6,31,41,.15));
+ box-shadow:inset 0 1px rgba(255,241,200,.22),inset 0 -1px rgba(18,52,58,.28),0 3px 0 #1d4654;
+}
+.big-button {
+ border-color:color-mix(in srgb,var(--craft-brass) 58%,#315f72);
+ box-shadow:inset 0 1px rgba(255,248,218,.4),inset 0 -2px rgba(13,45,55,.18),0 4px 0 #153847;
+}
+.big-button.green {
+ border-color:var(--craft-brass-shadow);
+ box-shadow:inset 0 2px var(--craft-brass-hi),inset 0 -2px rgba(113,82,42,.13),0 4px 0 #85663e;
+}
+.buy-button {
+ border-color:color-mix(in srgb,var(--craft-brass) 34%,#3a6577);
+ box-shadow:inset 0 1px rgba(255,240,204,.22),inset 0 -1px rgba(18,54,64,.24),0 2px 0 #203f4e;
+}
+
+/* Dialogs and cards share a quiet double-edge language. */
+.dialog {
+ border-color:var(--craft-brass);
+ box-shadow:inset 0 0 0 1px rgba(255,247,218,.7),inset 0 4px rgba(255,251,231,.42),0 8px 0 rgba(16,44,59,.4),0 24px 70px rgba(8,28,43,.52);
+}
+.collection-card, .skill-detail, .battle-option, .reward, .setting-row {
+ border-color:color-mix(in srgb,var(--craft-stone) 62%,var(--craft-paper-line));
+ box-shadow:inset 0 1px rgba(255,255,232,.54),0 3px rgba(121,132,105,.28);
+}
+.collection-card, .skill-detail, .battle-option {
+ background-image:linear-gradient(112deg,rgba(255,255,238,.18),transparent 36%,rgba(93,102,75,.035));
+}
+
+/* Navigation gets one crafted seam; selection remains the only high-energy ornament. */
+.bottom-nav {
+ border-top-color:var(--craft-brass-shadow);
+ box-shadow:inset 0 1px rgba(244,223,170,.26),inset 0 4px rgba(4,30,40,.13);
+}
+.nav-item.active::after {
+ content:'';
+ position:absolute;
+ bottom:4px;
+ width:22px;
+ height:1px;
+ background:linear-gradient(90deg,transparent,var(--craft-brass-hi),transparent);
+ opacity:.76;
+}
+
+@media(max-height:700px) {
+ .deployment::before { opacity:.48; }
+ .unit-card::after { inset:3px; }
+ .screen-heading h2::after { margin-top:6px; width:48px; }
+}
