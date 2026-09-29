@@ -133,9 +133,56 @@ try {
  await farm.screenshot({path:`${output}/12-olive-clash-390.png`});
  assert.equal(await farm.evaluate(()=>window.__visualFallback),undefined);
  await olive.close();
+ // Harbor transition uses the real evolution dialog; no simulation state is mutated.
+ const harborTransition=await browser.newContext({viewport:{width:390,height:844},deviceScaleFactor:2});
+ await harborTransition.addInitScript(()=>{
+  document.addEventListener('visual-fallback',()=>{window.__visualFallback=true;});
+  localStorage.setItem('almo7areboon.save.v1',JSON.stringify({version:2,timeline:1,age:1,enemyAge:1,furthestBattle:1,coins:20000,cards:[],unlocked:[true,true,true],sound:false}));
+ });
+ const coast=await harborTransition.newPage();coast.on('pageerror',error=>errors.push(error.message));
+ coast.on('response',response=>{if(response.url().includes('/art/storybook/')&&!response.ok())assetFailures.push(`${response.status()} ${response.url()}`);});
+ await coast.goto('http://127.0.0.1:4173/',{waitUntil:'networkidle'});
+ await coast.waitForFunction(()=>!document.querySelector('.world-loader'));
+ await coast.getByRole('button',{name:'Evolution',exact:true}).click();
+ assert.equal(await coast.locator('.era-landscape').nth(2).getAttribute('src'),'/art/storybook/harbor/village.webp');
+ await coast.locator('[data-command="evolve"]').click();
+ await coast.getByRole('button',{name:'EVOLVE TO HARBOR WATCH',exact:true}).click();
+ await coast.waitForFunction(()=>document.querySelector('.game-shell').dataset.era==='2');
+ assert.equal(await coast.locator('#app').getAttribute('data-art-style'),'storybook');
+ await coast.getByRole('button',{name:/Deploy Quay Guard/}).waitFor();
+ await coast.screenshot({path:`${output}/13-harbor-evolution-mixed-390.png`});
+ assert.equal(await coast.evaluate(()=>window.__visualFallback),undefined);
+ await harborTransition.close();
+ const harbor=await browser.newContext({viewport:{width:390,height:844},deviceScaleFactor:2});
+ await harbor.addInitScript(()=>{
+  document.addEventListener('visual-fallback',()=>{window.__visualFallback=true;});
+  localStorage.setItem('almo7areboon.save.v1',JSON.stringify({version:2,timeline:1,age:2,enemyAge:2,furthestBattle:2,coins:0,cards:[],unlocked:[true,true,true],sound:false}));
+ });
+ const quay=await harbor.newPage();quay.on('pageerror',error=>errors.push(error.message));
+ quay.on('response',response=>{if(response.url().includes('/art/storybook/')&&!response.ok())assetFailures.push(`${response.status()} ${response.url()}`);});
+ await quay.goto('http://127.0.0.1:4173/',{waitUntil:'networkidle'});
+ await quay.waitForFunction(()=>!document.querySelector('.world-loader'));
+ const harborPortraits=await quay.locator('.unit-card img').evaluateAll(images=>images.map(img=>({src:img.getAttribute('src'),ready:img.complete&&img.naturalWidth>0})));
+ assert.equal(harborPortraits.length,3);assert.ok(harborPortraits.every(p=>p.ready&&p.src.includes('/art/storybook/harbor/')));
+ await quay.screenshot({path:`${output}/14-harbor-ready-390.png`});
+ await quay.setViewportSize({width:320,height:640});
+ assert.equal(await quay.evaluate(()=>document.documentElement.scrollWidth>innerWidth),false);
+ const quayCards=await quay.locator('.unit-card').evaluateAll(cards=>cards.map(card=>({left:card.getBoundingClientRect().left,right:card.getBoundingClientRect().right,image:card.querySelector('img').getBoundingClientRect().bottom,price:card.querySelector('.unit-price').getBoundingClientRect().top})));
+ for(const card of quayCards){assert.ok(card.left>=0&&card.right<=321);assert.ok(card.image<=card.price+1,'harbor portrait clears price');}
+ await quay.screenshot({path:`${output}/15-harbor-ready-320.png`});
+ await quay.setViewportSize({width:390,height:844});
+ await quay.getByRole('button',{name:/^BATTLE/}).click();
+ await quay.getByRole('button',{name:/Food drop/i}).click();
+ for(const name of ['Quay Guard','Archer','Rider'])await quay.getByRole('button',{name:new RegExp(`Deploy ${name},`)}).click();
+ await quay.waitForTimeout(8000);
+ await quay.screenshot({path:`${output}/16-harbor-all-roles-390.png`});
+ await quay.waitForTimeout(20000);
+ await quay.screenshot({path:`${output}/17-harbor-clash-390.png`});
+ assert.equal(await quay.evaluate(()=>window.__visualFallback),undefined);
+ await harbor.close();
  assert.deepEqual(errors,[],`browser errors: ${errors.join('; ')}`);
  assert.deepEqual(assetFailures,[],'all storybook asset requests succeeded');
- console.log(JSON.stringify({density,screenshots:12,narrowControls:layout.length,errors,assetFailures},null,2));
+ console.log(JSON.stringify({density,screenshots:17,narrowControls:layout.length,errors,assetFailures},null,2));
 } finally {
  await browser?.close();
  server.kill('SIGTERM');

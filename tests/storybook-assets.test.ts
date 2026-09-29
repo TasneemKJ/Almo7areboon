@@ -8,9 +8,9 @@ import {unitPortrait} from '../src/view/unit-illustrations.ts';
 
 test('storybook assets are local WebP files with matching decoded dimensions and bounded transfer size',()=>{
  let bytes=0;
- for(const age of [0,1]){
+ for(const age of [0,1,2]){
  bytes=0;
- for(const asset of visualAssets().filter(a=>a.format==='image'&&a.url.startsWith(storybookArt(age)!.folder+'/')&&(age!==0||!a.url.includes('/olive/')))){
+ for(const asset of visualAssets().filter(a=>a.format==='image'&&a.url.slice(0,a.url.lastIndexOf('/'))===storybookArt(age)!.folder)){
   const file=new URL(`../public${asset.url}`,import.meta.url),data=readFileSync(file);
   assert.equal(data.toString('ascii',0,4),'RIFF');assert.equal(data.toString('ascii',8,12),'WEBP');
   const chunk=data.toString('ascii',12,16);
@@ -18,7 +18,7 @@ test('storybook assets are local WebP files with matching decoded dimensions and
   const width=chunk==='VP8X'?1+data.readUIntLE(24,3):data.readUInt16LE(26)&0x3fff;
   const height=chunk==='VP8X'?1+data.readUIntLE(27,3):data.readUInt16LE(28)&0x3fff;
   assert.equal(width,asset.width);assert.equal(height,asset.height);
-  if(asset.frames){assert.equal(width/asset.frames,asset.url.includes('/olive/')?224:256);assert.equal(height,192);}
+  if(asset.frames){assert.equal(width/asset.frames,storybookArt(age)!.frameWidth);assert.equal(height,192);}
   bytes+=statSync(file).size;
  }
  assert.ok(bytes<800_000,`chapter ${age} transfer budget: ${bytes}`);
@@ -27,7 +27,7 @@ test('storybook assets are local WebP files with matching decoded dimensions and
 
 test('both teams resolve shared painted atlases and portraits resolve to real assets',()=>{
  const keys=new Set(visualAssets().map(a=>a.key));
- for(const age of [0,1]){
+ for(const age of [0,1,2]){
  assert.equal(baseTexture(age,'player'),baseTexture(age,'enemy'));
  assert.equal(chapterLandscape(age),`${storybookArt(age)!.folder}/village.webp`);
  for(const kind of [0,1,2] as const){
