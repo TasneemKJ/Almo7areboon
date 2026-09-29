@@ -20,6 +20,6 @@ test('Harbor Watch uses one coherent painted chapter across battlefield and UI',
 });
 
 test('later unpainted chapters and invalid chapter lookups retain the existing fallback',()=>{
- for(const age of [4,5,-1,6,NaN,Infinity,1.5])assert.equal(storybookArt(age),undefined);
- for(const age of [4,5])assert.notEqual(unitTexture(age,0,'player'),unitTexture(age,0,'enemy'));
+ for(const age of [5,-1,6,NaN,Infinity,1.5])assert.equal(storybookArt(age),undefined);
+ assert.notEqual(unitTexture(5,0,'player'),unitTexture(5,0,'enemy'));
 });

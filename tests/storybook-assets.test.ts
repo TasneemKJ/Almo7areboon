@@ -8,7 +8,7 @@ import {unitPortrait} from '../src/view/unit-illustrations.ts';
 
 test('storybook assets are local WebP files with matching decoded dimensions and bounded transfer size',()=>{
  let bytes=0;
- for(const age of [0,1,2,3]){
+ for(const age of [0,1,2,3,4]){
  bytes=0;
  for(const asset of visualAssets().filter(a=>a.format==='image'&&a.url.slice(0,a.url.lastIndexOf('/'))===storybookArt(age)!.folder)){
   const file=new URL(`../public${asset.url}`,import.meta.url),data=readFileSync(file);
@@ -27,7 +27,7 @@ test('storybook assets are local WebP files with matching decoded dimensions and
 
 test('both teams resolve shared painted atlases and portraits resolve to real assets',()=>{
  const keys=new Set(visualAssets().map(a=>a.key));
- for(const age of [0,1,2,3]){
+ for(const age of [0,1,2,3,4]){
  assert.equal(baseTexture(age,'player'),baseTexture(age,'enemy'));
  assert.equal(chapterLandscape(age),`${storybookArt(age)!.folder}/village.webp`);
  for(const kind of [0,1,2] as const){

@@ -236,9 +236,60 @@ try {
  await quarter.screenshot({path:`${lanternOutput}/22-lantern-later-battle-390.png`});
  assert.equal(await quarter.evaluate(()=>window.__visualFallback),undefined);
  await lantern.close();
+ const hillsideOutput=`${output}/hillside`;mkdirSync(hillsideOutput,{recursive:true});
+ const hillsideTransition=await browser.newContext({viewport:{width:390,height:844},deviceScaleFactor:2});
+ await hillsideTransition.addInitScript(()=>{
+  document.addEventListener('visual-fallback',()=>{window.__visualFallback=true;});
+  localStorage.setItem('almo7areboon.save.v1',JSON.stringify({version:2,timeline:1,age:3,enemyAge:3,furthestBattle:3,coins:1300000,cards:[],unlocked:[true,true,true],sound:false}));
+ });
+ const ascent=await hillsideTransition.newPage();ascent.on('pageerror',error=>errors.push(error.message));
+ ascent.on('response',response=>{if(response.url().includes('/art/storybook/')&&!response.ok())assetFailures.push(`${response.status()} ${response.url()}`);});
+ await ascent.goto('http://127.0.0.1:4173/',{waitUntil:'networkidle'});
+ await ascent.waitForFunction(()=>!document.querySelector('.world-loader'));
+ await ascent.getByRole('button',{name:'Evolution',exact:true}).click();
+ assert.equal(await ascent.locator('.era-landscape').nth(4).getAttribute('src'),'/art/storybook/hillside/village.webp');
+ await ascent.locator('[data-command="evolve"]').click();
+ await ascent.getByRole('button',{name:'EVOLVE TO HILLSIDE WATCH',exact:true}).click();
+ await ascent.waitForFunction(()=>document.querySelector('.game-shell').dataset.era==='4');
+ assert.equal(await ascent.locator('#app').getAttribute('data-art-style'),'storybook');
+ await ascent.getByRole('button',{name:/Deploy Sentinel/}).waitFor();
+ await ascent.screenshot({path:`${hillsideOutput}/23-hillside-evolution-mixed-390.png`});
+ assert.equal(await ascent.evaluate(()=>window.__visualFallback),undefined);
+ await hillsideTransition.close();
+ const hillside=await browser.newContext({viewport:{width:390,height:844},deviceScaleFactor:2});
+ await hillside.addInitScript(()=>{
+  document.addEventListener('visual-fallback',()=>{window.__visualFallback=true;});
+  localStorage.setItem('almo7areboon.save.v1',JSON.stringify({version:2,timeline:1,age:4,enemyAge:4,furthestBattle:4,coins:0,cards:[],unlocked:[true,true,true],sound:false}));
+ });
+ const watch=await hillside.newPage();watch.on('pageerror',error=>errors.push(error.message));
+ watch.on('response',response=>{if(response.url().includes('/art/storybook/')&&!response.ok())assetFailures.push(`${response.status()} ${response.url()}`);});
+ await watch.goto('http://127.0.0.1:4173/',{waitUntil:'networkidle'});
+ await watch.waitForFunction(()=>!document.querySelector('.world-loader'));
+ const hillsidePortraits=await watch.locator('.unit-card img').evaluateAll(async images=>Promise.all(images.map(async img=>{
+  await img.decode();return {src:img.getAttribute('src'),ready:img.complete&&img.naturalWidth>0&&img.naturalHeight>0};
+ })));
+ assert.deepEqual(hillsidePortraits.map(p=>p.src),['sentinel','scout','tank'].map(role=>`/art/storybook/hillside/${role}-portrait.webp`));
+ assert.ok(hillsidePortraits.every(p=>p.ready),'all three Hillside portraits decode');
+ assert.equal(await watch.locator('#app').getAttribute('data-art-style'),'storybook');
+ await watch.screenshot({path:`${hillsideOutput}/24-hillside-ready-390.png`});
+ await watch.setViewportSize({width:320,height:640});
+ assert.equal(await watch.evaluate(()=>document.documentElement.scrollWidth>innerWidth),false,'Hillside Watch must fit 320px');
+ const watchCards=await watch.locator('.unit-card').evaluateAll(cards=>cards.map(card=>({left:card.getBoundingClientRect().left,right:card.getBoundingClientRect().right,image:card.querySelector('img').getBoundingClientRect().bottom,price:card.querySelector('.unit-price').getBoundingClientRect().top})));
+ for(const card of watchCards){assert.ok(card.left>=0&&card.right<=321,'Hillside card stays in viewport');assert.ok(card.image<=card.price+1,'Hillside portrait clears price');}
+ await watch.screenshot({path:`${hillsideOutput}/25-hillside-ready-320.png`});
+ await watch.setViewportSize({width:390,height:844});
+ await watch.getByRole('button',{name:/^BATTLE/}).click();
+ await watch.getByRole('button',{name:/Food drop/i}).click();
+ for(const name of ['Sentinel','Scout','Tank'])await watch.getByRole('button',{name:new RegExp(`Deploy ${name},`)}).click();
+ await watch.waitForTimeout(8000);
+ await watch.screenshot({path:`${hillsideOutput}/26-hillside-all-roles-390.png`});
+ await watch.waitForTimeout(20000);
+ await watch.screenshot({path:`${hillsideOutput}/27-hillside-later-battle-390.png`});
+ assert.equal(await watch.evaluate(()=>window.__visualFallback),undefined);
+ await hillside.close();
  assert.deepEqual(errors,[],`browser errors: ${errors.join('; ')}`);
  assert.deepEqual(assetFailures,[],'all storybook asset requests succeeded');
- console.log(JSON.stringify({density,screenshots:22,narrowControls:layout.length,errors,assetFailures},null,2));
+ console.log(JSON.stringify({density,screenshots:27,narrowControls:layout.length,errors,assetFailures},null,2));
 } finally {
  await browser?.close();
  server.kill('SIGTERM');

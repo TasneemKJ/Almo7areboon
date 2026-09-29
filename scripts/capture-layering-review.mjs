@@ -26,13 +26,14 @@ try {
   browser = await chromium.launch({ headless: true });
   const context = await browser.newContext({ viewport: { width: 490, height: 550 }, deviceScaleFactor: 2, reducedMotion: 'no-preference' });
   const cases = [];
-  for (const age of [0, 1, 3]) for (const health of [70, 25]) for (const lane of [0, 1, 2]) {
+  for (const age of [0, 1, 3, 4]) for (const health of [70, 25]) for (const lane of [0, 1, 2]) {
     cases.push({ age, health, lane, effects: 'both' });
   }
-  // The mixed chapter case exposes the current painted/vector style boundary.
+  // Retain the adjacent painted chapters and expose the remaining vector boundary.
   cases.push({ age: 3, enemyAge: 4, health: 25, lane: 1, effects: 'both' });
+  cases.push({ age: 4, enemyAge: 5, health: 25, lane: 1, effects: 'both' });
   // Isolated views make damage marks and each source effect easier to review.
-  for (const age of [0, 1, 3]) cases.push({ age, health: 25, lane: 0, effects: 'none', troops: 0 });
+  for (const age of [0, 1, 3, 4]) cases.push({ age, health: 25, lane: 0, effects: 'none', troops: 0 });
   for (const effects of ['attack', 'dust']) cases.push({ age: 3, health: 25, lane: 0, effects });
 
   for (const fixture of cases) {
@@ -56,7 +57,7 @@ try {
       const bases = diagnostic.images.filter(image => image.texture.startsWith('base-')).sort((a, b) => a.x - b.x);
       assert.equal(bases.length, 2, 'both base images render');
       assert.equal(bases[0].flipX, false, 'player painted base keeps its authored orientation');
-      if ((fixture.enemyAge ?? fixture.age) <= 3) assert.equal(bases[1].flipX, true, 'enemy painted base is mirrored');
+      if ((fixture.enemyAge ?? fixture.age) <= 4) assert.equal(bases[1].flipX, true, 'enemy painted base is mirrored');
       assert.ok(diagnostic.baseDamage?.commandCount > 8, 'damaged bases draw actual damage graphics');
       if (fixture.troops !== 0) {
         const troops = diagnostic.images.filter(image => image.texture.startsWith('army-')).sort((a, b) => a.x - b.x);
