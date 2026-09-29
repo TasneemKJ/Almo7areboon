@@ -1,6 +1,7 @@
 import type {Side,UnitKind} from '../game/types.ts';
 import {path as p,ellipse as e,rect as r,line as l,gradient,documentSvg,dataSvg,INK} from './illustration-kit.ts';
 import {garmentSvg,headwearSvg,clothingPalette,skinPalette} from './levantine-wardrobe.ts';
+import {unitMaterialDetailSvg} from './design-detail.ts';
 export const TROOP_FRAME={width:128,height:144,count:6} as const;
 const team=(side:Side)=>side==='player'?['#8ce2f3','#309ddb','#16658e']:['#ffd0ad','#e66b50','#a93839'];
 function defs(age:number,kind:UnitKind,side:Side,id:string){const t=team(side),cloth=clothingPalette(age),skin=skinPalette(age,kind);return gradient(`${id}s`,skin[0],skin[1])+gradient(`${id}c`,cloth[0],cloth[1])+gradient(`${id}t`,t[0],t[2])+gradient(`${id}g`,'#e9d4a2','#998057')+gradient(`${id}m`,'#e8ecda','#708b90')+gradient(`${id}d`,'#a9c080','#547961')+gradient(`${id}w`,'#bc9971','#74624d');}
@@ -81,9 +82,10 @@ function vehicle(age:number,side:Side,frame:number,id:string){
 }
 function validated(age:number,kind:UnitKind){return {age:Number.isInteger(age)&&age>=0&&age<6?age:0,kind:([0,1,2].includes(kind)?kind:0)as UnitKind};}
 function art(age:number,kind:UnitKind,side:Side,frame:number,id:string){
- if(kind===2&&age>=3)return vehicle(age,side,frame,id);
- if(kind===2&&(age===0||age===2))return mount(age,side,frame,id)+`<g transform="translate(17 -4) scale(.72)">${human(age,0,side,frame,id,true)}</g>`;
- return `<g transform="${age===1&&kind===2?'translate(-5 -3) scale(1.08)':'translate(0 7)'}">${human(age,kind,side,frame,id)}</g>`;
+ const detail=unitMaterialDetailSvg(age,kind,side,id);
+ if(kind===2&&age>=3)return vehicle(age,side,frame,id)+detail;
+ if(kind===2&&(age===0||age===2))return mount(age,side,frame,id)+`<g transform="translate(17 -4) scale(.72)">${human(age,0,side,frame,id,true)}</g>`+detail;
+ return `<g transform="${age===1&&kind===2?'translate(-5 -3) scale(1.08)':'translate(0 7)'}">${human(age,kind,side,frame,id)}${detail}</g>`;
 }
 // Inset around the shared foot anchor: tilted weapons and cavalry crests stay
 // inside their own texture frame, with room for linear texture sampling.
