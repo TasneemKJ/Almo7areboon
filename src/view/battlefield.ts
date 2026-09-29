@@ -56,7 +56,8 @@ export function mountBattlefield(element:HTMLElement,game:GamePort,onFrame:()=>v
   private glow!:Phaser.GameObjects.Graphics;
   private mist!:Phaser.GameObjects.Container;
   private clouds!:Phaser.GameObjects.Container;
-  private stars!:Phaser.GameObjects.Graphics;
+  private stars!:Phaser.GameObjects.Container;
+  private streak!:Phaser.GameObjects.Graphics;
   private graded=new Set<string>();
   private flares:Flare[]=[];
   private playerBase!:ImageOrFallback;
@@ -93,7 +94,8 @@ export function mountBattlefield(element:HTMLElement,game:GamePort,onFrame:()=>v
    this.world=this.add.container();
    this.sky=this.add.image(0,0,this.textures.exists(landscapeTexture(game.profile.age))?landscapeTexture(game.profile.age):'__WHITE').setOrigin(0);
    this.world.add(this.sky);
-   this.stars=this.add.graphics().setBlendMode(Phaser.BlendModes.ADD);this.world.add(this.stars);
+   this.stars=this.add.container();this.world.add(this.stars);
+   this.streak=this.add.graphics().setBlendMode(Phaser.BlendModes.ADD);this.world.add(this.streak);
    this.clouds=this.add.container();this.world.add(this.clouds);
    this.ambience=this.add.graphics();this.world.add(this.ambience);
    this.basesLayer=this.add.container();this.world.add(this.basesLayer);
@@ -307,8 +309,9 @@ export function mountBattlefield(element:HTMLElement,game:GamePort,onFrame:()=>v
    });
   }
   private drawStageLight():void {
-   const s=game.state,age=game.profile.age,st=this.stars;st.clear();
-   for(const star of starFrame(age,this.clock,this.layout.groundY,this.reduce)){st.fillStyle(0xfff6e0,star.alpha*.25);st.fillCircle(star.x,star.y,star.size*2.4);st.fillStyle(0xfffaf0,star.alpha);st.fillCircle(star.x,star.y,star.size*.6);}
+   const s=game.state,age=game.profile.age,st=this.streak;st.clear();
+   // Stars are pooled soft quads: tessellating 60 circles a frame cost ~12% fps at 2x density.
+   this.paintSoft(this.stars,starFrame(age,this.clock,this.layout.groundY,this.reduce).map(star=>({x:star.x,y:star.y,rx:star.size*2.2,ry:star.size*2.2,color:0xfff6e0,alpha:star.alpha})),Phaser.BlendModes.ADD);
    const streak=shootingStar(age,this.clock,this.layout.groundY,this.reduce);
    if(streak){st.lineStyle(2.2,0xfff4d6,streak.alpha*.3);st.lineBetween(streak.x1,streak.y1,streak.x2,streak.y2);st.lineStyle(.9,0xffffff,streak.alpha);st.lineBetween(streak.x1+(streak.x2-streak.x1)*.4,streak.y1+(streak.y2-streak.y1)*.4,streak.x2,streak.y2);st.fillStyle(0xffffff,streak.alpha);st.fillCircle(streak.x2,streak.y2,1.1);}
    this.paintSoft(this.clouds,cloudFrame(age,this.clock,this.layout.groundY,this.reduce),Phaser.BlendModes.NORMAL);
