@@ -222,7 +222,7 @@ svg,img { user-select:none; -webkit-user-select:none; }
 .quest-row { display:flex; gap:12px; align-items:center; text-align:left; }
 .quest-row>div { flex:1; min-width:0; }
 .quest-row h3 { margin:0 0 8px; font-size:12px; }
-.quest-row small { font-size:9px; color:#5f766a; }
+.quest-row small { font-size:9px; color:#4f6559; }
 .quest-meter { height:7px; border:1px solid #a9bfa4; border-radius:5px; background:#d6dfc2; overflow:hidden; margin-bottom:4px; }
 .quest-meter i { display:block; height:100%; background:#629486; }
 .battle-options { display:grid; gap:8px; margin:17px 0 0; }
