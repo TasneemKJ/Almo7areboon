@@ -135,7 +135,13 @@ test('combat text and skill feedback stay legible against bright skies',()=>{
  const css=readFileSync(new URL('../src/ui/era-glow.css',import.meta.url),'utf8'),main=readFileSync(new URL('../src/main.ts',import.meta.url),'utf8');
  assert.ok(main.indexOf("./ui/era-glow.css")>main.indexOf("./ui/combat-focus.css"),'era glow must load last to win the cascade');
  assert.match(css,/background:radial-gradient\(ellipse at 50% 78%,#7bada8[^;]+;\n background:radial-gradient\([^;]*color-mix/,'plain gradient must precede the color-mix one as a fallback');
- assert.match(css,/\.unit-card\.affordable img \{ animation:/);
+ assert.match(css,/\.unit-card\.affordable img \{ animation:card-ready [.\d]+s ease-out 1; \}/,'ready cue is a one-shot pop, not an infinite loop');
+ assert.doesNotMatch(css,/infinite/);
+ assert.match(css,/\.unit-card\.affordable \{\n border-color:#ffe2a0;/,'the ready signal colour is constant across chapters');
+ const material=readFileSync(new URL('../src/ui/material-language.css',import.meta.url),'utf8');
+ const enamel=material.match(/\.skill-circle \{[^}]*box-shadow:([^;]+);/)![1];
+ const glow=css.match(/\.skill-circle:not\(:disabled\):not\(\.used\) \{ box-shadow:([^;]+);/)![1];
+ assert.ok(glow.startsWith(enamel),'skill glow must extend, not replace, the enamel shadow stack');
 });
 
 test('skill banners are never evicted by the damage-number cap',()=>{

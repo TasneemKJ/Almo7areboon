@@ -5,10 +5,13 @@
  transition:transform .08s ease-out,box-shadow .2s ease-out;
 }
 .unit-card:active:not(:disabled) { transform:translateY(2px) scale(.97); box-shadow:0 1px 0 #122d3d; }
+/* The ready signal stays brass in every chapter; the accent only adds glow around it. */
 .unit-card.affordable {
- border-color:var(--era-accent);
+ border-color:#ffe2a0;
  box-shadow:0 3px 0 #122d3d,0 0 14px -2px var(--era-accent),inset 0 0 0 1px rgba(244,223,170,.48),inset 0 1px rgba(255,246,210,.45);
 }
-.unit-card.affordable img { animation:card-ready 2.6s ease-in-out infinite; }
-@keyframes card-ready { 0%,100% { transform:translateY(0); } 50% { transform:translateY(-2px); } }
-.skill-circle:not(:disabled):not(.used) { box-shadow:0 3px 0 #1d4654,0 0 12px -3px var(--era-accent),inset 0 1px #e4f7d254; }
+/* One pop when a card becomes affordable, not a perpetual bob competing with the battlefield. */
+.unit-card.affordable img { animation:card-ready .45s ease-out 1; }
+@keyframes card-ready { 0% { transform:translateY(0) scale(1); } 40% { transform:translateY(-3px) scale(1.06); } 100% { transform:translateY(0) scale(1); } }
+/* Accent glow is appended to material-language's full enamel stack, never substituted for it. */
+.skill-circle:not(:disabled):not(.used) { box-shadow:inset 0 1px rgba(255,241,200,.22),inset 0 -1px rgba(18,52,58,.28),0 3px 0 #1d4654,0 0 12px -3px var(--era-accent); }
