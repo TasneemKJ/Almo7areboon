@@ -4,6 +4,7 @@ import {arenaLayout,landscapePlacement,troopPose,visualEra} from './visual-theme
 import {atmosphereFrame} from './era-atmosphere.ts';
 import {baseDamageFrame,baseDamagePalette,baseDamageStage} from './base-damage.ts';
 import {attackCueFrame,hitReaction} from './combat-choreography.ts';
+import {healthOffset,lanePresentation,projectileLift,troopScale} from './lane-perspective.ts';
 import {visualAssets,baseTexture,unitTexture,landscapeTexture} from './visual-assets.ts';
 import {projectileGeometry,paintProjectile} from './projectile-art.ts';
 import {DeathVisuals} from './death-visuals.ts';
@@ -18,7 +19,7 @@ type Spark={x:number;y:number;vx:number;vy:number;life:number;max:number;size:nu
 type Bolt={from:{x:number;y:number};to:{x:number;y:number};life:number;max:number;arc:number;age:number;side:Side;heavy:boolean;damage:number;meteor?:boolean;targetBase?:boolean;targetSide?:Side;targetAge?:number};
 type Ring={x:number;y:number;life:number;max:number;radius:number;color:number};
 type Floater={text:Phaser.GameObjects.Text;life:number;max:number;startY:number};
-type AttackCue={x:number;y:number;age:number;kind:Unit['kind'];side:Side;life:number;max:number};
+type AttackCue={x:number;y:number;lane:number;age:number;kind:Unit['kind'];side:Side;life:number;max:number};
 const xAt=(x:number)=>x*.45;
 const noise=(n:number)=>{const value=Math.sin(n*117.13)*43758.5453;return value-Math.floor(value);};
 const tint=(hex:string)=>parseInt(hex.slice(1),16);
@@ -138,11 +139,11 @@ export function mountBattlefield(element:HTMLElement,game:GamePort,onFrame:()=>v
     ids.add(unit.id);let view=this.units.get(unit.id);
     const x=xAt(unit.x),y=this.yAt(unit.lane),frozen=unit.side==='enemy'&&game.state.freezeUntil>game.state.time;
     if(!view){const body=this.sprite(unit.age,unit.kind,unit.side);this.armyLayer.add(body);view={body,x,y,side:unit.side,dustAt:0};this.units.set(unit.id,view);}
-    const moving=Math.abs(view.x-x)>.001,scale=unit.kind===2?.54:.42;
+    const moving=Math.abs(view.x-x)>.001,perspective=lanePresentation(unit.lane,unit.kind),scale=troopScale(unit.kind,unit.lane);
     const pose=troopPose(game.state.time+unit.id*.17,moving,unit.attacking,this.reduce||frozen);
     const recoil=hitReaction(unit.hitFlash,unit.side,unit.kind,this.reduce||frozen);
-    g.fillStyle(0x243c42,.14);g.fillEllipse(x+3,y+3,unit.kind===2?46:27,unit.kind===2?11:7);
-    g.fillStyle(0x2a4647,.12);g.fillEllipse(x+2,y+2,unit.kind===2?31:17,4);
+    g.fillStyle(0x243c42,perspective.shadowAlpha);g.fillEllipse(x+3,y+3,perspective.shadowWidth,perspective.shadowHeight);
+    g.fillStyle(0x2a4647,perspective.shadowAlpha*.82);g.fillEllipse(x+2,y+2,perspective.shadowWidth*.68,perspective.shadowHeight*.38);
     if(view.body instanceof Phaser.GameObjects.Image){
      if(!game.state.paused)view.body.setFrame(String(pose.frame));
      view.body.setAngle((unit.side==='player'?pose.angle:-pose.angle)+recoil.angle);
@@ -150,7 +151,7 @@ export function mountBattlefield(element:HTMLElement,game:GamePort,onFrame:()=>v
      if(unit.hitFlash>0)view.body.setTintFill(0xfff9db);else if(frozen)view.body.setTint(0x91e5f0);else view.body.clearTint();
      view.body.setPosition(x+recoil.x,y-(game.state.paused?0:pose.lift)+recoil.y);
     }else{
-     view.body.setPosition(x+recoil.x,y+recoil.y).setScale(unit.side==='player'?1:-1,1).setAngle(recoil.angle);
+     view.body.setPosition(x+recoil.x,y+recoil.y).setScale((unit.side==='player'?1:-1)*perspective.scale,perspective.scale).setAngle(recoil.angle);
      drawTroop(view.body,unit.age,unit.kind,unit.side,this.reduce||frozen?0:game.state.time,unit.attacking,unit.hitFlash>0);
     }
     view.body.setDepth(y);
@@ -240,27 +241,28 @@ export function mountBattlefield(element:HTMLElement,game:GamePort,onFrame:()=>v
    const g=this.actionFx;g.clear();
    for(const cue of this.attackCues){
     cue.life-=dt;const progress=1-Math.max(0,cue.life)/cue.max;
+    const perspective=lanePresentation(cue.lane,cue.kind);
     for(const mark of attackCueFrame(cue.age,cue.kind,cue.side,progress,this.reduce)){
-     const x=cue.x+mark.x,y=cue.y+mark.y,forward=cue.side==='player'?1:-1;
+     const x=cue.x+mark.x*perspective.scale,y=cue.y+mark.y*perspective.scale,forward=cue.side==='player'?1:-1,size=mark.size*perspective.scale;
      if(mark.kind==='slash'){
       const a0=mark.angle-.72*forward,a1=mark.angle,a2=mark.angle+.72*forward;
-      const p0={x:x+Math.cos(a0)*mark.size,y:y+Math.sin(a0)*mark.size};
-      const p1={x:x+Math.cos(a1)*mark.size*1.22,y:y+Math.sin(a1)*mark.size*1.22};
-      const p2={x:x+Math.cos(a2)*mark.size,y:y+Math.sin(a2)*mark.size};
+      const p0={x:x+Math.cos(a0)*size,y:y+Math.sin(a0)*size};
+      const p1={x:x+Math.cos(a1)*size*1.22,y:y+Math.sin(a1)*size*1.22};
+      const p2={x:x+Math.cos(a2)*size,y:y+Math.sin(a2)*size};
       g.lineStyle(5,mark.color,mark.alpha*.18);g.lineBetween(p0.x,p0.y,p1.x,p1.y);g.lineBetween(p1.x,p1.y,p2.x,p2.y);
       g.lineStyle(1.7,mark.color,mark.alpha);g.lineBetween(p0.x,p0.y,p1.x,p1.y);g.lineBetween(p1.x,p1.y,p2.x,p2.y);
      }else if(mark.kind==='muzzle'||mark.kind==='flash'){
-      g.fillStyle(mark.color,mark.alpha*.92);g.fillTriangle(x+forward*mark.size,y,x-forward*mark.size*.45,y-mark.size*.58,x-forward*mark.size*.45,y+mark.size*.58);
-      g.lineStyle(1.1,0xfff6d0,mark.alpha);g.lineBetween(x-forward*mark.size*.4,y,x+forward*mark.size*1.35,y);
-      if(mark.kind==='muzzle'){g.lineBetween(x,y-mark.size*.75,x,y+mark.size*.75);}
+      g.fillStyle(mark.color,mark.alpha*.92);g.fillTriangle(x+forward*size,y,x-forward*size*.45,y-size*.58,x-forward*size*.45,y+size*.58);
+      g.lineStyle(1.1,0xfff6d0,mark.alpha);g.lineBetween(x-forward*size*.4,y,x+forward*size*1.35,y);
+      if(mark.kind==='muzzle'){g.lineBetween(x,y-size*.75,x,y+size*.75);}
      }else if(mark.kind==='energy'){
-      g.fillStyle(mark.color,mark.alpha*.18);g.fillCircle(x,y,mark.size*1.35);g.lineStyle(2,mark.color,mark.alpha);g.strokeCircle(x,y,mark.size*.72);g.fillStyle(0xf0ffff,mark.alpha);g.fillCircle(x,y,mark.size*.24);
+      g.fillStyle(mark.color,mark.alpha*.18);g.fillCircle(x,y,size*1.35);g.lineStyle(2,mark.color,mark.alpha);g.strokeCircle(x,y,size*.72);g.fillStyle(0xf0ffff,mark.alpha);g.fillCircle(x,y,size*.24);
      }else if(mark.kind==='smoke'){
-      g.fillStyle(mark.color,mark.alpha*.24);g.fillCircle(x-mark.size*.2,y+mark.size*.1,mark.size*.65);g.fillCircle(x+mark.size*.35,y-mark.size*.25,mark.size*.82);
+      g.fillStyle(mark.color,mark.alpha*.24);g.fillCircle(x-size*.2,y+size*.1,size*.65);g.fillCircle(x+size*.35,y-size*.25,size*.82);
      }else if(mark.kind==='dust'){
-      g.fillStyle(mark.color,mark.alpha*.22);g.fillEllipse(x,y,mark.size*2.2,mark.size*.72);
+      g.fillStyle(mark.color,mark.alpha*.22);g.fillEllipse(x,y,size*2.2,size*.72);
      }else{
-      const dx=Math.cos(mark.angle)*mark.size,dy=Math.sin(mark.angle)*mark.size;g.lineStyle(2.1,mark.color,mark.alpha*.72);g.lineBetween(x-dx,y-dy,x+dx,y+dy);
+      const dx=Math.cos(mark.angle)*size,dy=Math.sin(mark.angle)*size;g.lineStyle(2.1,mark.color,mark.alpha*.72);g.lineBetween(x-dx,y-dy,x+dx,y+dy);
      }
     }
    }
@@ -277,7 +279,7 @@ export function mountBattlefield(element:HTMLElement,game:GamePort,onFrame:()=>v
     this.baseText[i].setPosition(x,y+1).setText(compactNumber(hp));
    }
    for(const unit of s.units)if(unit.hp<unit.maxHp){
-    const x=xAt(unit.x),y=this.yAt(unit.lane)-(unit.kind===2?78:59),w=unit.kind===2?31:22;
+    const perspective=lanePresentation(unit.lane,unit.kind),x=xAt(unit.x),y=this.yAt(unit.lane)-healthOffset(unit.kind,unit.lane),w=(unit.kind===2?31:22)*perspective.scale;
     g.fillStyle(0x203d43,.7);g.fillRoundedRect(x-w/2-1,y-1,w+2,5,2);
     g.fillStyle(unit.side==='player'?0x9de6ef:0xffb18a,1);const fill=w*Math.max(0,unit.hp/unit.maxHp);if(fill>.1)g.fillRoundedRect(x-w/2,y,fill,3,1);
    }
@@ -306,12 +308,13 @@ export function mountBattlefield(element:HTMLElement,game:GamePort,onFrame:()=>v
    const x=xAt(e.x??500),y=this.yAt(e.lane??1);
    if(e.type==='spawn'){this.emit(x,y,5,0xdfd4b1,true,.4);this.ring(x,y,0xc9e2b3,13);}
    if(e.type==='hit'){
-    if(e.source){this.attackCues.push({x:xAt(e.source.x),y:this.yAt(e.source.lane),age:e.source.age,kind:e.source.kind,side:e.source.side,life:.18,max:.18});if(this.attackCues.length>42)this.attackCues.shift();}
+    if(e.source){this.attackCues.push({x:xAt(e.source.x),y:this.yAt(e.source.lane),lane:e.source.lane,age:e.source.age,kind:e.source.kind,side:e.source.side,life:.18,max:.18});if(this.attackCues.length>42)this.attackCues.shift();}
     const shot=projectileForHit(e),targetBase=e.target==='base',targetSide:Side=e.side==='player'?'enemy':'player';
     const targetAge=targetSide==='player'?game.profile.age:game.profile.enemyAge;
     if(shot&&!this.reduce){
      const u=shot.source,heavy=u.kind===2,direction=u.side==='player'?1:-1;
-     this.bolts.push({from:{x:xAt(u.x)+direction*(heavy?27:22),y:this.yAt(u.lane)-(heavy?29:25)},to:{x:xAt(shot.targetX),y:shot.base?this.layout.groundY-22:this.yAt(shot.targetLane)-22},life:.2,max:.2,arc:u.age<3?13:0,age:u.age,side:u.side,heavy,damage:e.amount??0,targetBase:shot.base,targetSide,targetAge});
+     const perspective=lanePresentation(u.lane,u.kind);
+     this.bolts.push({from:{x:xAt(u.x)+direction*(heavy?27:22)*perspective.scale,y:this.yAt(u.lane)-projectileLift(u.kind,u.lane)},to:{x:xAt(shot.targetX),y:shot.base?this.layout.groundY-22:this.yAt(shot.targetLane)-22},life:.2,max:.2,arc:u.age<3?13*perspective.scale:0,age:u.age,side:u.side,heavy,damage:e.amount??0,targetBase:shot.base,targetSide,targetAge});
      if(this.bolts.length>70)this.bolts.shift();
     }else if(targetBase)this.baseImpact(x,this.layout.groundY-22,e.amount??0,e.source?.kind===2,targetSide,targetAge);
     else this.impact(x,y-22,e.amount??0);
