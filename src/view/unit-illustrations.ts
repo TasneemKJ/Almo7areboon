@@ -2,6 +2,7 @@ import type {Side,UnitKind} from '../game/types.ts';
 import {path as p,ellipse as e,rect as r,line as l,gradient,documentSvg,dataSvg,INK} from './illustration-kit.ts';
 import {garmentSvg,headwearSvg,clothingPalette,skinPalette} from './levantine-wardrobe.ts';
 import {unitMaterialDetailSvg} from './design-detail.ts';
+import {characterExpressionSvg} from './character-expression.ts';
 export const TROOP_FRAME={width:128,height:144,count:6} as const;
 const team=(side:Side)=>side==='player'?['#8ce2f3','#309ddb','#16658e']:['#ffd0ad','#e66b50','#a93839'];
 function defs(age:number,kind:UnitKind,side:Side,id:string){const t=team(side),cloth=clothingPalette(age),skin=skinPalette(age,kind);return gradient(`${id}s`,skin[0],skin[1])+gradient(`${id}c`,cloth[0],cloth[1])+gradient(`${id}t`,t[0],t[2])+gradient(`${id}g`,'#e9d4a2','#998057')+gradient(`${id}m`,'#e8ecda','#708b90')+gradient(`${id}d`,'#a9c080','#547961')+gradient(`${id}w`,'#bc9971','#74624d');}
@@ -18,8 +19,8 @@ function human(age:number,kind:UnitKind,side:Side,frame:number,id:string,mounted
  out+=l('M40 77Q24 87 32 99',INK,13)+l('M40 77Q24 87 32 99',skin,9)+e(34,99,5.5,6,skin,INK,1.7);
  // Oversized, shaded head with a clear 3/4 gaze; never a blank alien face.
  out+=e(38,51,6,8,skin,INK,1.8)+p('M36 44Q33 24 57 23Q82 23 83 43L82 58Q80 72 60 73Q41 73 37 60Z',skin)+p('M41 37Q47 29 62 29', 'none','#fff2d4',4);
- out+=e(62,51,2.5,3.5,INK)+e(76,51,2.2,3.1,INK)+e(62.7,49.8,.8,1,'#fffdf3')+e(76.6,50,.7,.9,'#fffdf3');
- out+=p('M81 54Q87 58 81 61',skin,INK,1)+e(52,60,4,1.3,'#c39476')+l(kind===1?'M65 65L74 64':'M64 64Q70 67 75 64',INK,1.2)+l('M59 42l7-1M74 41l5 1',INK,2.1);
+ out+=p('M81 54Q87 58 81 61',skin,INK,1)+e(52,60,4,1.3,'#c39476');
+ out+=characterExpressionSvg(kind,frame,skin);
  out+=headwearSvg(age,kind,side,id);
  // Front arm and weapon form a second, readable action silhouette.
  out+=`<g transform="rotate(${attack} 73 78)">${l('M72 78L86 90 95 87',INK,13)+l('M72 78L86 90 95 87',skin,9)}`;
