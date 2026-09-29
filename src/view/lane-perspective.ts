@@ -28,12 +28,12 @@ export function lanePresentation(lane:number,kind:number):LanePresentation {
 
 export function troopScale(kind:number,lane:number):number {
   const actualKind=clampKind(kind);
-  return (actualKind===2?.54:.42)*lanePresentation(lane,actualKind).scale;
+  return (actualKind===2?.6:.46)*lanePresentation(lane,actualKind).scale;
 }
 
 export function healthOffset(kind:number,lane:number):number {
   const actualKind=clampKind(kind);
-  return (actualKind===2?78:59)*lanePresentation(lane,actualKind).scale;
+  return (actualKind===2?85:65)*lanePresentation(lane,actualKind).scale;
 }
 
 export function projectileLift(kind:number,lane:number):number {
