@@ -87,3 +87,9 @@ Eleven connected refinements are now implemented toward forty. No scheduler; bro
 Added a shared rarity-frame grammar around all 30 original collectible objects: protected central negative space, grounded plinth/shadow, and progressively stronger common/rare/epic/legendary ornament. Collection and summon surfaces expose the same rarity metadata. Five regressions RED→GREEN; full suite 224/224, production build passed, and standalone asset QA still reports 30 cards with zero errors. Details: [12-card-art-hierarchy.md](12-card-art-hierarchy.md).
 
 Twelve connected refinements are now implemented toward forty. No scheduler; rendered mobile acceptance remains open.
+
+
+## 13 — Outpost architectural micro-detail
+Added six bounded architectural-detail grammars across all 12 faction outposts while preserving the existing silhouettes. Player/enemy geometry remains identical after faction color normalization. Five regressions RED→GREEN after correcting one overbroad test regex; full suite 229/229, production build passed, and standalone asset QA still reports 12 bases with zero errors. Details: [13-outpost-detail.md](13-outpost-detail.md).
+
+Thirteen connected refinements are now implemented toward forty. No scheduler; rendered mobile acceptance remains open.
