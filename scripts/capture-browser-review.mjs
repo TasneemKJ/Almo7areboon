@@ -26,6 +26,8 @@ try {
  const density=await page.locator('#battlefield canvas').evaluate(canvas=>({width:canvas.width,height:canvas.height,cssWidth:canvas.clientWidth,cssHeight:canvas.clientHeight}));
  assert.ok(density.width/density.cssWidth>=1.9&&density.width/density.cssWidth<=2.1,`canvas density: ${JSON.stringify(density)}`);
  assert.ok(density.height/density.cssHeight>=1.9&&density.height/density.cssHeight<=2.1,`canvas height density: ${JSON.stringify(density)}`);
+ const portraitBounds=await page.locator('.unit-card').first().evaluate(card=>({image:card.querySelector('img').getBoundingClientRect().bottom,price:card.querySelector('.unit-price').getBoundingClientRect().top}));
+ assert.ok(portraitBounds.image<=portraitBounds.price+1,`portrait clipped by price bar: ${JSON.stringify(portraitBounds)}`);
  await page.screenshot({path:`${output}/01-ready-390.png`});
  await page.getByRole('button',{name:/^BATTLE/}).click();
  await page.getByRole('button',{name:/Deploy Pathkeeper/}).click();
@@ -47,6 +49,8 @@ try {
   });
  });
  for(const item of layout)assert.ok(item.left>=item.shellLeft-1&&item.right<=item.shellRight+1,`narrow overflow: ${JSON.stringify(item)}`);
+ const narrowPortrait=await small.locator('.unit-card').first().evaluate(card=>({image:card.querySelector('img').getBoundingClientRect().bottom,price:card.querySelector('.unit-price').getBoundingClientRect().top}));
+ assert.ok(narrowPortrait.image<=narrowPortrait.price+1,`narrow portrait clipped: ${JSON.stringify(narrowPortrait)}`);
  await small.screenshot({path:`${output}/04-ready-320.png`});
  await narrow.close();
  assert.deepEqual(errors,[],`browser errors: ${errors.join('; ')}`);

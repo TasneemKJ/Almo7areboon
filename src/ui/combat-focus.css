@@ -6,10 +6,12 @@
 .food-line { margin-bottom:5px; }
 .unit-cards { gap:8px; }
 .unit-card {
- height:101px;
+ height:120px;
+ --portrait-top:24px;
+ --portrait-bottom:26px;
  background:radial-gradient(ellipse at 50% 78%,#7bada8 0%,#3b7890 48%,#234b63 100%);
 }
-.unit-card img { height:85px; bottom:17px; filter:drop-shadow(0 3px 2px #102f3b8c); }
+.unit-card img { top:var(--portrait-top); bottom:auto; height:calc(100% - var(--portrait-top) - var(--portrait-bottom)); filter:drop-shadow(0 3px 2px #102f3b8c); }
 .unit-name { font-size:13px; text-shadow:0 1px 3px #102f3b; }
 .unit-role { font-size:9px; top:23px; letter-spacing:.65px; }
 .unit-price { height:25px; background:#122f3deF; }
@@ -34,8 +36,7 @@
 
 @media(max-height:700px) {
  .deployment { padding:4px 10px; }
- .unit-card { height:79px; }
- .unit-card img { height:61px; bottom:16px; }
+ .unit-card { height:90px; --portrait-top:19px; --portrait-bottom:21px; }
  .unit-name { font-size:11px; }
  .unit-role { font-size:8px; top:17px; }
  .unit-price { height:20px; }
