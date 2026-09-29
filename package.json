@@ -8,7 +8,8 @@
     "build": "tsc --noEmit && vite build",
     "preview": "vite preview --host 0.0.0.0",
     "test": "node --experimental-strip-types --test tests/*.test.ts",
-    "review:browser": "node scripts/capture-browser-review.mjs"
+    "review:browser": "node scripts/capture-browser-review.mjs",
+    "review:layering": "node scripts/capture-layering-review.mjs"
   },
   "dependencies": {
     "phaser": "^3.90.0"

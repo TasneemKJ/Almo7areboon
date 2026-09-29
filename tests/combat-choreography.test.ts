@@ -63,16 +63,11 @@ test('attack cue fades over its short lifetime and reduced motion removes trails
   assert.ok(reduced.every((mark:any)=>mark.kind!=='trail'&&mark.kind!=='dust'));
 });
 
-test('battlefield keeps action accents above units but below health bars and applies hit recoil only in presentation',async()=>{
+test('battlefield applies hit recoil and attack choreography only in presentation',async()=>{
   const {readFileSync}=await import('node:fs');
   const source=readFileSync(new URL('../src/view/battlefield.ts',import.meta.url),'utf8');
   assert.match(source,/from '.\/combat-choreography\.ts'/);
-  assert.match(source,/private actionFx!:/);
   assert.match(source,/private attackCues:/);
-  const army=source.indexOf('this.world.add(this.armyLayer)');
-  const cues=source.indexOf('this.world.add(this.actionFx)');
-  const bars=source.indexOf('this.world.add(this.bars)');
-  assert.ok(army>=0&&cues>army&&bars>cues,'action cues belong above actors and below health bars');
   assert.match(source,/hitReaction\(unit\.hitFlash/);
   assert.match(source,/attackCueFrame\(/);
   assert.doesNotMatch(source,/game\.(?:profile|state)\.[A-Za-z0-9_]+\s*=(?!=)/,'presentation must not mutate simulation state');
