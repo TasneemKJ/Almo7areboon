@@ -51,6 +51,6 @@ test('all production SVG gradients resolve and remain compatible with the ASCII 
 });
 test('new scenery replaces the existing textures rather than multiplying mobile memory use',()=>{
  const assets=visualAssets();
- assert.equal(assets.length,44);assert.equal(new Set(assets.map(asset=>asset.key)).size,44);
+ assert.equal(assets.length,40);assert.equal(new Set(assets.map(asset=>asset.key)).size,40);
  assert.ok(assets.reduce((sum,asset)=>sum+asset.width*asset.height*4,0)<42_000_000);
 });
