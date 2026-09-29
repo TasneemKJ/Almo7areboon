@@ -12,7 +12,7 @@ import {healthOffset,lanePresentation,projectileLift,troopScale} from './lane-pe
 import {unitFocusMarks} from './silhouette-focus.ts';
 import {visualAssets,baseTexture,foregroundTexture,unitTexture,landscapeTexture} from './visual-assets.ts';
 import {projectileGeometry,paintProjectile,projectileStyle} from './projectile-art.ts';
-import {eraGrade,gradeMatrix,keyLightRays,projectileGlow,stageGlow,teamHalo,vignetteStops,foregroundMist} from './cinematic-grade.ts';
+import {VIGNETTE_RADIUS,eraGrade,gradeMatrix,gradePixels,keyLightRays,projectileGlow,stageGlow,teamHalo,vignetteStops,foregroundMist,type GlowMark} from './cinematic-grade.ts';
 import {DeathVisuals} from './death-visuals.ts';
 import {TROOP_FRAME} from './unit-illustrations.ts';
 import {compactNumber} from '../ui/battle-hud.ts';
@@ -49,13 +49,11 @@ export function mountBattlefield(element:HTMLElement,game:GamePort,onFrame:()=>v
   private shadows!:Phaser.GameObjects.Graphics;
   private fx!:Phaser.GameObjects.Graphics;
   private bars!:Phaser.GameObjects.Graphics;
-  private rays!:Phaser.GameObjects.Graphics;
-  private stageLight!:Phaser.GameObjects.Graphics;
+  private stageLight!:Phaser.GameObjects.Container;
   private halos!:Phaser.GameObjects.Graphics;
   private glow!:Phaser.GameObjects.Graphics;
-  private mist!:Phaser.GameObjects.Graphics;
-  private vignette!:Phaser.GameObjects.Image;
-  private grade:Phaser.FX.ColorMatrix|null=null;
+  private mist!:Phaser.GameObjects.Container;
+  private graded=new Set<string>();
   private flares:Flare[]=[];
   private playerBase!:ImageOrFallback;
   private enemyBase!:ImageOrFallback;
@@ -83,6 +81,7 @@ export function mountBattlefield(element:HTMLElement,game:GamePort,onFrame:()=>v
   }
   create():void {
    if(disposed)return;
+   this.layout=arenaLayout(this.scale.width,this.scale.height);
    for(const asset of visualAssets())if(asset.frames&&this.textures.exists(asset.key)){
     const texture=this.textures.get(asset.key);
     for(let frame=0;frame<asset.frames;frame++)texture.add(String(frame),0,frame*TROOP_FRAME.width,0,TROOP_FRAME.width,TROOP_FRAME.height);
@@ -91,9 +90,8 @@ export function mountBattlefield(element:HTMLElement,game:GamePort,onFrame:()=>v
    this.sky=this.add.image(0,0,this.textures.exists(landscapeTexture(game.profile.age))?landscapeTexture(game.profile.age):'__WHITE').setOrigin(0);
    this.world.add(this.sky);
    this.ambience=this.add.graphics();this.world.add(this.ambience);
-   this.rays=this.add.graphics().setBlendMode(Phaser.BlendModes.ADD);this.world.add(this.rays);
    this.basesLayer=this.add.container();this.world.add(this.basesLayer);
-   this.stageLight=this.add.graphics().setBlendMode(Phaser.BlendModes.ADD);this.world.add(this.stageLight);
+   this.stageLight=this.add.container();this.world.add(this.stageLight);
    this.baseDamage=this.add.graphics();this.world.add(this.baseDamage);
    this.shadows=this.add.graphics();this.world.add(this.shadows);
    this.halos=this.add.graphics().setBlendMode(Phaser.BlendModes.ADD);this.world.add(this.halos);
@@ -101,8 +99,7 @@ export function mountBattlefield(element:HTMLElement,game:GamePort,onFrame:()=>v
    this.foreground=this.add.image(0,0,this.textures.exists(foregroundTexture(game.profile.age))?foregroundTexture(game.profile.age):'__WHITE').setOrigin(0);
    if(this.foreground.texture.key==='__WHITE')this.foreground.setVisible(false);
    this.world.add(this.foreground);
-   this.mist=this.add.graphics();this.world.add(this.mist);
-   this.vignette=this.add.image(0,0,'__WHITE').setOrigin(0).setVisible(false);this.world.add(this.vignette);
+   this.mist=this.add.container();this.world.add(this.mist);
    this.actionFx=this.add.graphics();this.world.add(this.actionFx);
    this.fx=this.add.graphics();this.world.add(this.fx);
    this.glow=this.add.graphics().setBlendMode(Phaser.BlendModes.ADD);this.world.add(this.glow);
@@ -113,10 +110,6 @@ export function mountBattlefield(element:HTMLElement,game:GamePort,onFrame:()=>v
    }
    this.scale.on('resize',this.resize,this);
    this.events.once('shutdown',()=>{this.scale.off('resize',this.resize,this);this.resetEffects();this.units.clear();this.idle=[];});
-   if(this.renderer.type===Phaser.WEBGL){
-    const camera=this.cameras.main;
-    this.grade=camera.postFX.addColorMatrix();
-   }
    this.resize();this.syncEra();loading.remove();
    if(this.failed)element.dispatchEvent(new CustomEvent('visual-fallback',{bubbles:true}));
   }
@@ -126,27 +119,53 @@ export function mountBattlefield(element:HTMLElement,game:GamePort,onFrame:()=>v
    this.world.setScale(this.layout.scale); // one scale: heads, circles and bodies never stretch
    this.placeLandscape();
    this.placeForeground();
-   this.placeVignette();
    this.resetEffects();
   }
-  /** One cached radial texture per chapter, stretched over the arena so the lane stays the brightest band. */
-  private placeVignette():void {
-   if(!this.vignette)return;
-   const age=game.profile.age,key=`stage-vignette-${age}`;
-   if(!this.textures.exists(key)){
-    const texture=this.textures.createCanvas(key,256,256);
-    const ctx=texture?.getContext();
-    if(!texture||!ctx){this.vignette.setVisible(false);return;}
-    const {center,stops,floor,color}=vignetteStops(age),rgb=`${color>>16&255},${color>>8&255},${color&255}`;
-    const radial=ctx.createRadialGradient(center.x*256,center.y*256,0,center.x*256,center.y*256,181);
-    for(const [at,alpha]of stops)radial.addColorStop(at,`rgba(${rgb},${alpha})`);
-    ctx.fillStyle=radial;ctx.fillRect(0,0,256,256);
-    const base=ctx.createLinearGradient(0,center.y*256+40,0,256);
-    base.addColorStop(0,`rgba(${rgb},0)`);base.addColorStop(1,`rgba(${rgb},${floor})`);
-    ctx.fillStyle=base;ctx.fillRect(0,0,256,256);
-    texture.refresh();
+  /**
+   * Bakes the chapter grade into its static art once: no per-frame post pass, and Canvas and WebGL match.
+   * Frames are sub-rectangles of the same source, so sprite sheets keep their cells. A tainted or
+   * unavailable canvas leaves the art ungraded rather than failing.
+   */
+  /**
+   * Static key-light rays and the stage vignette, painted into the art in its own source space
+   * (map: world→source). Baked because full-screen blended layers cost ~5 fps each on fill-limited GPUs.
+   */
+  private finishStage(ctx:CanvasRenderingContext2D,age:number,map:{x:number;y:number;kx:number;ky:number}):void {
+   const sx=(x:number)=>(x-map.x)*map.kx,sy=(y:number)=>(y-map.y)*map.ky,h=this.layout.height,{groundY}=this.layout;
+   const rgba=(color:number,alpha:number)=>`rgba(${color>>16&255},${color>>8&255},${color&255},${alpha})`;
+   ctx.save();ctx.globalCompositeOperation='lighter';
+   for(const ray of keyLightRays(age,groundY,0,true)){ctx.fillStyle=rgba(ray.color,ray.alpha);ctx.beginPath();ctx.moveTo(sx(ray.x1),sy(ray.y1));ctx.lineTo(sx(ray.x2),sy(ray.y2));ctx.lineTo(sx(ray.x3),sy(ray.y3));ctx.closePath();ctx.fill();}
+   ctx.restore();ctx.save();ctx.globalCompositeOperation='source-atop';
+   const {center,stops,floor,color}=vignetteStops(age),rx=VIGNETTE_RADIUS/256*450*map.kx,ry=VIGNETTE_RADIUS/256*h*map.ky;
+   ctx.translate(sx(center.x*450),sy(center.y*h));ctx.scale(1,ry/rx);
+   const radial=ctx.createRadialGradient(0,0,0,0,0,rx);for(const [at,alpha]of stops)radial.addColorStop(at,rgba(color,alpha));
+   ctx.fillStyle=radial;ctx.fillRect(-4*rx,-4*rx,8*rx,8*rx);
+   ctx.setTransform(1,0,0,1,0,0);
+   const base=ctx.createLinearGradient(0,sy((center.y+40/256)*h),0,sy(h));base.addColorStop(0,rgba(color,0));base.addColorStop(1,rgba(color,floor));
+   ctx.fillStyle=base;ctx.fillRect(0,0,ctx.canvas.width,ctx.canvas.height);
+   ctx.restore();
+  }
+  private bakeGrade(age:number):void {
+   const matrix=gradeMatrix(eraGrade(age));
+   const keys=[landscapeTexture(age),foregroundTexture(age)];
+   for(const side of ['player','enemy'] as const){keys.push(baseTexture(age,side));for(const kind of [0,1,2] as const)keys.push(unitTexture(age,kind,side));}
+   for(const key of keys){
+    if(this.graded.has(key)||!this.textures.exists(key))continue;
+    this.graded.add(key);
+    const source=this.textures.get(key).source[0],image=source?.image as CanvasImageSource|undefined;
+    if(!source||!image||!source.width||!source.height)continue;
+    try{
+     const canvas=document.createElement('canvas');canvas.width=source.width;canvas.height=source.height;
+     const ctx=canvas.getContext('2d',{willReadFrequently:true});if(!ctx)continue;
+     ctx.drawImage(image,0,0);
+     const pixels=ctx.getImageData(0,0,canvas.width,canvas.height);gradePixels(pixels.data,matrix);ctx.putImageData(pixels,0,0);
+     if(key===landscapeTexture(age)){const w=landscapePlacement(450,this.layout.height,this.layout.groundY);this.finishStage(ctx,age,{x:w.x,y:w.y,kx:1/w.scale,ky:1/w.scale});}
+     if(key===foregroundTexture(age)){const f=foregroundPlacement(450,this.layout.height,this.layout.groundY);this.finishStage(ctx,age,{x:f.x,y:f.y,kx:canvas.width/f.width,ky:canvas.height/f.height});}
+     source.image=canvas;source.source=canvas;source.isCanvas=true;
+     const renderer=this.renderer;
+     if(renderer instanceof Phaser.Renderer.WebGL.WebGLRenderer&&source.glTexture)renderer.updateCanvasTexture(canvas,source.glTexture,source.flipY);
+    }catch{/* keep the ungraded, still-lit art */}
    }
-   this.vignette.setTexture(key).setPosition(0,0).setDisplaySize(450,this.layout.height).setVisible(true);
   }
   private placeLandscape():void {
    if(!this.sky)return;
@@ -176,11 +195,11 @@ export function mountBattlefield(element:HTMLElement,game:GamePort,onFrame:()=>v
   private syncEra():void {
    const p=game.profile,key=`${p.age}:${p.enemyAge}`;
    if(this.ages===key)return;this.ages=key;
+   this.bakeGrade(p.age);this.bakeGrade(p.enemyAge);
    const backdrop=landscapeTexture(p.age),foreground=foregroundTexture(p.age);
    if(this.textures.exists(backdrop))this.sky.setTexture(backdrop).clearTint();else this.sky.setTexture('__WHITE').setTint(tint(visualEra(p.age).ground));
    if(this.textures.exists(foreground))this.foreground.setTexture(foreground).setVisible(true).clearTint();else this.foreground.setVisible(false);
-   this.placeLandscape();this.placeForeground();this.placeVignette();
-   this.grade?.set(gradeMatrix(eraGrade(p.age)));
+   this.placeLandscape();this.placeForeground();
    this.playerBase?.destroy();this.enemyBase?.destroy();
    this.playerBase=this.createBase(p.age,'player');this.enemyBase=this.createBase(p.enemyAge,'enemy');
    this.basesLayer.add([this.playerBase,this.enemyBase]);
@@ -206,8 +225,8 @@ export function mountBattlefield(element:HTMLElement,game:GamePort,onFrame:()=>v
     for(const mark of unitFocusMarks(unit.side,unit.lane,unit.kind,unit.hitFlash,frozen)){g.fillStyle(mark.color,mark.alpha);g.fillEllipse(x+mark.x,y+mark.y,mark.width,mark.height);}
     g.fillStyle(0x243c42,perspective.shadowAlpha);g.fillEllipse(x+3,y+3,perspective.shadowWidth,perspective.shadowHeight);
     const halo=teamHalo(unit.side,unit.kind,perspective.scale,unit.hitFlash,frozen);
-    h.fillStyle(halo.color,halo.alpha*.45);h.fillEllipse(x+halo.x,y+halo.y,halo.rx*2,halo.ry*2);
-    h.fillStyle(halo.color,halo.alpha*.6);h.fillEllipse(x+halo.x,y+halo.y,halo.rx*1.2,halo.ry*1.1);
+    h.fillStyle(halo.color,halo.alpha*.45);h.fillEllipse(x+halo.x,y+halo.y,halo.rx*2,halo.ry*2,12);
+    h.fillStyle(halo.color,halo.alpha*.6);h.fillEllipse(x+halo.x,y+halo.y,halo.rx*1.2,halo.ry*1.1,10);
     g.fillStyle(0x2a4647,perspective.shadowAlpha*.82);g.fillEllipse(x+2,y+2,perspective.shadowWidth*.68,perspective.shadowHeight*.38);
     if(view.body instanceof Phaser.GameObjects.Image){
      if(!game.state.paused)view.body.setFrame(String(pose.frame));
@@ -263,14 +282,28 @@ export function mountBattlefield(element:HTMLElement,game:GamePort,onFrame:()=>v
     }
    }
   }
+  /** One cached white radial falloff; every soft light is a tinted quad of it instead of tessellated nested ellipses. */
+  private softTexture():string {
+   const key='soft-light';
+   if(!this.textures.exists(key)){
+    const texture=this.textures.createCanvas(key,128,128),ctx=texture?.getContext();
+    if(texture&&ctx){const g=ctx.createRadialGradient(64,64,0,64,64,64);g.addColorStop(0,'rgba(255,255,255,1)');g.addColorStop(.45,'rgba(255,255,255,.55)');g.addColorStop(1,'rgba(255,255,255,0)');ctx.fillStyle=g;ctx.fillRect(0,0,128,128);texture.refresh();}
+   }
+   return key;
+  }
+  private paintSoft(pool:Phaser.GameObjects.Container,marks:readonly GlowMark[],blend:Phaser.BlendModes):void {
+   const key=this.softTexture();
+   while(pool.length<marks.length)pool.add(this.add.image(0,0,key).setBlendMode(blend));
+   pool.list.forEach((child,i)=>{
+    const image=child as Phaser.GameObjects.Image,mark=marks[i];
+    if(!mark){image.setVisible(false);return;}
+    image.setVisible(true).setPosition(mark.x,mark.y).setDisplaySize(mark.rx*2,mark.ry*2).setTint(mark.color).setAlpha(Math.min(1,mark.alpha));
+   });
+  }
   private drawStageLight():void {
-   const r=this.rays,l=this.stageLight,s=game.state,age=game.profile.age;r.clear();l.clear();
-   for(const ray of keyLightRays(age,this.layout.groundY,this.clock,this.reduce)){r.fillStyle(ray.color,ray.alpha);r.fillTriangle(ray.x1,ray.y1,ray.x2,ray.y2,ray.x3,ray.y3);}
-   const m=this.mist;m.clear();
-   for(const mark of foregroundMist(age,this.layout.groundY,this.layout.height,this.clock,this.reduce))
-    for(const [scale,opacity]of [[1,.5],[.6,.7]] as const){m.fillStyle(mark.color,mark.alpha*opacity);m.fillEllipse(mark.x,mark.y,mark.rx*2*scale,mark.ry*2*scale);}
-   for(const mark of stageGlow(age,this.layout.groundY,this.clock,this.reduce,s.playerHp/Math.max(1,s.playerMaxHp),s.enemyHp/Math.max(1,s.enemyMaxHp)))
-    for(const [scale,opacity]of [[1,.3],[.66,.4],[.36,.5]] as const){l.fillStyle(mark.color,mark.alpha*opacity);l.fillEllipse(mark.x,mark.y,mark.rx*2*scale,mark.ry*2*scale);}
+   const s=game.state,age=game.profile.age;
+   this.paintSoft(this.mist,foregroundMist(age,this.layout.groundY,this.layout.height,this.clock,this.reduce).map(m=>({...m,alpha:m.alpha*1.1})),Phaser.BlendModes.NORMAL);
+   this.paintSoft(this.stageLight,stageGlow(age,this.layout.groundY,this.clock,this.reduce,s.playerHp/Math.max(1,s.playerMaxHp),s.enemyHp/Math.max(1,s.enemyMaxHp)).map(m=>({...m,alpha:m.alpha*1.1})),Phaser.BlendModes.ADD);
   }
   private flare(x:number,y:number,radius:number,color:number,life=.22):void {
    if(this.reduce)return;

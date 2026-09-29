@@ -22,12 +22,12 @@ export interface GlowMark {x:number;y:number;rx:number;ry:number;color:number;al
 export interface RayMark {x1:number;y1:number;x2:number;y2:number;x3:number;y3:number;color:number;alpha:number}
 
 const GRADES:readonly EraGrade[]=Object.freeze(([
-  {saturation:1.32,contrast:1.2,gain:[1.05,1.02,.95],lift:[4,6,12],vignette:{inner:.34,outer:.86,alpha:.58,floor:.5,color:0x0d1a1f},key:{x:196,rise:34,color:0xffb866,rays:5,alpha:.04},stage:{color:0xffc987,alpha:.07}},
-  {saturation:1.3,contrast:1.18,gain:[1.07,1.02,.93],lift:[5,5,12],vignette:{inner:.34,outer:.86,alpha:.55,floor:.5,color:0x151a1c},key:{x:214,rise:58,color:0xffbe70,rays:5,alpha:.04},stage:{color:0xffd08c,alpha:.07}},
-  {saturation:1.26,contrast:1.18,gain:[1.04,1.02,.97],lift:[3,6,13],vignette:{inner:.36,outer:.88,alpha:.52,floor:.46,color:0x0e1a22},key:{x:236,rise:62,color:0xffcf8a,rays:4,alpha:.04},stage:{color:0xffd49a,alpha:.07}},
-  {saturation:1.34,contrast:1.22,gain:[1.08,1,.94],lift:[6,4,12],vignette:{inner:.33,outer:.85,alpha:.6,floor:.52,color:0x160f1c},key:{x:226,rise:86,color:0xffae6c,rays:6,alpha:.04},stage:{color:0xffbf85,alpha:.07}},
-  {saturation:1.22,contrast:1.2,gain:[1.03,1.02,.98],lift:[3,6,12],vignette:{inner:.35,outer:.87,alpha:.56,floor:.5,color:0x0c1719},key:{x:208,rise:106,color:0xffc98a,rays:4,alpha:.04},stage:{color:0xffd9a3,alpha:.07}},
-  {saturation:1.3,contrast:1.24,gain:[.98,1.02,1.08],lift:[4,6,16],vignette:{inner:.32,outer:.84,alpha:.62,floor:.54,color:0x080c1e},key:{x:225,rise:70,color:0x9fe9ff,rays:5,alpha:.04},stage:{color:0xa9eaff,alpha:.07}},
+  {saturation:1.32,contrast:1.2,gain:[1.05,1.02,.95],lift:[4,6,12],vignette:{inner:.62,outer:.98,alpha:.58,floor:.5,color:0x0d1a1f},key:{x:196,rise:34,color:0xffb866,rays:5,alpha:.04},stage:{color:0xffc987,alpha:.07}},
+  {saturation:1.3,contrast:1.18,gain:[1.07,1.02,.93],lift:[5,5,12],vignette:{inner:.62,outer:.98,alpha:.55,floor:.5,color:0x151a1c},key:{x:214,rise:58,color:0xffbe70,rays:5,alpha:.04},stage:{color:0xffd08c,alpha:.07}},
+  {saturation:1.26,contrast:1.18,gain:[1.04,1.02,.97],lift:[3,6,13],vignette:{inner:.62,outer:.98,alpha:.52,floor:.46,color:0x0e1a22},key:{x:236,rise:62,color:0xffcf8a,rays:4,alpha:.04},stage:{color:0xffd49a,alpha:.07}},
+  {saturation:1.34,contrast:1.22,gain:[1.08,1,.94],lift:[6,4,12],vignette:{inner:.62,outer:.98,alpha:.6,floor:.52,color:0x160f1c},key:{x:226,rise:86,color:0xffae6c,rays:6,alpha:.04},stage:{color:0xffbf85,alpha:.07}},
+  {saturation:1.22,contrast:1.2,gain:[1.03,1.02,.98],lift:[3,6,12],vignette:{inner:.62,outer:.98,alpha:.56,floor:.5,color:0x0c1719},key:{x:208,rise:106,color:0xffc98a,rays:4,alpha:.04},stage:{color:0xffd9a3,alpha:.07}},
+  {saturation:1.3,contrast:1.24,gain:[.98,1.02,1.08],lift:[4,6,16],vignette:{inner:.62,outer:.98,alpha:.62,floor:.54,color:0x080c1e},key:{x:225,rise:70,color:0x9fe9ff,rays:5,alpha:.04},stage:{color:0xa9eaff,alpha:.07}},
 ] as EraGrade[]).map(grade=>Object.freeze(grade)));
 
 const scene=(age:number)=>Number.isInteger(age)&&age>=0&&age<6?age:0;
@@ -60,10 +60,23 @@ export function applyGrade(matrix:readonly number[],rgb:readonly [number,number,
   return [0,1,2].map(i=>clamp(matrix[i*5]*r+matrix[i*5+1]*g+matrix[i*5+2]*b+matrix[i*5+4])) as [number,number,number];
 }
 
+/** Grades unpremultiplied RGBA pixels in place, once per static texture; transparent pixels are skipped. */
+export function gradePixels(data:Uint8ClampedArray,matrix:readonly number[]):void {
+  const [a,b,c,,d,e,f,g,,h,i,j,k,,l]=matrix;
+  for(let p=0;p<data.length;p+=4){
+    if(data[p+3]===0)continue;
+    const r=data[p],gr=data[p+1],bl=data[p+2];
+    data[p]=a*r+b*gr+c*bl+d;data[p+1]=e*r+f*gr+g*bl+h;data[p+2]=i*r+j*gr+k*bl+l;
+  }
+}
+
+/** Pixel radius of the 256² vignette texture's gradient; the stretched texture spans the whole arena. */
+export const VIGNETTE_RADIUS=181;
+
 /** Radial stops for the stage vignette. The lane is the brightest band; edges and the empty foreground recede. */
 export function vignetteStops(age:number):{center:{x:number;y:number};stops:readonly [number,number][];floor:number;color:number} {
   const v=eraGrade(age).vignette;
-  return {center:{x:.5,y:.6},stops:[[0,0],[v.inner,0],[(v.inner+v.outer)/2,v.alpha*.42],[v.outer,v.alpha*.82],[1,v.alpha]],floor:v.floor,color:v.color};
+  return {center:{x:.5,y:.64},stops:[[0,0],[v.inner,0],[(v.inner+v.outer)/2,v.alpha*.42],[v.outer,v.alpha*.82],[1,v.alpha]],floor:v.floor,color:v.color};
 }
 
 /** God rays from the chapter key light, fanning down across the lane. Additive, low alpha, slow breathing. */
@@ -123,4 +136,11 @@ export function foregroundMist(age:number,groundY:number,height:number,time:numb
     y:top+depth*(.2+i*.2)+Math.sin(t*.3+i)*2,
     rx:120+i*18,ry:9+i*3,color,alpha:.085+i*.012,
   }));
+}
+
+/** Vignette opacity at a normalized arena point, mirroring the canvas gradient; used to prove outposts stay clear. */
+export function vignetteAlphaAt(age:number,u:number,v:number):number {
+  const {center,stops}=vignetteStops(age),t=Math.hypot((u-center.x)*256,(v-center.y)*256)/VIGNETTE_RADIUS;
+  for(let i=1;i<stops.length;i++){const [p0,a0]=stops[i-1],[p1,a1]=stops[i];if(t<=p1)return t<=p0?a0:a0+(a1-a0)*(t-p0)/(p1-p0);}
+  return stops.at(-1)![1];
 }

@@ -119,6 +119,6 @@ Seventeen connected refinements are now implemented toward forty. No scheduler; 
 
 
 ## 18 — Cinematic grade and practical light
-Added a per-chapter camera colour grade (WebGL only), a stage vignette, key-light rays, cool/ember team beacons, per-troop additive team halos, lit projectiles and impact flares, and foreground mist. Unthresholded bloom was tried and rejected because it washed out the frame. Nine new tests; full suite 261/261, build passed. This is the first batch with rendered-browser evidence (headless Chromium, all six chapters, zero page errors). Details: [18-cinematic-grade.md](18-cinematic-grade.md).
+Added a per-chapter colour grade, stage vignette and key-light rays baked into the static art, cool/ember team beacons, per-troop additive team halos, lit projectiles and impact flares, and foreground mist. A devil's-advocate review rejected bloom, a camera post pass (−20% fps) and per-frame vignette layers (they darkened the outposts), so the finished pass costs ~10% fps under software GL. Eleven new tests; full suite 263/263, build passed. This is the first batch with rendered-browser evidence (headless Chromium, all six chapters, zero page errors). Details: [18-cinematic-grade.md](18-cinematic-grade.md).
 
 Eighteen connected refinements are now implemented toward forty. Real-device and Safari acceptance remain open.

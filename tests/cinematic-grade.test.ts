@@ -1,7 +1,7 @@
 import test from 'node:test';
 import assert from 'node:assert/strict';
 import {readFileSync} from 'node:fs';
-import {applyGrade,eraGrade,foregroundMist,gradeMatrix,keyLightRays,projectileGlow,stageGlow,teamHalo,vignetteStops} from '../src/view/cinematic-grade.ts';
+import {applyGrade,eraGrade,foregroundMist,gradeMatrix,gradePixels,vignetteAlphaAt,keyLightRays,projectileGlow,stageGlow,teamHalo,vignetteStops} from '../src/view/cinematic-grade.ts';
 
 const luma=([r,g,b]:readonly number[])=>.2126*r+.7152*g+.0722*b;
 const chroma=(c:readonly number[])=>Math.max(...c)-Math.min(...c);
@@ -92,12 +92,31 @@ test('foreground mist stays below the lane and disappears when there is no foreg
  assert.deepEqual(foregroundMist(0,280,300,0,false),[]);
 });
 
-test('battlefield applies the grade only on WebGL and keeps light layers additive and behind the HUD bars',()=>{
+test('outposts and the lane stay outside the vignette while corners recede',()=>{
+ for(let age=0;age<6;age++){
+  for(const u of [39/450,.5,411/450])assert.equal(vignetteAlphaAt(age,u,.66),0,`chapter ${age} darkens the fight at u=${u.toFixed(2)}`);
+  assert.ok(vignetteAlphaAt(age,0,0)>=.3&&vignetteAlphaAt(age,1,1)>=.3,`chapter ${age} corners must recede`);
+ }
+});
+
+test('baked pixel grade matches the matrix and leaves transparency alone',()=>{
+ const m=gradeMatrix(eraGrade(3)),data=new Uint8ClampedArray([150,132,112,255, 9,9,9,0, 40,44,48,128]);
+ gradePixels(data,m);
+ assert.deepEqual([...data.slice(0,3)],applyGrade(m,[150,132,112]).map(Math.round));
+ assert.deepEqual([...data.slice(4,8)],[9,9,9,0]);
+ assert.equal(data[11],128,'alpha is never graded');
+});
+
+test('battlefield bakes the grade into static art instead of paying a per-frame post pass',()=>{
  const source=readFileSync(new URL('../src/view/battlefield.ts',import.meta.url),'utf8');
- assert.match(source,/renderer\.type===Phaser\.WEBGL/);
- assert.match(source,/postFX\.addColorMatrix\(\)/);
- assert.doesNotMatch(source,/addBloom/,'unthresholded bloom washes the whole frame');
- for(const layer of ['rays','stageLight','halos','glow'])assert.match(source,new RegExp(`this\\.${layer}=this\\.add\\.graphics\\(\\)\\.setBlendMode\\(Phaser\\.BlendModes\\.ADD\\)`));
+ assert.doesNotMatch(source,/postFX|addBloom/,'full-screen post passes cost ~20% frame rate on software GL');
+ assert.match(source,/gradePixels\(pixels\.data,matrix\)/);
+ assert.match(source,/catch\{\/\* keep the ungraded/,'a tainted canvas must fall back, not crash');
+ assert.match(source,/this\.bakeGrade\(p\.age\);this\.bakeGrade\(p\.enemyAge\)/);
+ assert.match(source,/globalCompositeOperation='source-atop'/,'baked vignette must not paint into transparent foreground pixels');
+ assert.match(source,/keyLightRays\(age,groundY,0,true\)/,'baked rays use the still, reduced-motion composition');
+ assert.doesNotMatch(source,/this\.vignette|this\.rays/,'no full-screen blended layers per frame');
+ for(const layer of ['halos','glow'])assert.match(source,new RegExp(`this\\.${layer}=this\\.add\\.graphics\\(\\)\\.setBlendMode\\(Phaser\\.BlendModes\\.ADD\\)`));
  assert.ok(source.indexOf('this.glow=this.add.graphics()')<source.indexOf('this.bars=this.add.graphics()'),'health bars must draw above glow');
  assert.match(source,/private flare\([^)]*\):void \{\n\s+if\(this\.reduce\)return;/,'reduced motion must not flash');
  assert.match(source,/if\(!this\.reduce\)\{this\.cameras\.main\.shake\(100,\.0015\);this\.cameras\.main\.flash/);
