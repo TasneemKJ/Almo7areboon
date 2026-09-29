@@ -1,0 +1,158 @@
+[
+  {
+    "name": "pathkeeper",
+    "frames": 6,
+    "frameWidth": 256,
+    "frameHeight": 192,
+    "footBaseline": 181,
+    "sharedScale": 0.34949494949494947,
+    "sourceBounds": [
+      {
+        "left": 61,
+        "right": 454,
+        "top": 11,
+        "bottom": 505,
+        "anchor": 227
+      },
+      {
+        "left": 560,
+        "right": 967,
+        "top": 12,
+        "bottom": 503,
+        "anchor": 761
+      },
+      {
+        "left": 1100,
+        "right": 1492,
+        "top": 15,
+        "bottom": 506,
+        "anchor": 1294.5
+      },
+      {
+        "left": 43,
+        "right": 467,
+        "top": 519,
+        "bottom": 1005,
+        "anchor": 251.5
+      },
+      {
+        "left": 544,
+        "right": 925,
+        "top": 512,
+        "bottom": 1005,
+        "anchor": 734.5
+      },
+      {
+        "left": 970,
+        "right": 1532,
+        "top": 576,
+        "bottom": 1003,
+        "anchor": 1197.5
+      }
+    ]
+  },
+  {
+    "name": "thrower",
+    "frames": 6,
+    "frameWidth": 256,
+    "frameHeight": 192,
+    "footBaseline": 181,
+    "sharedScale": 0.3537832310838446,
+    "sourceBounds": [
+      {
+        "left": 77,
+        "right": 425,
+        "top": 16,
+        "bottom": 504,
+        "anchor": 269.5
+      },
+      {
+        "left": 582,
+        "right": 977,
+        "top": 16,
+        "bottom": 499,
+        "anchor": 776
+      },
+      {
+        "left": 1104,
+        "right": 1497,
+        "top": 15,
+        "bottom": 501,
+        "anchor": 1302.5
+      },
+      {
+        "left": 49,
+        "right": 486,
+        "top": 520,
+        "bottom": 996,
+        "anchor": 271
+      },
+      {
+        "left": 556,
+        "right": 1024,
+        "top": 525,
+        "bottom": 996,
+        "anchor": 775.5
+      },
+      {
+        "left": 1042,
+        "right": 1516,
+        "top": 523,
+        "bottom": 996,
+        "anchor": 1281.5
+      }
+    ]
+  },
+  {
+    "name": "rider",
+    "frames": 6,
+    "frameWidth": 256,
+    "frameHeight": 192,
+    "footBaseline": 181,
+    "sharedScale": 0.3619246861924686,
+    "sourceBounds": [
+      {
+        "left": 51,
+        "right": 487,
+        "top": 15,
+        "bottom": 492,
+        "anchor": 248
+      },
+      {
+        "left": 548,
+        "right": 999,
+        "top": 16,
+        "bottom": 493,
+        "anchor": 761
+      },
+      {
+        "left": 1066,
+        "right": 1491,
+        "top": 16,
+        "bottom": 492,
+        "anchor": 1266.5
+      },
+      {
+        "left": 33,
+        "right": 491,
+        "top": 514,
+        "bottom": 972,
+        "anchor": 238
+      },
+      {
+        "left": 559,
+        "right": 1003,
+        "top": 502,
+        "bottom": 973,
+        "anchor": 755.5
+      },
+      {
+        "left": 1036,
+        "right": 1526,
+        "top": 518,
+        "bottom": 974,
+        "anchor": 1254.5
+      }
+    ]
+  }
+]

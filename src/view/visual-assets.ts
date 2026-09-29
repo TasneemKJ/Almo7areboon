@@ -3,16 +3,24 @@ import type {Side,UnitKind} from '../game/types.ts';
 const loaderSvg=(svg:string)=>`data:image/svg+xml;base64,${btoa(svg)}`;
 import {unitSheetSvg} from './unit-illustrations.ts';
 import {baseSvg,foregroundSvg,landscapeSvg} from './world-illustrations.ts';
-export const unitTexture=(age:number,kind:UnitKind,side:Side)=>`army-${age}-${kind}-${side}`;
+// Painted chapter shares one atlas per role; team halos and mirroring distinguish sides.
+export const unitTexture=(age:number,kind:UnitKind,side:Side)=>`army-${age}-${kind}-${age===0?'player':side}`;
 export const baseTexture=(age:number,side:Side)=>`base-${age}-${side}`;
 export const landscapeTexture=(age:number)=>`landscape-${age}`;
 export const foregroundTexture=(age:number)=>`foreground-${age}`;
-export interface VisualAsset {key:string;url:string;width:number;height:number;frames?:number}
+export interface VisualAsset {key:string;url:string;width:number;height:number;frames?:number;format?:'image'}
 let cached:readonly VisualAsset[]|undefined;
 export function visualAssets():readonly VisualAsset[] {
  if(cached)return cached;
  const entries:VisualAsset[]=[];
  for(let age=0;age<6;age++){
+  if(age===0){
+   entries.push({key:landscapeTexture(age),url:'/art/storybook/village.webp',width:900,height:1000,format:'image'});
+   entries.push({key:foregroundTexture(age),url:loaderSvg('<svg xmlns="http://www.w3.org/2000/svg" width="1" height="1"></svg>'),width:1,height:1});
+   for(const side of ['player','enemy'] as const)entries.push({key:baseTexture(age,side),url:'/art/storybook/shelter.webp',width:256,height:256,format:'image'});
+   for(const kind of [0,1,2] as const)entries.push({key:unitTexture(age,kind,'player'),url:`/art/storybook/${['pathkeeper','thrower','rider'][kind]}-strip.webp`,width:1536,height:192,frames:6,format:'image'});
+   continue;
+  }
   entries.push({key:landscapeTexture(age),url:loaderSvg(landscapeSvg(age,false)),width:900,height:1000});
   entries.push({key:foregroundTexture(age),url:loaderSvg(foregroundSvg(age)),width:450,height:220});
   for(const side of ['player','enemy'] as const){
