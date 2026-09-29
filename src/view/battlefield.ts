@@ -6,6 +6,7 @@ import {duskAtmosphereFrame,paintDuskAtmosphere} from './dusk-atmosphere.ts';
 import {lightingHierarchyFrame,paintLightingHierarchy} from './lighting-hierarchy.ts';
 import {baseDamageFrame,baseDamagePalette,baseDamageStage} from './base-damage.ts';
 import {attackCueFrame,hitReaction} from './combat-choreography.ts';
+import {characterGesture} from './character-gesture.ts';
 import {healthOffset,lanePresentation,projectileLift,troopScale} from './lane-perspective.ts';
 import {unitFocusMarks} from './silhouette-focus.ts';
 import {visualAssets,baseTexture,foregroundTexture,unitTexture,landscapeTexture} from './visual-assets.ts';
@@ -154,19 +155,21 @@ export function mountBattlefield(element:HTMLElement,game:GamePort,onFrame:()=>v
     const x=xAt(unit.x),y=this.yAt(unit.lane),frozen=unit.side==='enemy'&&game.state.freezeUntil>game.state.time;
     if(!view){const body=this.sprite(unit.age,unit.kind,unit.side);this.armyLayer.add(body);view={body,x,y,side:unit.side,dustAt:0};this.units.set(unit.id,view);}
     const moving=Math.abs(view.x-x)>.001,perspective=lanePresentation(unit.lane,unit.kind),scale=troopScale(unit.kind,unit.lane);
+    const direction=unit.side==='player'?1:-1;
     const pose=troopPose(game.state.time+unit.id*.17,moving,unit.attacking,this.reduce||frozen);
+    const gesture=characterGesture(unit.kind,game.state.time+unit.id*.17,moving,unit.attacking,this.reduce||frozen);
     const recoil=hitReaction(unit.hitFlash,unit.side,unit.kind,this.reduce||frozen);
     for(const mark of unitFocusMarks(unit.side,unit.lane,unit.kind,unit.hitFlash,frozen)){g.fillStyle(mark.color,mark.alpha);g.fillEllipse(x+mark.x,y+mark.y,mark.width,mark.height);}
     g.fillStyle(0x243c42,perspective.shadowAlpha);g.fillEllipse(x+3,y+3,perspective.shadowWidth,perspective.shadowHeight);
     g.fillStyle(0x2a4647,perspective.shadowAlpha*.82);g.fillEllipse(x+2,y+2,perspective.shadowWidth*.68,perspective.shadowHeight*.38);
     if(view.body instanceof Phaser.GameObjects.Image){
      if(!game.state.paused)view.body.setFrame(String(pose.frame));
-     view.body.setAngle((unit.side==='player'?pose.angle:-pose.angle)+recoil.angle);
-     view.body.setScale(scale).setFlipX(unit.side==='enemy');
+     view.body.setAngle(pose.angle*direction+gesture.angle*direction+recoil.angle);
+     view.body.setScale(scale*gesture.sx,scale*gesture.sy).setFlipX(unit.side==='enemy');
      if(unit.hitFlash>0)view.body.setTintFill(0xfff9db);else if(frozen)view.body.setTint(0x91e5f0);else view.body.clearTint();
-     view.body.setPosition(x+recoil.x,y-(game.state.paused?0:pose.lift)+recoil.y);
+     view.body.setPosition(x+recoil.x+gesture.forward*direction,y-(game.state.paused?0:pose.lift)-gesture.lift+recoil.y);
     }else{
-     view.body.setPosition(x+recoil.x,y+recoil.y).setScale((unit.side==='player'?1:-1)*perspective.scale,perspective.scale).setAngle(recoil.angle);
+     view.body.setPosition(x+recoil.x+gesture.forward*direction,y-gesture.lift+recoil.y).setScale(direction*perspective.scale*gesture.sx,perspective.scale*gesture.sy).setAngle(pose.angle*direction+gesture.angle*direction+recoil.angle);
      drawTroop(view.body,unit.age,unit.kind,unit.side,this.reduce||frozen?0:game.state.time,unit.attacking,unit.hitFlash>0);
     }
     view.body.setDepth(y);
