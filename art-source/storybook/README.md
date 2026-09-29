@@ -2,6 +2,8 @@
 
 Art direction requested by the user, 2026-09-29: tactile picture-book ink and gouache, round bellies and short limbs, crooked Levantine limestone architecture, warm lanterns against uneasy indigo skies. Expressions are peculiar and endearing. No named artist or commercial asset pack was used.
 
+The follow-up shape-language pass repainted the village and shelter after the user reiterated this direction. The earlier environment leaned too realistic. The shipped revision uses fewer, plumper cottages, broader opaque paint shapes, stronger imperfect ink outlines and more exaggerated crooked architecture. Display lettering and card surfaces now echo a printed storybook. Gameplay values keep the existing readable sans-serif typography.
+
 ## Source and production
 
 Five original assets were generated with the built-in image generation tool: `village.webp`, `shelter.webp`, and three six-pose character sheets (`pathkeeper`, `thrower`, `rider`). These are high-quality WebP copies of the generated source images. Discarded realistic and thin-character drafts are not shipped.
