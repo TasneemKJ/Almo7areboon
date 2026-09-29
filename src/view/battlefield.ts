@@ -437,7 +437,8 @@ export function mountBattlefield(element:HTMLElement,game:GamePort,onFrame:()=>v
   private healthBars():void {
    const g=this.bars,s=game.state;g.clear();
    for(const [i,x,hp,max,color]of [[0,39,s.playerHp,s.playerMaxHp,0x68c9ee],[1,411,s.enemyHp,s.enemyMaxHp,0xf19d75]]){
-    const y=this.layout.groundY-85,fill=59*Math.max(0,Math.min(1,hp/max));
+    const age=i===0?game.profile.age:game.profile.enemyAge;
+    const y=this.layout.groundY-(age===0?65:85),fill=59*Math.max(0,Math.min(1,hp/max));
     g.fillStyle(0x132d3c,.88);g.fillRoundedRect(x-33,y-4,66,19,7);
     g.lineStyle(1,0xd2d9ba,.5);g.strokeRoundedRect(x-33,y-4,66,19,7);
     g.fillStyle(0x5a7477,1);g.fillRoundedRect(x-30,y+7,60,5,2);

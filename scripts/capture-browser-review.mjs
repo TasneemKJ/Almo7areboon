@@ -81,7 +81,7 @@ try {
  for(const name of ['Pathkeeper','Thrower','Dino Rider'])await army.getByRole('button',{name:new RegExp(`Deploy ${name}`)}).click();
  await army.waitForTimeout(8000);
  await army.screenshot({path:`${output}/06-all-roles-fixture-390.png`});
- await army.waitForTimeout(7000);
+ await army.waitForTimeout(20000);
  await army.screenshot({path:`${output}/07-clash-fixture-390.png`});
  await showcase.close();
  assert.deepEqual(errors,[],`browser errors: ${errors.join('; ')}`);
