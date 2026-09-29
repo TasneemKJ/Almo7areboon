@@ -180,10 +180,10 @@ svg,img { user-select:none; -webkit-user-select:none; }
 .skill-detail { display:flex; align-items:center; gap:13px; padding:14px 12px; border:1px solid #b3c0ad; border-radius:13px; background:#faf4df; box-shadow:0 3px #bdc5af; }
 .skill-art { width:66px; height:77px; display:grid; place-items:center; flex-shrink:0; border:1px solid #5e827f; border-radius:14px; box-shadow:inset 0 1px #ffeedf77,0 3px #bdc3a8; }
 .skill-art .icon { width:46px; height:46px; }
-.skill-detail small { font-size:8px; letter-spacing:1.5px; color:#6a8077; }
+.skill-detail small { font-size:8px; letter-spacing:1.5px; color:#4f6559; }
 .skill-detail h3 { margin:4px 0; font-size:21px; }
 .skill-detail p { margin:6px 0; color:var(--muted); font-weight:500; font-size:12px; line-height:1.5; }
-.skill-rule { font-size:8px; color:#59716e; letter-spacing:.6px; }
+.skill-rule { font-size:8px; color:#4f6559; letter-spacing:.6px; }
 .skill-note { display:flex; align-items:center; gap:11px; margin:22px 3px; font-size:12px; line-height:1.6; font-weight:500; color:var(--muted); }
 .secondary-screen>.big-button { width:100%; }
 .toast { position:absolute; bottom:calc(79px + env(safe-area-inset-bottom,0px)); left:15px; right:15px; z-index:20; border:1px solid #c9d3af; border-radius:12px; padding:13px; background:#153b4cf5; color:#fff0c8; font-size:12px; font-weight:500; line-height:1.45; box-shadow:0 4px 16px #14374666; text-align:center; pointer-events:none; opacity:0; transform:translateY(12px); transition:opacity .18s,transform .18s; }
@@ -202,7 +202,7 @@ svg,img { user-select:none; -webkit-user-select:none; }
 .result-dialog h2 { color:#2e695d; font-size:39px; letter-spacing:1px; }
 .result-dialog:has(.defeat) h2 { color:#51697c; }
 .reward { margin:18px 0; padding:14px; border:1px solid #c3c8aa; border-radius:12px; background:#e7ead2; }
-.reward>span { display:block; font-size:9px; letter-spacing:1.6px; color:#5f7669; }
+.reward>span { display:block; font-size:9px; letter-spacing:1.6px; color:#4f6559; }
 .reward strong { display:flex; align-items:center; justify-content:center; gap:8px; font-size:29px; margin:9px 0; }
 .reward .icon { width:31px; height:31px; }
 .reward small { color:var(--muted); font-size:10px; line-height:1.4; font-weight:500; }
@@ -216,7 +216,7 @@ svg,img { user-select:none; -webkit-user-select:none; }
 .backup-actions button { font-size:11px; padding:9px 4px; }
 .help-box { text-align:left; }
 .help-box p { color:var(--muted); font-weight:500; font-size:12px; line-height:1.6; }
-.help-box small { display:block; font-size:10px; line-height:1.5; color:#5c746f; }
+.help-box small { display:block; font-size:10px; line-height:1.5; color:#4f6559; }
 .save-note { border-top:1px solid #d4d7bd; margin-top:19px; padding-top:13px; font-size:10px; line-height:1.5; }
 .quest-list { display:grid; gap:17px; margin:22px 0 9px; }
 .quest-row { display:flex; gap:12px; align-items:center; text-align:left; }
