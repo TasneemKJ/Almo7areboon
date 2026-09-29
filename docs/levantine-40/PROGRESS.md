@@ -57,3 +57,9 @@ Applied selective masonry, pottery, banner, textile and equipment detail under a
 Added a separate depth layer between distant land and the focal settlement using atmospheric perspective, detail falloff and rhythmic repetition. Small distant homes/cypress/haze remain low-weight; banners, torches and chapter landmarks grow stronger toward the focal area. Four regressions RED→GREEN; combined suite 197/197 and production build passed; source-art QA remains zero-error. Details: [07-cinematic-depth.md](07-cinematic-depth.md).
 
 Seven connected refinements are now implemented toward forty. Asset boards, tests and per-chapter counts are evidence, not extra iterations. Browser/mobile acceptance and independent review remain outstanding. No scheduler.
+
+
+## 08 — Simultaneous contrast for troop silhouettes
+Added two bounded, low-alpha faction-tinted focus fields behind each active troop using the existing shadow Graphics layer. Lane/role scale affects field geometry; hit flash strengthens it within an alpha cap; freeze stays cool. The approach uses simultaneous contrast rather than outlines so increasingly detailed scenery does not swallow playable figures. Five regressions RED→GREEN; full suite 202/202 and production build passed. Details: [08-silhouette-focus.md](08-silhouette-focus.md).
+
+Eight connected refinements are now implemented toward forty. No scheduler; browser/mobile acceptance remains open.
