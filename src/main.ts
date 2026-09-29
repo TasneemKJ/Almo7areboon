@@ -1,5 +1,6 @@
 import './style.css';
 import './ui/continuation.css';
+import './ui/material-language.css';
 import { Game } from './game/simulation.ts';
 import { ERAS, foodRate, unlockCost, QUESTS } from './game/data.ts';
 import { loadProfileWithStatus, saveProfile, MAX_SAVE_CHARS } from './game/save.ts';
