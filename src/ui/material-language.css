@@ -123,7 +123,6 @@
  .screen-heading h2::after { margin-top:6px; width:48px; }
 }
 
-
 /* Collection rarity uses hierarchy, not motion: stronger framing as scarcity rises. */
 .collection-card[data-rarity=common] { --rarity-edge:#789a78; }
 .collection-card[data-rarity=rare] { --rarity-edge:#6e9ecb; }
