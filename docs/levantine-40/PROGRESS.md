@@ -126,3 +126,7 @@ Eighteen connected refinements are now implemented toward forty. Real-device and
 
 ## 19 — Combat feedback punch and chapter-aware HUD
 A playtest audit of #18 found skill banners being evicted by damage numbers in large fights, a hairline-only freeze marker, small damage numbers, chapter-blind deploy cards, and a pale road in bright chapters. All five are fixed; five new tests, 268/268, build passed. Details: [19-feedback-punch.md](19-feedback-punch.md).
+
+
+## 20 — Living sky
+Parallax cloud banks, twinkling stars and a rare shooting star now fill the upper sky that #24 exposed, all kept above the skyline and drawn as pooled soft quads. Five new tests, 273/273, build passed. Details: [20-living-sky.md](20-living-sky.md).

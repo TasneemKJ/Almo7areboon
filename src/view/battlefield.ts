@@ -12,6 +12,7 @@ import {healthOffset,lanePresentation,projectileLift,troopScale} from './lane-pe
 import {unitFocusMarks} from './silhouette-focus.ts';
 import {visualAssets,baseTexture,foregroundTexture,unitTexture,landscapeTexture} from './visual-assets.ts';
 import {projectileGeometry,paintProjectile,projectileStyle} from './projectile-art.ts';
+import {cloudFrame,shootingStar,starFrame} from './living-sky.ts';
 import {VIGNETTE_RADIUS,eraGrade,gradeMatrix,gradePixels,keyLightRays,projectileGlow,stageGlow,teamHalo,vignetteStops,foregroundMist,type GlowMark} from './cinematic-grade.ts';
 import {DeathVisuals} from './death-visuals.ts';
 import {TROOP_FRAME} from './unit-illustrations.ts';
@@ -54,6 +55,8 @@ export function mountBattlefield(element:HTMLElement,game:GamePort,onFrame:()=>v
   private halos!:Phaser.GameObjects.Graphics;
   private glow!:Phaser.GameObjects.Graphics;
   private mist!:Phaser.GameObjects.Container;
+  private clouds!:Phaser.GameObjects.Container;
+  private stars!:Phaser.GameObjects.Graphics;
   private graded=new Set<string>();
   private flares:Flare[]=[];
   private playerBase!:ImageOrFallback;
@@ -90,6 +93,8 @@ export function mountBattlefield(element:HTMLElement,game:GamePort,onFrame:()=>v
    this.world=this.add.container();
    this.sky=this.add.image(0,0,this.textures.exists(landscapeTexture(game.profile.age))?landscapeTexture(game.profile.age):'__WHITE').setOrigin(0);
    this.world.add(this.sky);
+   this.stars=this.add.graphics().setBlendMode(Phaser.BlendModes.ADD);this.world.add(this.stars);
+   this.clouds=this.add.container();this.world.add(this.clouds);
    this.ambience=this.add.graphics();this.world.add(this.ambience);
    this.basesLayer=this.add.container();this.world.add(this.basesLayer);
    this.stageLight=this.add.container();this.world.add(this.stageLight);
@@ -302,7 +307,11 @@ export function mountBattlefield(element:HTMLElement,game:GamePort,onFrame:()=>v
    });
   }
   private drawStageLight():void {
-   const s=game.state,age=game.profile.age;
+   const s=game.state,age=game.profile.age,st=this.stars;st.clear();
+   for(const star of starFrame(age,this.clock,this.layout.groundY,this.reduce)){st.fillStyle(0xfff6e0,star.alpha*.25);st.fillCircle(star.x,star.y,star.size*2.4);st.fillStyle(0xfffaf0,star.alpha);st.fillCircle(star.x,star.y,star.size*.6);}
+   const streak=shootingStar(age,this.clock,this.layout.groundY,this.reduce);
+   if(streak){st.lineStyle(2.2,0xfff4d6,streak.alpha*.3);st.lineBetween(streak.x1,streak.y1,streak.x2,streak.y2);st.lineStyle(.9,0xffffff,streak.alpha);st.lineBetween(streak.x1+(streak.x2-streak.x1)*.4,streak.y1+(streak.y2-streak.y1)*.4,streak.x2,streak.y2);st.fillStyle(0xffffff,streak.alpha);st.fillCircle(streak.x2,streak.y2,1.1);}
+   this.paintSoft(this.clouds,cloudFrame(age,this.clock,this.layout.groundY,this.reduce),Phaser.BlendModes.NORMAL);
    this.paintSoft(this.mist,foregroundMist(age,this.layout.groundY,this.layout.height,this.clock,this.reduce).map(m=>({...m,alpha:m.alpha*1.1})),Phaser.BlendModes.NORMAL);
    this.paintSoft(this.stageLight,stageGlow(age,this.layout.groundY,this.clock,this.reduce,s.playerHp/Math.max(1,s.playerMaxHp),s.enemyHp/Math.max(1,s.enemyMaxHp)).map(m=>({...m,alpha:m.alpha*1.1})),Phaser.BlendModes.ADD);
   }
