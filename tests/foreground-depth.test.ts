@@ -54,12 +54,12 @@ test('foreground crop stays registered to the exact landscape transform at short
 
 test('foreground assets stay within the existing texture-memory guardrail',async()=>{
  const m=await assets();const entries=m.visualAssets();
- assert.equal(entries.length,40);
- assert.equal(new Set(entries.map((entry:any)=>entry.key)).size,40);
+ assert.equal(entries.length,36);
+ assert.equal(new Set(entries.map((entry:any)=>entry.key)).size,36);
  for(let age=0;age<6;age++){
   const item=entries.find((entry:any)=>entry.key===m.foregroundTexture(age));
   assert.ok(item,`foreground ${age} is in manifest`);
-  assert.equal(item.width,age<5?1:450);assert.equal(item.height,age<5?1:220);
+  assert.equal(item.width,1);assert.equal(item.height,1);
  }
  const pixels=entries.reduce((sum:number,entry:any)=>sum+entry.width*entry.height,0);
  assert.ok(pixels*4<42_000_000,`uncompressed texture budget ${pixels*4}`);

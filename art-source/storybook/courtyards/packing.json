@@ -1,0 +1,158 @@
+[
+  {
+    "name": "light-guard",
+    "frames": 6,
+    "frameWidth": 216,
+    "frameHeight": 192,
+    "footBaseline": 181,
+    "sharedScale": 0.31695721077654515,
+    "sourceBounds": [
+      {
+        "left": 102,
+        "right": 419,
+        "top": 18,
+        "bottom": 508,
+        "anchor": 270
+      },
+      {
+        "left": 592,
+        "right": 993,
+        "top": 20,
+        "bottom": 508,
+        "anchor": 785
+      },
+      {
+        "left": 1106,
+        "right": 1503,
+        "top": 19,
+        "bottom": 509,
+        "anchor": 1298.5
+      },
+      {
+        "left": 70,
+        "right": 482,
+        "top": 526,
+        "bottom": 995,
+        "anchor": 276.5
+      },
+      {
+        "left": 555,
+        "right": 958,
+        "top": 517,
+        "bottom": 996,
+        "anchor": 756.5
+      },
+      {
+        "left": 987,
+        "right": 1530,
+        "top": 553,
+        "bottom": 995,
+        "anchor": 1214.5
+      }
+    ]
+  },
+  {
+    "name": "trooper",
+    "frames": 6,
+    "frameWidth": 216,
+    "frameHeight": 192,
+    "footBaseline": 181,
+    "sharedScale": 0.34530938123752497,
+    "sourceBounds": [
+      {
+        "left": 79,
+        "right": 438,
+        "top": 10,
+        "bottom": 507,
+        "anchor": 229.5
+      },
+      {
+        "left": 588,
+        "right": 977,
+        "top": 10,
+        "bottom": 507,
+        "anchor": 765
+      },
+      {
+        "left": 1102,
+        "right": 1486,
+        "top": 10,
+        "bottom": 510,
+        "anchor": 1290
+      },
+      {
+        "left": 53,
+        "right": 489,
+        "top": 517,
+        "bottom": 999,
+        "anchor": 218
+      },
+      {
+        "left": 549,
+        "right": 1005,
+        "top": 527,
+        "bottom": 1001,
+        "anchor": 750.5
+      },
+      {
+        "left": 1097,
+        "right": 1504,
+        "top": 520,
+        "bottom": 1010,
+        "anchor": 1302
+      }
+    ]
+  },
+  {
+    "name": "sky-skimmer",
+    "frames": 6,
+    "frameWidth": 216,
+    "frameHeight": 192,
+    "footBaseline": 181,
+    "sharedScale": 0.3508771929824561,
+    "sourceBounds": [
+      {
+        "left": 56,
+        "right": 516,
+        "top": 42,
+        "bottom": 456,
+        "anchor": 261
+      },
+      {
+        "left": 549,
+        "right": 1014,
+        "top": 46,
+        "bottom": 456,
+        "anchor": 742.5
+      },
+      {
+        "left": 1062,
+        "right": 1522,
+        "top": 68,
+        "bottom": 473,
+        "anchor": 1287.5
+      },
+      {
+        "left": 45,
+        "right": 516,
+        "top": 554,
+        "bottom": 956,
+        "anchor": 266
+      },
+      {
+        "left": 549,
+        "right": 1010,
+        "top": 543,
+        "bottom": 955,
+        "anchor": 725
+      },
+      {
+        "left": 1066,
+        "right": 1522,
+        "top": 544,
+        "bottom": 956,
+        "anchor": 1281
+      }
+    ]
+  }
+]

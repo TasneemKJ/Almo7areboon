@@ -287,9 +287,60 @@ try {
  await watch.screenshot({path:`${hillsideOutput}/27-hillside-later-battle-390.png`});
  assert.equal(await watch.evaluate(()=>window.__visualFallback),undefined);
  await hillside.close();
+ const courtyardsOutput=`${output}/courtyards`;mkdirSync(courtyardsOutput,{recursive:true});
+ const courtyardsTransition=await browser.newContext({viewport:{width:390,height:844},deviceScaleFactor:2});
+ await courtyardsTransition.addInitScript(()=>{
+  document.addEventListener('visual-fallback',()=>{window.__visualFallback=true;});
+  localStorage.setItem('almo7areboon.save.v1',JSON.stringify({version:2,timeline:1,age:4,enemyAge:4,furthestBattle:4,coins:13000000,cards:[],unlocked:[true,true,true],sound:false}));
+ });
+ const beyond=await courtyardsTransition.newPage();beyond.on('pageerror',error=>errors.push(error.message));
+ beyond.on('response',response=>{if(response.url().includes('/art/storybook/')&&!response.ok())assetFailures.push(`${response.status()} ${response.url()}`);});
+ await beyond.goto('http://127.0.0.1:4173/',{waitUntil:'networkidle'});
+ await beyond.waitForFunction(()=>!document.querySelector('.world-loader'));
+ await beyond.getByRole('button',{name:'Evolution',exact:true}).click();
+ assert.equal(await beyond.locator('.era-landscape').nth(5).getAttribute('src'),'/art/storybook/courtyards/village.webp');
+ await beyond.locator('[data-command="evolve"]').click();
+ await beyond.getByRole('button',{name:'EVOLVE TO COURTYARDS BEYOND',exact:true}).click();
+ await beyond.waitForFunction(()=>document.querySelector('.game-shell').dataset.era==='5');
+ assert.equal(await beyond.locator('#app').getAttribute('data-art-style'),'storybook');
+ await beyond.getByRole('button',{name:/Deploy Light Guard/}).waitFor();
+ await beyond.screenshot({path:`${courtyardsOutput}/28-courtyards-evolution-mixed-390.png`});
+ assert.equal(await beyond.evaluate(()=>window.__visualFallback),undefined);
+ await courtyardsTransition.close();
+ const courtyards=await browser.newContext({viewport:{width:390,height:844},deviceScaleFactor:2});
+ await courtyards.addInitScript(()=>{
+  document.addEventListener('visual-fallback',()=>{window.__visualFallback=true;});
+  localStorage.setItem('almo7areboon.save.v1',JSON.stringify({version:2,timeline:1,age:5,enemyAge:5,furthestBattle:5,coins:0,cards:[],unlocked:[true,true,true],sound:false}));
+ });
+ const future=await courtyards.newPage();future.on('pageerror',error=>errors.push(error.message));
+ future.on('response',response=>{if(response.url().includes('/art/storybook/')&&!response.ok())assetFailures.push(`${response.status()} ${response.url()}`);});
+ await future.goto('http://127.0.0.1:4173/',{waitUntil:'networkidle'});
+ await future.waitForFunction(()=>!document.querySelector('.world-loader'));
+ const courtyardsPortraits=await future.locator('.unit-card img').evaluateAll(async images=>Promise.all(images.map(async img=>{
+  await img.decode();return {src:img.getAttribute('src'),ready:img.complete&&img.naturalWidth>0&&img.naturalHeight>0};
+ })));
+ assert.deepEqual(courtyardsPortraits.map(p=>p.src),['light-guard','trooper','sky-skimmer'].map(role=>`/art/storybook/courtyards/${role}-portrait.webp`));
+ assert.ok(courtyardsPortraits.every(p=>p.ready),'all three Courtyards portraits decode');
+ assert.equal(await future.locator('#app').getAttribute('data-art-style'),'storybook');
+ await future.screenshot({path:`${courtyardsOutput}/29-courtyards-ready-390.png`});
+ await future.setViewportSize({width:320,height:640});
+ assert.equal(await future.evaluate(()=>document.documentElement.scrollWidth>innerWidth),false,'Courtyards Beyond must fit 320px');
+ const futureCards=await future.locator('.unit-card').evaluateAll(cards=>cards.map(card=>({left:card.getBoundingClientRect().left,right:card.getBoundingClientRect().right,image:card.querySelector('img').getBoundingClientRect().bottom,price:card.querySelector('.unit-price').getBoundingClientRect().top})));
+ for(const card of futureCards){assert.ok(card.left>=0&&card.right<=321,'Courtyards card stays in viewport');assert.ok(card.image<=card.price+1,'Courtyards portrait clears price');}
+ await future.screenshot({path:`${courtyardsOutput}/30-courtyards-ready-320.png`});
+ await future.setViewportSize({width:390,height:844});
+ await future.getByRole('button',{name:/^BATTLE/}).click();
+ await future.getByRole('button',{name:/Food drop/i}).click();
+ for(const name of ['Light Guard','Trooper','Sky Skimmer'])await future.getByRole('button',{name:new RegExp(`Deploy ${name},`)}).click();
+ await future.waitForTimeout(8000);
+ await future.screenshot({path:`${courtyardsOutput}/31-courtyards-all-roles-390.png`});
+ await future.waitForTimeout(20000);
+ await future.screenshot({path:`${courtyardsOutput}/32-courtyards-later-battle-390.png`});
+ assert.equal(await future.evaluate(()=>window.__visualFallback),undefined);
+ await courtyards.close();
  assert.deepEqual(errors,[],`browser errors: ${errors.join('; ')}`);
  assert.deepEqual(assetFailures,[],'all storybook asset requests succeeded');
- console.log(JSON.stringify({density,screenshots:27,narrowControls:layout.length,errors,assetFailures},null,2));
+ console.log(JSON.stringify({density,screenshots:32,narrowControls:layout.length,errors,assetFailures},null,2));
 } finally {
  await browser?.close();
  server.kill('SIGTERM');
