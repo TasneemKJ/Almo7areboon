@@ -75,3 +75,9 @@ Nine connected refinements are now implemented toward forty. No scheduler; brows
 Added a lightweight post-baseline CSS layer using ornament as structure: brass seams, inset card frames, parchment directionality, button edge light and shared dialog/card framing. It never targets the playfield, adds no panels/assets/fonts/animations, and leaves touch-target sizing to existing CSS. Five regressions RED→GREEN; full suite 214/214 and production build passed. Details: [10-material-language.md](10-material-language.md).
 
 Ten connected refinements are now implemented toward forty. No scheduler; rendered mobile acceptance remains open.
+
+
+## 11 — Line of action and role weight
+Added a bounded view-only gesture model over existing sprite frames: melee commits forward, ranged attacks recoil while staying upright, and heavy units compress. Faction direction mirrors the same geometry; reduced motion is neutral. Five regressions RED→GREEN; full suite 219/219 and production build passed. Details: [11-character-gesture.md](11-character-gesture.md).
+
+Eleven connected refinements are now implemented toward forty. No scheduler; browser/mobile acceptance remains open.
