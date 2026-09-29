@@ -48,3 +48,12 @@ Published preceding checkpoint: 5c47fcb566cbfd8ddbed86aef253d043a190c539, tree 0
 ## 05 — Original dusk soundscape
 Original chapter-specific plucked/airy music and environmental textures now use the existing gesture-created audio context, with a master Sound control and a separately stored Atmosphere switch. Pause, menus, hidden tabs, inactive screens and battle results silence ambience. A cancellable worker generates only the requested chapter, and one cached buffer plus bounded fade voices prevents playback accumulation. Full details, observed failures, concurrency ruling and reproduction commands: [05-soundscape.md](05-soundscape.md).
 Fresh suite: 189 passing tests; production build and diff check pass. Built-worker PCM matches the generator for all six chapters in a Node-thread test. Offline WAVs/metrics are not real-device listening or browser verification. No gameplay or artwork changes; src/game remains byte-identical. This is one connected fifth batch toward forty, not six because there are six chapters. Author self-review only. No scheduler, merge, browser workaround or explicit deployment request.
+
+
+## 06 — Material hierarchy
+Applied selective masonry, pottery, banner, textile and equipment detail under a figure/ground rule: detail clusters around landmarks and silhouettes while the road stays quiet. Four regressions RED→GREEN; full suite 193/193 and production build passed; full source-art QA remains zero-error. Details: [06-material-hierarchy.md](06-material-hierarchy.md).
+
+## 07 — Cinematic depth
+Added a separate depth layer between distant land and the focal settlement using atmospheric perspective, detail falloff and rhythmic repetition. Small distant homes/cypress/haze remain low-weight; banners, torches and chapter landmarks grow stronger toward the focal area. Four regressions RED→GREEN; combined suite 197/197 and production build passed; source-art QA remains zero-error. Details: [07-cinematic-depth.md](07-cinematic-depth.md).
+
+Seven connected refinements are now implemented toward forty. Asset boards, tests and per-chapter counts are evidence, not extra iterations. Browser/mobile acceptance and independent review remain outstanding. No scheduler.

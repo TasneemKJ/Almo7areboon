@@ -1,4 +1,6 @@
 import {path as p,ellipse as e,rect as r,line as l,gradient,documentSvg} from './illustration-kit.ts';
+import {sceneMaterialDetailSvg} from './design-detail.ts';
+import {cinematicDepthSvg} from './cinematic-depth.ts';
 
 // Fictional chapters, not reconstructions of monuments or a historical chronology.
 // Reference contexts and deliberate fantasy are recorded in docs/levantine-40.
@@ -172,9 +174,12 @@ export function landscapeSvg(input:number,includeForeground=true):string {
  body+=p('M707 181A31 31 0 1 0 719 229A28 28 0 0 1 707 181Z','#dbdbc0','none',0);
  for(let i=0;i<21;i++)body+=e(65+noise(i+8)*780,80+noise(i+54)*217,.6+noise(i+11)*.9,.6+noise(i+11)*.9,'#c0cfbf');
  body+=`<g opacity=".19">${p('M0 232Q120 202 277 230Q443 250 541 224Q706 208 900 239V254Q656 232 479 248Q244 255 0 246Z',c[2],'none',0)}${p('M0 308Q236 269 421 300Q653 277 900 312V326Q650 302 442 320Q182 304 0 330Z',c[2],'none',0)}</g></g>`;
- body+=`<g data-layer="distant-landscape">${ridge(age)}</g><g data-layer="settlement">`;
+ body+=`<g data-layer="distant-landscape">${ridge(age)}</g>`;
+ body+=cinematicDepthSvg(age);
+ body+=`<g data-layer="settlement">`;
  body+=[shelterValley,terraces,coast,quarter,()=>hillside(false),()=>hillside(true)][age]();
  body+='</g>';
+ body+=sceneMaterialDetailSvg(age);
  body+=`<g data-layer="meadow">${p('M0 581Q248 559 473 578Q714 556 900 580V1000H0Z','url(#earth)','none',0)}</g>`;
  body+=`<g data-layer="battle-lane">${p('M0 625Q210 613 436 622Q682 614 900 626V757Q692 765 440 752Q220 762 0 751Z','#344e55','none',0)}${p('M0 622Q210 610 436 619Q682 611 900 623V747Q692 753 440 742Q220 752 0 741Z','url(#road)','none',0)}${l('M0 623Q210 611 436 620Q682 612 900 624',age===5?'#c0d0b9':'#c3b99d',3)}`;
  for(let i=0;i<70;i++){const x=noise(i+52)*900,y=638+noise(i+73)*91;body+=e(x,y,1+noise(i+21)*3,1,'#758777');}
