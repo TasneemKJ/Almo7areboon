@@ -36,7 +36,10 @@ try {
  assert.equal(await page.locator('.battle-select').evaluate(node=>getComputedStyle(node).display),'none');
  await page.getByRole('button',{name:/Deploy Pathkeeper/}).click();
  await page.screenshot({path:`${output}/02-combat-390.png`});
- await page.getByRole('button',{name:'Pause battle'}).click();
+  await page.getByRole('button',{name:'Pause battle'}).click();
+ const pausedTitleSize=await page.locator('.stage h1').evaluate(node=>parseFloat(getComputedStyle(node).fontSize));
+ assert.ok(pausedTitleSize<readyTitleSize*.7,`pause heading should remain compact: ${readyTitleSize} → ${pausedTitleSize}`);
+ assert.equal(await page.locator('.battle-select').evaluate(node=>getComputedStyle(node).display),'none');
  await page.getByText('PAUSED',{exact:true}).waitFor();
  await page.screenshot({path:`${output}/03-pause-390.png`});
  await context.close();

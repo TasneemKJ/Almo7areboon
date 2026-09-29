@@ -35,14 +35,14 @@
 .secondary-screen { bottom:calc(58px + env(safe-area-inset-bottom,0px)); }
 
 /* The chapter title introduces the scene, then recedes when commands matter. */
-.world[data-phase="running"] .stage { top:calc(75px + env(safe-area-inset-top,0px)); }
-.world[data-phase="running"] .stage h1 { margin:0; font-size:18px; line-height:1.2; letter-spacing:.2px; }
-.world[data-phase="running"] .stage .eyebrow,
-.world[data-phase="running"] .scene-name,
-.world[data-phase="running"] .battle-select { display:none; }
+.world:is([data-phase="running"],[data-phase="paused"]) .stage { top:calc(75px + env(safe-area-inset-top,0px)); }
+.world:is([data-phase="running"],[data-phase="paused"]) .stage h1 { margin:0; font-size:18px; line-height:1.2; letter-spacing:.2px; }
+.world:is([data-phase="running"],[data-phase="paused"]) .stage .eyebrow,
+.world:is([data-phase="running"],[data-phase="paused"]) .scene-name,
+.world:is([data-phase="running"],[data-phase="paused"]) .battle-select { display:none; }
 
 @media(max-height:700px) {
- .world[data-phase="running"] .stage { top:calc(62px + env(safe-area-inset-top,0px)); }
+ .world:is([data-phase="running"],[data-phase="paused"]) .stage { top:calc(62px + env(safe-area-inset-top,0px)); }
  .deployment { padding:4px 10px; }
  .unit-card { height:90px; --portrait-top:19px; --portrait-bottom:21px; }
  .unit-name { font-size:11px; }
