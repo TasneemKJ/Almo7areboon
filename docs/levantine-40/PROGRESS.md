@@ -69,3 +69,9 @@ Eight connected refinements are now implemented toward forty. No scheduler; brow
 Added source-registered warm practical-light pools and weaker cool atmospheric support through the existing ambience Graphics layer. The road remains neutral; reduced motion freezes the complete composition. Seven regressions RED→GREEN; full suite 209/209 and production build passed. Details: [09-lighting-hierarchy.md](09-lighting-hierarchy.md).
 
 Nine connected refinements are now implemented toward forty. No scheduler; browser/mobile acceptance remains open.
+
+
+## 10 — Crafted UI material language
+Added a lightweight post-baseline CSS layer using ornament as structure: brass seams, inset card frames, parchment directionality, button edge light and shared dialog/card framing. It never targets the playfield, adds no panels/assets/fonts/animations, and leaves touch-target sizing to existing CSS. Five regressions RED→GREEN; full suite 214/214 and production build passed. Details: [10-material-language.md](10-material-language.md).
+
+Ten connected refinements are now implemented toward forty. No scheduler; rendered mobile acceptance remains open.
