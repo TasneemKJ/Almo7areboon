@@ -167,7 +167,7 @@ svg,img { user-select:none; -webkit-user-select:none; }
 .collection-card p { min-height:47px; margin:0 9px 9px; color:var(--muted); line-height:1.4; font-size:11px; font-weight:500; }
 .card-level { border-top:1px solid #b7c4a9; background:#e1e7cd; padding:7px 4px; color:#315850; font-size:9px; letter-spacing:.7px; }
 .card-copies { display:block; min-height:35px; padding:7px 4px; color:var(--muted); font-size:9px; line-height:1.4; font-weight:500; }
-.collection-card.unowned .card-level { color:#61736c; background:#e5e4d3; }
+.collection-card.unowned .card-level { color:#4f6559; background:#e5e4d3; }
 .collection-card.unowned .card-art { opacity:.8; }
 .summon-results { display:grid; gap:8px; text-align:left; margin:15px 0; max-height:45dvh; overflow-y:auto; }
 .summon-results article { display:flex; align-items:center; gap:8px; padding:7px; border:1px solid #d3d5bc; border-radius:9px; background:#fcf5df; }
