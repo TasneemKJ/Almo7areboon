@@ -1,6 +1,6 @@
 import Phaser from 'phaser';
 import {reducedMotion,projectileForHit} from './combat-feedback.ts';
-import {arenaLayout,troopPose,visualEra} from './visual-theme.ts';
+import {arenaLayout,landscapePlacement,troopPose,visualEra} from './visual-theme.ts';
 import {atmosphereFrame} from './era-atmosphere.ts';
 import {baseDamageFrame,baseDamagePalette,baseDamageStage} from './base-damage.ts';
 import {attackCueFrame,hitReaction} from './combat-choreography.ts';
@@ -92,8 +92,17 @@ export function mountBattlefield(element:HTMLElement,game:GamePort,onFrame:()=>v
    if(!this.world)return;
    this.layout=arenaLayout(this.scale.width,this.scale.height);
    this.world.setScale(this.layout.scale); // one scale: heads, circles and bodies never stretch
-   this.sky.setDisplaySize(450,this.layout.height);
+   this.placeLandscape();
    this.resetEffects();
+  }
+  private placeLandscape():void {
+   if(!this.sky)return;
+   if(this.sky.texture.key==='__WHITE'){
+    this.sky.setPosition(0,0).setScale(450/Math.max(1,this.sky.width),this.layout.height/Math.max(1,this.sky.height));
+    return;
+   }
+   const placement=landscapePlacement(450,this.layout.height,this.layout.groundY);
+   this.sky.setPosition(placement.x,placement.y).setScale(placement.scale);
   }
   private yAt(lane:number):number{return this.layout.groundY+lane*this.layout.laneGap;}
   private sprite(age:number,kind:Unit['kind'],side:Side):ImageOrFallback {
@@ -111,7 +120,7 @@ export function mountBattlefield(element:HTMLElement,game:GamePort,onFrame:()=>v
    if(this.ages===key)return;this.ages=key;
    const backdrop=landscapeTexture(p.age);
    if(this.textures.exists(backdrop))this.sky.setTexture(backdrop).clearTint();else this.sky.setTexture('__WHITE').setTint(tint(visualEra(p.age).ground));
-   this.sky.setDisplaySize(450,this.layout.height);
+   this.placeLandscape();
    this.playerBase?.destroy();this.enemyBase?.destroy();
    this.playerBase=this.createBase(p.age,'player');this.enemyBase=this.createBase(p.enemyAge,'enemy');
    this.basesLayer.add([this.playerBase,this.enemyBase]);

@@ -9,13 +9,43 @@ export const VISUAL_ERAS = [
 ] as const;
 export function visualEra(age:number) { return VISUAL_ERAS[Number.isInteger(age)&&age>=0&&age<6?age:0]; }
 export const ART_WIDTH=450;
+export const LANDSCAPE_WIDTH=900;
+export const LANDSCAPE_HEIGHT=1000;
+export const LANDSCAPE_GROUND_Y=660;
 export function arenaLayout(width:number,height:number) {
   const w=Number.isFinite(width)&&width>0?width:450;
   const h=Number.isFinite(height)&&height>0?height:430;
   const scale=w/ART_WIDTH, logicalHeight=h/scale;
   return {scale,width:ART_WIDTH,height:logicalHeight,groundY:logicalHeight*.66,laneGap:12};
 }
-/** All world actors use uniform scale. The landscape alone may stretch to fit. */
+/**
+ * Uniform cover crop for the 900×1000 illustrated world. It keeps the source
+ * ground anchor under troop feet instead of vertically squashing mountains,
+ * buildings and trees to whatever height the browser gives the canvas.
+ */
+export function landscapePlacement(width:number,height:number,groundY?:number) {
+  const w=Number.isFinite(width)&&width>0?width:ART_WIDTH;
+  const h=Number.isFinite(height)&&height>0?height:430;
+  const requested=Number.isFinite(groundY)?Number(groundY):h*.66;
+  const ground=Math.max(0,Math.min(h,requested));
+  const below=LANDSCAPE_HEIGHT-LANDSCAPE_GROUND_Y;
+  const scale=Math.max(
+    w/LANDSCAPE_WIDTH,
+    ground/LANDSCAPE_GROUND_Y,
+    (h-ground)/below,
+  );
+  const scaledWidth=LANDSCAPE_WIDTH*scale,scaledHeight=LANDSCAPE_HEIGHT*scale;
+  return {
+    x:(w-scaledWidth)/2,
+    y:ground-LANDSCAPE_GROUND_Y*scale,
+    scale,
+    scaleX:scale,
+    scaleY:scale,
+    width:scaledWidth,
+    height:scaledHeight,
+  };
+}
+/** All world actors and illustrated scenery preserve their authored proportions. */
 export function troopPose(time:number,moving:boolean,attacking:boolean,reduced:boolean) {
   if(reduced||(!moving&&!attacking))return {frame:0,lift:0,angle:0};
   const t=Number.isFinite(time)?Math.max(0,time):0;
