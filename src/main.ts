@@ -6,7 +6,9 @@ import { loadProfileWithStatus, saveProfile, MAX_SAVE_CHARS } from './game/save.
 import { exportBackup, importBackup, restoreBackup } from './game/backup.ts';
 import type { Action, GameEvent, GamePort, Profile, Skill, UnitKind } from './game/types.ts';
 import { mountBattlefield } from './view/battlefield.ts';
-import { unitPortrait } from './view/art.ts';
+import { unitPortrait } from './view/unit-illustrations.ts';
+import { visualEra } from './view/visual-theme.ts';
+import { evolutionScreenHtml } from './ui/evolution-screen.ts';
 import { icon } from './view/icons.ts';
 import { sound, unlockAudio, suspendAudio, disposeAudio } from './view/audio.ts';
 import { createArmyUpdater } from './ui/army-screen.ts';
@@ -35,7 +37,7 @@ root.innerHTML = `
   <div id="battle-view" class="battle-view">
     <section id="world" class="world" aria-label="Battlefield">
       <div id="battlefield"></div>
-      <div class="stage"><div id="timeline" class="eyebrow"></div><h1 id="age-title"></h1><button id="battle-select" class="battle-select" data-command="battles" aria-label="Choose a battle"><span class="stage-progress" id="stage-progress"></span></button></div>
+      <div class="stage"><div id="timeline" class="eyebrow"></div><h1 id="age-title"></h1><p id="scene-name" class="scene-name"></p><button id="battle-select" class="battle-select" data-command="battles" aria-label="Choose a battle"><span class="stage-progress" id="stage-progress"></span></button></div>
       <div class="world-tools"><button id="quests" class="square-button" data-command="quests" aria-label="Quests">${icon('quest')}<i class="notification"></i></button><button class="square-button" data-command="settings" aria-label="Settings">${icon('gear')}</button></div>
       <div class="battle-meta"><span id="wave-label"></span><div class="battle-toggles"><button id="speed" data-command="speed" aria-label="Change battle speed">1×</button><button id="pause" data-command="pause" aria-label="Pause battle">Ⅱ</button></div></div>
       <div id="ready" class="ready"><div class="ready-title">YOUR ARMY. YOUR ERA.</div><button class="big-button green" data-command="start">BATTLE ${icon('battle')}</button><p>Destroy the enemy base!</p></div>
@@ -87,6 +89,7 @@ function update(force=false){
   const p=game.profile,s=game.state;
   textIfChanged($('coins'),money(p.coins));textIfChanged($('gems'),money(p.gems));
   textIfChanged($('timeline'),`TIMELINE ${p.timeline} · BATTLE ${p.enemyAge+1}`);textIfChanged($('age-title'),ERAS[p.age].name);
+  textIfChanged($('scene-name'),visualEra(p.age).scene);
   textIfChanged($('food-count'),Math.floor(s.food).toString());$('food-fill').style.width=`${s.food>=99?100:(s.food%1)*100}%`;
   textIfChanged($('production'),`${foodRate(p).toFixed(2)}/sec`);
   const food=game.upgradeStatus('food'),base=game.upgradeStatus('base');
@@ -139,8 +142,7 @@ function switchTab(tab:string){
 function renderScreen(){
   const p=game.profile;let html='';
   if(activeTab==='evolution'){
-    const next=ERAS[p.age+1],cost=ERAS[p.age].evolveCost;
-    html=`<div class="screen-heading"><span class="eyebrow">CONQUER HISTORY</span><h2 id="secondary-title" tabindex="-1">Evolution</h2><p>New age. Stronger army.</p></div><div class="era-list">${ERAS.map((era,i)=>`<div class="era-row ${i===p.age?'selected':''} ${i>p.age?'future':''}"><span class="era-number">${i<p.age?'✓':i+1}</span><div class="era-picture"><img src="${unitPortrait(i,2)}" alt="${era.units[2].name}"/></div><div class="era-copy"><small>${era.year}</small><h3>${era.name}</h3><p>${i===p.age?'YOUR CURRENT AGE':i<p.age?'CONQUERED':era.units[0].name+' · '+era.units[2].name}</p></div>${i===p.age?`<span class="current-badge">NOW</span>`:i>p.age?icon('lock'):icon('flag')}</div>`).join('')}</div><div class="screen-bottom"><p>${next?`Evolve to the <strong>${next.name}</strong>. All coins, upgrades, troop unlocks, and unlocked battles reset. Cards and gems stay.`:'Win the final battle to begin a new timeline.'}</p><button class="big-button green" data-command="evolve" ${!next||p.coins<cost||p.age>p.enemyAge||game.state.phase==='running'?'disabled':''}>${next?`EVOLVE ${coin(cost)}`:'FINAL AGE'}</button>${next?`<small>${game.state.phase==='running'?'Finish the current battle to evolve.':p.age>p.enemyAge?'Defeat the enemy to continue evolving.':'Your cards and gems stay with you.'}</small>`:''}</div>`;
+    html=evolutionScreenHtml(p,game.state);
   }else if(activeTab==='cards'){
     html=cardsScreenHtml(p);
   }else if(activeTab==='skills'){
@@ -256,6 +258,7 @@ lifetime.listen<KeyboardEvent>(document,'keydown',e=>{
     e.preventDefault();if(game.state.phase==='ready')action({type:'start'});else if(game.state.phase==='running'){manualPaused=!manualPaused;syncPause();update(true);}
   }
 });
+lifetime.listen(root,'visual-fallback',()=>toast('Some artwork could not load. The simplified battlefield is active.'));
 lifetime.listen(document,'visibilitychange',()=>{syncPause();if(document.hidden){persist();suspendAudio();}});
 lifetime.listen(window,'pagehide',()=>{persist();suspendAudio();});
 lifetime.listen(motionQuery,'change',syncMotion);
