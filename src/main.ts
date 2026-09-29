@@ -10,7 +10,7 @@ import { unitPortrait } from './view/unit-illustrations.ts';
 import { chapterPresentation, unitPresentationName } from './ui/chapter-presentation.ts';
 import { evolutionScreenHtml } from './ui/evolution-screen.ts';
 import { icon } from './view/icons.ts';
-import { sound, unlockAudio, suspendAudio, disposeAudio } from './view/audio.ts';
+import { sound, unlockAudio, suspendAudio, disposeAudio, updateSoundscape } from './view/audio.ts';
 import { createArmyUpdater } from './ui/army-screen.ts';
 import { cardsScreenHtml, summonedCardsHtml } from './ui/cards-screen.ts';
 import { resultsHtml } from './ui/results-screen.ts';
@@ -18,6 +18,7 @@ import { battleGuidance, baseHealthDisplay, compactNumber } from './ui/battle-hu
 import { battleSelectionHtml, evolutionDialogHtml } from './ui/progression-screen.ts';
 import { createModalIsolation, modalFocusables, nextFocusIndex, isEditingTarget } from './ui/accessibility.ts';
 import { pauseReason } from './ui/pause.ts';
+import { loadAtmosphere, saveAtmosphere, ambienceAllowed } from './ui/audio-preferences.ts';
 import { createLifetime } from './ui/lifetime.ts';
 import { textIfChanged, htmlIfChanged } from './ui/dom-state.ts';
 
@@ -27,6 +28,7 @@ const root=document.querySelector<HTMLDivElement>('#app');
 if(!root)throw new Error('The game mount element is missing.');
 const lifetime=createLifetime();
 let activeTab='battle',modal:string|null=null,manualPaused=false;
+let atmosphereEnabled=loadAtmosphere();
 let lastUpdate=0,lastSave=0,resultShown='',toastTimer=0,focusFrame=0,modalVersion=0;
 let savedWarning=false,pendingImport:Profile|null=null;
 const persistenceBlocked=loaded.status==='unsupported';
@@ -77,6 +79,7 @@ function persist():boolean{
 }
 function syncPause(){
   game.state.paused=pauseReason({phase:game.state.phase,manual:manualPaused,tab:activeTab,modal,hidden:document.hidden})!==null;
+  updateSoundscape(game.profile.age,ambienceAllowed({sound:game.profile.sound,atmosphere:atmosphereEnabled,paused:game.state.paused,phase:game.state.phase,tab:activeTab,modal,hidden:document.hidden}));
 }
 function syncMotion(){document.documentElement.dataset.motion=game.profile.motion==='reduced'||motionQuery.matches?'reduced':'full';}
 function action(a:Action):boolean{
@@ -172,7 +175,9 @@ function closeModal(refresh=true){
 function showResult(){persist();showModal('result',resultsHtml(game.profile,game.state));}
 function showSettings(){
   showModal('settings',`<span class="eyebrow">ALMO7AREBOON</span><h2 id="dialog-title">Settings</h2>
-  <button class="setting-row" data-command="sound" aria-pressed="${game.profile.sound}">${icon('sound')} Sound effects <b>${game.profile.sound?'ON':'OFF'}</b></button>
+  <button class="setting-row" data-command="sound" aria-pressed="${game.profile.sound}">${icon('sound')} Sound <b>${game.profile.sound?'ON':'OFF'}</b></button>
+  <button class="setting-row" data-command="atmosphere" aria-pressed="${atmosphereEnabled}" aria-label="Atmospheric music and ambience">Atmosphere <b>${atmosphereEnabled?'ON':'OFF'}</b></button>
+  <p class="save-note">Quiet original music and environmental sound. Pauses in menus and when the battle is paused. Sound is the master switch.</p>
   <button class="setting-row" data-command="speed">${icon('evolution')} Battle speed <b>${game.profile.speed}×</b></button>
   <button class="setting-row" data-command="motion" aria-pressed="${game.profile.motion==='reduced'}">Motion <b>${game.profile.motion==='reduced'?'REDUCED':'SYSTEM'}</b></button>
   <div class="backup-actions"><button class="big-button blue" data-command="export">EXPORT SAVE</button><button class="big-button secondary" data-command="import" ${persistenceBlocked?'disabled':''}>IMPORT SAVE</button><input id="import-save" type="file" accept=".json,application/json" hidden></div>
@@ -219,6 +224,7 @@ lifetime.listen<MouseEvent>(root,'click',e=>{
     case 'settings':showSettings();break;
     case 'quests':showQuests();break;
     case 'sound':game.profile.sound=!game.profile.sound;if(game.profile.sound)unlockAudio(true);else suspendAudio();persist();showSettings();break;
+    case 'atmosphere':atmosphereEnabled=!atmosphereEnabled;saveAtmosphere(atmosphereEnabled);syncPause();showSettings();break;
     case 'motion':game.profile.motion=game.profile.motion==='reduced'?'system':'reduced';syncMotion();persist();showSettings();break;
     case 'export':exportSave();break;
     case 'import':$('import-save')?.click();break;
@@ -267,7 +273,7 @@ function events(batch:GameEvent[]){
   if(batch.some(event=>event.type==='win'||event.type==='lose'))persist();
 }
 const port:GamePort={get profile(){return game.profile;},get state(){return game.state;},dispatch:a=>game.dispatch(a),step:dt=>{syncPause();game.step(dt*game.profile.speed);},drainEvents:()=>game.drainEvents()};
-rebuildArmy();syncMotion();update(true);
+rebuildArmy();syncMotion();syncPause();update(true);
 const renderer=mountBattlefield($('battlefield'),port,()=>update(),events,{isVisible:()=>activeTab==='battle'&&!document.hidden});
 lifetime.add(()=>renderer.destroy());lifetime.add(disposeAudio);
 lifetime.add(()=>{window.clearTimeout(toastTimer);window.cancelAnimationFrame(focusFrame);isolateModal(false);});
