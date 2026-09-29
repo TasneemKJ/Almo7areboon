@@ -1,3 +1,4 @@
+import {storybookArt} from '../view/storybook-art.ts';
 import type {UnitKind} from '../game/types.ts';
 import {landscapeSvg} from '../view/world-illustrations.ts';
 import {dataSvg} from '../view/illustration-kit.ts';
@@ -23,9 +24,10 @@ export function unitPresentationName(age:number,kind:UnitKind):string {
  return chapterPresentation(age).units[[0,1,2].includes(kind)?kind:0];
 }
 const landscapes=new Map<number,string>();
-/** Shared immutable DOM image URI, with no per-frame regeneration or network fetch. */
+/** Same authored landscape as the battlefield, cached by the browser. */
 export function chapterLandscape(age:number):string {
- const index=chapterIndex(age);
+ const index=chapterIndex(age),art=storybookArt(index);
+ if(art)return `${art.folder}/village.webp`;
  let image=landscapes.get(index);
  if(!image){image=dataSvg(landscapeSvg(index,false));landscapes.set(index,image);}
  return image;

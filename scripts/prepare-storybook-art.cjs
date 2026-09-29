@@ -2,14 +2,15 @@
 const sharp=require('sharp');
 const {mkdirSync,writeFileSync}=require('node:fs');
 const path=require('node:path');
-const source=path.resolve('art-source/storybook');
-const output=path.resolve('public/art/storybook');
+const olive=process.argv.includes('--olive');
+const source=path.resolve('art-source/storybook',olive?'olive':'');
+const output=path.resolve('public/art/storybook',olive?'olive':'');
 mkdirSync(output,{recursive:true});
-const WIDTH=256,HEIGHT=192,BASELINE=181,PADDING=8;
+const WIDTH=olive?224:256,HEIGHT=192,BASELINE=181,PADDING=8;
 
 async function pack(name){
  const {data,info}=await sharp(path.join(source,`${name}.webp`)).ensureAlpha().raw().toBuffer({resolveWithObject:true});
- const rows=[0,name==='rider'?500:info.height/2,info.height],frames=[];
+ const rows=[0,name==='rider'?500:name==='fieldhand'?503:info.height/2,info.height],frames=[];
  for(let row=0;row<2;row++){
   const ranges=[];let start=-1;
   for(let x=0;x<=info.width;x++){
@@ -44,7 +45,7 @@ async function pack(name){
 }
 async function main(){
  const metadata=[];
- for(const name of ['pathkeeper','thrower','rider'])metadata.push(await pack(name));
+ for(const name of olive?['fieldhand','slinger','harvester']:['pathkeeper','thrower','rider'])metadata.push(await pack(name));
  await sharp(path.join(source,'village.webp')).resize(900,1000,{fit:'fill'}).webp({quality:92}).toFile(path.join(output,'village.webp'));
  const hut=await sharp(path.join(source,'shelter.webp')).trim({threshold:12}).resize(234,208,{fit:'inside'}).png().toBuffer();
  const m=await sharp(hut).metadata();

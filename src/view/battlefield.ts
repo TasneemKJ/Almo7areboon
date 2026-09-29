@@ -1,4 +1,5 @@
 import Phaser from 'phaser';
+import {storybookArt} from './storybook-art.ts';
 import {reducedMotion,projectileForHit} from './combat-feedback.ts';
 import {arenaLayout,foregroundPlacement,landscapePlacement,troopPose,visualEra} from './visual-theme.ts';
 import {atmosphereFrame} from './era-atmosphere.ts';
@@ -159,7 +160,7 @@ export function mountBattlefield(element:HTMLElement,game:GamePort,onFrame:()=>v
   }
   private bakeGrade(age:number):void {
    // The storybook paintings already contain their authored lighting and paper texture.
-   if(age===0)return;
+   if(storybookArt(age))return;
    const matrix=gradeMatrix(eraGrade(age));
    const keys=[landscapeTexture(age),foregroundTexture(age)];
    for(const side of ['player','enemy'] as const){keys.push(baseTexture(age,side));for(const kind of [0,1,2] as const)keys.push(unitTexture(age,kind,side));}
@@ -205,7 +206,7 @@ export function mountBattlefield(element:HTMLElement,game:GamePort,onFrame:()=>v
    const key=baseTexture(age,side);
    if(this.textures.exists(key)){
     const image=this.add.image(0,0,key).setOrigin(.5,140/160);
-    return image.setScale(.62*160/image.width).setFlipX(age===0&&side==='enemy');
+    return image.setScale(.62*160/image.width).setFlipX(!!storybookArt(age)&&side==='enemy');
    }
    const graphic=this.add.graphics();drawBase(graphic,age,side);return graphic;
   }
@@ -250,7 +251,7 @@ export function mountBattlefield(element:HTMLElement,game:GamePort,onFrame:()=>v
      view.body.setAngle(pose.angle*direction+gesture.angle*direction+recoil.angle);
      const density=TROOP_FRAME.height/view.body.height;
      view.body.setScale(scale*density*gesture.sx,scale*density*gesture.sy).setFlipX(unit.side==='enemy');
-     if(unit.hitFlash>0)view.body.setTintFill(0xfff9db);else if(frozen)view.body.setTint(0x91e5f0);else if(unit.age===0&&unit.side==='enemy')view.body.setTint(0xffd9b5);else view.body.clearTint();
+     if(unit.hitFlash>0)view.body.setTintFill(0xfff9db);else if(frozen)view.body.setTint(0x91e5f0);else if(storybookArt(unit.age)&&unit.side==='enemy')view.body.setTint(0xffd9b5);else view.body.clearTint();
      view.body.setPosition(x+recoil.x+gesture.forward*direction,y-(game.state.paused?0:pose.lift)-gesture.lift+recoil.y);
     }else{
      view.body.setPosition(x+recoil.x+gesture.forward*direction,y-gesture.lift+recoil.y).setScale(direction*perspective.scale*gesture.sx,perspective.scale*gesture.sy).setAngle(pose.angle*direction+gesture.angle*direction+recoil.angle);
@@ -271,14 +272,14 @@ export function mountBattlefield(element:HTMLElement,game:GamePort,onFrame:()=>v
     if(game.state.phase!=='ready')continue;
     g.fillStyle(0x243e40,.2);g.fillEllipse(x,y+2,25,7);
     actor.setPosition(x,y).setDepth(y);
-    if(actor instanceof Phaser.GameObjects.Image){actor.setScale(.47*TROOP_FRAME.height/actor.height).setFlipX(i===1);if(i===1&&game.profile.enemyAge===0)actor.setTint(0xffd9b5);}
+    if(actor instanceof Phaser.GameObjects.Image){actor.setScale(.47*TROOP_FRAME.height/actor.height).setFlipX(i===1);if(i===1&&storybookArt(game.profile.enemyAge))actor.setTint(0xffd9b5);}
     else {actor.setScale(i===0?1:-1,1);drawTroop(actor,i===0?game.profile.age:game.profile.enemyAge,0,side,0,false);}
    }
    this.armyLayer.sort('depth');
   }
   private drawAtmosphere():void {
    const g=this.ambience;g.clear();
-   if(game.profile.age!==0){
+   if(!storybookArt(game.profile.age)){
     paintDuskAtmosphere(g,duskAtmosphereFrame(game.profile.age,this.clock,this.reduce),landscapePlacement(450,this.layout.height,this.layout.groundY));
     paintLightingHierarchy(g,lightingHierarchyFrame(game.profile.age,this.clock,this.reduce),landscapePlacement(450,this.layout.height,this.layout.groundY));
    }
@@ -438,7 +439,7 @@ export function mountBattlefield(element:HTMLElement,game:GamePort,onFrame:()=>v
    const g=this.bars,s=game.state;g.clear();
    for(const [i,x,hp,max,color]of [[0,39,s.playerHp,s.playerMaxHp,0x68c9ee],[1,411,s.enemyHp,s.enemyMaxHp,0xf19d75]]){
     const age=i===0?game.profile.age:game.profile.enemyAge;
-    const y=this.layout.groundY-(age===0?65:85),fill=59*Math.max(0,Math.min(1,hp/max));
+    const y=this.layout.groundY-(storybookArt(age)?65:85),fill=59*Math.max(0,Math.min(1,hp/max));
     g.fillStyle(0x132d3c,.88);g.fillRoundedRect(x-33,y-4,66,19,7);
     g.lineStyle(1,0xd2d9ba,.5);g.strokeRoundedRect(x-33,y-4,66,19,7);
     g.fillStyle(0x5a7477,1);g.fillRoundedRect(x-30,y+7,60,5,2);
