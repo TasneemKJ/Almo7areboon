@@ -180,9 +180,57 @@ try {
  await quay.screenshot({path:`${output}/17-harbor-clash-390.png`});
  assert.equal(await quay.evaluate(()=>window.__visualFallback),undefined);
  await harbor.close();
+ // Keep later-chapter captures in a separate artifact-sized folder.
+ const lanternOutput=`${output}/lantern`;mkdirSync(lanternOutput,{recursive:true});
+ const lanternTransition=await browser.newContext({viewport:{width:390,height:844},deviceScaleFactor:2});
+ await lanternTransition.addInitScript(()=>{
+  document.addEventListener('visual-fallback',()=>{window.__visualFallback=true;});
+  localStorage.setItem('almo7areboon.save.v1',JSON.stringify({version:2,timeline:1,age:2,enemyAge:2,furthestBattle:2,coins:170000,cards:[],unlocked:[true,true,true],sound:false}));
+ });
+ const crossing=await lanternTransition.newPage();crossing.on('pageerror',error=>errors.push(error.message));
+ crossing.on('response',response=>{if(response.url().includes('/art/storybook/')&&!response.ok())assetFailures.push(`${response.status()} ${response.url()}`);});
+ await crossing.goto('http://127.0.0.1:4173/',{waitUntil:'networkidle'});
+ await crossing.waitForFunction(()=>!document.querySelector('.world-loader'));
+ await crossing.getByRole('button',{name:'Evolution',exact:true}).click();
+ assert.equal(await crossing.locator('.era-landscape').nth(3).getAttribute('src'),'/art/storybook/lantern/village.webp');
+ await crossing.locator('[data-command="evolve"]').click();
+ await crossing.getByRole('button',{name:'EVOLVE TO LANTERN QUARTER',exact:true}).click();
+ await crossing.waitForFunction(()=>document.querySelector('.game-shell').dataset.era==='3');
+ assert.equal(await crossing.locator('#app').getAttribute('data-art-style'),'storybook');
+ await crossing.getByRole('button',{name:/Deploy Gatekeeper/}).waitFor();
+ await crossing.screenshot({path:`${lanternOutput}/18-lantern-evolution-mixed-390.png`});
+ assert.equal(await crossing.evaluate(()=>window.__visualFallback),undefined);
+ await lanternTransition.close();
+ const lantern=await browser.newContext({viewport:{width:390,height:844},deviceScaleFactor:2});
+ await lantern.addInitScript(()=>{
+  document.addEventListener('visual-fallback',()=>{window.__visualFallback=true;});
+  localStorage.setItem('almo7areboon.save.v1',JSON.stringify({version:2,timeline:1,age:3,enemyAge:3,furthestBattle:3,coins:0,cards:[],unlocked:[true,true,true],sound:false}));
+ });
+ const quarter=await lantern.newPage();quarter.on('pageerror',error=>errors.push(error.message));
+ quarter.on('response',response=>{if(response.url().includes('/art/storybook/')&&!response.ok())assetFailures.push(`${response.status()} ${response.url()}`);});
+ await quarter.goto('http://127.0.0.1:4173/',{waitUntil:'networkidle'});
+ await quarter.waitForFunction(()=>!document.querySelector('.world-loader'));
+ const lanternPortraits=await quarter.locator('.unit-card img').evaluateAll(images=>images.map(img=>({src:img.getAttribute('src'),ready:img.complete&&img.naturalWidth>0})));
+ assert.equal(lanternPortraits.length,3);assert.ok(lanternPortraits.every(p=>p.ready&&p.src.includes('/art/storybook/lantern/')));
+ await quarter.screenshot({path:`${lanternOutput}/19-lantern-ready-390.png`});
+ await quarter.setViewportSize({width:320,height:640});
+ assert.equal(await quarter.evaluate(()=>document.documentElement.scrollWidth>innerWidth),false);
+ const quarterCards=await quarter.locator('.unit-card').evaluateAll(cards=>cards.map(card=>({left:card.getBoundingClientRect().left,right:card.getBoundingClientRect().right,image:card.querySelector('img').getBoundingClientRect().bottom,price:card.querySelector('.unit-price').getBoundingClientRect().top})));
+ for(const card of quarterCards){assert.ok(card.left>=0&&card.right<=321);assert.ok(card.image<=card.price+1,'lantern portrait clears price');}
+ await quarter.screenshot({path:`${lanternOutput}/20-lantern-ready-320.png`});
+ await quarter.setViewportSize({width:390,height:844});
+ await quarter.getByRole('button',{name:/^BATTLE/}).click();
+ await quarter.getByRole('button',{name:/Food drop/i}).click();
+ for(const name of ['Gatekeeper','Musketeer','Cannon'])await quarter.getByRole('button',{name:new RegExp(`Deploy ${name},`)}).click();
+ await quarter.waitForTimeout(8000);
+ await quarter.screenshot({path:`${lanternOutput}/21-lantern-all-roles-390.png`});
+ await quarter.waitForTimeout(20000);
+ await quarter.screenshot({path:`${lanternOutput}/22-lantern-later-battle-390.png`});
+ assert.equal(await quarter.evaluate(()=>window.__visualFallback),undefined);
+ await lantern.close();
  assert.deepEqual(errors,[],`browser errors: ${errors.join('; ')}`);
  assert.deepEqual(assetFailures,[],'all storybook asset requests succeeded');
- console.log(JSON.stringify({density,screenshots:17,narrowControls:layout.length,errors,assetFailures},null,2));
+ console.log(JSON.stringify({density,screenshots:22,narrowControls:layout.length,errors,assetFailures},null,2));
 } finally {
  await browser?.close();
  server.kill('SIGTERM');

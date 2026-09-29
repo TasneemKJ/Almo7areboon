@@ -68,9 +68,9 @@ test('passive cards have 30 different object illustrations rather than repeated 
 });
 test('the texture manifest has unique keys and a bounded initial decoded pixel budget',async()=>{
  const m=await moduleAt('visual-assets');const entries=m.visualAssets();
- assert.equal(entries.length,48);assert.equal(new Set(entries.map((x:any)=>x.key)).size,48);
+ assert.equal(entries.length,44);assert.equal(new Set(entries.map((x:any)=>x.key)).size,44);
  let pixels=0;
- for(const entry of entries){assert.match(entry.url,entry.format==='image'?/^\/art\/storybook\/(?:(?:olive|harbor)\/)?[a-z-]+\.webp$/:/^data:image\/svg\+xml/);pixels+=entry.width*entry.height;assert.ok(entry.width<=2048&&entry.height<=1024);}
+ for(const entry of entries){assert.match(entry.url,entry.format==='image'?/^\/art\/storybook\/(?:(?:olive|harbor|lantern)\/)?[a-z-]+\.webp$/:/^data:image\/svg\+xml/);pixels+=entry.width*entry.height;assert.ok(entry.width<=2048&&entry.height<=1024);}
  assert.ok(pixels*4<42_000_000,`uncompressed texture budget ${pixels*4}`);
 });
 test('deployment cards identify their tactical role without changing prices or action IDs',()=>{

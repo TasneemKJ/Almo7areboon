@@ -46,6 +46,14 @@ jobs:
           name: portrait-browser-review
           path: artifacts/browser-review/*.png
           retention-days: 7
+      - name: Publish Lantern screenshots
+        # Chapter-specific screenshots keep individual downloads small.
+        if: always() && steps.browser.outcome != 'skipped'
+        uses: actions/upload-artifact@v4
+        with:
+          name: lantern-browser-review
+          path: artifacts/browser-review/lantern/*.png
+          retention-days: 7
       - name: Publish verified web build
         if: steps.tests.outcome == 'success' && steps.build.outcome == 'success'
         uses: actions/upload-artifact@v4
