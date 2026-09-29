@@ -1,0 +1,14 @@
+/* Chapter-aware HUD: cards and skills borrow the scene accent so the interface belongs to the world above it. */
+.unit-card {
+ background:radial-gradient(ellipse at 50% 78%,#7bada8 0%,#3b7890 48%,#234b63 100%);
+ background:radial-gradient(ellipse at 50% 80%,color-mix(in srgb,var(--era-accent) 46%,#3b7890) 0%,#316f88 46%,#1d445b 100%);
+ transition:transform .08s ease-out,box-shadow .2s ease-out;
+}
+.unit-card:active:not(:disabled) { transform:translateY(2px) scale(.97); box-shadow:0 1px 0 #122d3d; }
+.unit-card.affordable {
+ border-color:var(--era-accent);
+ box-shadow:0 3px 0 #122d3d,0 0 14px -2px var(--era-accent),inset 0 0 0 1px rgba(244,223,170,.48),inset 0 1px rgba(255,246,210,.45);
+}
+.unit-card.affordable img { animation:card-ready 2.6s ease-in-out infinite; }
+@keyframes card-ready { 0%,100% { transform:translateY(0); } 50% { transform:translateY(-2px); } }
+.skill-circle:not(:disabled):not(.used) { box-shadow:0 3px 0 #1d4654,0 0 12px -3px var(--era-accent),inset 0 1px #e4f7d254; }

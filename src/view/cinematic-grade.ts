@@ -22,9 +22,9 @@ export interface GlowMark {x:number;y:number;rx:number;ry:number;color:number;al
 export interface RayMark {x1:number;y1:number;x2:number;y2:number;x3:number;y3:number;color:number;alpha:number}
 
 const GRADES:readonly EraGrade[]=Object.freeze(([
-  {saturation:1.32,contrast:1.2,gain:[1.05,1.02,.95],lift:[4,6,12],vignette:{inner:.62,outer:.98,alpha:.58,floor:.5,color:0x0d1a1f},key:{x:196,rise:34,color:0xffb866,rays:5,alpha:.04},stage:{color:0xffc987,alpha:.07}},
-  {saturation:1.3,contrast:1.18,gain:[1.07,1.02,.93],lift:[5,5,12],vignette:{inner:.62,outer:.98,alpha:.55,floor:.5,color:0x151a1c},key:{x:214,rise:58,color:0xffbe70,rays:5,alpha:.04},stage:{color:0xffd08c,alpha:.07}},
-  {saturation:1.26,contrast:1.18,gain:[1.04,1.02,.97],lift:[3,6,13],vignette:{inner:.62,outer:.98,alpha:.52,floor:.46,color:0x0e1a22},key:{x:236,rise:62,color:0xffcf8a,rays:4,alpha:.04},stage:{color:0xffd49a,alpha:.07}},
+  {saturation:1.32,contrast:1.2,gain:[1.05,1.02,.95],lift:[4,6,12],vignette:{inner:.62,outer:.98,alpha:.58,floor:.5,color:0x0d1a1f},key:{x:196,rise:34,color:0xffb866,rays:5,alpha:.04},stage:{color:0xffc987,alpha:.045}},
+  {saturation:1.3,contrast:1.18,gain:[1.07,1.02,.93],lift:[5,5,12],vignette:{inner:.62,outer:.98,alpha:.55,floor:.5,color:0x151a1c},key:{x:214,rise:58,color:0xffbe70,rays:5,alpha:.04},stage:{color:0xffd08c,alpha:.045}},
+  {saturation:1.26,contrast:1.18,gain:[1.04,1.02,.97],lift:[3,6,13],vignette:{inner:.62,outer:.98,alpha:.52,floor:.46,color:0x0e1a22},key:{x:236,rise:62,color:0xffcf8a,rays:4,alpha:.04},stage:{color:0xffd49a,alpha:.045}},
   {saturation:1.34,contrast:1.22,gain:[1.08,1,.94],lift:[6,4,12],vignette:{inner:.62,outer:.98,alpha:.6,floor:.52,color:0x160f1c},key:{x:226,rise:86,color:0xffae6c,rays:6,alpha:.04},stage:{color:0xffbf85,alpha:.07}},
   {saturation:1.22,contrast:1.2,gain:[1.03,1.02,.98],lift:[3,6,12],vignette:{inner:.62,outer:.98,alpha:.56,floor:.5,color:0x0c1719},key:{x:208,rise:106,color:0xffc98a,rays:4,alpha:.04},stage:{color:0xffd9a3,alpha:.07}},
   {saturation:1.3,contrast:1.24,gain:[.98,1.02,1.08],lift:[4,6,16],vignette:{inner:.62,outer:.98,alpha:.62,floor:.54,color:0x080c1e},key:{x:225,rise:70,color:0x9fe9ff,rays:5,alpha:.04},stage:{color:0xa9eaff,alpha:.07}},

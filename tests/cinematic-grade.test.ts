@@ -121,3 +121,26 @@ test('battlefield bakes the grade into static art instead of paying a per-frame 
  assert.match(source,/private flare\([^)]*\):void \{\n\s+if\(this\.reduce\)return;/,'reduced motion must not flash');
  assert.match(source,/if\(!this\.reduce\)\{this\.cameras\.main\.shake\(100,\.0015\);this\.cameras\.main\.flash/);
 });
+
+test('bright chapters keep a dimmer road pool so troops stay darker than the lane',()=>{
+ for(const age of [0,1,2])assert.ok(eraGrade(age).stage.alpha<eraGrade(age+3).stage.alpha,`chapter ${age} road pool washes out the army`);
+});
+
+test('combat text and skill feedback stay legible against bright skies',()=>{
+ const source=readFileSync(new URL('../src/view/battlefield.ts',import.meta.url),'utf8');
+ assert.match(source,/\.setShadow\(0,2,'#08171d'/,'floating numbers need a drop shadow');
+ assert.match(source,/fontSize:large\?'22px':heavy\?'15px':'13px'/);
+ assert.match(source,/if\(!this\.reduce\)this\.cameras\.main\.flash\(220,170,240,255\)/,'freeze flash respects reduced motion');
+ assert.doesNotMatch(source,/lineBetween\(95,this\.layout\.groundY\+34,355/,'the hairline frozen marker was replaced');
+ const css=readFileSync(new URL('../src/ui/era-glow.css',import.meta.url),'utf8'),main=readFileSync(new URL('../src/main.ts',import.meta.url),'utf8');
+ assert.ok(main.indexOf("./ui/era-glow.css")>main.indexOf("./ui/combat-focus.css"),'era glow must load last to win the cascade');
+ assert.match(css,/background:radial-gradient\(ellipse at 50% 78%,#7bada8[^;]+;\n background:radial-gradient\([^;]*color-mix/,'plain gradient must precede the color-mix one as a fallback');
+ assert.match(css,/\.unit-card\.affordable img \{ animation:/);
+});
+
+test('skill banners are never evicted by the damage-number cap',()=>{
+ const source=readFileSync(new URL('../src/view/battlefield.ts',import.meta.url),'utf8');
+ assert.match(source,/banner:large\}\);/);
+ assert.match(source,/const numbers=this\.floaters\.filter\(f=>!f\.banner\);\n\s+if\(numbers\.length>24\)/);
+ assert.doesNotMatch(source,/if\(this\.floaters\.length>24\)this\.floaters\.shift\(\)/);
+});
