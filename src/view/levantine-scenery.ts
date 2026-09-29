@@ -3,6 +3,7 @@ import {sceneMaterialDetailSvg} from './design-detail.ts';
 import {cinematicDepthSvg} from './cinematic-depth.ts';
 import {environmentVignettesSvg} from './environment-vignettes.ts';
 import {foregroundVignettesSvg} from './foreground-vignettes.ts';
+import {skyOmensSvg} from './sky-omens.ts';
 
 // Fictional chapters, not reconstructions of monuments or a historical chronology.
 // Reference contexts and deliberate fantasy are recorded in docs/levantine-40.
@@ -173,9 +174,9 @@ export function foregroundSvg(input:number):string {
 export function landscapeSvg(input:number,includeForeground=true):string {
  const age=ageOf(input),c=palettes[age];
  let body=`<g data-setting="${settings[age]}"><g data-layer="sky">${r(0,0,900,1000,0,'url(#sky)','none',0)}`;
- body+=p('M707 181A31 31 0 1 0 719 229A28 28 0 0 1 707 181Z','#dbdbc0','none',0);
  for(let i=0;i<21;i++)body+=e(65+noise(i+8)*780,80+noise(i+54)*217,.6+noise(i+11)*.9,.6+noise(i+11)*.9,'#c0cfbf');
  body+=`<g opacity=".19">${p('M0 232Q120 202 277 230Q443 250 541 224Q706 208 900 239V254Q656 232 479 248Q244 255 0 246Z',c[2],'none',0)}${p('M0 308Q236 269 421 300Q653 277 900 312V326Q650 302 442 320Q182 304 0 330Z',c[2],'none',0)}</g></g>`;
+ body+=skyOmensSvg(age);
  body+=`<g data-layer="distant-landscape">${ridge(age)}</g>`;
  body+=cinematicDepthSvg(age);
  body+=`<g data-layer="settlement">`;
