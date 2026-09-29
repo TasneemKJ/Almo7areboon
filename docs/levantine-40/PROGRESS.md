@@ -93,3 +93,9 @@ Twelve connected refinements are now implemented toward forty. No scheduler; ren
 Added six bounded architectural-detail grammars across all 12 faction outposts while preserving the existing silhouettes. Player/enemy geometry remains identical after faction color normalization. Five regressions RED→GREEN after correcting one overbroad test regex; full suite 229/229, production build passed, and standalone asset QA still reports 12 bases with zero errors. Details: [13-outpost-detail.md](13-outpost-detail.md).
 
 Thirteen connected refinements are now implemented toward forty. No scheduler; rendered mobile acceptance remains open.
+
+
+## 14 — Material-specific impact choreography
+Replaced the one-size-fits-all unit-hit burst with a bounded contact→breakup→dissipation grammar: earth/stone chips and dust, bronze sparks, powder smoke, steel fragments and energy pulses. Heavy units carry more visual mass without multiplying effect count; projectile impacts wait for the visible projectile to land; reduced motion uses a static contact composition. Seven regressions RED→GREEN; full suite 236/236 and production build passed. Details: [14-impact-material.md](14-impact-material.md).
+
+Fourteen connected refinements are now implemented toward forty. No scheduler; rendered mobile acceptance remains open.
