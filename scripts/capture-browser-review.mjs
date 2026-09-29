@@ -1,0 +1,57 @@
+/** Real browser screenshots and geometry checks for the portrait battle UI. */
+import {chromium} from 'playwright';
+import {spawn} from 'node:child_process';
+import {mkdirSync} from 'node:fs';
+import assert from 'node:assert/strict';
+
+const output='artifacts/browser-review';
+mkdirSync(output,{recursive:true});
+const server=spawn(process.execPath,['node_modules/vite/bin/vite.js','preview','--host','127.0.0.1','--port','4173'],{stdio:'pipe'});
+let browser;
+try {
+ let ready=false;
+ for(let i=0;i<60;i++){
+  if(server.exitCode!==null)throw new Error(`Vite preview exited ${server.exitCode}`);
+  try {const response=await fetch('http://127.0.0.1:4173/');if(response.ok){ready=true;break;}} catch {}
+  await new Promise(resolve=>setTimeout(resolve,250));
+ }
+ assert.ok(ready,'Vite preview did not start');
+ browser=await chromium.launch({headless:true});
+ const context=await browser.newContext({viewport:{width:390,height:844},deviceScaleFactor:2});
+ const page=await context.newPage(),errors=[];
+ page.on('pageerror',error=>errors.push(error.message));
+ await page.goto('http://127.0.0.1:4173/',{waitUntil:'networkidle'});
+ await page.waitForSelector('#battlefield canvas');
+ await page.waitForFunction(()=>!document.querySelector('.world-loader'));
+ const density=await page.locator('#battlefield canvas').evaluate(canvas=>({width:canvas.width,height:canvas.height,cssWidth:canvas.clientWidth,cssHeight:canvas.clientHeight}));
+ assert.ok(density.width/density.cssWidth>=1.9&&density.width/density.cssWidth<=2.1,`canvas density: ${JSON.stringify(density)}`);
+ assert.ok(density.height/density.cssHeight>=1.9&&density.height/density.cssHeight<=2.1,`canvas height density: ${JSON.stringify(density)}`);
+ await page.screenshot({path:`${output}/01-ready-390.png`});
+ await page.getByRole('button',{name:/^BATTLE/}).click();
+ await page.getByRole('button',{name:/Deploy Pathkeeper/}).click();
+ await page.screenshot({path:`${output}/02-combat-390.png`});
+ await page.getByRole('button',{name:'Pause battle'}).click();
+ await page.getByText('PAUSED',{exact:true}).waitFor();
+ await page.screenshot({path:`${output}/03-pause-390.png`});
+ await context.close();
+
+ const narrow=await browser.newContext({viewport:{width:320,height:640},deviceScaleFactor:2});
+ const small=await narrow.newPage();
+ small.on('pageerror',error=>errors.push(error.message));
+ await small.goto('http://127.0.0.1:4173/',{waitUntil:'networkidle'});
+ await small.waitForFunction(()=>!document.querySelector('.world-loader'));
+ const layout=await small.evaluate(()=>{
+  const shell=document.querySelector('.game-shell').getBoundingClientRect();
+  return [...document.querySelectorAll('.upgrade-row,.buy-button,.unit-card,.nav-item')].map(el=>{
+   const rect=el.getBoundingClientRect();return {className:el.className,left:rect.left,right:rect.right,shellLeft:shell.left,shellRight:shell.right};
+  });
+ });
+ for(const item of layout)assert.ok(item.left>=item.shellLeft-1&&item.right<=item.shellRight+1,`narrow overflow: ${JSON.stringify(item)}`);
+ await small.screenshot({path:`${output}/04-ready-320.png`});
+ await narrow.close();
+ assert.deepEqual(errors,[],`browser errors: ${errors.join('; ')}`);
+ console.log(JSON.stringify({density,screenshots:4,narrowControls:layout.length,errors},null,2));
+} finally {
+ await browser?.close();
+ server.kill('SIGTERM');
+}

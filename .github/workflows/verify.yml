@@ -31,6 +31,21 @@ jobs:
         run: |
           set -o pipefail
           npm run build | tee verification-build.log
+      - name: Install browser for visual verification
+        if: steps.tests.outcome == 'success' && steps.build.outcome == 'success'
+        run: npx playwright install --with-deps chromium
+      - name: Capture portrait browser states
+        id: browser
+        if: steps.tests.outcome == 'success' && steps.build.outcome == 'success'
+        continue-on-error: true
+        run: npm run review:browser
+      - name: Publish browser screenshots
+        if: always() && steps.browser.outcome != 'skipped'
+        uses: actions/upload-artifact@v4
+        with:
+          name: portrait-browser-review
+          path: artifacts/browser-review/*.png
+          retention-days: 7
       - name: Publish verified web build
         if: steps.tests.outcome == 'success' && steps.build.outcome == 'success'
         uses: actions/upload-artifact@v4
@@ -49,5 +64,5 @@ jobs:
           path: ${{ runner.temp }}/game-workspace.tar.gz
           retention-days: 3
       - name: Require passing checks
-        if: steps.tests.outcome != 'success' || steps.build.outcome != 'success'
+        if: steps.tests.outcome != 'success' || steps.build.outcome != 'success' || steps.browser.outcome != 'success'
         run: exit 1
