@@ -1,9 +1,9 @@
 import type {Side,UnitKind} from '../game/types.ts';
 import {path as p,ellipse as e,rect as r,line as l,gradient,documentSvg,dataSvg,INK} from './illustration-kit.ts';
+import {garmentSvg,headwearSvg,clothingPalette,skinPalette} from './levantine-wardrobe.ts';
 export const TROOP_FRAME={width:128,height:144,count:6} as const;
 const team=(side:Side)=>side==='player'?['#8ce2f3','#309ddb','#16658e']:['#ffd0ad','#e66b50','#a93839'];
-const cloth=[['#dda15d','#9b5436'],['#eff0c2','#96aa82'],['#eed18a','#96744d'],['#6cb5dc','#355779'],['#aab991','#567051'],['#edf7f9','#7fadc1']];
-function defs(age:number,side:Side,id:string){const t=team(side);return gradient(`${id}s`,'#ffe6b8','#d99d77')+gradient(`${id}c`,cloth[age][0],cloth[age][1])+gradient(`${id}t`,t[0],t[2])+gradient(`${id}g`,'#ffe7a2','#b47b32')+gradient(`${id}m`,'#f2ffff','#71909c')+gradient(`${id}d`,'#a9d675','#477953')+gradient(`${id}w`,'#cda278','#806045');}
+function defs(age:number,kind:UnitKind,side:Side,id:string){const t=team(side),cloth=clothingPalette(age),skin=skinPalette(age,kind);return gradient(`${id}s`,skin[0],skin[1])+gradient(`${id}c`,cloth[0],cloth[1])+gradient(`${id}t`,t[0],t[2])+gradient(`${id}g`,'#e9d4a2','#998057')+gradient(`${id}m`,'#e8ecda','#708b90')+gradient(`${id}d`,'#a9c080','#547961')+gradient(`${id}w`,'#bc9971','#74624d');}
 function human(age:number,kind:UnitKind,side:Side,frame:number,id:string,mounted=false):string {
  const t=team(side),skin=`url(#${id}s)`,body=`url(#${id}c)`,gold=`url(#${id}g)`,metal=`url(#${id}m)`,accent=`url(#${id}t)`;
  const rangedVisual=kind===1||(age===4&&kind===0),longPole=age===1&&kind===0;
@@ -13,23 +13,13 @@ function human(age:number,kind:UnitKind,side:Side,frame:number,id:string,mounted
  let out=p('M44 75Q25 87 27 116L47 108Z',accent)+l('M42 81L32 107',t[0],2);
  out+=`<g transform="rotate(${-stride} 49 105)">${p('M43 101L42 121 53 123 57 103Z',skin)+r(39,119,18,9,4,boots)+l('M41 120H53','#d9bb87',2)}</g>`;
  out+=`<g transform="rotate(${stride} 65 105)">${p('M59 102L61 122 73 122 72 100Z',skin)+r(60,120,22,9,4,boots)+l('M63 122H76','#d9bb87',2)}</g>`;
- out+=p('M40 70Q51 66 72 70L79 106Q60 118 36 106Z',body);
- if(age===0){out+=p('M43 70L54 70 70 110 49 112 36 105Z','#d49854','none',0)+p('M37 103L43 99 48 105 55 101 61 108 69 103 78 105 80 112 72 116 64 112 55 117 45 112 38 114Z','#e5bd77');for(const [x,y]of [[46,83],[59,92],[46,99],[69,102]])out+=p(`M${x} ${y}l4-2 2 4-4 2Z`,'#815132','none',0);out+=p('M44 69L56 71 53 80 43 77Z','#fff0c7');}
- else if(age===2){out+=p('M40 70L73 70 76 90 37 90Z',gold)+l('M43 77H68M43 83H67','#fff0be',2)+p('M39 92H75L80 111H35Z','#765845');for(let x=42;x<76;x+=9)out+=l(`M${x} 96v13`,'#d8ad69',3);}
- else if(age===4){out+=r(39,74,35,29,5,'#637b55')+r(39,81,12,16,2,'#9dac78')+r(58,81,13,16,2,'#9dac78')+r(46,102,22,5,1,'#4b5d4a')+r(36,74,8,13,3,accent);}
- else if(age===5){out+=p('M40 72L53 69 63 70 74 74 71 88 42 88Z',metal)+p('M48 76H65L62 83H51Z',accent)+l('M45 101H68',t[0],3)+r(33,68,13,13,5,metal)+r(66,68,13,13,5,metal);}
- else{out+=l('M55 74V108','#fff2cf',3)+r(36,101,40,5,1,'#755945')+r(53,100,9,7,1,gold);for(const y of [80,89,97])out+=e(61,y,1.8,1.8,'#e8d29f');}
+ out+=garmentSvg(age,kind,side,id);
  out+=l('M40 77Q24 87 32 99',INK,13)+l('M40 77Q24 87 32 99',skin,9)+e(34,99,5.5,6,skin,INK,1.7);
  // Oversized, shaded head with a clear 3/4 gaze; never a blank alien face.
  out+=e(38,51,6,8,skin,INK,1.8)+p('M36 44Q33 24 57 23Q82 23 83 43L82 58Q80 72 60 73Q41 73 37 60Z',skin)+p('M41 37Q47 29 62 29', 'none','#fff2d4',4);
- out+=e(63,50,3.1,5.1,INK)+e(76,50,2.7,4.7,INK)+e(64,48,1,1.4,'#fffdf3')+e(77,48,1,1.4,'#fffdf3');
- out+=p('M82 53Q91 59 81 62','#edb88c',INK,1.2)+e(54,59,5,2.3,'#e6a183')+l('M65 64Q70 67 75 64',INK,1.4)+l('M59 42l7-1M74 41l5 1',INK,2.1);
- if(age===0){out+=p('M35 48L30 39 35 33 29 31 40 24 38 18 49 20 56 13 63 20 73 17 78 25 85 28 81 36 70 32 65 37 60 30 50 35 43 33 42 46Z','#80543a')+p('M35 33L49 26 56 21 64 26 74 24 79 29 67 28 61 31 55 26 44 34Z','#bd8151','none',0)+l('M34 37Q53 27 82 35',t[1],5)+l('M36 35Q56 27 76 32',t[0],1.6)+p('M33 37L18 43 22 48 35 42Z',accent);}
- if(age===1){out+=p('M36 33L42 15Q58 10 73 17L79 35Z',gold)+l('M45 16L41 32M55 15L53 30M66 17L70 32','#edcf8a',2)+e(57,35,34,7,gold,INK,2)+l('M31 33Q56 25 84 34','#fff1b1',2)+p('M38 25Q60 21 76 27L78 32Q54 27 37 32Z',accent);}
- if(age===2){out+=p('M31 48L31 30Q35 14 59 15Q78 15 85 31L84 39 69 35 55 38 48 51 50 66 39 62Z',gold)+l('M38 28Q55 18 72 25','#fff2b8',3)+p('M39 20L39 7Q58 1 80 13L86 26 77 24Q60 12 43 24Z',accent)+l('M45 8v9M51 7v8M58 7v8M65 9v8M73 12v8',t[0],1.5)+p('M74 36L80 38 80 54 74 54Z',gold);}
- if(age===3){out+=p('M29 34L24 16 44 22 61 15 82 12 91 32 81 40 41 41Z','#273d51')+l('M29 18L44 27 62 22 81 16 87 31', '#d9bb76',2.8)+p('M40 26Q19 7 29 2Q42 5 47 24Z','#fff4cd')+l('M29 5L43 23','#bda973',1.5)+r(51,31,19,5,2,accent);}
- if(age===4){out+=p('M30 43L32 25Q41 12 62 14Q82 16 85 36L84 43Z',body)+p('M33 25Q43 16 61 17L57 27 40 31Z','#c1cb9b','none',0)+l('M30 43Q56 34 88 42','#415743',5)+r(38,25,13,9,3,accent)+l('M42 28h5',t[0],1.5);}
- if(age===5){out+=p('M32 60L28 37 34 18 48 9 68 11 85 24 90 39 79 41 74 29 47 27 40 44 43 61Z',metal)+l('M41 20L49 16 67 18','#fff',3)+p('M44 32L76 33 81 39 45 40Z',t[1])+e(35,46,8,9,accent,INK,2)+e(35,45,3.5,4,'#d9ffff')+l('M49 37H71','#b5ffff',2);}
+ out+=e(62,51,2.5,3.5,INK)+e(76,51,2.2,3.1,INK)+e(62.7,49.8,.8,1,'#fffdf3')+e(76.6,50,.7,.9,'#fffdf3');
+ out+=p('M81 54Q87 58 81 61',skin,INK,1)+e(52,60,4,1.3,'#c39476')+l(kind===1?'M65 65L74 64':'M64 64Q70 67 75 64',INK,1.2)+l('M59 42l7-1M74 41l5 1',INK,2.1);
+ out+=headwearSvg(age,kind,side,id);
  // Front arm and weapon form a second, readable action silhouette.
  out+=`<g transform="rotate(${attack} 73 78)">${l('M72 78L86 90 95 87',INK,13)+l('M72 78L86 90 95 87',skin,9)}`;
  if(mounted){out+=l('M92 105L110 30','#805e42',4)+p('M106 32L115 16 116 36Z',metal)+l('M108 33L111 23','#fff4c9',1.4);}
@@ -102,11 +92,11 @@ function safeArt(age:number,kind:UnitKind,side:Side,frame:number,id:string):stri
 }
 export function unitSvg(age:number,kind:UnitKind,side:Side='player',frame=0):string {
  ({age,kind}=validated(age,kind));const id='u',pose=Number.isInteger(frame)&&frame>=0&&frame<6?frame:0;
- return documentSvg(128,144,safeArt(age,kind,side,pose,id),defs(age,side,id));
+ return documentSvg(128,144,safeArt(age,kind,side,pose,id),defs(age,kind,side,id));
 }
 export function unitSheetSvg(age:number,kind:UnitKind,side:Side):string {
  ({age,kind}=validated(age,kind));
- return documentSvg(768,144,Array.from({length:6},(_,frame)=>`<g data-frame="${frame}" transform="translate(${frame*128} 0)"><g clip-path="url(#unit-frame)">${safeArt(age,kind,side,frame,'u')}</g></g>`).join(''),defs(age,side,'u')+'<clipPath id="unit-frame"><rect width="128" height="144"/></clipPath>');
+ return documentSvg(768,144,Array.from({length:6},(_,frame)=>`<g data-frame="${frame}" transform="translate(${frame*128} 0)"><g clip-path="url(#unit-frame)">${safeArt(age,kind,side,frame,'u')}</g></g>`).join(''),defs(age,kind,side,'u')+'<clipPath id="unit-frame"><rect width="128" height="144"/></clipPath>');
 }
 const portraits=new Map<string,string>();
 /** Battle sheets and DOM portraits use the same source, colors and anchor. */

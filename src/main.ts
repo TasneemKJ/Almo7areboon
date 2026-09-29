@@ -7,10 +7,10 @@ import { exportBackup, importBackup, restoreBackup } from './game/backup.ts';
 import type { Action, GameEvent, GamePort, Profile, Skill, UnitKind } from './game/types.ts';
 import { mountBattlefield } from './view/battlefield.ts';
 import { unitPortrait } from './view/unit-illustrations.ts';
-import { visualEra } from './view/visual-theme.ts';
+import { chapterPresentation, unitPresentationName } from './ui/chapter-presentation.ts';
 import { evolutionScreenHtml } from './ui/evolution-screen.ts';
 import { icon } from './view/icons.ts';
-import { sound, unlockAudio, suspendAudio, disposeAudio } from './view/audio.ts';
+import { sound, unlockAudio, suspendAudio, disposeAudio, updateSoundscape } from './view/audio.ts';
 import { createArmyUpdater } from './ui/army-screen.ts';
 import { cardsScreenHtml, summonedCardsHtml } from './ui/cards-screen.ts';
 import { resultsHtml } from './ui/results-screen.ts';
@@ -18,6 +18,7 @@ import { battleGuidance, baseHealthDisplay, compactNumber } from './ui/battle-hu
 import { battleSelectionHtml, evolutionDialogHtml } from './ui/progression-screen.ts';
 import { createModalIsolation, modalFocusables, nextFocusIndex, isEditingTarget } from './ui/accessibility.ts';
 import { pauseReason } from './ui/pause.ts';
+import { loadAtmosphere, saveAtmosphere, ambienceAllowed } from './ui/audio-preferences.ts';
 import { createLifetime } from './ui/lifetime.ts';
 import { textIfChanged, htmlIfChanged } from './ui/dom-state.ts';
 
@@ -27,6 +28,7 @@ const root=document.querySelector<HTMLDivElement>('#app');
 if(!root)throw new Error('The game mount element is missing.');
 const lifetime=createLifetime();
 let activeTab='battle',modal:string|null=null,manualPaused=false;
+let atmosphereEnabled=loadAtmosphere();
 let lastUpdate=0,lastSave=0,resultShown='',toastTimer=0,focusFrame=0,modalVersion=0;
 let savedWarning=false,pendingImport:Profile|null=null;
 const persistenceBlocked=loaded.status==='unsupported';
@@ -77,6 +79,7 @@ function persist():boolean{
 }
 function syncPause(){
   game.state.paused=pauseReason({phase:game.state.phase,manual:manualPaused,tab:activeTab,modal,hidden:document.hidden})!==null;
+  updateSoundscape(game.profile.age,ambienceAllowed({sound:game.profile.sound,atmosphere:atmosphereEnabled,paused:game.state.paused,phase:game.state.phase,tab:activeTab,modal,hidden:document.hidden}));
 }
 function syncMotion(){document.documentElement.dataset.motion=game.profile.motion==='reduced'||motionQuery.matches?'reduced':'full';}
 function action(a:Action):boolean{
@@ -88,8 +91,8 @@ function update(force=false){
   const now=performance.now();if(!force&&now-lastUpdate<80)return;lastUpdate=now;
   const p=game.profile,s=game.state;
   textIfChanged($('coins'),money(p.coins));textIfChanged($('gems'),money(p.gems));
-  textIfChanged($('timeline'),`TIMELINE ${p.timeline} · BATTLE ${p.enemyAge+1}`);textIfChanged($('age-title'),ERAS[p.age].name);
-  textIfChanged($('scene-name'),visualEra(p.age).scene);
+  textIfChanged($('timeline'),`TIMELINE ${p.timeline} · BATTLE ${p.enemyAge+1}`);textIfChanged($('age-title'),chapterPresentation(p.age).title);
+  textIfChanged($('scene-name'),chapterPresentation(p.age).subtitle);
   textIfChanged($('food-count'),Math.floor(s.food).toString());$('food-fill').style.width=`${s.food>=99?100:(s.food%1)*100}%`;
   textIfChanged($('production'),`${foodRate(p).toFixed(2)}/sec`);
   const food=game.upgradeStatus('food'),base=game.upgradeStatus('base');
@@ -172,7 +175,9 @@ function closeModal(refresh=true){
 function showResult(){persist();showModal('result',resultsHtml(game.profile,game.state));}
 function showSettings(){
   showModal('settings',`<span class="eyebrow">ALMO7AREBOON</span><h2 id="dialog-title">Settings</h2>
-  <button class="setting-row" data-command="sound" aria-pressed="${game.profile.sound}">${icon('sound')} Sound effects <b>${game.profile.sound?'ON':'OFF'}</b></button>
+  <button class="setting-row" data-command="sound" aria-pressed="${game.profile.sound}">${icon('sound')} Sound <b>${game.profile.sound?'ON':'OFF'}</b></button>
+  <button class="setting-row" data-command="atmosphere" aria-pressed="${atmosphereEnabled}" aria-label="Atmospheric music and ambience">Atmosphere <b>${atmosphereEnabled?'ON':'OFF'}</b></button>
+  <p class="save-note">Quiet original music and environmental sound. Pauses in menus and when the battle is paused. Sound is the master switch.</p>
   <button class="setting-row" data-command="speed">${icon('evolution')} Battle speed <b>${game.profile.speed}×</b></button>
   <button class="setting-row" data-command="motion" aria-pressed="${game.profile.motion==='reduced'}">Motion <b>${game.profile.motion==='reduced'?'REDUCED':'SYSTEM'}</b></button>
   <div class="backup-actions"><button class="big-button blue" data-command="export">EXPORT SAVE</button><button class="big-button secondary" data-command="import" ${persistenceBlocked?'disabled':''}>IMPORT SAVE</button><input id="import-save" type="file" accept=".json,application/json" hidden></div>
@@ -197,7 +202,7 @@ lifetime.listen<MouseEvent>(root,'click',e=>{
   const button=e.target instanceof Element?e.target.closest<HTMLButtonElement>('button'):null;
   if(!button||button.disabled)return;unlockAudio(game.profile.sound);
   if(button.dataset.tab){switchTab(button.dataset.tab);return;}
-  if(button.dataset.unit!==undefined){const kind=Number(button.dataset.unit) as UnitKind;if(!game.profile.unlocked[kind]){if(action({type:'unlock',kind}))toast(`${ERAS[game.profile.age].units[kind].name} unlocked!`);}else action({type:'spawn',kind});return;}
+  if(button.dataset.unit!==undefined){const kind=Number(button.dataset.unit) as UnitKind;if(!game.profile.unlocked[kind]){if(action({type:'unlock',kind}))toast(`${unitPresentationName(game.profile.age,kind)} unlocked!`);}else action({type:'spawn',kind});return;}
   if(button.dataset.skill){action({type:'skill',skill:button.dataset.skill as Skill});return;}
   if(button.dataset.claim){if(action({type:'claim',id:button.dataset.claim}))showQuests();return;}
   if(button.dataset.battle!==undefined){if(action({type:'select-battle',battle:Number(button.dataset.battle)}))closeModal();return;}
@@ -212,13 +217,14 @@ lifetime.listen<MouseEvent>(root,'click',e=>{
     case 'upgrade-base':action({type:'upgrade',stat:'base'});break;
     case 'battles':showModal('battles',battleSelectionHtml(game.profile,game.state));break;
     case 'evolve':{const html=evolutionDialogHtml(game.profile,game.state);if(html)showModal('evolve',html);break;}
-    case 'confirm-evolve':if(action({type:'evolve'})){closeModal(false);switchTab('battle');toast(`Welcome to the ${ERAS[game.profile.age].name}!`);}break;
+    case 'confirm-evolve':if(action({type:'evolve'})){closeModal(false);switchTab('battle');toast(`Entering ${chapterPresentation(game.profile.age).title}.`);}break;
     case 'next':case 'retry':if(action({type:button.dataset.command})){closeModal(false);manualPaused=false;switchTab('battle');}break;
     case 'pause':if(game.state.phase==='running'){manualPaused=!manualPaused;syncPause();update(true);}break;
     case 'speed':game.profile.speed=game.profile.speed===1?2:1;persist();update(true);if(modal==='settings')showSettings();break;
     case 'settings':showSettings();break;
     case 'quests':showQuests();break;
     case 'sound':game.profile.sound=!game.profile.sound;if(game.profile.sound)unlockAudio(true);else suspendAudio();persist();showSettings();break;
+    case 'atmosphere':atmosphereEnabled=!atmosphereEnabled;saveAtmosphere(atmosphereEnabled);syncPause();showSettings();break;
     case 'motion':game.profile.motion=game.profile.motion==='reduced'?'system':'reduced';syncMotion();persist();showSettings();break;
     case 'export':exportSave();break;
     case 'import':$('import-save')?.click();break;
@@ -239,7 +245,7 @@ lifetime.listen<Event>(root,'change',async e=>{
     if(lifetime.disposed||version!==modalVersion||modal!=='settings')return;
     if(!decoded.ok){toast(decoded.error);input.value='';return;}
     pendingImport=decoded.profile;
-    showModal('import',`<h2 id="dialog-title">Replace this save?</h2><p>Import timeline ${pendingImport.timeline}, ${ERAS[pendingImport.age].name}, with ${money(pendingImport.coins)} coins.</p><p>Your current progress in this browser will be replaced. Export it first to keep a separate copy.</p><button class="big-button blue" data-command="confirm-import">REPLACE WITH THIS SAVE</button><button class="big-button secondary" data-command="close">CANCEL</button>`);
+    showModal('import',`<h2 id="dialog-title">Replace this save?</h2><p>Import timeline ${pendingImport.timeline}, ${chapterPresentation(pendingImport.age).title}, with ${money(pendingImport.coins)} coins.</p><p>Your current progress in this browser will be replaced. Export it first to keep a separate copy.</p><button class="big-button blue" data-command="confirm-import">REPLACE WITH THIS SAVE</button><button class="big-button secondary" data-command="close">CANCEL</button>`);
   }catch{toast('The selected file could not be read. Your current game was not changed.');}
 });
 lifetime.listen<KeyboardEvent>(document,'keydown',e=>{
@@ -267,7 +273,7 @@ function events(batch:GameEvent[]){
   if(batch.some(event=>event.type==='win'||event.type==='lose'))persist();
 }
 const port:GamePort={get profile(){return game.profile;},get state(){return game.state;},dispatch:a=>game.dispatch(a),step:dt=>{syncPause();game.step(dt*game.profile.speed);},drainEvents:()=>game.drainEvents()};
-rebuildArmy();syncMotion();update(true);
+rebuildArmy();syncMotion();syncPause();update(true);
 const renderer=mountBattlefield($('battlefield'),port,()=>update(),events,{isVisible:()=>activeTab==='battle'&&!document.hidden});
 lifetime.add(()=>renderer.destroy());lifetime.add(disposeAudio);
 lifetime.add(()=>{window.clearTimeout(toastTimer);window.cancelAnimationFrame(focusFrame);isolateModal(false);});

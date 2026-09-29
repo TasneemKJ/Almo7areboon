@@ -23,3 +23,18 @@
  .modal-layer { position:fixed; max-height:100dvh; }
 }
 @media(max-height:600px) { .scene-name { display:none; } }
+/* Chapter artwork is decorative; labels, controls and the battle remain primary. */
+.battle-preview { width:46px; height:48px; flex-shrink:0; object-fit:cover; object-position:center 43%; border-radius:7px; border:1px solid #93a597; pointer-events:none; }
+.battle-option { gap:8px; }
+.battle-option>strong { width:16px; font-size:17px; }
+.battle-option>span { font-size:13px; overflow-wrap:anywhere; }
+.battle-option>.icon { width:20px; height:20px; }
+.era-copy h3 { font-size:17px; line-height:1.15; }
+.era-copy small { font-size:8px; letter-spacing:.25px; }
+.era-copy p { font-size:10px; line-height:1.35; }
+.result-dialog { isolation:isolate; }
+.result-landscape { position:absolute; inset:0 0 auto; height:155px; z-index:-1; opacity:.3; pointer-events:none; overflow:hidden; }
+.result-landscape img { width:100%; height:100%; object-fit:cover; object-position:center 39%; }
+.result-landscape:after { content:''; position:absolute; inset:0; background:linear-gradient(0deg,var(--paper),transparent 85%); }
+@media(max-width:360px) { .era-copy h3 { font-size:14px; } .battle-preview { width:46px; } }
+@media(max-height:700px) { .result-landscape { height:115px; } }

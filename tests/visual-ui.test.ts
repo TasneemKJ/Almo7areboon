@@ -4,6 +4,7 @@ import {readFileSync} from 'node:fs';
 import {defaultProfile} from '../src/game/save.ts';
 import {Game} from '../src/game/simulation.ts';
 import {ERAS} from '../src/game/data.ts';
+import {chapterPresentation} from '../src/ui/chapter-presentation.ts';
 
 async function evolution() {
  const path='../src/ui/evolution-screen.ts';
@@ -16,7 +17,7 @@ test('era journey shows all six landscapes and preserves the actual evolution ga
  let html=m.evolutionScreenHtml(g.profile,g.state);
  assert.equal((html.match(/class="era-landscape"/g)??[]).length,6);
  assert.equal((html.match(/class="era-picture"/g)??[]).length,6);
- for(const era of ERAS)assert.ok(html.includes(era.name));
+ for(let age=0;age<ERAS.length;age++)assert.ok(html.includes(chapterPresentation(age).title));
  assert.match(html,/data-command="evolve" disabled/);
  g.profile.coins=ERAS[0].evolveCost;
  html=m.evolutionScreenHtml(g.profile,g.state);

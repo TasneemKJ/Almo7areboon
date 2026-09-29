@@ -4,9 +4,13 @@ A mobile-first, portrait web recreation of the **We Are Warriors!** core loop, b
 
 ## Current delivery
 
-The deterministic core, 30-card collection, progression and save recovery are implemented. The illustrated visual overhaul adds six environments, redesigned armies and a coordinated mobile interface. Its current local suite has **139 passing tests** and the production build succeeds. This is **not** a verified pixel-exact clone or a complete recreation of the reference's live-service systems.
+The deterministic core, 30-card collection, progression and save recovery are implemented. The illustrated visual overhaul adds six environments, redesigned armies and a coordinated mobile interface. Its current local suite has **189 passing tests** and the production build succeeds. This is **not** a verified pixel-exact clone or a complete recreation of the reference's live-service systems.
 
 Rendered browser, screenshot, touch-device and Safari verification remain pending because the available browser route was blocked. Component tests and CSS/source checks do not replace those checks. See the [visual-overhaul evidence](docs/VISUAL-OVERHAUL.md), [core verification](docs/VERIFICATION.md) and the [original 40-pass record](docs/ITERATIONS.md).
+
+## Levantine continuation
+
+The active visual branch adds original Levantine dusk settlements, chapter wardrobes, twelve faction outposts and a consistent six-chapter journey. These are fictional settings rather than exact historical reconstructions. Combat, prices and saves keep their original internal identifiers. A quiet original six-chapter soundscape is now available after an enabled user gesture; Settings provides a separate Atmosphere switch under master Sound. Audio generation uses a cancellable worker. Arabic/RTL localization and real device/audio acceptance remain unfinished. The [refinement record](docs/levantine-40/PROGRESS.md) separates the five implemented batches from the forty-iteration goal and still-pending browser acceptance. No scheduled job is used.
 
 ## Run locally
 
