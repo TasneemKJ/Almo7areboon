@@ -1,0 +1,66 @@
+{
+  "kind": "source-art heuristics, not browser or WCAG verification",
+  "scenes": [
+    {
+      "age": 0,
+      "world_size": [
+        900,
+        1000
+      ],
+      "road_overlay_alpha": 0,
+      "road_luminance": 0.3211,
+      "road_vs_near_ground": 2.151
+    },
+    {
+      "age": 1,
+      "world_size": [
+        900,
+        1000
+      ],
+      "road_overlay_alpha": 0,
+      "road_luminance": 0.3301,
+      "road_vs_near_ground": 2.509
+    },
+    {
+      "age": 2,
+      "world_size": [
+        900,
+        1000
+      ],
+      "road_overlay_alpha": 0,
+      "road_luminance": 0.3396,
+      "road_vs_near_ground": 2.52
+    },
+    {
+      "age": 3,
+      "world_size": [
+        900,
+        1000
+      ],
+      "road_overlay_alpha": 0,
+      "road_luminance": 0.3206,
+      "road_vs_near_ground": 2.435
+    },
+    {
+      "age": 4,
+      "world_size": [
+        900,
+        1000
+      ],
+      "road_overlay_alpha": 0,
+      "road_luminance": 0.3274,
+      "road_vs_near_ground": 2.318
+    },
+    {
+      "age": 5,
+      "world_size": [
+        900,
+        1000
+      ],
+      "road_overlay_alpha": 0,
+      "road_luminance": 0.3256,
+      "road_vs_near_ground": 2.511
+    }
+  ],
+  "errors": []
+}
