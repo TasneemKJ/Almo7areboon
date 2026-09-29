@@ -1,6 +1,7 @@
 import {path as p,ellipse as e,rect as r,line as l,gradient,documentSvg} from './illustration-kit.ts';
 import {sceneMaterialDetailSvg} from './design-detail.ts';
 import {cinematicDepthSvg} from './cinematic-depth.ts';
+import {environmentVignettesSvg} from './environment-vignettes.ts';
 
 // Fictional chapters, not reconstructions of monuments or a historical chronology.
 // Reference contexts and deliberate fantasy are recorded in docs/levantine-40.
@@ -179,6 +180,7 @@ export function landscapeSvg(input:number,includeForeground=true):string {
  body+=`<g data-layer="settlement">`;
  body+=[shelterValley,terraces,coast,quarter,()=>hillside(false),()=>hillside(true)][age]();
  body+='</g>';
+ body+=environmentVignettesSvg(age);
  body+=sceneMaterialDetailSvg(age);
  body+=`<g data-layer="meadow">${p('M0 581Q248 559 473 578Q714 556 900 580V1000H0Z','url(#earth)','none',0)}</g>`;
  body+=`<g data-layer="battle-lane">${p('M0 625Q210 613 436 622Q682 614 900 626V757Q692 765 440 752Q220 762 0 751Z','#344e55','none',0)}${p('M0 622Q210 610 436 619Q682 611 900 623V747Q692 753 440 742Q220 752 0 741Z','url(#road)','none',0)}${l('M0 623Q210 611 436 620Q682 612 900 624',age===5?'#c0d0b9':'#c3b99d',3)}`;
