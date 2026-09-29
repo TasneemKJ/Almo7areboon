@@ -33,7 +33,7 @@ const xAt=(x:number)=>x*.45;
 const noise=(n:number)=>{const value=Math.sin(n*117.13)*43758.5453;return value-Math.floor(value);};
 const tint=(hex:string)=>parseInt(hex.slice(1),16);
 
-/** Original SVG art is rasterized once; simulation remains the only gameplay owner. */
+/** Raster and SVG art share logical anchors; simulation remains the gameplay owner. */
 export function mountBattlefield(element:HTMLElement,game:GamePort,onFrame:()=>void,onEvents:(events:GameEvent[])=>void,options:{isVisible?:()=>boolean}={}):{destroy():void} {
  let disposed=false;
  const motionQuery=window.matchMedia('(prefers-reduced-motion: reduce)');
@@ -77,7 +77,10 @@ export function mountBattlefield(element:HTMLElement,game:GamePort,onFrame:()=>v
   private failed=false;
   constructor(){super('battlefield');}
   preload():void {
-   for(const asset of visualAssets())this.load.svg(asset.key,asset.url);
+   for(const asset of visualAssets()){
+    if(asset.format==='image')this.load.image(asset.key,asset.url);
+    else this.load.svg(asset.key,asset.url);
+   }
    this.load.on('loaderror',()=>{this.failed=true;});
   }
   create():void {
@@ -85,7 +88,8 @@ export function mountBattlefield(element:HTMLElement,game:GamePort,onFrame:()=>v
    this.layout=arenaLayout(this.scale.width,this.scale.height);
    for(const asset of visualAssets())if(asset.frames&&this.textures.exists(asset.key)){
     const texture=this.textures.get(asset.key);
-    for(let frame=0;frame<asset.frames;frame++)texture.add(String(frame),0,frame*TROOP_FRAME.width,0,TROOP_FRAME.width,TROOP_FRAME.height);
+    const frameWidth=asset.width/asset.frames;
+    for(let frame=0;frame<asset.frames;frame++)texture.add(String(frame),0,frame*frameWidth,0,frameWidth,asset.height);
    }
    this.world=this.add.container();
    this.sky=this.add.image(0,0,this.textures.exists(landscapeTexture(game.profile.age))?landscapeTexture(game.profile.age):'__WHITE').setOrigin(0);
@@ -147,6 +151,8 @@ export function mountBattlefield(element:HTMLElement,game:GamePort,onFrame:()=>v
    ctx.restore();
   }
   private bakeGrade(age:number):void {
+   // The storybook paintings already contain their authored lighting and paper texture.
+   if(age===0)return;
    const matrix=gradeMatrix(eraGrade(age));
    const keys=[landscapeTexture(age),foregroundTexture(age)];
    for(const side of ['player','enemy'] as const){keys.push(baseTexture(age,side));for(const kind of [0,1,2] as const)keys.push(unitTexture(age,kind,side));}
@@ -190,7 +196,10 @@ export function mountBattlefield(element:HTMLElement,game:GamePort,onFrame:()=>v
   }
   private createBase(age:number,side:Side):ImageOrFallback {
    const key=baseTexture(age,side);
-   if(this.textures.exists(key))return this.add.image(0,0,key).setOrigin(.5,140/160).setScale(.62);
+   if(this.textures.exists(key)){
+    const image=this.add.image(0,0,key).setOrigin(.5,140/160);
+    return image.setScale(.62*160/image.width).setFlipX(age===0&&side==='enemy');
+   }
    const graphic=this.add.graphics();drawBase(graphic,age,side);return graphic;
   }
   private syncEra():void {
@@ -232,8 +241,9 @@ export function mountBattlefield(element:HTMLElement,game:GamePort,onFrame:()=>v
     if(view.body instanceof Phaser.GameObjects.Image){
      if(!game.state.paused)view.body.setFrame(String(pose.frame));
      view.body.setAngle(pose.angle*direction+gesture.angle*direction+recoil.angle);
-     view.body.setScale(scale*gesture.sx,scale*gesture.sy).setFlipX(unit.side==='enemy');
-     if(unit.hitFlash>0)view.body.setTintFill(0xfff9db);else if(frozen)view.body.setTint(0x91e5f0);else view.body.clearTint();
+     const density=TROOP_FRAME.height/view.body.height;
+     view.body.setScale(scale*density*gesture.sx,scale*density*gesture.sy).setFlipX(unit.side==='enemy');
+     if(unit.hitFlash>0)view.body.setTintFill(0xfff9db);else if(frozen)view.body.setTint(0x91e5f0);else if(unit.age===0&&unit.side==='enemy')view.body.setTint(0xffd9b5);else view.body.clearTint();
      view.body.setPosition(x+recoil.x+gesture.forward*direction,y-(game.state.paused?0:pose.lift)-gesture.lift+recoil.y);
     }else{
      view.body.setPosition(x+recoil.x+gesture.forward*direction,y-gesture.lift+recoil.y).setScale(direction*perspective.scale*gesture.sx,perspective.scale*gesture.sy).setAngle(pose.angle*direction+gesture.angle*direction+recoil.angle);
@@ -254,15 +264,17 @@ export function mountBattlefield(element:HTMLElement,game:GamePort,onFrame:()=>v
     if(game.state.phase!=='ready')continue;
     g.fillStyle(0x243e40,.2);g.fillEllipse(x,y+2,25,7);
     actor.setPosition(x,y).setDepth(y);
-    if(actor instanceof Phaser.GameObjects.Image)actor.setScale(.47).setFlipX(i===1);
+    if(actor instanceof Phaser.GameObjects.Image){actor.setScale(.47*TROOP_FRAME.height/actor.height).setFlipX(i===1);if(i===1&&game.profile.enemyAge===0)actor.setTint(0xffd9b5);}
     else {actor.setScale(i===0?1:-1,1);drawTroop(actor,i===0?game.profile.age:game.profile.enemyAge,0,side,0,false);}
    }
    this.armyLayer.sort('depth');
   }
   private drawAtmosphere():void {
    const g=this.ambience;g.clear();
-   paintDuskAtmosphere(g,duskAtmosphereFrame(game.profile.age,this.clock,this.reduce),landscapePlacement(450,this.layout.height,this.layout.groundY));
-   paintLightingHierarchy(g,lightingHierarchyFrame(game.profile.age,this.clock,this.reduce),landscapePlacement(450,this.layout.height,this.layout.groundY));
+   if(game.profile.age!==0){
+    paintDuskAtmosphere(g,duskAtmosphereFrame(game.profile.age,this.clock,this.reduce),landscapePlacement(450,this.layout.height,this.layout.groundY));
+    paintLightingHierarchy(g,lightingHierarchyFrame(game.profile.age,this.clock,this.reduce),landscapePlacement(450,this.layout.height,this.layout.groundY));
+   }
    this.drawStageLight();
    for(const mark of atmosphereFrame(game.profile.age,this.clock,450,this.layout.groundY,this.reduce)){
     if(mark.kind==='firefly'||mark.kind==='starlight'){

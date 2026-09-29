@@ -18,11 +18,16 @@ try {
  assert.ok(ready,'Vite preview did not start');
  browser=await chromium.launch({headless:true});
  const context=await browser.newContext({viewport:{width:390,height:844},deviceScaleFactor:2});
- const page=await context.newPage(),errors=[];
+ const page=await context.newPage(),errors=[],assetFailures=[];
  page.on('pageerror',error=>errors.push(error.message));
+ page.on('response',response=>{if(response.url().includes('/art/storybook/')&&!response.ok())assetFailures.push(`${response.status()} ${response.url()}`);});
+ await page.addInitScript(()=>document.addEventListener('visual-fallback',()=>{window.__visualFallback=true;}));
  await page.goto('http://127.0.0.1:4173/',{waitUntil:'networkidle'});
  await page.waitForSelector('#battlefield canvas');
  await page.waitForFunction(()=>!document.querySelector('.world-loader'));
+ assert.equal(await page.evaluate(()=>window.__visualFallback),undefined,'art must load without renderer fallback');
+ const portraits=await page.locator('.unit-card img').evaluateAll(images=>images.map(img=>({src:img.getAttribute('src'),ready:img.complete&&img.naturalWidth>0})));
+ assert.ok(portraits.every(p=>p.ready&&p.src.includes('/art/storybook/')),'all opening portraits use loaded storybook art');
  const density=await page.locator('#battlefield canvas').evaluate(canvas=>({width:canvas.width,height:canvas.height,cssWidth:canvas.clientWidth,cssHeight:canvas.clientHeight}));
  assert.ok(density.width/density.cssWidth>=1.9&&density.width/density.cssWidth<=2.1,`canvas density: ${JSON.stringify(density)}`);
  assert.ok(density.height/density.cssHeight>=1.9&&density.height/density.cssHeight<=2.1,`canvas height density: ${JSON.stringify(density)}`);
@@ -42,6 +47,11 @@ try {
  assert.equal(await page.locator('.battle-select').evaluate(node=>getComputedStyle(node).display),'none');
  await page.getByText('PAUSED',{exact:true}).waitFor();
  await page.screenshot({path:`${output}/03-pause-390.png`});
+ await page.getByRole('button',{name:'Resume battle'}).click();
+ await page.getByRole('button',{name:/Food drop/i}).click();
+ await page.getByRole('button',{name:/Deploy Pathkeeper/}).click();
+ await page.waitForTimeout(6500);
+ await page.screenshot({path:`${output}/05-skirmish-390.png`});
  await context.close();
 
  const narrow=await browser.newContext({viewport:{width:320,height:640},deviceScaleFactor:2});
@@ -60,8 +70,23 @@ try {
  assert.ok(narrowPortrait.image<=narrowPortrait.price+1,`narrow portrait clipped: ${JSON.stringify(narrowPortrait)}`);
  await small.screenshot({path:`${output}/04-ready-320.png`});
  await narrow.close();
+ // Isolated visual fixture: all three roles unlocked, normal combat actions thereafter.
+ const showcase=await browser.newContext({viewport:{width:390,height:844},deviceScaleFactor:2});
+ await showcase.addInitScript(()=>localStorage.setItem('almo7areboon.save.v1',JSON.stringify({version:2,timeline:1,age:0,enemyAge:0,coins:0,cards:[],unlocked:[true,true,true],sound:false})));
+ const army=await showcase.newPage();army.on('pageerror',error=>errors.push(error.message));
+ await army.goto('http://127.0.0.1:4173/',{waitUntil:'networkidle'});
+ await army.waitForFunction(()=>!document.querySelector('.world-loader'));
+ await army.getByRole('button',{name:/^BATTLE/}).click();
+ await army.getByRole('button',{name:/Food drop/i}).click();
+ for(const name of ['Pathkeeper','Thrower','Dino Rider'])await army.getByRole('button',{name:new RegExp(`Deploy ${name}`)}).click();
+ await army.waitForTimeout(8000);
+ await army.screenshot({path:`${output}/06-all-roles-fixture-390.png`});
+ await army.waitForTimeout(7000);
+ await army.screenshot({path:`${output}/07-clash-fixture-390.png`});
+ await showcase.close();
  assert.deepEqual(errors,[],`browser errors: ${errors.join('; ')}`);
- console.log(JSON.stringify({density,screenshots:4,narrowControls:layout.length,errors},null,2));
+ assert.deepEqual(assetFailures,[],'all storybook asset requests succeeded');
+ console.log(JSON.stringify({density,screenshots:7,narrowControls:layout.length,errors,assetFailures},null,2));
 } finally {
  await browser?.close();
  server.kill('SIGTERM');

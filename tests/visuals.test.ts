@@ -68,9 +68,9 @@ test('passive cards have 30 different object illustrations rather than repeated 
 });
 test('the texture manifest has unique keys and a bounded initial decoded pixel budget',async()=>{
  const m=await moduleAt('visual-assets');const entries=m.visualAssets();
- assert.equal(entries.length,60);assert.equal(new Set(entries.map((x:any)=>x.key)).size,60);
+ assert.equal(entries.length,57);assert.equal(new Set(entries.map((x:any)=>x.key)).size,57);
  let pixels=0;
- for(const entry of entries){assert.match(entry.url,/^data:image\/svg\+xml/);pixels+=entry.width*entry.height;assert.ok(entry.width<=1024&&entry.height<=1024);}
+ for(const entry of entries){assert.match(entry.url,entry.format==='image'?/^\/art\/storybook\/[a-z-]+\.webp$/:/^data:image\/svg\+xml/);pixels+=entry.width*entry.height;assert.ok(entry.width<=2048&&entry.height<=1024);}
  assert.ok(pixels*4<42_000_000,`uncompressed texture budget ${pixels*4}`);
 });
 test('deployment cards identify their tactical role without changing prices or action IDs',()=>{
@@ -86,6 +86,7 @@ test('inline scene assets use the pinned Phaser loader decoding path without net
  const {createRequire}=await import('node:module');const require=createRequire(import.meta.url);
  const xhr=require('phaser/src/loader/XHRLoader.js');
  for(const asset of m.visualAssets()){
+  if(asset.format==='image')continue;
   let decoded='';
   assert.doesNotThrow(()=>xhr({url:asset.url,base64:true,xhrSettings:{responseType:'text'},onBase64Load:(result:{responseText:string})=>{decoded=result.responseText;}},{}));
   assert.match(decoded,/^<svg /);assert.match(decoded,/<\/svg>$/);

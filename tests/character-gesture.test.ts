@@ -41,5 +41,5 @@ test('battlefield mirrors gesture forward/lean by faction direction and keeps si
  assert.match(source,/direction=unit\.side==='player'\?1:-1/);
  assert.match(source,/x\+recoil\.x\+gesture\.forward\*direction/);
  assert.match(source,/pose\.angle\*direction\+gesture\.angle\*direction\+recoil\.angle/);
- assert.match(source,/scale\*gesture\.sx,scale\*gesture\.sy/);
+ assert.match(source,/scale\*density\*gesture\.sx,scale\*density\*gesture\.sy/);
 });
