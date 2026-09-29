@@ -1,0 +1,51 @@
+/* Keep the tactical world dominant while preserving every upgrade and control. */
+.deployment {
+ padding:7px 12px 5px;
+ background:linear-gradient(180deg,#254b5b,#142f40);
+}
+.food-line { margin-bottom:5px; }
+.unit-cards { gap:8px; }
+.unit-card {
+ height:120px;
+ --portrait-top:24px;
+ --portrait-bottom:26px;
+ background:radial-gradient(ellipse at 50% 78%,#7bada8 0%,#3b7890 48%,#234b63 100%);
+}
+.unit-card img { top:var(--portrait-top); bottom:auto; height:calc(100% - var(--portrait-top) - var(--portrait-bottom)); filter:drop-shadow(0 3px 2px #102f3b8c); }
+.unit-name { font-size:13px; text-shadow:0 1px 3px #102f3b; }
+.unit-role { font-size:9px; top:23px; letter-spacing:.65px; }
+.unit-price { height:25px; background:#122f3deF; }
+.unit-fill { bottom:24px; }
+.deploy-hint { min-height:19px; margin-top:4px; }
+
+.upgrades {
+ display:grid;
+ grid-template-columns:repeat(2,minmax(0,1fr));
+ gap:8px;
+ padding:5px 10px;
+}
+.upgrade-row,.upgrade-row+.upgrade-row { min-width:0; min-height:46px; padding:0; border:0; }
+.upgrade-label { min-width:0; gap:4px; font-size:11px; line-height:1.1; }
+.upgrade-label>div { min-width:0; overflow-wrap:anywhere; }
+.upgrade-label>.icon { width:21px; height:21px; }
+.upgrade-label small { display:none; }
+.buy-button { min-width:61px; min-height:44px; flex-shrink:0; padding:5px 3px; font-size:12px; }
+.buy-button .icon { width:17px; height:17px; }
+.bottom-nav { height:calc(58px + env(safe-area-inset-bottom,0px)); }
+.secondary-screen { bottom:calc(58px + env(safe-area-inset-bottom,0px)); }
+
+@media(max-height:700px) {
+ .deployment { padding:4px 10px; }
+ .unit-card { height:90px; --portrait-top:19px; --portrait-bottom:21px; }
+ .unit-name { font-size:11px; }
+ .unit-role { font-size:8px; top:17px; }
+ .unit-price { height:20px; }
+ .unit-fill { bottom:19px; }
+ .upgrades { padding:3px 8px; gap:5px; }
+ .upgrade-row,.upgrade-row+.upgrade-row { min-height:44px; }
+}
+@media(max-width:360px) {
+ .upgrades { gap:4px; padding-inline:7px; }
+ .upgrade-label { font-size:10px; }
+ .buy-button { min-width:55px; }
+}
