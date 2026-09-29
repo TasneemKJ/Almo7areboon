@@ -56,7 +56,7 @@ test('battlefield renders ambience behind actors from the presentation-only mode
   assert.match(source,/from '.\/era-atmosphere\.ts'/);
   assert.match(source,/private ambience!:/);
   assert.match(source,/this\.world\.add\(this\.ambience\)/);
-  assert.ok(source.indexOf('this.world.add(this.ambience)')<source.indexOf('this.world.add(this.basesLayer)'),'ambience belongs behind bases and troops');
+  assert.ok(source.indexOf('this.world.add(this.ambience)')<source.indexOf('this.world.add(this.armyLayer)'),'ambience belongs behind bases and troops');
   assert.match(source,/atmosphereFrame\(game\.profile\.age/);
   assert.match(source,/drawAtmosphere\(\)/);
   assert.doesNotMatch(source,/game\.(?:profile|state)\.[A-Za-z0-9_]+\s*=(?!=)/,'renderer must not mutate simulation state');

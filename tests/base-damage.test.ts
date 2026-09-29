@@ -66,14 +66,16 @@ test('player and enemy damage compositions mirror structural marks rather than r
   }
 });
 
-test('battlefield inserts damage above bases but below troops and routes base hits through delayed projectile impact',async()=>{
+test('battlefield sorts base damage with buildings and troops and routes base hits through delayed projectile impact',async()=>{
   const {readFileSync}=await import('node:fs');
   const source=readFileSync(new URL('../src/view/battlefield.ts',import.meta.url),'utf8');
   assert.match(source,/from '.\/base-damage\.ts'/);
   assert.match(source,/private baseDamage!:/);
-  const damageAdd=source.indexOf('this.world.add(this.baseDamage)');
-  assert.ok(damageAdd>source.indexOf('this.world.add(this.basesLayer)'));
-  assert.ok(damageAdd<source.indexOf('this.world.add(this.shadows)'));
+  assert.ok(source.includes('this.armyLayer.add(this.baseDamage)'));
+  assert.ok(source.includes('this.armyLayer.add([this.playerBase,this.enemyBase])'));
+  assert.ok(source.includes('this.baseDamage.setDepth(groundY+12.1)'));
+  assert.ok(source.includes('view.body.setDepth(y+.5)'));
+  assert.ok(source.includes("this.armyLayer.sort('depth')"));
   assert.match(source,/baseDamageFrame\(/);
   assert.match(source,/targetBase:/);
   assert.match(source,/baseImpact\(/);

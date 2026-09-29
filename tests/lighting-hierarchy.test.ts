@@ -75,5 +75,5 @@ test('production painter stays bounded and does not mutate source marks',async()
 test('battlefield paints hierarchy through existing ambience before bases and troops',()=>{
  const source=readFileSync(new URL('../src/view/battlefield.ts',import.meta.url),'utf8');
  assert.match(source,/paintLightingHierarchy\(g,lightingHierarchyFrame\(game\.profile\.age,this\.clock,this\.reduce\),landscapePlacement\(450,this\.layout\.height,this\.layout\.groundY\)\)/);
- assert.ok(source.indexOf('this.world.add(this.ambience)')<source.indexOf('this.world.add(this.basesLayer)'));
+ assert.ok(source.indexOf('this.world.add(this.ambience)')<source.indexOf('this.world.add(this.armyLayer)'));
 });
