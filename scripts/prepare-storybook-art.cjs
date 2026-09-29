@@ -6,12 +6,13 @@ const olive=process.argv.includes('--olive');
 const harbor=process.argv.includes('--harbor');
 const lantern=process.argv.includes('--lantern');
 const hillside=process.argv.includes('--hillside');
-if([olive,harbor,lantern,hillside].filter(Boolean).length>1)throw new Error('Choose one chapter to pack');
-const folder=hillside?'hillside':lantern?'lantern':harbor?'harbor':olive?'olive':'';
+const courtyards=process.argv.includes('--courtyards');
+if([olive,harbor,lantern,hillside,courtyards].filter(Boolean).length>1)throw new Error('Choose one chapter to pack');
+const folder=courtyards?'courtyards':hillside?'hillside':lantern?'lantern':harbor?'harbor':olive?'olive':'';
 const source=path.resolve('art-source/storybook',folder);
 const output=path.resolve('public/art/storybook',folder);
 mkdirSync(output,{recursive:true});
-const WIDTH=hillside?216:folder?224:256,HEIGHT=192,BASELINE=181,PADDING=8;
+const WIDTH=hillside||courtyards?216:folder?224:256,HEIGHT=192,BASELINE=181,PADDING=8;
 
 async function pack(name){
  const {data,info}=await sharp(path.join(source,`${name}.webp`)).ensureAlpha().raw().toBuffer({resolveWithObject:true});
@@ -51,7 +52,7 @@ async function pack(name){
 }
 async function main(){
  const metadata=[];
- const names=hillside?['sentinel','scout','tank']:lantern?['gatekeeper','musketeer','cannon']:harbor?['quay-guard','archer','quay-rider']:olive?['fieldhand','slinger','harvester']:['pathkeeper','thrower','rider'];
+ const names=courtyards?['light-guard','trooper','sky-skimmer']:hillside?['sentinel','scout','tank']:lantern?['gatekeeper','musketeer','cannon']:harbor?['quay-guard','archer','quay-rider']:olive?['fieldhand','slinger','harvester']:['pathkeeper','thrower','rider'];
  for(const name of names)metadata.push(await pack(name));
  await sharp(path.join(source,'village.webp')).resize(900,1000,{fit:'fill'}).webp({quality:92}).toFile(path.join(output,'village.webp'));
  const hut=await sharp(path.join(source,'shelter.webp')).trim({threshold:12}).resize(234,208,{fit:'inside'}).png().toBuffer();
