@@ -98,3 +98,9 @@ Thirteen connected refinements are now implemented toward forty. No scheduler; r
 Replaced the one-size-fits-all unit-hit burst with a bounded contact→breakup→dissipation grammar: earth/stone chips and dust, bronze sparks, powder smoke, steel fragments and energy pulses. Heavy units carry more visual mass without multiplying effect count; projectile impacts wait for the visible projectile to land; reduced motion uses a static contact composition. Seven regressions RED→GREEN; full suite 236/236 and production build passed. Details: [14-impact-material.md](14-impact-material.md).
 
 Fourteen connected refinements are now implemented toward forty. No scheduler; rendered mobile acceptance remains open.
+
+
+## 15 — Environmental storytelling micro-vignettes
+Added chapter-specific functional set dressing above the combat road: water/storage, agriculture, harbor work, workshop craft, civilian utilities and future garden infrastructure. Five regressions RED→GREEN; full suite 241/241, build passed, asset QA stayed zero-error, and source road-mask checks stayed unchanged. Details: [15-environment-vignettes.md](15-environment-vignettes.md).
+
+Fifteen connected refinements are now implemented toward forty. No scheduler; rendered mobile acceptance remains open.
