@@ -71,7 +71,7 @@ test('drawing is bounded, does not mutate source data and never reaches the batt
 test('runtime draws dusk within the existing atmosphere layer before bases and troops (source contract)',()=>{
  const source=readFileSync(new URL('../src/view/battlefield.ts',import.meta.url),'utf8');
  assert.match(source,/paintDuskAtmosphere\(g,duskAtmosphereFrame\(game.profile.age,this.clock,this.reduce\),landscapePlacement\(450,this.layout.height,this.layout.groundY\)\)/);
- assert.ok(source.indexOf('this.world.add(this.ambience)')<source.indexOf('this.world.add(this.basesLayer)'));
+ assert.ok(source.indexOf('this.world.add(this.ambience)')<source.indexOf('this.world.add(this.armyLayer)'));
  assert.match(source,/if\(!game.state.paused&&!this.reduce\)this.clock\+=dt/);
 });
 test('harbor ripples remain below the painted boat hulls rather than washing over them',async()=>{

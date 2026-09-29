@@ -44,7 +44,6 @@ export function mountBattlefield(element:HTMLElement,game:GamePort,onFrame:()=>v
   private world!:Phaser.GameObjects.Container;
   private sky!:Phaser.GameObjects.Image;
   private ambience!:Phaser.GameObjects.Graphics;
-  private basesLayer!:Phaser.GameObjects.Container;
   private baseDamage!:Phaser.GameObjects.Graphics;
   private armyLayer!:Phaser.GameObjects.Container;
   private foreground!:Phaser.GameObjects.Image;
@@ -103,12 +102,11 @@ export function mountBattlefield(element:HTMLElement,game:GamePort,onFrame:()=>v
    this.streak=this.add.graphics().setBlendMode(Phaser.BlendModes.ADD);this.world.add(this.streak);
    this.clouds=this.add.container();this.world.add(this.clouds);
    this.ambience=this.add.graphics();this.world.add(this.ambience);
-   this.basesLayer=this.add.container();this.world.add(this.basesLayer);
    this.stageLight=this.add.container();this.world.add(this.stageLight);
-   this.baseDamage=this.add.graphics();this.world.add(this.baseDamage);
    this.shadows=this.add.graphics();this.world.add(this.shadows);
    this.halos=this.add.graphics().setBlendMode(Phaser.BlendModes.ADD);this.world.add(this.halos);
    this.armyLayer=this.add.container();this.world.add(this.armyLayer);
+   this.baseDamage=this.add.graphics();this.armyLayer.add(this.baseDamage);
    this.foreground=this.add.image(0,0,this.textures.exists(foregroundTexture(game.profile.age))?foregroundTexture(game.profile.age):'__WHITE').setOrigin(0);
    if(this.foreground.texture.key==='__WHITE')this.foreground.setVisible(false);
    this.world.add(this.foreground);
@@ -220,7 +218,7 @@ export function mountBattlefield(element:HTMLElement,game:GamePort,onFrame:()=>v
    this.placeLandscape();this.placeForeground();
    this.playerBase?.destroy();this.enemyBase?.destroy();
    this.playerBase=this.createBase(p.age,'player');this.enemyBase=this.createBase(p.enemyAge,'enemy');
-   this.basesLayer.add([this.playerBase,this.enemyBase]);
+   this.armyLayer.add([this.playerBase,this.enemyBase]);
    for(const actor of this.idle)actor.destroy();this.idle=[];
    for(const side of ['player','enemy'] as const){const actor=this.sprite(side==='player'?p.age:p.enemyAge,0,side);this.armyLayer.add(actor);this.idle.push(actor);}
    const shell=element.closest<HTMLElement>('.game-shell');
@@ -229,7 +227,10 @@ export function mountBattlefield(element:HTMLElement,game:GamePort,onFrame:()=>v
   private drawArmy():void {
    const g=this.shadows,h=this.halos;g.clear();h.clear();
    const {groundY}=this.layout;
-   this.playerBase.setPosition(39,groundY+12);this.enemyBase.setPosition(411,groundY+12);
+   // A shared ground-plane sort lets rear-lane troops pass behind buildings.
+   this.playerBase.setPosition(39,groundY+12).setDepth(groundY+12);
+   this.enemyBase.setPosition(411,groundY+12).setDepth(groundY+12);
+   this.baseDamage.setDepth(groundY+12.1);
    const ids=new Set<number>();
    for(const unit of game.state.units){
     ids.add(unit.id);let view=this.units.get(unit.id);
@@ -257,7 +258,8 @@ export function mountBattlefield(element:HTMLElement,game:GamePort,onFrame:()=>v
      view.body.setPosition(x+recoil.x+gesture.forward*direction,y-gesture.lift+recoil.y).setScale(direction*perspective.scale*gesture.sx,perspective.scale*gesture.sy).setAngle(pose.angle*direction+gesture.angle*direction+recoil.angle);
      drawTroop(view.body,unit.age,unit.kind,unit.side,this.reduce||frozen?0:game.state.time,unit.attacking,unit.hitFlash>0);
     }
-    view.body.setDepth(y);
+    // Troops win a same-baseline tie against the building and its damage marks.
+    view.body.setDepth(y+.5);
     if(moving&&!game.state.paused&&!frozen&&this.clock-view.dustAt>.28){this.emit(x,y+2,1,0xdfd4b1,true,.45);view.dustAt=this.clock;}
     view.x=x;view.y=y;
    }
@@ -271,7 +273,7 @@ export function mountBattlefield(element:HTMLElement,game:GamePort,onFrame:()=>v
     actor.setVisible(game.state.phase==='ready');
     if(game.state.phase!=='ready')continue;
     g.fillStyle(0x243e40,.2);g.fillEllipse(x,y+2,25,7);
-    actor.setPosition(x,y).setDepth(y);
+    actor.setPosition(x,y).setDepth(y+.5);
     if(actor instanceof Phaser.GameObjects.Image){actor.setScale(.47*TROOP_FRAME.height/actor.height).setFlipX(i===1);if(i===1&&storybookArt(game.profile.enemyAge))actor.setTint(0xffd9b5);}
     else {actor.setScale(i===0?1:-1,1);drawTroop(actor,i===0?game.profile.age:game.profile.enemyAge,0,side,0,false);}
    }
@@ -323,6 +325,13 @@ export function mountBattlefield(element:HTMLElement,game:GamePort,onFrame:()=>v
   }
   private drawStageLight():void {
    const s=game.state,age=game.profile.age,st=this.streak;st.clear();
+   // Painted plates already contain sky, lamps and foreground shading. Procedural
+   // clouds cannot be masked by their baked rooftops and would float over the walls.
+   if(storybookArt(age)){
+    for(const pool of [this.stars,this.clouds,this.mist,this.stageLight])pool.setVisible(false);
+    return;
+   }
+   for(const pool of [this.stars,this.clouds,this.mist,this.stageLight])pool.setVisible(true);
    // Stars are pooled soft quads: tessellating 60 circles a frame cost ~12% fps at 2x density.
    this.paintSoft(this.stars,starFrame(age,this.clock,this.layout.groundY,this.reduce).map(star=>({x:star.x,y:star.y,rx:star.size*2.2,ry:star.size*2.2,color:0xfff6e0,alpha:star.alpha})),Phaser.BlendModes.ADD);
    const streak=shootingStar(age,this.clock,this.layout.groundY,this.reduce);
