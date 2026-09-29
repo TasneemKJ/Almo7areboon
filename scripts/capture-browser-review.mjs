@@ -28,10 +28,12 @@ try {
  assert.equal(await page.evaluate(()=>window.__visualFallback),undefined,'art must load without renderer fallback');
  const interfaceImages=await page.locator('svg.icon image').evaluateAll(nodes=>nodes.map(node=>node.getAttribute('href')));
  assert.ok(interfaceImages.length>=10,'painted icons are present in the initial HUD');
+ const paintedIconNames=['coin','gem','food','battle','evolution','cards','skills','shield','gear','quest','lock','freeze','meteor','heart','flag','trophy'];
+ const allInterfaceImages=paintedIconNames.map(name=>`/art/storybook/interface/${name}.webp`);
  const decodedIcons=await page.evaluate(async urls=>Promise.all([...new Set(urls)].map(url=>new Promise(resolve=>{
   const image=new Image();image.onload=()=>resolve(image.naturalWidth===128&&image.naturalHeight===128);image.onerror=()=>resolve(false);image.src=url;
- }))),interfaceImages);
- assert.ok(decodedIcons.every(Boolean),'HUD icon images decode at their intended density');
+ }))),[...interfaceImages,...allInterfaceImages]);
+ assert.ok(decodedIcons.every(Boolean),'all 16 painted icons decode at their intended density, including result and progression icons');
  const portraits=await page.locator('.unit-card img').evaluateAll(images=>images.map(img=>({src:img.getAttribute('src'),ready:img.complete&&img.naturalWidth>0})));
  assert.ok(portraits.every(p=>p.ready&&p.src.includes('/art/storybook/')),'all opening portraits use loaded storybook art');
  const density=await page.locator('#battlefield canvas').evaluate(canvas=>({width:canvas.width,height:canvas.height,cssWidth:canvas.clientWidth,cssHeight:canvas.clientHeight}));
