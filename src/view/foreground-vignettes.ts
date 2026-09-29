@@ -71,6 +71,6 @@ function futureCourtyards():string {
 
 export function foregroundVignettesSvg(input:number):string {
  const age=validAge(input);
- const body=[firstFires,oliveTerraces,harborWatch,hillsideWatch,hillsideWatch,futureCourtyards][age]();
+ const body=[firstFires,oliveTerraces,harborWatch,lanternQuarter,hillsideWatch,futureCourtyards][age]();
  return `<g data-layer="foreground-vignettes" data-chapter="${age}">${body}</g>`;
 }
