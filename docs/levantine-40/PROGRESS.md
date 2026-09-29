@@ -63,3 +63,9 @@ Seven connected refinements are now implemented toward forty. Asset boards, test
 Added two bounded, low-alpha faction-tinted focus fields behind each active troop using the existing shadow Graphics layer. Lane/role scale affects field geometry; hit flash strengthens it within an alpha cap; freeze stays cool. The approach uses simultaneous contrast rather than outlines so increasingly detailed scenery does not swallow playable figures. Five regressions RED→GREEN; full suite 202/202 and production build passed. Details: [08-silhouette-focus.md](08-silhouette-focus.md).
 
 Eight connected refinements are now implemented toward forty. No scheduler; browser/mobile acceptance remains open.
+
+
+## 09 — Warm/cool lighting hierarchy
+Added source-registered warm practical-light pools and weaker cool atmospheric support through the existing ambience Graphics layer. The road remains neutral; reduced motion freezes the complete composition. Seven regressions RED→GREEN; full suite 209/209 and production build passed. Details: [09-lighting-hierarchy.md](09-lighting-hierarchy.md).
+
+Nine connected refinements are now implemented toward forty. No scheduler; browser/mobile acceptance remains open.
