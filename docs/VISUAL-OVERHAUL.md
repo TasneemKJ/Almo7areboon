@@ -1,6 +1,6 @@
 # Illustrated visual overhaul — 2026-09-29
 
-Branch: `feat/illustrated-visual-overhaul`; PR #2. Base: merged core commit `474fe734f3f05d3d979d95d807197cfd7ffd3e15`.
+Initial visual-overhaul PR #2 merged as `9658a18b503e440e5c718d7e4367abde12e3b88d`; this document continues to track presentation-only follow-up passes on isolated branches. The core-only base before that overhaul was `474fe734f3f05d3d979d95d807197cfd7ffd3e15`.
 
 ## Delivered presentation
 
@@ -16,10 +16,10 @@ No files under `src/game` were changed. The existing gameplay and save suite is 
 
 ## Evidence
 
-- `npm test`: **121 passed, 0 failed** on the current local tree.
+- `npm test`: **139 passed, 0 failed** on the current local tree.
 - `npm run build`: TypeScript and Vite production build passed.
 - `git diff --check`: clean.
-- First visual checkpoint `df53471eaaa56801e759b64cd598aa9e23c92d81` passed GitHub Actions run `36501123490`; atmosphere checkpoint `87714e9a4c4c7f48621789312a522c8543e276bf` passed run `36509123095`. A newly published commit still requires its own exact-head CI result.
+- First visual checkpoint `df53471eaaa56801e759b64cd598aa9e23c92d81` passed GitHub Actions run `36501123490`; atmosphere checkpoint `87714e9a4c4c7f48621789312a522c8543e276bf` passed run `36509123095`; base-destruction checkpoint `252a721d687ec5507f365a5570b99a74763f2995` passed run `36513906661`. A newly published commit still requires its own exact-head CI result.
 - The uploaded tree was compared against an alternate local Git index after each transfer; the complete source tree must match before publication.
 - The scene manifest has 54 unique inline SVG texture assets and a declared initial pixel budget below 42 MB RGBA. This arithmetic budget excludes browser/GPU overhead and is not a measured memory claim.
 
@@ -38,6 +38,14 @@ No files under `src/game` were changed. The existing gameplay and save suite is 
 
 10. Bases previously stayed visually pristine until the instant they disappeared, so progress against the objective was carried almost entirely by the health bar. A presentation-only destruction model now adds era-material cracks and rubble below 72% health, then bounded smoke/sparks below 35%. Both factions mirror the structural treatment; Stone/Farm/Spartan damage reads as broken natural material while Renaissance/Modern/Space add restrained ember or energy accents. Ranged base hits defer debris and hit rings until the displayed projectile arrives, heavy impacts receive a very small shake, and reduced motion keeps the persistent damage state but suppresses the animated hit ring and freezes smoke/sparks. A standalone 24-panel base-state board (six eras × player/enemy worn/critical) was rasterized and inspected; this is asset/presentation QA, not browser gameplay evidence.
 
+11. Army attacks still read too similarly to idle at battle scale after the character redraw, especially when several troops overlapped. The renderer now gives each actual hit a source-side cue matched to the visible weapon family (melee slash, thrown/bow release, firearm muzzle flash, artillery blast or energy pulse) plus a very small presentation-only victim recoil driven by the existing `hitFlash`. Melee/heavy attack cells use stronger leg/weapon silhouettes while ranged poses stay restrained; reduced motion keeps one static contact cue but removes trails, drifting smoke and dust. Standalone before/after attack boards were inspected across all 18 player roles. Fresh raster QA initially caught the Farm Age farmer's long fork touching the right sampling edge in attack frame 5; its follow-through was reduced until the full 216-pose / 36-sheet check returned zero errors. These cues never change targeting, positions, collision, damage or saves.
+
+12. The illustrated 900×1000 battlefields were still being non-uniformly stretched to the live canvas height, so mountains, towers, trees and the space horizon changed proportions between short and tall phones even though troop art no longer stretched. The renderer now uses one uniform cover scale and crops the scenery around the authored ground anchor at source y=660. That keeps the painted battle lane directly under troop feet while preserving scenic proportions; tall worlds crop horizontally instead of elongating the art, and short worlds crop sky/foreground instead of flattening the scene. Four layout regressions cover uniform scaling, full viewport coverage, ground-anchor alignment and malformed viewport inputs. A standalone old-vs-new crop board was inspected across all six eras at short and tall logical battle heights; this is presentation/asset QA, not an in-game screenshot or device-layout claim.
+
+13. The three combat lanes still read as nearly parallel rows because every troop and contact shadow had the same apparent distance from the camera. A presentation-only lane-perspective model now recedes the back lane and brings the front lane forward with a restrained 0.93× / 1.00× / 1.07× scale stack. Contact shadows, hit cues, projectile launch height and unit health-bar offsets follow the same perspective so effects stay attached to their actors; heavy units retain their existing size advantage. Simulation x/y, collision, target selection and saves remain untouched. A standalone six-era before/after formation board was rasterized and inspected to confirm the depth change remains subtle enough to preserve silhouettes; it is asset/presentation QA, not a browser gameplay screenshot. Four regressions cover scale ordering, heavy/light relationships, malformed lane inputs and renderer integration.
+
+14. The illustrated worlds contained a layer named `foreground`, but it was flattened into the same Phaser texture as the sky and ground, so those plants, masonry edges and crystals could never actually pass in front of bases or troop silhouettes. The battlefield asset path now keeps the default full illustration for DOM/evolution artwork while loading a dedicated transparent foreground strip for gameplay. That strip shares the exact ground-anchored crop transform, sits after the army layer but before hit cues/health/effects, and uses six era-specific silhouettes: jungle fronds and rocks, wheat, olive branches and marble, ivy/parapets, pine/field cover and alien crystals. The transparent strips are rasterized at 450×220 rather than duplicating six full 900×1000 worlds; the complete initial manifest remains under the existing 42 MB decoded-RGBA arithmetic guardrail. Four regressions cover layer separation, crop registration, manifest/memory bounds and renderer ordering. Standalone art QA now also checks all six foreground overlays are nonempty. This creates real scene occlusion while keeping combat cues above the frame; it remains asset/presentation QA rather than browser-layout evidence.
+
 ## Repeatable standalone asset QA
 
 ```sh
@@ -47,7 +55,7 @@ python scripts/verify-art.py artifacts/visual-assets
 
 The Python checker requires Pillow and CairoSVG in the local QA environment; neither is an application dependency. It never opens a browser or accesses a game URL.
 
-The latest raster run checked **216 faction/pose images, 36 sprite sheets, 12 bases and 30 card illustrations**, with zero recorded errors. It checks two-pixel sampling margins, nonempty artwork and atlas/standalone alpha differences with a tolerance of three intensity levels. Contact shadows are checked structurally. Preview boards and before/after comparisons are production-asset reviews, not in-game screenshots.
+The latest raster run checked **216 faction/pose images, 36 sprite sheets, 12 bases, six transparent foreground overlays and 30 card illustrations**, with zero recorded errors. It checks two-pixel sampling margins, nonempty artwork and atlas/standalone alpha differences with a tolerance of three intensity levels. Contact shadows are checked structurally. Preview boards and before/after comparisons are production-asset reviews, not in-game screenshots.
 
 ## Remaining limits
 
