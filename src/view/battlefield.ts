@@ -6,6 +6,7 @@ import {atmosphereFrame} from './era-atmosphere.ts';
 import {duskAtmosphereFrame,paintDuskAtmosphere} from './dusk-atmosphere.ts';
 import {lightingHierarchyFrame,paintLightingHierarchy} from './lighting-hierarchy.ts';
 import {baseDamageFrame,baseDamagePalette,baseDamageStage} from './base-damage.ts';
+import {groundEffectDepth,groundEffectLayer} from './ground-effects.ts';
 import {attackCueFrame,hitReaction} from './combat-choreography.ts';
 import {impactMaterialFrame} from './impact-material.ts';
 import {characterGesture} from './character-gesture.ts';
@@ -24,7 +25,7 @@ import type {BattleState,GameEvent,GamePort,Unit,Side} from '../game/types';
 
 type ImageOrFallback=Phaser.GameObjects.Image|Phaser.GameObjects.Graphics;
 type TroopView={body:ImageOrFallback;x:number;y:number;side:Side;dustAt:number};
-type Spark={x:number;y:number;vx:number;vy:number;life:number;max:number;size:number;color:number;dust:boolean};
+type Spark={x:number;y:number;vx:number;vy:number;life:number;max:number;size:number;color:number;dust:boolean;lane?:number};
 type Bolt={from:{x:number;y:number};to:{x:number;y:number};life:number;max:number;arc:number;age:number;kind:Unit['kind'];side:Side;heavy:boolean;damage:number;meteor?:boolean;targetBase?:boolean;targetSide?:Side;targetAge?:number};
 type Ring={x:number;y:number;life:number;max:number;radius:number;color:number};
 type Floater={text:Phaser.GameObjects.Text;life:number;max:number;startY:number;banner:boolean};
@@ -47,7 +48,7 @@ export function mountBattlefield(element:HTMLElement,game:GamePort,onFrame:()=>v
   private baseDamage!:Phaser.GameObjects.Graphics;
   private armyLayer!:Phaser.GameObjects.Container;
   private foreground!:Phaser.GameObjects.Image;
-  private actionFx!:Phaser.GameObjects.Graphics;
+  private groundFx:Phaser.GameObjects.Graphics[]=[];
   private shadows!:Phaser.GameObjects.Graphics;
   private fx!:Phaser.GameObjects.Graphics;
   private bars!:Phaser.GameObjects.Graphics;
@@ -107,11 +108,12 @@ export function mountBattlefield(element:HTMLElement,game:GamePort,onFrame:()=>v
    this.halos=this.add.graphics().setBlendMode(Phaser.BlendModes.ADD);this.world.add(this.halos);
    this.armyLayer=this.add.container();this.world.add(this.armyLayer);
    this.baseDamage=this.add.graphics();this.armyLayer.add(this.baseDamage);
+   // Fixed pools share the actor sort; no masks or per-particle game objects.
+   for(let lane=0;lane<3;lane++){const g=this.add.graphics();this.armyLayer.add(g);this.groundFx.push(g);}
    this.foreground=this.add.image(0,0,this.textures.exists(foregroundTexture(game.profile.age))?foregroundTexture(game.profile.age):'__WHITE').setOrigin(0);
    if(this.foreground.texture.key==='__WHITE')this.foreground.setVisible(false);
    this.world.add(this.foreground);
    this.mist=this.add.container();this.world.add(this.mist);
-   this.actionFx=this.add.graphics();this.world.add(this.actionFx);
    this.fx=this.add.graphics();this.world.add(this.fx);
    this.glow=this.add.graphics().setBlendMode(Phaser.BlendModes.ADD);this.world.add(this.glow);
    this.bars=this.add.graphics();this.world.add(this.bars);
@@ -231,6 +233,7 @@ export function mountBattlefield(element:HTMLElement,game:GamePort,onFrame:()=>v
    this.playerBase.setPosition(39,groundY+12).setDepth(groundY+12);
    this.enemyBase.setPosition(411,groundY+12).setDepth(groundY+12);
    this.baseDamage.setDepth(groundY+12.1);
+   for(let lane=0;lane<3;lane++)this.groundFx[lane].clear().setDepth(groundEffectDepth(groundY,lane,this.layout.laneGap));
    const ids=new Set<number>();
    for(const unit of game.state.units){
     ids.add(unit.id);let view=this.units.get(unit.id);
@@ -260,7 +263,7 @@ export function mountBattlefield(element:HTMLElement,game:GamePort,onFrame:()=>v
     }
     // Troops win a same-baseline tie against the building and its damage marks.
     view.body.setDepth(y+.5);
-    if(moving&&!game.state.paused&&!frozen&&this.clock-view.dustAt>.28){this.emit(x,y+2,1,0xdfd4b1,true,.45);view.dustAt=this.clock;}
+    if(moving&&!game.state.paused&&!frozen&&this.clock-view.dustAt>.28){this.emit(x,y+2,1,0xdfd4b1,true,.45,unit.lane);view.dustAt=this.clock;}
     view.x=x;view.y=y;
    }
    for(const [id,view]of this.units)if(!ids.has(id)){
@@ -388,8 +391,8 @@ export function mountBattlefield(element:HTMLElement,game:GamePort,onFrame:()=>v
    if(heavy&&!this.reduce)this.cameras.main.shake(55,.0012);
   }
   private drawAttackCues(dt:number):void {
-   const g=this.actionFx;g.clear();
    for(const cue of this.attackCues){
+    const g=groundEffectLayer(this.groundFx,this.fx,cue.lane);
     cue.life-=dt;const progress=1-Math.max(0,cue.life)/cue.max;
     const perspective=lanePresentation(cue.lane,cue.kind);
     for(const mark of attackCueFrame(cue.age,cue.kind,cue.side,progress,this.reduce)){
@@ -462,10 +465,10 @@ export function mountBattlefield(element:HTMLElement,game:GamePort,onFrame:()=>v
    }
    if(s.freezeUntil>s.time){const y=this.layout.groundY+12;g.fillStyle(0xbff6ff,.1);g.fillEllipse(300,y,260,34,24);g.lineStyle(1.5,0xd6fbff,.55);g.strokeEllipse(300,y,250,30,24);}
   }
-  private emit(x:number,y:number,count:number,color:number,dust=false,life=.36):void {
+  private emit(x:number,y:number,count:number,color:number,dust=false,life=.36,lane?:number):void {
    if(this.reduce)return;
    for(let i=0;i<count;i++){const a=noise(i+this.clock*39)*Math.PI*2,speed=dust?8:22+noise(i+8)*39;
-    this.sparks.push({x,y,vx:Math.cos(a)*speed,vy:Math.sin(a)*speed-15,life,max:life,size:dust?3:1.3+noise(i+19)*2.5,color,dust});}
+    this.sparks.push({x,y,vx:Math.cos(a)*speed,vy:Math.sin(a)*speed-15,life,max:life,size:dust?3:1.3+noise(i+19)*2.5,color,dust,lane});}
    if(this.sparks.length>180)this.sparks.splice(0,this.sparks.length-180);
   }
   private ring(x:number,y:number,color:number,radius=18):void {
@@ -487,7 +490,7 @@ export function mountBattlefield(element:HTMLElement,game:GamePort,onFrame:()=>v
   }
   private event(e:GameEvent):void {
    const x=xAt(e.x??500),y=this.yAt(e.lane??1);
-   if(e.type==='spawn'){this.emit(x,y,5,0xdfd4b1,true,.4);this.ring(x,y,0xc9e2b3,13);this.flare(x,y-4,16,e.side==='enemy'?0xff8b55:0x6fd6ff,.3);}
+   if(e.type==='spawn'){this.emit(x,y,5,0xdfd4b1,true,.4,e.lane??1);this.ring(x,y,0xc9e2b3,13);this.flare(x,y-4,16,e.side==='enemy'?0xff8b55:0x6fd6ff,.3);}
    if(e.type==='hit'){
     if(e.source){this.attackCues.push({x:xAt(e.source.x),y:this.yAt(e.source.lane),lane:e.source.lane,age:e.source.age,kind:e.source.kind,side:e.source.side,life:.18,max:.18});if(this.attackCues.length>42)this.attackCues.shift();}
     const shot=projectileForHit(e),targetBase=e.target==='base',targetSide:Side=e.side==='player'?'enemy':'player';
@@ -500,7 +503,7 @@ export function mountBattlefield(element:HTMLElement,game:GamePort,onFrame:()=>v
     }else if(targetBase)this.baseImpact(x,this.layout.groundY-22,e.amount??0,e.source?.kind===2,targetSide,targetAge);
     else this.impact(x,y-22,e.amount??0,e.source?.age??0,e.source?.kind??0,e.source?.side??'player');
    }
-   if(e.type==='death'){this.emit(x,y-12,9,e.side==='player'?0x82cce8:0xe6b388,true,.52);this.flare(x,y-14,18,e.side==='player'?0x5ccfff:0xff8a50,.3);}
+   if(e.type==='death'){this.emit(x,y-12,9,e.side==='player'?0x82cce8:0xe6b388,true,.52,e.lane??1);this.flare(x,y-14,18,e.side==='player'?0x5ccfff:0xff8a50,.3);}
    if(e.type==='coin'&&e.amount)this.floatText(x,y-51,`+${compactNumber(e.amount)}`,'#ffdf7f');
    if(e.type==='win'){this.emit(408,this.layout.groundY-27,40,0xffd373,false,1.25);this.flare(411,this.layout.groundY-30,120,0xffd27a,1.1);if(!this.reduce){this.cameras.main.shake(100,.0015);this.cameras.main.flash(260,255,226,170);}}
    if(e.type==='lose')this.emit(39,this.layout.groundY-10,20,0xb6a484,true,.8);
@@ -524,7 +527,7 @@ export function mountBattlefield(element:HTMLElement,game:GamePort,onFrame:()=>v
    const g=this.fx,glow=this.glow;g.clear();glow.clear();this.drawAttackCues(dt);this.drawImpactCues(dt);this.fallen.step(dt,this.reduce);
    this.baseHit.player=Math.max(0,this.baseHit.player-dt);this.baseHit.enemy=Math.max(0,this.baseHit.enemy-dt);
    for(const spark of this.sparks){spark.life-=dt;spark.x+=spark.vx*dt;spark.y+=spark.vy*dt;spark.vy+=(spark.dust?-3:50)*dt;
-    const alpha=Math.max(0,spark.life/spark.max);g.fillStyle(spark.color,alpha*(spark.dust?.3:1));g.fillCircle(spark.x,spark.y,spark.size*(spark.dust?2-alpha:1));
+    const layer=groundEffectLayer(this.groundFx,g,spark.lane),alpha=Math.max(0,spark.life/spark.max);layer.fillStyle(spark.color,alpha*(spark.dust?.3:1));layer.fillCircle(spark.x,spark.y,spark.size*(spark.dust?2-alpha:1));
     if(!spark.dust){glow.fillStyle(spark.color,alpha*.35);glow.fillCircle(spark.x,spark.y,spark.size*2.6);}}
    this.sparks=this.sparks.filter(p=>p.life>0);
    for(const ring of this.rings){ring.life-=dt;const p=1-Math.max(0,ring.life/ring.max);g.lineStyle(2-p,ring.color,(1-p)*.7);g.strokeEllipse(ring.x,ring.y,ring.radius*2*p,ring.radius*p);}
@@ -549,7 +552,7 @@ export function mountBattlefield(element:HTMLElement,game:GamePort,onFrame:()=>v
    for(const f of this.floaters){f.life-=dt;const progress=1-f.life/f.max;f.text.setY(f.startY-(this.reduce?0:progress*22)).setAlpha(Math.max(0,Math.min(1,f.life/f.max*2)));if(f.life<=0)f.text.destroy();}
    this.floaters=this.floaters.filter(f=>f.life>0);
   }
-  private resetEffects():void {this.baseHit={player:0,enemy:0};this.actionFx?.clear();this.attackCues=[];this.impactCues=[];this.fallen.clear();for(const f of this.floaters)f.text.destroy();this.floaters=[];this.sparks=[];this.bolts=[];this.rings=[];this.flares=[];this.glow?.clear();}
+  private resetEffects():void {this.baseHit={player:0,enemy:0};for(const g of this.groundFx)g.clear();this.attackCues=[];this.impactCues=[];this.fallen.clear();for(const f of this.floaters)f.text.destroy();this.floaters=[];this.sparks=[];this.bolts=[];this.rings=[];this.flares=[];this.glow?.clear();}
   update(_time:number,delta:number):void {
    if(disposed||!this.world)return;
    const dt=Math.min(.05,Math.max(0,delta/1000));game.step(dt);

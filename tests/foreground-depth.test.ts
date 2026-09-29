@@ -71,7 +71,7 @@ test('renderer sandwiches foreground art between actors and combat readability e
  assert.match(source,/foregroundTexture/);
  const army=source.indexOf('this.world.add(this.armyLayer)');
  const foreground=source.indexOf('this.world.add(this.foreground)');
- const action=source.indexOf('this.world.add(this.actionFx)');
+ const action=source.indexOf('this.world.add(this.fx)');
  assert.ok(army>=0&&foreground>army&&action>foreground,'foreground must cover lower actor silhouettes but not hit cues or HUD effects');
  assert.match(source,/foregroundPlacement\(450,this\.layout\.height,this\.layout\.groundY\)/);
 });

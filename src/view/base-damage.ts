@@ -26,6 +26,16 @@ export const BASE_DAMAGE_PALETTES:readonly BaseDamagePalette[]=Object.freeze([
 const clamp=(value:number,min:number,max:number)=>Math.max(min,Math.min(max,value));
 const fract=(value:number)=>value-Math.floor(value);
 const noise=(seed:number)=>fract(Math.sin(seed*91.73+17.11)*43758.5453);
+type CrackAttachment=readonly [x:number,y:number,size:number,angle:number];
+// Attach to opaque masonry in each painted shelter, with room for the 2.2px
+// outline on both teams. These replace the rectangular legacy facade assumption.
+const PAINTED_CRACKS:readonly (readonly CrackAttachment[])[]=[
+  [[0,-45,9,.58],[28,-26,7,-.72],[-26,-11,8,-.4],[-12,-33,8,.78],[23,-9,9,-.48],[-28,-24,7,.34]],
+  [[-15,-43,9,-.72],[11,-35,10,.58],[-5,-15,8,-.4],[-16,-57,8,.78],[25,-20,8,-.48],[-26,-27,7,.34]],
+  [[-17,-43,9,-.72],[9,-39,10,.58],[-5,-25,8,-.4],[-14,-59,7,.78],[25,-20,8,-.48],[-25,-28,7,.34]],
+  [[-17,-52,10,-.72],[9,-39,10,.58],[-5,-25,8,-.4],[14,-48,8,.78],[-27,-35,9,-.48],[25,-18,7,.34]],
+];
+const LEGACY_CRACKS:readonly CrackAttachment[]=[[-17,-52,12,-.72],[9,-39,10,.58],[-5,-25,8,-.4],[23,-61,14,.78],[-27,-35,11,-.48],[19,-18,9,.34]];
 
 export function baseDamagePalette(age:number):BaseDamagePalette {
   return BASE_DAMAGE_PALETTES[Number.isInteger(age)&&age>=0&&age<BASE_DAMAGE_PALETTES.length?age:0];
@@ -51,14 +61,13 @@ export function baseDamageFrame(age:number,side:Side,hp:number,maxHp:number,time
   const marks:BaseDamageMark[]=[];
   const add=(kind:BaseDamageKind,x:number,y:number,size:number,alpha:number,color:number,angle:number)=>marks.push({kind,x:clamp(x,-42,42),y:clamp(y,-82,8),size:clamp(size,.5,16),alpha:clamp(alpha,0,.82),color,angle:Number.isFinite(angle)?angle:0});
 
-  const cracks=[[-17,-52,12,-.72],[9,-39,10,.58],[-5,-25,8,-.4]] as const;
-  for(const [x,y,size,angle] of cracks)add('crack',x*sign,y,size,.65,palette.crack,angle*sign);
+  const cracks=PAINTED_CRACKS[actualAge]??LEGACY_CRACKS;
+  for(let i=0;i<3;i++){const [x,y,size,angle]=cracks[i];add('crack',x*sign,y,size,.65,palette.crack,angle*sign);}
   const rubble=[[-23,-2,6,-.34],[15,1,5,.26]] as const;
   for(const [x,y,size,angle] of rubble)add('rubble',x*sign,y,size,.7,palette.debris,angle*sign);
 
   if(stage==='critical'){
-    const criticalCracks=[[23,-61,14,.78],[-27,-35,11,-.48],[19,-18,9,.34]] as const;
-    for(const [x,y,size,angle] of criticalCracks)add('crack',x*sign,y,size,.76,palette.crack,angle*sign);
+    for(let i=3;i<6;i++){const [x,y,size,angle]=cracks[i];add('crack',x*sign,y,size,.76,palette.crack,angle*sign);}
     const criticalRubble=[[29,3,7,.52],[-10,5,5,-.22],[4,2,4,.12]] as const;
     for(const [x,y,size,angle] of criticalRubble)add('rubble',x*sign,y,size,.76,palette.debris,angle*sign);
 

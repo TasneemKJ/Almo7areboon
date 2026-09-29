@@ -39,6 +39,18 @@ jobs:
         if: steps.tests.outcome == 'success' && steps.build.outcome == 'success'
         continue-on-error: true
         run: npm run review:browser
+      - name: Verify frozen battlefield layering
+        id: layering
+        if: steps.tests.outcome == 'success' && steps.build.outcome == 'success'
+        continue-on-error: true
+        run: npm run review:layering
+      - name: Publish layering screenshots and diagnostics
+        if: always() && steps.layering.outcome != 'skipped'
+        uses: actions/upload-artifact@v4
+        with:
+          name: layering-browser-review
+          path: artifacts/browser-review/layering/
+          retention-days: 7
       - name: Publish browser screenshots
         if: always() && steps.browser.outcome != 'skipped'
         uses: actions/upload-artifact@v4
@@ -72,5 +84,5 @@ jobs:
           path: ${{ runner.temp }}/game-workspace.tar.gz
           retention-days: 3
       - name: Require passing checks
-        if: steps.tests.outcome != 'success' || steps.build.outcome != 'success' || steps.browser.outcome != 'success'
+        if: steps.tests.outcome != 'success' || steps.build.outcome != 'success' || steps.browser.outcome != 'success' || steps.layering.outcome != 'success'
         run: exit 1

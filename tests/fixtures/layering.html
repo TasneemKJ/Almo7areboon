@@ -1,0 +1,28 @@
+<!doctype html>
+<html lang="en">
+  <head>
+    <meta charset="UTF-8" />
+    <meta name="viewport" content="width=device-width, initial-scale=1" />
+    <title>Battlefield layering fixture</title>
+    <style>
+      * { box-sizing: border-box; }
+      body { margin: 0; background: #171c21; color: #f4e7ce; font: 14px/1.5 system-ui, sans-serif; }
+      main { width: 450px; margin: 20px auto; }
+      h1 { margin: 0; font-size: 18px; }
+      p { margin: 5px 0 12px; }
+      #battlefield { width: 450px; height: 430px; position: relative; overflow: hidden; }
+      #battlefield canvas { display: block; }
+      .world-loader { position: absolute; inset: 0; display: grid; place-items: center; }
+      #status { color: #baceaf; font-size: 12px; }
+    </style>
+  </head>
+  <body>
+    <main>
+      <h1>Battlefield layering fixture</h1>
+      <p id="description"></p>
+      <div id="battlefield" aria-label="Frozen battlefield review"></div>
+      <p id="status" role="status">Loading actual game renderer…</p>
+    </main>
+    <script type="module" src="./layering.ts"></script>
+  </body>
+</html>
