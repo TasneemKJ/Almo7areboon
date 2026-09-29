@@ -16,10 +16,10 @@ No files under `src/game` were changed. The existing gameplay and save suite is 
 
 ## Evidence
 
-- `npm test`: **115 passed, 0 failed** on the current local tree.
+- `npm test`: **121 passed, 0 failed** on the current local tree.
 - `npm run build`: TypeScript and Vite production build passed.
 - `git diff --check`: clean.
-- First visual checkpoint `df53471eaaa56801e759b64cd598aa9e23c92d81` also passed GitHub Actions run `36501123490`. A newer commit's CI result must be checked separately.
+- First visual checkpoint `df53471eaaa56801e759b64cd598aa9e23c92d81` passed GitHub Actions run `36501123490`; atmosphere checkpoint `87714e9a4c4c7f48621789312a522c8543e276bf` passed run `36509123095`. A newly published commit still requires its own exact-head CI result.
 - The uploaded tree was compared against an alternate local Git index after each transfer; the complete source tree must match before publication.
 - The scene manifest has 54 unique inline SVG texture assets and a declared initial pixel budget below 42 MB RGBA. This arithmetic budget excludes browser/GPU overhead and is not a measured memory claim.
 
@@ -35,6 +35,8 @@ No files under `src/game` were changed. The existing gameplay and save suite is 
 8. Defeated sprites disappeared before delayed projectile impacts. A bounded, view-only residue lasts at most 0.28 seconds, pauses with the scene and disposes on expiry, eviction, reset or reduced motion. Four tests exercise this lifecycle.
 
 9. The six battlefields shared one generic floating-mote treatment after the static background pass. A presentation-only atmosphere model now gives each era its own bounded motion language behind the bases: Stone fireflies, Farm pollen, Spartan gulls, Renaissance embers, Modern windblown leaves and Space starlight. Reduced motion freezes these accents into a small static composition instead of removing visual identity, and malformed timing/viewport inputs fail soft without touching simulation state. A standalone composited keyframe board was inspected to keep fireflies/stars accent-sized; this is asset/presentation QA, not an in-game screenshot.
+
+10. Bases previously stayed visually pristine until the instant they disappeared, so progress against the objective was carried almost entirely by the health bar. A presentation-only destruction model now adds era-material cracks and rubble below 72% health, then bounded smoke/sparks below 35%. Both factions mirror the structural treatment; Stone/Farm/Spartan damage reads as broken natural material while Renaissance/Modern/Space add restrained ember or energy accents. Ranged base hits defer debris and hit rings until the displayed projectile arrives, heavy impacts receive a very small shake, and reduced motion keeps the persistent damage state but suppresses the animated hit ring and freezes smoke/sparks. A standalone 24-panel base-state board (six eras × player/enemy worn/critical) was rasterized and inspected; this is asset/presentation QA, not browser gameplay evidence.
 
 ## Repeatable standalone asset QA
 

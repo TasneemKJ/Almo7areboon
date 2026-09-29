@@ -2,6 +2,7 @@ import Phaser from 'phaser';
 import {reducedMotion,projectileForHit} from './combat-feedback.ts';
 import {arenaLayout,troopPose,visualEra} from './visual-theme.ts';
 import {atmosphereFrame} from './era-atmosphere.ts';
+import {baseDamageFrame,baseDamagePalette,baseDamageStage} from './base-damage.ts';
 import {visualAssets,baseTexture,unitTexture,landscapeTexture} from './visual-assets.ts';
 import {projectileGeometry,paintProjectile} from './projectile-art.ts';
 import {DeathVisuals} from './death-visuals.ts';
@@ -13,7 +14,7 @@ import type {BattleState,GameEvent,GamePort,Unit,Side} from '../game/types';
 type ImageOrFallback=Phaser.GameObjects.Image|Phaser.GameObjects.Graphics;
 type TroopView={body:ImageOrFallback;x:number;y:number;side:Side;dustAt:number};
 type Spark={x:number;y:number;vx:number;vy:number;life:number;max:number;size:number;color:number;dust:boolean};
-type Bolt={from:{x:number;y:number};to:{x:number;y:number};life:number;max:number;arc:number;age:number;side:Side;heavy:boolean;damage:number;meteor?:boolean};
+type Bolt={from:{x:number;y:number};to:{x:number;y:number};life:number;max:number;arc:number;age:number;side:Side;heavy:boolean;damage:number;meteor?:boolean;targetBase?:boolean;targetSide?:Side;targetAge?:number};
 type Ring={x:number;y:number;life:number;max:number;radius:number;color:number};
 type Floater={text:Phaser.GameObjects.Text;life:number;max:number;startY:number};
 const xAt=(x:number)=>x*.45;
@@ -30,6 +31,7 @@ export function mountBattlefield(element:HTMLElement,game:GamePort,onFrame:()=>v
   private sky!:Phaser.GameObjects.Image;
   private ambience!:Phaser.GameObjects.Graphics;
   private basesLayer!:Phaser.GameObjects.Container;
+  private baseDamage!:Phaser.GameObjects.Graphics;
   private armyLayer!:Phaser.GameObjects.Container;
   private shadows!:Phaser.GameObjects.Graphics;
   private fx!:Phaser.GameObjects.Graphics;
@@ -39,6 +41,7 @@ export function mountBattlefield(element:HTMLElement,game:GamePort,onFrame:()=>v
   private baseText:Phaser.GameObjects.Text[]=[];
   private units=new Map<number,TroopView>();
   private fallen=new DeathVisuals();
+  private baseHit:Record<Side,number>={player:0,enemy:0};
   private idle:ImageOrFallback[]=[];
   private sparks:Spark[]=[];
   private bolts:Bolt[]=[];
@@ -66,6 +69,7 @@ export function mountBattlefield(element:HTMLElement,game:GamePort,onFrame:()=>v
    this.world.add(this.sky);
    this.ambience=this.add.graphics();this.world.add(this.ambience);
    this.basesLayer=this.add.container();this.world.add(this.basesLayer);
+   this.baseDamage=this.add.graphics();this.world.add(this.baseDamage);
    this.shadows=this.add.graphics();this.world.add(this.shadows);
    this.armyLayer=this.add.container();this.world.add(this.armyLayer);
    this.bars=this.add.graphics();this.world.add(this.bars);
@@ -174,6 +178,48 @@ export function mountBattlefield(element:HTMLElement,game:GamePort,onFrame:()=>v
     }
    }
   }
+  private drawBaseDamage():void {
+   const g=this.baseDamage;g.clear();
+   const state=game.state,ground=this.layout.groundY+12;
+   for(const side of ['player','enemy'] as const){
+    const x=side==='player'?39:411;
+    const hp=side==='player'?state.playerHp:state.enemyHp,maxHp=side==='player'?state.playerMaxHp:state.enemyMaxHp;
+    const age=side==='player'?game.profile.age:game.profile.enemyAge;
+    for(const mark of baseDamageFrame(age,side,hp,maxHp,this.clock,this.reduce)){
+     const px=x+mark.x,py=ground+mark.y;
+     if(mark.kind==='smoke'){
+      g.fillStyle(mark.color,mark.alpha*.28);g.fillCircle(px-mark.size*.16,py+mark.size*.12,mark.size*.72);
+      g.fillStyle(mark.color,mark.alpha*.18);g.fillCircle(px+mark.size*.36,py-mark.size*.28,mark.size*.9);
+      g.fillStyle(mark.color,mark.alpha*.12);g.fillCircle(px-mark.size*.28,py-mark.size*.62,mark.size*1.08);
+     }else if(mark.kind==='crack'){
+      const dx=Math.cos(mark.angle)*mark.size,dy=Math.sin(mark.angle)*mark.size;
+      g.lineStyle(2.2,0x20363b,mark.alpha*.8);g.lineBetween(px-dx*.22,py-dy*.22,px+dx,py+dy);
+      g.lineStyle(.9,mark.color,mark.alpha);g.lineBetween(px,py,px+dx,py+dy);
+      g.lineBetween(px+dx*.42,py+dy*.42,px+dx*.62-dy*.28,py+dy*.62+dx*.28);
+     }else if(mark.kind==='rubble'){
+      const c=Math.cos(mark.angle),s=Math.sin(mark.angle),r=mark.size;
+      g.fillStyle(mark.color,mark.alpha);g.fillTriangle(px+c*r,py+s*r,px-s*r*.65,py+c*r*.65,px-c*r*.72+s*r*.42,py-s*r*.72-c*r*.42);
+      g.lineStyle(.7,0x31494d,mark.alpha*.65);g.strokeTriangle(px+c*r,py+s*r,px-s*r*.65,py+c*r*.65,px-c*r*.72+s*r*.42,py-s*r*.72-c*r*.42);
+     }else{
+      const dx=Math.cos(mark.angle)*mark.size*2.6,dy=Math.sin(mark.angle)*mark.size*2.6;
+      g.lineStyle(1.2,mark.color,mark.alpha);g.lineBetween(px-dx,py-dy,px+dx,py+dy);
+      g.fillStyle(mark.color,mark.alpha*.9);g.fillCircle(px,py,mark.size*.55);
+     }
+    }
+    const hit=this.baseHit[side];
+    if(hit>0&&!this.reduce){const progress=hit/.18,color=side==='player'?0x91ecf2:0xffc08e;g.lineStyle(2,color,progress*.7);g.strokeEllipse(x,ground-34,58+(1-progress)*12,72+(1-progress)*9);}
+   }
+  }
+  private baseImpact(x:number,y:number,amount:number,heavy:boolean,targetSide:Side,targetAge:number):void {
+   this.baseHit[targetSide]=.18;
+   const palette=baseDamagePalette(targetAge),state=game.state;
+   const hp=targetSide==='player'?state.playerHp:state.enemyHp,maxHp=targetSide==='player'?state.playerMaxHp:state.enemyMaxHp;
+   const critical=baseDamageStage(hp,maxHp)==='critical';
+   this.emit(x,y,critical?(heavy?13:9):(heavy?9:6),palette.debris,true,critical?.5:.36);
+   this.ring(x,y,targetSide==='player'?0x8fe7f0:0xffbb8b,heavy?29:18);
+   if(amount>0)this.floatText(x,y-17,compactNumber(amount));
+   if(heavy&&!this.reduce)this.cameras.main.shake(55,.0012);
+  }
   private healthBars():void {
    const g=this.bars,s=game.state;g.clear();
    for(const [i,x,hp,max,color]of [[0,39,s.playerHp,s.playerMaxHp,0x68c9ee],[1,411,s.enemyHp,s.enemyMaxHp,0xf19d75]]){
@@ -214,12 +260,14 @@ export function mountBattlefield(element:HTMLElement,game:GamePort,onFrame:()=>v
    const x=xAt(e.x??500),y=this.yAt(e.lane??1);
    if(e.type==='spawn'){this.emit(x,y,5,0xdfd4b1,true,.4);this.ring(x,y,0xc9e2b3,13);}
    if(e.type==='hit'){
-    const shot=projectileForHit(e);
+    const shot=projectileForHit(e),targetBase=e.target==='base',targetSide:Side=e.side==='player'?'enemy':'player';
+    const targetAge=targetSide==='player'?game.profile.age:game.profile.enemyAge;
     if(shot&&!this.reduce){
      const u=shot.source,heavy=u.kind===2,direction=u.side==='player'?1:-1;
-     this.bolts.push({from:{x:xAt(u.x)+direction*(heavy?27:22),y:this.yAt(u.lane)-(heavy?29:25)},to:{x:xAt(shot.targetX),y:shot.base?this.layout.groundY-22:this.yAt(shot.targetLane)-22},life:.2,max:.2,arc:u.age<3?13:0,age:u.age,side:u.side,heavy,damage:e.amount??0});
+     this.bolts.push({from:{x:xAt(u.x)+direction*(heavy?27:22),y:this.yAt(u.lane)-(heavy?29:25)},to:{x:xAt(shot.targetX),y:shot.base?this.layout.groundY-22:this.yAt(shot.targetLane)-22},life:.2,max:.2,arc:u.age<3?13:0,age:u.age,side:u.side,heavy,damage:e.amount??0,targetBase:shot.base,targetSide,targetAge});
      if(this.bolts.length>70)this.bolts.shift();
-    }else this.impact(x,y-22,e.amount??0);
+    }else if(targetBase)this.baseImpact(x,this.layout.groundY-22,e.amount??0,e.source?.kind===2,targetSide,targetAge);
+    else this.impact(x,y-22,e.amount??0);
    }
    if(e.type==='death')this.emit(x,y-12,9,e.side==='player'?0x82cce8:0xe6b388,true,.52);
    if(e.type==='coin'&&e.amount)this.floatText(x,y-51,`+${compactNumber(e.amount)}`,'#ffdf7f');
@@ -239,6 +287,7 @@ export function mountBattlefield(element:HTMLElement,game:GamePort,onFrame:()=>v
   }
   private effects(dt:number):void {
    const g=this.fx;g.clear();this.fallen.step(dt,this.reduce);
+   this.baseHit.player=Math.max(0,this.baseHit.player-dt);this.baseHit.enemy=Math.max(0,this.baseHit.enemy-dt);
    for(const spark of this.sparks){spark.life-=dt;spark.x+=spark.vx*dt;spark.y+=spark.vy*dt;spark.vy+=(spark.dust?-3:50)*dt;
     const alpha=Math.max(0,spark.life/spark.max);g.fillStyle(spark.color,alpha*(spark.dust?.3:1));g.fillCircle(spark.x,spark.y,spark.size*(spark.dust?2-alpha:1));}
    this.sparks=this.sparks.filter(p=>p.life>0);
@@ -247,13 +296,13 @@ export function mountBattlefield(element:HTMLElement,game:GamePort,onFrame:()=>v
    for(const bolt of this.bolts){
     bolt.life-=dt;const progress=1-Math.max(0,bolt.life)/bolt.max;
     paintProjectile(g,projectileGeometry(bolt.from,bolt.to,progress,bolt.arc,bolt.age,bolt.heavy,bolt.side,bolt.meteor));
-    if(bolt.life<=0)this.impact(bolt.to.x,bolt.to.y,bolt.damage,bolt.heavy);
+    if(bolt.life<=0){if(bolt.targetBase&&bolt.targetSide!==undefined&&bolt.targetAge!==undefined)this.baseImpact(bolt.to.x,bolt.to.y,bolt.damage,bolt.heavy,bolt.targetSide,bolt.targetAge);else this.impact(bolt.to.x,bolt.to.y,bolt.damage,bolt.heavy);}
    }
    this.bolts=this.bolts.filter(b=>b.life>0);
    for(const f of this.floaters){f.life-=dt;const progress=1-f.life/f.max;f.text.setY(f.startY-(this.reduce?0:progress*22)).setAlpha(Math.max(0,Math.min(1,f.life/f.max*2)));if(f.life<=0)f.text.destroy();}
    this.floaters=this.floaters.filter(f=>f.life>0);
   }
-  private resetEffects():void {this.fallen.clear();for(const f of this.floaters)f.text.destroy();this.floaters=[];this.sparks=[];this.bolts=[];this.rings=[];}
+  private resetEffects():void {this.baseHit={player:0,enemy:0};this.fallen.clear();for(const f of this.floaters)f.text.destroy();this.floaters=[];this.sparks=[];this.bolts=[];this.rings=[];}
   update(_time:number,delta:number):void {
    if(disposed||!this.world)return;
    const dt=Math.min(.05,Math.max(0,delta/1000));game.step(dt);
@@ -264,7 +313,7 @@ export function mountBattlefield(element:HTMLElement,game:GamePort,onFrame:()=>v
    if(reduced&&!this.reduce)this.resetEffects();this.reduce=reduced;
    if(!game.state.paused&&!this.reduce)this.clock+=dt;
    this.syncEra();for(const event of events)this.event(event);
-   this.drawAtmosphere();this.drawArmy();this.healthBars();this.effects(game.state.paused?0:dt);onFrame();
+   this.drawAtmosphere();this.drawBaseDamage();this.drawArmy();this.healthBars();this.effects(game.state.paused?0:dt);onFrame();
   }
  }
  let renderer:Phaser.Game;
