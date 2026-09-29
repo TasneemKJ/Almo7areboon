@@ -2,6 +2,7 @@ import {path as p,ellipse as e,rect as r,line as l,gradient,documentSvg} from '.
 import {sceneMaterialDetailSvg} from './design-detail.ts';
 import {cinematicDepthSvg} from './cinematic-depth.ts';
 import {environmentVignettesSvg} from './environment-vignettes.ts';
+import {foregroundVignettesSvg} from './foreground-vignettes.ts';
 
 // Fictional chapters, not reconstructions of monuments or a historical chronology.
 // Reference contexts and deliberate fantasy are recorded in docs/levantine-40.
@@ -163,7 +164,7 @@ function foreground(age:number):string {
   }
   out+=`<g transform="translate(${x} 0) scale(${sign} 1)">${edge}</g>`;
  }
- return `<g data-layer="foreground">${out}</g>`;
+ return `<g data-layer="foreground">${out}${foregroundVignettesSvg(age)}</g>`;
 }
 export function foregroundSvg(input:number):string {
  const age=ageOf(input);

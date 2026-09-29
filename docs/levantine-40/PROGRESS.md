@@ -104,3 +104,9 @@ Fourteen connected refinements are now implemented toward forty. No scheduler; r
 Added chapter-specific functional set dressing above the combat road: water/storage, agriculture, harbor work, workshop craft, civilian utilities and future garden infrastructure. Five regressions RED→GREEN; full suite 241/241, build passed, asset QA stayed zero-error, and source road-mask checks stayed unchanged. Details: [15-environment-vignettes.md](15-environment-vignettes.md).
 
 Fifteen connected refinements are now implemented toward forty. No scheduler; rendered mobile acceptance remains open.
+
+
+## 16 — Asymmetric foreground framing
+Added chapter-specific left/right foreground vignettes using frame-within-frame composition and asymmetric balance while keeping the central corridor open. Five regressions RED→GREEN; full suite 246/246, build passed, asset QA stayed zero-error, and scene road-overlay alpha remains zero. Details: [16-foreground-framing.md](16-foreground-framing.md).
+
+Sixteen connected refinements are now implemented toward forty. No scheduler; rendered mobile acceptance remains open.
