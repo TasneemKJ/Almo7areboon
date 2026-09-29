@@ -1,5 +1,6 @@
 import type {Side} from '../game/types.ts';
 import {path as p,ellipse as e,rect as r,line as l,gradient,documentSvg} from './illustration-kit.ts';
+import {outpostDetailSvg} from './outpost-detail.ts';
 const names=['stone-shelter','terrace-store','quay-gate','workshop-gate','hill-station','courtyard-station'];
 const ink='#364f54';
 function entry(x:number,y:number,w:number,h:number):string {
@@ -38,6 +39,7 @@ export function baseSvg(input:number,side:Side):string {
   out+=p('M13 137L21 67 38 46H123L142 70 149 137Z','url(#metal)',ink,2.3)+p('M18 70L36 43H122L142 70Z','url(#stone)',ink,1.5)+entry(49,79,65,61)+r(19,132,123,9,2,'#a9bba7',ink,1.4);
   out+=p('M37 43L56 22H104L123 43Z','#4c7e88',ink,1.5)+l('M47 39H112M59 26L67 40M84 24V40M103 27L98 40','#a5d5c8',1.5)+l('M57 130V99Q81 67 107 99V130','#80c2bb',2)+r(28,81,10,39,4,'#5d868a',ink,1)+r(124,81,10,39,4,'#5d868a',ink,1);
  }
+ out+=outpostDetailSvg(age,side);
  // Restrained reflected light, never a full-sprite yellow tint.
  out+=`<g data-layer="practical-light">${e(113,112,23,25,'url(#light)')}${r(110,103,6,13,2,'#e8c182',ink,1)}${l('M113 99V103',ink,1.4)}</g>`;
  out+=r(65,70,31,9,2,'url(#wood)',ink,1)+p('M77 72l5 2-1 4-5-2Z','url(#trim)','none',0)+l('M137 135V78',ink,2)+p('M138 81L155 85 149 92 155 100 138 96Z','url(#trim)',ink,1.2);
