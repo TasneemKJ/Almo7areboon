@@ -3,6 +3,7 @@ import {reducedMotion,projectileForHit} from './combat-feedback.ts';
 import {arenaLayout,foregroundPlacement,landscapePlacement,troopPose,visualEra} from './visual-theme.ts';
 import {atmosphereFrame} from './era-atmosphere.ts';
 import {duskAtmosphereFrame,paintDuskAtmosphere} from './dusk-atmosphere.ts';
+import {lightingHierarchyFrame,paintLightingHierarchy} from './lighting-hierarchy.ts';
 import {baseDamageFrame,baseDamagePalette,baseDamageStage} from './base-damage.ts';
 import {attackCueFrame,hitReaction} from './combat-choreography.ts';
 import {healthOffset,lanePresentation,projectileLift,troopScale} from './lane-perspective.ts';
@@ -191,6 +192,7 @@ export function mountBattlefield(element:HTMLElement,game:GamePort,onFrame:()=>v
   private drawAtmosphere():void {
    const g=this.ambience;g.clear();
    paintDuskAtmosphere(g,duskAtmosphereFrame(game.profile.age,this.clock,this.reduce),landscapePlacement(450,this.layout.height,this.layout.groundY));
+   paintLightingHierarchy(g,lightingHierarchyFrame(game.profile.age,this.clock,this.reduce),landscapePlacement(450,this.layout.height,this.layout.groundY));
    for(const mark of atmosphereFrame(game.profile.age,this.clock,450,this.layout.groundY,this.reduce)){
     if(mark.kind==='firefly'||mark.kind==='starlight'){
      g.fillStyle(mark.color,mark.alpha*.16);g.fillCircle(mark.x,mark.y,mark.size*2.5);
