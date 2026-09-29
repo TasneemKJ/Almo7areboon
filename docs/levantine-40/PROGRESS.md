@@ -110,3 +110,9 @@ Fifteen connected refinements are now implemented toward forty. No scheduler; re
 Added chapter-specific left/right foreground vignettes using frame-within-frame composition and asymmetric balance while keeping the central corridor open. Five regressions RED→GREEN; full suite 246/246, build passed, asset QA stayed zero-error, and scene road-overlay alpha remains zero. Details: [16-foreground-framing.md](16-foreground-framing.md).
 
 Sixteen connected refinements are now implemented toward forty. No scheduler; rendered mobile acceptance remains open.
+
+
+## 17 — Gaze and character expression
+Replaced static face details with a bounded role/frame expression source: controlled gaze, eye openness, brow angle and mouth shape across all six animation cells. A source-art review caught a worried attack mouth; a new RED→GREEN regression corrected it before publication. Final full suite 252/252, build passed, and full asset QA remains zero-error. Details: [17-character-expression.md](17-character-expression.md).
+
+Seventeen connected refinements are now implemented toward forty. No scheduler; rendered mobile acceptance remains open.
