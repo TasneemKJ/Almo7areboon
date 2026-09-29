@@ -1,0 +1,158 @@
+[
+  {
+    "name": "quay-guard",
+    "frames": 6,
+    "frameWidth": 224,
+    "frameHeight": 192,
+    "footBaseline": 181,
+    "sharedScale": 0.3674911660777385,
+    "sourceBounds": [
+      {
+        "left": 135,
+        "right": 415,
+        "top": 64,
+        "bottom": 473,
+        "anchor": 280.5
+      },
+      {
+        "left": 615,
+        "right": 948,
+        "top": 64,
+        "bottom": 472,
+        "anchor": 773.5
+      },
+      {
+        "left": 1084,
+        "right": 1434,
+        "top": 66,
+        "bottom": 476,
+        "anchor": 1252
+      },
+      {
+        "left": 118,
+        "right": 468,
+        "top": 546,
+        "bottom": 955,
+        "anchor": 286
+      },
+      {
+        "left": 585,
+        "right": 945,
+        "top": 535,
+        "bottom": 955,
+        "anchor": 767.5
+      },
+      {
+        "left": 1021,
+        "right": 1494,
+        "top": 580,
+        "bottom": 955,
+        "anchor": 1211
+      }
+    ]
+  },
+  {
+    "name": "archer",
+    "frames": 6,
+    "frameWidth": 224,
+    "frameHeight": 192,
+    "footBaseline": 181,
+    "sharedScale": 0.42610837438423643,
+    "sourceBounds": [
+      {
+        "left": 125,
+        "right": 398,
+        "top": 71,
+        "bottom": 464,
+        "anchor": 243.5
+      },
+      {
+        "left": 616,
+        "right": 936,
+        "top": 72,
+        "bottom": 464,
+        "anchor": 753.5
+      },
+      {
+        "left": 1132,
+        "right": 1448,
+        "top": 73,
+        "bottom": 464,
+        "anchor": 1274.5
+      },
+      {
+        "left": 114,
+        "right": 439,
+        "top": 577,
+        "bottom": 963,
+        "anchor": 262
+      },
+      {
+        "left": 576,
+        "right": 971,
+        "top": 558,
+        "bottom": 963,
+        "anchor": 749.5
+      },
+      {
+        "left": 1079,
+        "right": 1437,
+        "top": 575,
+        "bottom": 963,
+        "anchor": 1256
+      }
+    ]
+  },
+  {
+    "name": "quay-rider",
+    "frames": 6,
+    "frameWidth": 224,
+    "frameHeight": 192,
+    "footBaseline": 181,
+    "sharedScale": 0.34462151394422313,
+    "sourceBounds": [
+      {
+        "left": 44,
+        "right": 472,
+        "top": 16,
+        "bottom": 494,
+        "anchor": 233.5
+      },
+      {
+        "left": 552,
+        "right": 981,
+        "top": 16,
+        "bottom": 493,
+        "anchor": 752
+      },
+      {
+        "left": 1057,
+        "right": 1492,
+        "top": 15,
+        "bottom": 494,
+        "anchor": 1273.5
+      },
+      {
+        "left": 34,
+        "right": 482,
+        "top": 525,
+        "bottom": 997,
+        "anchor": 253.5
+      },
+      {
+        "left": 531,
+        "right": 985,
+        "top": 500,
+        "bottom": 1001,
+        "anchor": 745
+      },
+      {
+        "left": 1020,
+        "right": 1520,
+        "top": 548,
+        "bottom": 996,
+        "anchor": 1242.5
+      }
+    ]
+  }
+]
