@@ -116,3 +116,9 @@ Sixteen connected refinements are now implemented toward forty. No scheduler; re
 Replaced static face details with a bounded role/frame expression source: controlled gaze, eye openness, brow angle and mouth shape across all six animation cells. A source-art review caught a worried attack mouth; a new RED→GREEN regression corrected it before publication. Final full suite 252/252, build passed, and full asset QA remains zero-error. Details: [17-character-expression.md](17-character-expression.md).
 
 Seventeen connected refinements are now implemented toward forty. No scheduler; rendered mobile acceptance remains open.
+
+
+## 18 — Cinematic grade and practical light
+Added a per-chapter camera colour grade (WebGL only), a stage vignette, key-light rays, cool/ember team beacons, per-troop additive team halos, lit projectiles and impact flares, and foreground mist. Unthresholded bloom was tried and rejected because it washed out the frame. Nine new tests; full suite 261/261, build passed. This is the first batch with rendered-browser evidence (headless Chromium, all six chapters, zero page errors). Details: [18-cinematic-grade.md](18-cinematic-grade.md).
+
+Eighteen connected refinements are now implemented toward forty. Real-device and Safari acceptance remain open.
