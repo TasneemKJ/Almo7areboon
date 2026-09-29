@@ -91,7 +91,8 @@ function action(a:Action):boolean{
 }
 function update(force=false){
   const now=performance.now();if(!force&&now-lastUpdate<80)return;lastUpdate=now;
-  const p=game.profile,s=game.state;
+ const p=game.profile,s=game.state;
+ $('world').dataset.phase=s.phase;
   textIfChanged($('coins'),money(p.coins));textIfChanged($('gems'),money(p.gems));
   textIfChanged($('timeline'),`TIMELINE ${p.timeline} · BATTLE ${p.enemyAge+1}`);textIfChanged($('age-title'),chapterPresentation(p.age).title);
   textIfChanged($('scene-name'),chapterPresentation(p.age).subtitle);

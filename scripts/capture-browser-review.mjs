@@ -29,7 +29,11 @@ try {
  const portraitBounds=await page.locator('.unit-card').first().evaluate(card=>({image:card.querySelector('img').getBoundingClientRect().bottom,price:card.querySelector('.unit-price').getBoundingClientRect().top}));
  assert.ok(portraitBounds.image<=portraitBounds.price+1,`portrait clipped by price bar: ${JSON.stringify(portraitBounds)}`);
  await page.screenshot({path:`${output}/01-ready-390.png`});
+ const readyTitleSize=await page.locator('.stage h1').evaluate(node=>parseFloat(getComputedStyle(node).fontSize));
  await page.getByRole('button',{name:/^BATTLE/}).click();
+ const activeTitleSize=await page.locator('.stage h1').evaluate(node=>parseFloat(getComputedStyle(node).fontSize));
+ assert.ok(activeTitleSize<readyTitleSize*.7,`combat heading should recede: ${readyTitleSize} → ${activeTitleSize}`);
+ assert.equal(await page.locator('.battle-select').evaluate(node=>getComputedStyle(node).display),'none');
  await page.getByRole('button',{name:/Deploy Pathkeeper/}).click();
  await page.screenshot({path:`${output}/02-combat-390.png`});
  await page.getByRole('button',{name:'Pause battle'}).click();
