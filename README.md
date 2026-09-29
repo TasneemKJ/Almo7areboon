@@ -4,9 +4,9 @@ A mobile-first, portrait web recreation of the **We Are Warriors!** core loop, b
 
 ## Current delivery
 
-The deterministic core, 30-card collection, progression, save recovery and interface integration are implemented. The final local suite has **82 passing tests** and the production build succeeds. This is **not** a verified pixel-exact clone or a complete recreation of the reference's live-service systems.
+The deterministic core, 30-card collection, progression and save recovery are implemented. The visual-overhaul branch adds six illustrated environments, redesigned armies and a coordinated mobile interface. Its current local suite has **109 passing tests** and the production build succeeds. This is **not** a verified pixel-exact clone or a complete recreation of the reference's live-service systems.
 
-Rendered browser, screenshot, touch-device and Safari verification remain pending because the available browser route was blocked. Component tests and CSS/source checks do not replace those checks. See [verification](docs/VERIFICATION.md) and the [40-pass record](docs/ITERATIONS.md).
+Rendered browser, screenshot, touch-device and Safari verification remain pending because the available browser route was blocked. Component tests and CSS/source checks do not replace those checks. See the [visual-overhaul evidence](docs/VISUAL-OVERHAUL.md), [core verification](docs/VERIFICATION.md) and the [original 40-pass record](docs/ITERATIONS.md).
 
 ## Run locally
 

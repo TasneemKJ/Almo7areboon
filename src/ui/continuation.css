@@ -3,7 +3,15 @@
 .currency.gems { min-height:44px; }
 .world.base-danger:after { box-shadow:inset 0 0 0 3px #df8f72; z-index:1; }
 [data-motion=reduced] *,[data-motion=reduced] *:before,[data-motion=reduced] *:after { animation:none!important; transition:none!important; scroll-behavior:auto!important; }
+/* Keep artwork out of both text bands, including tall crests and weapon tips. */
+.unit-card { height:124px; --portrait-top:32px; --portrait-bottom:24px; }
+.unit-role { line-height:10px; }
+.unit-card img { top:var(--portrait-top); bottom:auto; height:calc(100% - var(--portrait-top) - var(--portrait-bottom)); }
 @media(max-height:700px) {
+ .unit-card { height:100px; --portrait-top:26px; --portrait-bottom:20px; }
+ .unit-role { line-height:9px; }
+ .battle-select:disabled { visibility:hidden; pointer-events:none; }
+
  .secondary-screen { padding-top:calc(68px + env(safe-area-inset-top,0px)); }
  .battle-statistics { grid-template-columns:repeat(2,minmax(0,1fr)); }
 }
@@ -14,3 +22,4 @@
  .game-shell { height:540px; min-height:540px; border-radius:0; }
  .modal-layer { position:fixed; max-height:100dvh; }
 }
+@media(max-height:600px) { .scene-name { display:none; } }

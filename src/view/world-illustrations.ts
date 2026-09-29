@@ -96,7 +96,7 @@ export function baseSvg(age:number,side:Side):string {
  const defs=gradient('stone','#d8cdad','#8e957e')+gradient('roof','#efd79a','#a77b45')+gradient('metal','#f1f7ea','#809caf')+gradient('door','#264659','#122b39')+gradient('team',bright,accent)+gradient('wood','#c99460','#806342');
  let out=`<g opacity=".25">${e(80,144,72,11,'#21433e')}</g>`;
  if(age===0){
-  out=p('M11 137L16 94 32 62 62 43 96 43 125 65 143 98 149 139Z','url(#stone)','#5b7061',2.5)+p('M17 94L32 63 60 47 54 83 35 105 29 138H12Z','#b6b79a','none',0)+p('M61 46L96 45 126 65 92 79 54 83Z','#eee0b9','#b1ad8e',1.3)+p('M95 80L126 67 142 99 147 137 123 134 117 106Z','#818e77','none',0);
+  out+=p('M11 137L16 94 32 62 62 43 96 43 125 65 143 98 149 139Z','url(#stone)','#5b7061',2.5)+p('M17 94L32 63 60 47 54 83 35 105 29 138H12Z','#b6b79a','none',0)+p('M61 46L96 45 126 65 92 79 54 83Z','#eee0b9','#b1ad8e',1.3)+p('M95 80L126 67 142 99 147 137 123 134 117 106Z','#818e77','none',0);
   out+=p('M42 138L46 106Q53 81 79 82Q105 80 119 110L125 139Z','#6c7961','#6d765c',2)+p('M51 138L54 109Q61 92 81 93Q102 94 109 114L114 139Z','url(#door)','none',0)+p('M56 136Q58 110 73 102L67 123 69 137Z','#d9984b','none',0)+p('M25 87L32 70 51 61 59 60 47 76 42 91Z','#819a5a','none',0)+p('M104 51L123 65 131 77 113 79 111 69 93 64Z','#9ab770','none',0);
   out+=l('M45 127Q38 96 60 86M117 126Q119 96 99 86','#f3e1ad',5)+r(65,68,33,13,4,'url(#wood)','#7c7759',1.4)+p('M77 71l5 5-5 3-4-4Z',accent,'none',0)+l('M20 115L25 103M129 98l7 13','#d5c9a8',2);
  }else if(age===1){
@@ -121,5 +121,5 @@ export function baseSvg(age:number,side:Side):string {
   out+=p('M10 135L21 74 48 41 111 41 140 76 150 135Z','url(#metal)','#46667a',2.5)+p('M21 75L48 43 111 43 137 74Z','#e7f6ed','#789da2',1.5)+p('M46 138V89L58 72H102L115 90V138Z','url(#door)','#759fba',3)+l('M50 131V91L61 78H100L110 93V131','#8beadd',3)+r(23,88,12,32,3,'url(#team)','#547a8b',1.5)+r(125,88,12,32,3,'url(#team)','#547a8b',1.5)+r(28,56,104,7,3,'#a2dddd','none',0)+r(8,133,144,11,3,'#8eafba','#527588',2)+l('M42 139H116','#d2ffff',2)+r(67,92,27,4,2,accent,'none',0)+l('M119 44L125 26','#b4d5d5',3)+e(128,21,7,6,bright,'#4d738d',1.8);
  }
  if(age!==3){out+=l('M139 129V71','#5c735e',2.5)+p('M140 74L157 78 151 85 157 92 140 89Z','url(#team)','#617861',1.1);}
- return documentSvg(160,160,out,defs);
+ return documentSvg(160,160,`<g transform="translate(80 140) scale(0.96) translate(-80 -140)">${out}</g>`,defs);
 }

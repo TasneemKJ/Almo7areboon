@@ -1,7 +1,9 @@
 import Phaser from 'phaser';
 import {reducedMotion,projectileForHit} from './combat-feedback.ts';
-import {arenaLayout,troopPose,projectilePoint,visualEra} from './visual-theme.ts';
+import {arenaLayout,troopPose,visualEra} from './visual-theme.ts';
 import {visualAssets,baseTexture,unitTexture,landscapeTexture} from './visual-assets.ts';
+import {projectileGeometry,paintProjectile} from './projectile-art.ts';
+import {DeathVisuals} from './death-visuals.ts';
 import {TROOP_FRAME} from './unit-illustrations.ts';
 import {compactNumber} from '../ui/battle-hud.ts';
 import {drawTroop,drawBase} from './art';
@@ -34,6 +36,7 @@ export function mountBattlefield(element:HTMLElement,game:GamePort,onFrame:()=>v
   private enemyBase!:ImageOrFallback;
   private baseText:Phaser.GameObjects.Text[]=[];
   private units=new Map<number,TroopView>();
+  private fallen=new DeathVisuals();
   private idle:ImageOrFallback[]=[];
   private sparks:Spark[]=[];
   private bolts:Bolt[]=[];
@@ -69,7 +72,7 @@ export function mountBattlefield(element:HTMLElement,game:GamePort,onFrame:()=>v
     this.baseText.push(text);this.world.add(text);
    }
    this.scale.on('resize',this.resize,this);
-   this.events.once('shutdown',()=>this.scale.off('resize',this.resize,this));
+   this.events.once('shutdown',()=>{this.scale.off('resize',this.resize,this);this.resetEffects();this.units.clear();this.idle=[];});
    this.resize();this.syncEra();loading.remove();
    if(this.failed)element.dispatchEvent(new CustomEvent('visual-fallback',{bubbles:true}));
   }
@@ -131,7 +134,11 @@ export function mountBattlefield(element:HTMLElement,game:GamePort,onFrame:()=>v
     if(moving&&!game.state.paused&&!frozen&&this.clock-view.dustAt>.28){this.emit(x,y+2,1,0xdfd4b1,true,.45);view.dustAt=this.clock;}
     view.x=x;view.y=y;
    }
-   for(const [id,view]of this.units)if(!ids.has(id)){view.body.destroy();this.units.delete(id);}
+   for(const [id,view]of this.units)if(!ids.has(id)){
+    if(this.reduce)view.body.destroy();
+    else {if(view.body instanceof Phaser.GameObjects.Image)view.body.clearTint();this.fallen.add(view.body,view.side);}
+    this.units.delete(id);
+   }
    for(let i=0;i<this.idle.length;i++){
     const actor=this.idle[i],side=i===0?'player':'enemy',x=i===0?119:331,y=groundY+15;
     actor.setVisible(game.state.phase==='ready');
@@ -207,7 +214,7 @@ export function mountBattlefield(element:HTMLElement,game:GamePort,onFrame:()=>v
    }
   }
   private effects(dt:number):void {
-   const g=this.fx;g.clear();
+   const g=this.fx;g.clear();this.fallen.step(dt,this.reduce);
    if(!this.reduce)for(let i=0;i<9;i++){
     const x=40+(this.clock*9+i*41)%370,y=this.layout.groundY-100+Math.sin(this.clock*.6+i*2)*17;
     g.fillStyle(visualEra(game.profile.age).mote,.28);g.fillCircle(x,y,.6+i%2*.35);
@@ -218,18 +225,15 @@ export function mountBattlefield(element:HTMLElement,game:GamePort,onFrame:()=>v
    for(const ring of this.rings){ring.life-=dt;const p=1-Math.max(0,ring.life/ring.max);g.lineStyle(2-p,ring.color,(1-p)*.7);g.strokeEllipse(ring.x,ring.y,ring.radius*2*p,ring.radius*p);}
    this.rings=this.rings.filter(r=>r.life>0);
    for(const bolt of this.bolts){
-    bolt.life-=dt;const progress=1-Math.max(0,bolt.life)/bolt.max,point=projectilePoint(bolt.from,bolt.to,progress,bolt.arc),prior=projectilePoint(bolt.from,bolt.to,Math.max(0,progress-.2),bolt.arc);
-    const color=bolt.meteor?0xffb267:bolt.age===5?(bolt.side==='player'?0x8bf2f0:0xffb5b7):0xffe3ab;
-    g.lineStyle(bolt.meteor?10:bolt.heavy?4:2.5,color,.35);g.lineBetween(prior.x,prior.y,point.x,point.y);
-    g.lineStyle(bolt.meteor?4:1.3,0xfff3cb,1);g.lineBetween(prior.x,prior.y,point.x,point.y);
-    g.fillStyle(bolt.meteor?0xffedb5:bolt.age<3?0xbdc6b1:color,1);g.fillCircle(point.x,point.y,bolt.meteor?6:bolt.heavy?3:2.2);
+    bolt.life-=dt;const progress=1-Math.max(0,bolt.life)/bolt.max;
+    paintProjectile(g,projectileGeometry(bolt.from,bolt.to,progress,bolt.arc,bolt.age,bolt.heavy,bolt.side,bolt.meteor));
     if(bolt.life<=0)this.impact(bolt.to.x,bolt.to.y,bolt.damage,bolt.heavy);
    }
    this.bolts=this.bolts.filter(b=>b.life>0);
    for(const f of this.floaters){f.life-=dt;const progress=1-f.life/f.max;f.text.setY(f.startY-(this.reduce?0:progress*22)).setAlpha(Math.max(0,Math.min(1,f.life/f.max*2)));if(f.life<=0)f.text.destroy();}
    this.floaters=this.floaters.filter(f=>f.life>0);
   }
-  private resetEffects():void {for(const f of this.floaters)f.text.destroy();this.floaters=[];this.sparks=[];this.bolts=[];this.rings=[];}
+  private resetEffects():void {this.fallen.clear();for(const f of this.floaters)f.text.destroy();this.floaters=[];this.sparks=[];this.bolts=[];this.rings=[];}
   update(_time:number,delta:number):void {
    if(disposed||!this.world)return;
    const dt=Math.min(.05,Math.max(0,delta/1000));game.step(dt);
