@@ -24,15 +24,15 @@ function harness(motion = 'full') {
   const root = node(), elements = new Map<string, ReturnType<typeof node>>();
   const context: any = {
     Game, game: new Game(defaultProfile()), sessionReady: true, pagePresent: true, lifetime: { disposed: false },
-    acquiring: null, acquisitionVersion: 0, hasPlayed: true, manualPaused: false, savedWarning: false, pendingImport: null,
+    acquiring: null, acquisitionVersion: 0, hasPlayed: true, manualPaused: false, savedWarning: false, pendingImport: null, modal: null, evolutionFromResult: false,
     lastUpdate: 0, lastSave: 100, lastPhase: 'ready', resultDue: 0, resultShown: '', activeTab: 'battle', root,
     performance: { now: () => now }, document: { documentElement: { dataset: { motion } } },
     $: (id: string) => { if (!elements.has(id)) elements.set(id, node()); return elements.get(id); },
     ERAS, QUESTS, foodRate, unlockCost, dailyReward, localDay, battleGuidance, baseHealthDisplay, compactNumber, waveLabel, waveAccessibleLabel, chapterPresentation, resultsHtml,
     storybookArt: () => false, money: String, coin: String, textIfChanged() {}, htmlIfChanged() {}, unlockAudio() {}, syncPause() {}, rebuildArmy() {}, syncMotion() {}, renderScreen() {}, toast() {},
-    closeModal() {}, showModal: (id: string) => dialogs.push(id),
+    closeModal() { context.modal=null; }, showModal: (id: string) => {context.modal=id;dialogs.push(id);},
     session: {
-      status: 'active', check: () => !foreign,
+      status: 'active', check: () => {if(foreign){context.session.status='conflict';context.sessionReady=false;context.modal='session';dialogs.push('session');return false;}return true;},
       save: () => { if (foreign) { context.session.status = 'conflict'; context.sessionReady = false; dialogs.push('session'); return { ok: false }; } return { ok: true }; },
       acquire: async () => ({ status: 'active', profile: defaultProfile(), loadStatus: 'loaded' }),
     },

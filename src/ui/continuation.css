@@ -45,3 +45,29 @@
 /* This small flow row reserves its own space instead of covering battle or navigation controls. */
 .session-notice { flex-shrink:0; height:28px; margin:0; padding:5px 8px; position:relative; z-index:4; color:var(--ink); background:var(--paper); border-top:1px solid var(--paper-edge); text-align:center; font-size:11px; line-height:17px; font-weight:600; }
 [data-save-session=temporary] .secondary-screen { bottom:calc(93px + env(safe-area-inset-bottom,0px)); }
+/* Three storybook seals reuse chapter rows and the existing result, never the playfield. */
+.mastery-marks { display:flex; gap:5px; flex-wrap:wrap; margin:8px 0 5px; }
+.mastery-mark { display:inline-flex; align-items:center; gap:4px; border:1px dashed #8b967e; border-radius:50%; padding:4px 6px; color:#586454; font-size:10px; line-height:1.2; }
+.mastery-mark.gate { border-radius:4px 4px 1px 1px; }
+.mastery-mark.chapter-seal { border-radius:5px; }
+.mastery-mark.earned { border-style:solid; background:#dce7cd; color:#294e36; }
+.mastery-mark-title { font-size:9px; }
+.mastery-requirement,.mastery-remaining { display:block; font-size:10px; line-height:1.45; margin-top:4px; }
+.mastery-remaining { color:var(--muted); }
+.result-mastery { padding:10px 0; border-block:1px solid var(--paper-edge); margin:12px 0; text-align:left; }
+.result-mastery p { font-size:11px; line-height:1.5; margin:7px 0; }
+.result-mastery small { font-size:10px; color:var(--muted); }
+.result-dialog .reward small { display:block; line-height:1.5; }
+.chapter-continuation { margin-top:16px; padding-top:12px; border-top:1px solid var(--paper-edge); }
+.chapter-continuation p { font-size:11px; line-height:1.5; }
+.chapter-continuation .big-button { width:100%; }
+.result-dialog .big-button,.chapter-continuation .big-button { min-height:48px; white-space:normal; line-height:1.35; padding-block:10px; }
+.battle-option .mastery-marks { gap:4px; }
+.battle-option .mastery-mark { padding:3px 5px; }
+.battle-option .mastery-mark-title { display:none; }
+@media(max-width:360px) {
+ .result-dialog { padding:20px 14px; }
+ .mastery-mark-title { font-size:8px; }
+ .result-dialog .big-button { font-size:11px; }
+ .battle-option { padding-inline:7px; }
+}

@@ -1,20 +1,24 @@
 import { ERAS, foodRate, foodUpgradeCost, unlockCost } from '../game/data.ts';
+import { cardPackCost } from '../game/cards.ts';
 import type { WavePreview, WaveStatus } from '../game/encounters.ts';
 import type { BattleState, Profile } from '../game/types.ts';
+import { chapterMastery } from '../game/mastery.ts';
+import { masteryAdvice } from './mastery-presentation.ts';
 
 /** What most improves the next attempt, judged from what the player can afford right now. */
 export function defeatAdvice(profile: Profile): string {
   if (!profile.unlocked[1] && profile.coins >= unlockCost(1, profile)) return 'Unlock your ranged troop so it can strike from behind your front line, then retry.';
   if (!profile.unlocked[2] && profile.coins >= unlockCost(2, profile)) return 'Unlock your heavy troop to hold the front line, then retry.';
   if (profile.foodLevel < 100 && profile.coins >= foodUpgradeCost(profile)) return 'Upgrade food production to deploy faster, then retry.';
-  return 'Deploy earlier and mix melee with ranged troops, then retry.';
+  if (profile.gems >= cardPackCost(1)) return `You have ${profile.gems.toLocaleString('en-US')} gems: summon a card in Cards for a permanent boost, then retry.`;
+  return 'Deploy earlier and mix melee with ranged troops. Winning any battle pays gems for cards.';
 }
 
 /** A single contextual instruction, not an onboarding panel over the battlefield. */
 export function battleGuidance(profile: Profile, state: BattleState, preview?: WavePreview | null): string {
   if (state.phase === 'ready') return 'Tap Battle, then spend food to deploy warriors.';
   if (state.phase === 'won') return 'Victory! Continue to the next battle when you are ready.';
-  if (state.phase === 'lost') return `Your coins are safe. ${defeatAdvice(profile)}`;
+  if (state.phase === 'lost') return `Your coins are safe. ${masteryAdvice(profile,state)}`;
   if (state.paused) return 'Battle paused. Resume to deploy your army.';
   if (state.playerHp / state.playerMaxHp <= 0.3) return 'Your base is in danger. Deploy reinforcements or use a skill.';
   if (state.stats.deployed === 0 && state.food >= ERAS[profile.age].units[0].cost) return 'Deploy a melee warrior. Save some food for the next wave.';
@@ -29,6 +33,8 @@ export function battleGuidance(profile: Profile, state: BattleState, preview?: W
   }
   if (!profile.unlocked[1] && profile.coins >= unlockCost(1, profile)) return 'Ranged troops are affordable. Unlock them behind your front line.';
   if (state.food >= 90) return 'Food storage is nearly full. Deploy a stronger army now.';
+  const objective=chapterMastery(profile,profile.enemyAge);
+  if(!(objective.record.earnedMask&4))return objective.thirdRequirement;
   return profile.unlocked[1] ? 'Protect ranged troops with a front line of melee warriors.' : 'Save food and deploy together to overwhelm the enemy.';
 }
 
