@@ -63,6 +63,15 @@ jobs:
           path: artifacts/browser-review/upgrade-text/
 
           retention-days: 7
+      - name: Publish focused upgrade evidence
+        if: always() && steps.upgrade_text.outcome != 'skipped'
+        uses: actions/upload-artifact@v4
+        with:
+          name: upgrade-text-focus-review
+          path: |
+            artifacts/browser-review/upgrade-text/diagnostics.json
+            artifacts/browser-review/upgrade-text/*focused.png
+          retention-days: 7
       - name: Verify production offline audio waveforms
         id: offline_audio
         if: steps.tests.outcome == 'success' && steps.build.outcome == 'success'
