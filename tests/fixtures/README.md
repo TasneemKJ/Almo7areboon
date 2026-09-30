@@ -28,3 +28,20 @@ Expected occlusion: rear-lane troops and their source effects pass behind bases;
 middle/front-lane troops and source effects pass in front. Changing those effects
 back to the global foreground layer must fail the runtime paint-order checks.
 The script records failures and continues capturing remaining cases for review.
+
+
+Tactical feedback is opt-in: `traits=guard|pierce|sweep|all` adds positive,
+resolved production hit events at separated target coordinates. `motion=reduced`
+selects the real reduced-motion policy, and `width=320|390` resizes the scene for
+phone captures. The defaults remain unchanged, retaining all 39 layering cases.
+`npm run review:browser` also serves this fixture on port 4175 and checks that
+all three accents paint their target lane, sweep emits no second source cue or
+projectile, reduced motion suppresses travel, and static target coordinates hold.
+
+Additional production captures go to the existing portrait artifact directory:
+`33-first-fires-opening-{320,390}.png`, `34-incoming-volley-{320,390}.png`,
+`35-incoming-bulwark-{320,390}.png`, and
+`36-trait-feedback-{system,reduced}-{320,390}.png`. They supplement the original
+32 production screenshots. The trait screenshots are deterministic frozen
+renderer views, not live-combat timing guesses. Test diagnostics never enter
+the production entry or build.

@@ -1,4 +1,5 @@
 import { ERAS, foodRate, foodUpgradeCost, unlockCost } from '../game/data.ts';
+import type { WavePreview, WaveStatus } from '../game/encounters.ts';
 import type { BattleState, Profile } from '../game/types.ts';
 
 /** What most improves the next attempt, judged from what the player can afford right now. */
@@ -10,17 +11,22 @@ export function defeatAdvice(profile: Profile): string {
 }
 
 /** A single contextual instruction, not an onboarding panel over the battlefield. */
-export function battleGuidance(profile: Profile, state: BattleState): string {
+export function battleGuidance(profile: Profile, state: BattleState, preview?: WavePreview | null): string {
   if (state.phase === 'ready') return 'Tap Battle, then spend food to deploy warriors.';
   if (state.phase === 'won') return 'Victory! Continue to the next battle when you are ready.';
   if (state.phase === 'lost') return `Your coins are safe. ${defeatAdvice(profile)}`;
   if (state.paused) return 'Battle paused. Resume to deploy your army.';
   if (state.playerHp / state.playerMaxHp <= 0.3) return 'Your base is in danger. Deploy reinforcements or use a skill.';
-  if (state.stats.deployed === 0 && state.food >= ERAS[profile.age].units[0].cost) return 'Tap a troop to deploy your first warrior.';
-  if (state.wave === state.totalWaves && !state.units.some(unit => unit.side === 'enemy' && unit.hp > 0)) return 'Enemy army cleared. Keep deploying to destroy their base.';
-  if (profile.wins < 3 && state.stats.skillsCast === 0 && state.time >= 25) return 'Try a skill: Freeze, Meteor or Food Drop. Each works once per battle.';
+  if (state.stats.deployed === 0 && state.food >= ERAS[profile.age].units[0].cost) return 'Deploy a melee warrior. Save some food for the next wave.';
   const wait = Math.ceil((ERAS[profile.age].units[0].cost - state.food) / foodRate(profile));
   if (wait > 0) return `More food in ${wait}s. Your warriors fight automatically.`;
+  if (profile.wins < 3 && state.stats.skillsCast === 0 && state.time >= 25 && (!preview || preview.nextIn > 8)) return 'Try a skill: Freeze, Meteor or Food Drop. Each works once per battle.';
+  if (preview) {
+    if (preview.intent === 'volley') return 'Ranged enemies are coming. Melee guards take less damage from them.';
+    if (preview.intent === 'rush' && profile.unlocked[2]) return 'A rush is coming. A heavy warrior can hit two enemies.';
+    if (preview.intent === 'bulwark' && profile.unlocked[1]) return 'A heavy enemy is coming. Ranged troops deal extra damage to it.';
+    return 'A stronger wave is coming. Save food and send melee warriors together.';
+  }
   if (!profile.unlocked[1] && profile.coins >= unlockCost(1, profile)) return 'Ranged troops are affordable. Unlock them behind your front line.';
   if (state.food >= 90) return 'Food storage is nearly full. Deploy a stronger army now.';
   return profile.unlocked[1] ? 'Protect ranged troops with a front line of melee warriors.' : 'Save food and deploy together to overwhelm the enemy.';
@@ -40,4 +46,24 @@ export function baseHealthDisplay(hp: number, maximum: number): { ratio: number;
   const current = Math.max(0, Math.min(max, Number.isFinite(hp) ? hp : 0));
   const ratio = current / max;
   return { ratio, label: `${compactNumber(current)} / ${compactNumber(max)}`, danger: ratio <= 0.3 };
+}
+
+
+/** Compact visible chip; delayed final members always precede clearance. */
+export function waveLabel(status: WaveStatus): string {
+  const p=status.preview;
+  if(p){
+    const counts=p.counts.flatMap((count,index)=>count>0?[`${count}${['M','R','H'][index]}`]:[]).join(' ');
+    return `${p.intent.toUpperCase()} ${p.number}/${p.total} · ${counts} · ${Math.ceil(p.nextIn)}s`;
+  }
+  if(status.pendingEnemies>0)return `FINAL WAVE · ${status.pendingEnemies} INCOMING`;
+  return status.cleared?'WAVES CLEARED · ATTACK THE BASE':`${status.enemiesRemaining} ENEMIES REMAIN`;
+}
+
+/** Updated accessible name, deliberately not a countdown live region. */
+export function waveAccessibleLabel(status: WaveStatus): string {
+  const p=status.preview;
+  if(!p)return status.pendingEnemies>0?`Final wave. ${status.pendingEnemies} ${status.pendingEnemies===1?'enemy':'enemies'} incoming.`:status.cleared?'Waves cleared. Attack the base.':`${status.enemiesRemaining} enemies remain.`;
+  const counts=p.counts.flatMap((count,index)=>count>0?[`${count} ${['melee','ranged','heavy'][index]}`]:[]).join(', ');
+  return `${p.intent[0].toUpperCase()+p.intent.slice(1)} wave ${p.number} of ${p.total}. ${counts}. Arrives in ${Math.ceil(p.nextIn)} seconds.`;
 }

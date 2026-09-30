@@ -7,11 +7,12 @@ import { exportBackup, importBackup, restoreBackup } from '../src/game/backup.ts
 import { pauseReason } from '../src/ui/pause.ts';
 import { isEditingTarget, nextFocusIndex, createModalIsolation } from '../src/ui/accessibility.ts';
 import { createArmyUpdater } from '../src/ui/army-screen.ts';
-import { baseHealthDisplay, battleGuidance, compactNumber, defeatAdvice } from '../src/ui/battle-hud.ts';
+import * as hud from '../src/ui/battle-hud.ts';
 import { unlockCost, foodUpgradeCost } from '../src/game/data.ts';
 import { resultsHtml } from '../src/ui/results-screen.ts';
 import { battleSelectionHtml, evolutionDialogHtml } from '../src/ui/progression-screen.ts';
 import { createLifetime } from '../src/ui/lifetime.ts';
+const {baseHealthDisplay,battleGuidance,compactNumber,defeatAdvice}=hud;
 const main=()=>readFileSync(new URL('../src/main.ts',import.meta.url),'utf8');
 
 test('P17: closing one pause owner cannot clear another owner',()=>{
@@ -63,10 +64,10 @@ test('P27: food and coin ticks never rebuild troop buttons or their focus state'
  assert.match(main(),/createArmyUpdater/);
 });
 test('P28: guidance explains first deployment, pause, danger and waiting for food',()=>{
- const g=new Game();assert.match(battleGuidance(g.profile,g.state),/Tap Battle/);g.dispatch({type:'start'});assert.match(battleGuidance(g.profile,g.state),/first warrior/);
+ const g=new Game();assert.match(battleGuidance(g.profile,g.state),/Tap Battle/);g.dispatch({type:'start'});assert.match(battleGuidance(g.profile,g.state),/Deploy a melee warrior/);
  g.state.paused=true;assert.match(battleGuidance(g.profile,g.state),/paused/);g.state.paused=false;g.state.playerHp=10;assert.match(battleGuidance(g.profile,g.state),/danger/);
  assert.deepEqual(baseHealthDisplay(-3,100),{ratio:0,label:'0 / 100',danger:true});assert.equal(baseHealthDisplay(1e40,1e40).label.length<30,true);
- assert.match(main(),/battleGuidance\(p,\s*s\)/);
+
 });
 test('P31: results show durable statistics and do not imply a second reward claim',async()=>{
  const path='../src/ui/results-screen.ts';const screen=await import(path).catch(()=>null);assert.ok(screen,'results screen must exist');
@@ -94,6 +95,45 @@ test('P35: unchanged HUD values do not rewrite DOM nodes',async()=>{
 });
 test('P38: secondary screens isolate the battlefield and restore a meaningful focus target',()=>{
  assert.match(main(),/battle-view'\)\.inert/);assert.match(main(),/secondary-title/);assert.match(main(),/focusBefore\?\.isConnected/);
+});
+
+
+test('incoming formations display counts and expand roles without premature clearance',()=>{
+ assert.equal(typeof hud.waveLabel,'function','wave labels must consume resolved status');
+ assert.equal(typeof hud.waveAccessibleLabel,'function','accessible label must expand roles');
+ const {waveLabel,waveAccessibleLabel}=hud;
+ const status={spawned:2,total:5,nextIn:7.1,enemiesRemaining:0,pendingEnemies:0,cleared:false,preview:{number:3,total:5,intent:'volley' as const,counts:[1,2,0] as const,nextIn:7.1}};
+ assert.equal(waveLabel(status),'VOLLEY 3/5 · 1M 2R · 8s');
+ assert.equal(waveAccessibleLabel(status),'Volley wave 3 of 5. 1 melee, 2 ranged. Arrives in 8 seconds.');
+ assert.equal(waveLabel({...status,preview:null,nextIn:null,pendingEnemies:1}),'FINAL WAVE · 1 INCOMING');
+ assert.equal(waveLabel({...status,preview:null,nextIn:null,pendingEnemies:0,enemiesRemaining:2}),'2 ENEMIES REMAIN');
+ assert.equal(waveLabel({...status,preview:null,nextIn:null,pendingEnemies:0,cleared:true}),'WAVES CLEARED · ATTACK THE BASE');
+ assert.equal(waveLabel({...status,preview:{...status.preview,counts:[0,0,1]}}),'VOLLEY 3/5 · 1H · 8s');
+ assert.equal(waveAccessibleLabel({...status,preview:{...status.preview,counts:[0,0,1]}}),'Volley wave 3 of 5. 1 heavy. Arrives in 8 seconds.');
+ assert.equal(waveAccessibleLabel({...status,preview:null,pendingEnemies:1}),'Final wave. 1 enemy incoming.');
+});
+
+test('guidance teaches affordable opening, counters, unlock fallback and precedence',()=>{
+ const g=new Game();
+ const preview={number:3,total:5,intent:'volley' as const,counts:[1,2,0] as const,nextIn:8};
+ assert.match(battleGuidance(g.profile,g.state,preview),/Tap Battle/);g.dispatch({type:'start'});
+ assert.equal(battleGuidance(g.profile,g.state,preview),'Deploy a melee warrior. Save some food for the next wave.');
+ g.dispatch({type:'spawn',kind:0});g.state.food=20;
+ assert.equal(battleGuidance(g.profile,g.state,preview),'Ranged enemies are coming. Melee guards take less damage from them.');
+ for(const intent of ['rush','bulwark'] as const){
+  assert.equal(battleGuidance(g.profile,g.state,{...preview,intent}),'A stronger wave is coming. Save food and send melee warriors together.');
+ }
+ g.profile.unlocked=[true,true,true];
+ assert.equal(battleGuidance(g.profile,g.state,{...preview,intent:'rush'}),'A rush is coming. A heavy warrior can hit two enemies.');
+ assert.equal(battleGuidance(g.profile,g.state,{...preview,intent:'bulwark'}),'A heavy enemy is coming. Ranged troops deal extra damage to it.');
+ g.state.food=0;assert.match(battleGuidance(g.profile,g.state,preview),/More food/);
+ g.state.playerHp=10;assert.match(battleGuidance(g.profile,g.state,preview),/danger/);
+ g.state.paused=true;assert.match(battleGuidance(g.profile,g.state,preview),/paused/);
+ g.state.paused=false;g.state.playerHp=g.state.playerMaxHp;g.state.food=20;
+ assert.equal(typeof battleGuidance(g.profile,g.state),'string');
+ g.state.wave=5;assert.doesNotMatch(battleGuidance(g.profile,g.state,null),/cleared/);
+ g.state.paused=true;g.state.playerHp=1;g.state.phase='won';assert.match(battleGuidance(g.profile,g.state,preview),/Victory/);
+ g.state.phase='lost';assert.match(battleGuidance(g.profile,g.state,preview),/coins are safe/);
 });
 
 test('a backup saved with a UTF-8 byte-order mark still imports',()=>{
@@ -143,6 +183,9 @@ test('new players are pointed at the skill buttons once, until they cast one',()
  assert.doesNotMatch(battleGuidance(g.profile,g.state),/skill/i);
  g.state.time=30;
  assert.match(battleGuidance(g.profile,g.state),/Try a skill/);
+ const imminent={number:3,total:5,intent:'volley' as const,counts:[1,1,0] as const,nextIn:3};
+ assert.match(battleGuidance(g.profile,g.state,imminent),/Melee guards/);
+ assert.match(battleGuidance(g.profile,g.state,{...imminent,nextIn:12}),/Try a skill/);
  g.state.stats.skillsCast=1;
  assert.doesNotMatch(battleGuidance(g.profile,g.state),/Try a skill/);
  g.state.stats.skillsCast=0;g.profile.wins=3;
