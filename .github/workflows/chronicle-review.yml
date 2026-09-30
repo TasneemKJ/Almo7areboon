@@ -1,0 +1,33 @@
+name: Folktale tactics review
+on:
+  pull_request:
+  workflow_dispatch:
+permissions:
+  contents: read
+jobs:
+  chronicle:
+    runs-on: ubuntu-latest
+    timeout-minutes: 15
+    steps:
+      - uses: actions/checkout@v4
+        with:
+          persist-credentials: false
+      - uses: actions/setup-node@v4
+        with:
+          node-version: '22'
+          cache: npm
+      - run: npm ci
+      - run: npm test
+      - run: npm run build
+      - run: npx playwright install --with-deps chromium
+      - name: Playtest production build through real controls
+        run: |
+          npm run preview -- --port 4173 > /tmp/chronicle-preview.log 2>&1 &
+          for i in $(seq 1 30); do curl -fsS http://127.0.0.1:4173/ >/dev/null && break || sleep 1; done
+          node --experimental-strip-types scripts/review-chronicle.mjs
+      - uses: actions/upload-artifact@v4
+        if: always()
+        with:
+          name: folktale-tactics-review
+          path: artifacts/chronicle
+          retention-days: 7
