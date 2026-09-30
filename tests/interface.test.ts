@@ -93,3 +93,8 @@ test('P35: unchanged HUD values do not rewrite DOM nodes',async()=>{
 test('P38: secondary screens isolate the battlefield and restore a meaningful focus target',()=>{
  assert.match(main(),/battle-view'\)\.inert/);assert.match(main(),/secondary-title/);assert.match(main(),/focusBefore\?\.isConnected/);
 });
+
+test('a backup saved with a UTF-8 byte-order mark still imports',()=>{
+ const text=exportBackup(defaultProfile(),new Date('2026-09-28T00:00:00Z'));
+ assert.equal(importBackup('﻿'+text).ok,true);
+});
