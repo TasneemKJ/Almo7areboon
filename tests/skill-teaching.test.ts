@@ -42,3 +42,23 @@ test('empty targets and full food never produce a skill-use tutorial',()=>{
   assert.equal(game.canUseSkill('food'),false);
   assert.doesNotMatch(battleGuidance(game.profile,game.state,game.waveStatus().preview),/Try a skill/);
 });
+
+test('prepared native teaching fixture has live and quiet windows across deployment timing',()=>{
+  for(const delay of [.1,.5,1,2]) {
+    const profile=defaultProfile();Object.assign(profile,{wins:1,foodLevel:3});
+    const game=new Game(profile);assert.equal(game.dispatch({type:'start'}),true);
+    let lastDeployment=-1,firstLive:number|null=null,firstQuiet:number|null=null,lastQuiet=0;
+    for(let tick=0;tick<2100&&game.state.phase==='running';tick++) {
+      if(game.state.stats.deployed<3&&game.state.time>=delay&&game.state.time-lastDeployment>.3&&game.deploymentStatus(0).allowed) {
+        assert.equal(game.dispatch({type:'spawn',kind:0}),true);lastDeployment=game.state.time;
+      }
+      const hint=battleGuidance(profile,game.state,game.waveStatus().preview);
+      if(/Try a skill:.*Freeze.*Meteor/.test(hint)&&firstLive===null)firstLive=game.state.time;
+      if(/^Try a skill: Food Drop\./.test(hint)){firstQuiet??=game.state.time;lastQuiet=game.state.time;}
+      game.step(1/60);
+    }
+    assert.equal(game.state.stats.deployed,3);
+    assert.ok(firstLive!==null&&firstQuiet!==null&&firstLive<firstQuiet,`live targets precede gap, delay=${delay}`);
+    assert.ok(lastQuiet-firstQuiet!>=2,`quiet window allows native capture, delay=${delay}`);
+  }
+});
