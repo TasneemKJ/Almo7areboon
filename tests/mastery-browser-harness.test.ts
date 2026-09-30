@@ -3,6 +3,9 @@ import assert from 'node:assert/strict';
 import { readFileSync } from 'node:fs';
 import { runInNewContext } from 'node:vm';
 import ts from 'typescript';
+import { Game } from '../src/game/simulation.ts';
+import { defaultProfile } from '../src/game/save.ts';
+import { battleGuidance } from '../src/ui/battle-hud.ts';
 
 const source=readFileSync(new URL('../scripts/capture-mastery-review.mjs',import.meta.url),'utf8');
 const ast=ts.createSourceFile('capture-mastery-review.mjs',source,ts.ScriptTarget.Latest,true,ts.ScriptKind.JS);
@@ -71,7 +74,10 @@ test('fresh ready flow changes speed through visible Settings before native Batt
  function find(node:ts.Node){if(ts.isCallExpression(node)&&node.expression.getText(ast)==='scenario'&&node.arguments[0]?.getText(ast).startsWith('`fresh-win-paused-input-'))callback=node.arguments[2].getText(ast);ts.forEachChild(node,find);}
  find(ast);assert.ok(callback);
  let settings=false,speed=1;const reachedBattle=Error('reached the native Battle activation');
- const page={locator(selector:string){return{async click(){
+ const firstBattle=new Game(defaultProfile());
+ const page={locator(selector:string){return{async innerText(){
+  assert.equal(selector,'#deploy-hint');return battleGuidance(firstBattle.profile,firstBattle.state);
+ },async click(){
   if(selector==='[data-command="settings"]'){settings=true;return;}
   if(selector==='[data-command="speed"]')throw Error('the ready battlefield speed control is hidden');
   if(selector==='[data-command="start"]'){assert.equal(settings,false);assert.equal(speed,2);throw reachedBattle;}

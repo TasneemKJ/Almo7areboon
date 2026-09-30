@@ -13,3 +13,5 @@ Five focused tests cover schedule values for every chapter, invalid input, ficti
 Local test/build results and native evidence are recorded in the PR. Native rendering, deployed revision and retention uplift cannot be inferred from source review. Playwright gates and root screenshot inspection remain required before merge.
 
 Ruling: execute routine design and plan handoffs autonomously under the user's explicit iteration instruction; preserve an isolated sibling worktree without modifying repository ignore rules. Cost if the selected scope misses the intended personality: revise it after player feedback.
+
+CI36704927885 caught a test-only fixture mismatch after the fresh-guidance assertion was added: the orchestration fixture lacked locator.innerText. The focused test reproduced the same failure locally; the fixture now returns the real production battleGuidance for a default ready Game. All eight orchestration tests pass, retaining the visible Settings-before-start invariant. Full suite: 609 pass. Browser gates remain required.
