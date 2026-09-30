@@ -254,13 +254,13 @@ try {
  assert.equal(await page.locator('.battle-select').evaluate(node=>getComputedStyle(node).display),'none');
  await page.getByRole('button',{name:/Deploy Pathkeeper/}).click();
  await page.screenshot({path:`${output}/02-combat-390.png`});
-  await page.getByRole('button',{name:'Pause battle'}).click();
+  await page.getByRole('button',{name:'Pause battle',exact:true}).click();
  const pausedTitleSize=await page.locator('.stage h1').evaluate(node=>parseFloat(getComputedStyle(node).fontSize));
  assert.ok(pausedTitleSize<readyTitleSize*.7,`pause heading should remain compact: ${readyTitleSize} → ${pausedTitleSize}`);
  assert.equal(await page.locator('.battle-select').evaluate(node=>getComputedStyle(node).display),'none');
  await page.getByText('PAUSED',{exact:true}).waitFor();
  await page.screenshot({path:`${output}/03-pause-390.png`});
- await page.getByRole('button',{name:'Resume battle'}).click();
+ await page.getByRole('button',{name:'Resume battle',exact:true}).click();
  await page.getByRole('button',{name:/Food drop/i}).click();
  await page.getByRole('button',{name:/Deploy Pathkeeper/}).click();
  await page.waitForTimeout(6500);
