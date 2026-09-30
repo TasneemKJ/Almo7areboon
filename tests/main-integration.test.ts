@@ -4,53 +4,65 @@ import { readFileSync } from 'node:fs';
 import { runInNewContext } from 'node:vm';
 import ts from 'typescript';
 import { Game } from '../src/game/simulation.ts';
-import { defaultProfile, decodeSave } from '../src/game/save.ts';
+import { defaultProfile, decodeSave, SAVE_KEY, BACKUP_KEY } from '../src/game/save.ts';
+import { createSaveSession } from '../src/game/save-session.ts';
+import { saveSessionDialogHtml, temporarySessionNotice } from '../src/ui/save-session-screen.ts';
 import { advanceStatus } from '../src/game/mastery.ts';
 import { battleSelectionHtml, evolutionDialogHtml } from '../src/ui/progression-screen.ts';
 import { ERAS, QUESTS, foodRate, unlockCost, dailyReward, localDay } from '../src/game/data.ts';
 import { battleGuidance, baseHealthDisplay, compactNumber, waveLabel, waveAccessibleLabel } from '../src/ui/battle-hud.ts';
 import { chapterPresentation } from '../src/ui/chapter-presentation.ts';
 import { resultsHtml } from '../src/ui/results-screen.ts';
+import { isLegacyChoice, legacyEffects, prestigePreview } from '../src/game/prestige.ts';
+import { legacyCurrentHtml, prestigeDetailsHtml, prestigeDialogHtml } from '../src/ui/prestige-presentation.ts';
+import { evolutionScreenHtml } from '../src/ui/evolution-screen.ts';
 
 // Execute the app's actual functions with a clock and minimal DOM boundary; no browser/debug hooks.
 const source = readFileSync(new URL('../src/main.ts', import.meta.url), 'utf8');
 const ast = ts.createSourceFile('main.ts', source, ts.ScriptTarget.Latest, true, ts.ScriptKind.TS);
-const names = new Set(['playable', 'guardAction', 'action', 'update', 'showResult', 'acquireSession', 'dismissModal', 'returnToChapters']);
+const names = new Set(['playable', 'guardAction', 'action', 'persist', 'update', 'renderScreen', 'sessionPresentation', 'showResult', 'acquireSession', 'dismissModal', 'returnToChapters', 'clearPrestigeContext', 'openPrestige', 'refreshPrestige', 'returnFromPrestige']);
 const functions = ast.statements.filter(node => ts.isFunctionDeclaration(node) && node.name && names.has(node.name.text));
 assert.equal(functions.length, names.size);
 const click=ast.statements.find(node=>ts.isExpressionStatement(node)&&ts.isCallExpression(node.expression)&&node.expression.expression.getText(ast)==='lifetime.listen'&&node.expression.arguments[0]?.getText(ast)==='root'&&node.expression.arguments[1]?.getText(ast)==="'click'") as ts.ExpressionStatement;
 assert.ok(click,'the real click handler must remain reachable');
 const listener=(click.expression as ts.CallExpression).arguments[2];
-const code = ts.transpile(functions.map(node => node.getText(ast)).join('\n')+`\nthis.handleClick=${listener.getText(ast)};`, { target: ts.ScriptTarget.ES2022 });
+const change=ast.statements.find(node=>ts.isExpressionStatement(node)&&ts.isCallExpression(node.expression)&&node.expression.expression.getText(ast)==='lifetime.listen'&&node.expression.arguments[0]?.getText(ast)==='root'&&node.expression.arguments[1]?.getText(ast)==="'change'") as ts.ExpressionStatement;
+assert.ok(change,'the real native radio listener must remain reachable');
+const changeListener=(change.expression as ts.CallExpression).arguments[2];
+const code = ts.transpile(functions.map(node => node.getText(ast)).join('\n')+`\nthis.handleClick=${listener.getText(ast)};this.handleChange=${changeListener.getText(ast)};`, { target: ts.ScriptTarget.ES2022 });
 function harness(motion = 'full') {
   let now = 100, foreign = false;
   const dialogs: string[] = [];
-  const node = () => ({ dataset: {}, style: {}, hidden: false, classList: { toggle() {} }, setAttribute() {}, toggleAttribute() {}, querySelector() { return null; }, querySelectorAll() { return []; } });
+  const node = () => ({ dataset: {}, style: {}, hidden: false, innerHTML:'',textContent:'',classList: { toggle() {} }, setAttribute() {}, toggleAttribute() {}, querySelector() { return null; }, querySelectorAll():any[] { return []; } });
   class BoundaryButton {
     dataset:Record<string,string>;disabled=false;
     constructor(dataset:Record<string,string>){this.dataset=dataset;}
     closest(selector:string){return selector==='button'||(selector==='#modal-layer'&&!this.dataset.tab)?this:null;}
   }
+  class BoundaryInput {
+    type='radio';checked=true;id='';name:string;value:string;
+    constructor(name:string,value:string){this.name=name;this.value=value;}
+    closest(selector:string){return selector===(this.name==='prestige-legacy'?'#modal-layer':'#secondary-screen')?this:null;}
+  }
   const root = node(), elements = new Map<string, ReturnType<typeof node>>();
   const context: any = {
-    Element:BoundaryButton, Game, game: new Game(defaultProfile()), sessionReady: true, pagePresent: true, lifetime: { disposed: false },
-    acquiring: null, acquisitionVersion: 0, hasPlayed: true, manualPaused: false, savedWarning: false, pendingImport: null, modal: null, evolutionFromResult: false, modalPointerSequence: false,
+    Element:BoundaryButton,HTMLInputElement:BoundaryInput, Game, game: new Game(defaultProfile()), sessionReady: true, pagePresent: true, lifetime: { disposed: false },
+    acquiring: null, acquisitionVersion: 0, hasPlayed: true, manualPaused: false, savedWarning: false, pendingImport: null, modal: null, evolutionFromResult: false, modalPointerSequence: false,prestigeOrigin:null,prestigeDraft:null,prestigeExpectedTimeline:null,
     lastUpdate: 0, lastSave: 100, lastPhase: 'ready', resultDue: 0, resultShown: '', activeTab: 'battle', root,
     performance: { now: () => now }, document: { documentElement: { dataset: { motion } } },
     $: (id: string) => { if (!elements.has(id)) elements.set(id, node()); return elements.get(id); },
-    advanceStatus, battleSelectionHtml, evolutionDialogHtml, ERAS, QUESTS, foodRate, unlockCost, dailyReward, localDay, battleGuidance, baseHealthDisplay, compactNumber, waveLabel, waveAccessibleLabel, chapterPresentation, resultsHtml,
-    storybookArt: () => false, money: String, coin: String, textIfChanged() {}, htmlIfChanged() {}, unlockAudio() {}, syncPause() {}, rebuildArmy() {}, syncMotion() {}, renderScreen() {}, toast() {},
-    closeModal() { context.modal=null; }, showModal: (id: string) => {context.modal=id;dialogs.push(id);},
+    advanceStatus, battleSelectionHtml, evolutionDialogHtml, ERAS, QUESTS, foodRate, unlockCost, dailyReward, localDay, battleGuidance, baseHealthDisplay, compactNumber, waveLabel, waveAccessibleLabel, chapterPresentation, resultsHtml,isLegacyChoice,legacyEffects,prestigePreview,prestigeDetailsHtml,prestigeDialogHtml,legacyCurrentHtml,evolutionScreenHtml,saveSessionDialogHtml,temporarySessionNotice,
+    storybookArt: () => false, money: String, coin: String, icon:()=>'',textIfChanged(target:any,value:string){target.textContent=value;},htmlIfChanged(target:any,value:string){target.innerHTML=value;},unlockAudio() {}, syncPause() {}, rebuildArmy() {}, syncMotion() {}, isolateModal(){}, toast() {},
+    closeModal() { context.modal=null; }, showModal: (id: string,html:string,focusCommand?:string) => {context.modal=id;context.dialogHtml=html;context.focusCommand=focusCommand;dialogs.push(id);},
     session: {
-      status: 'active', check: () => {if(foreign){context.session.status='conflict';context.sessionReady=false;context.modal='session';dialogs.push('session');return false;}return true;},
+      status: 'active', check: () => {if(foreign){context.session.status='conflict';context.sessionPresentation('conflict');return false;}return true;},
       save: () => { if (foreign) { context.session.status = 'conflict'; context.sessionReady = false; dialogs.push('session'); return { ok: false }; } return { ok: true }; },
       acquire: async () => ({ status: 'active', profile: defaultProfile(), loadStatus: 'loaded' }),
     },
   };
-  context.persist = () => context.session.save(context.game.profile).ok;
   context.switchTab = (tab:string) => {context.activeTab=tab;context.update(true);};
-  runInNewContext(`${code}\nthis.api = { update, action, acquireSession, dismissModal, returnToChapters, showResult }; this.update = update;`, context);
-  return { context, dialogs, click:(command:string,detail=0)=>context.handleClick({target:new BoundaryButton({command}),detail,preventDefault(){}}), clickData:(dataset:Record<string,string>,detail=0)=>context.handleClick({target:new BoundaryButton(dataset),detail,preventDefault(){}}), clock: (value: number) => { now = value; }, foreign: () => { foreign = true; } };
+  runInNewContext(`${code}\nthis.api = { update, action, acquireSession, dismissModal, returnToChapters, showResult, renderScreen }; this.update = update;`, context);
+  return { context, dialogs, click:(command:string,detail=0)=>context.handleClick({target:new BoundaryButton({command}),detail,preventDefault(){}}), clickData:(dataset:Record<string,string>,detail=0)=>context.handleClick({target:new BoundaryButton(dataset),detail,preventDefault(){}}), change:(name:string,value:string)=>context.handleChange({target:new BoundaryInput(name,value)}),clock: (value: number) => { now = value; }, foreign: () => { foreign = true; } };
 }
 for (const [motion, delay] of [['full', 1300], ['reduced', 350]] as const) test(`${motion} result delay yields to save recovery before opening`, () => {
   const h = harness(motion), c = h.context;
@@ -83,9 +95,9 @@ test('daily claims use the app action guard before mutating progress', () => {
 });
 
 // Settled seed receipts are produced by public combat actions, never invented outcomes.
-function realVictory(chapter=1,timeline=1) {
+function realVictory(chapter=1,timeline=1,strongCards=true) {
  const p=defaultProfile();p.enemyAge=chapter;p.furthestBattle=5;p.timeline=timeline;p.mastery.timeline=timeline;
- p.age=0;p.coins=ERAS[0].evolveCost;p.foodLevel=12;p.unlocked=[true,true,true];p.cards=p.cards.map(()=>100);
+ p.age=strongCards?0:5;p.coins=ERAS[0].evolveCost;p.foodLevel=12;p.unlocked=[true,true,true];if(strongCards)p.cards=p.cards.map(()=>100);
  const g=new Game(p);assert.equal(g.dispatch({type:'start'}),true);let cycle=0;
  for(let tick=0;tick<36000&&g.state.phase==='running';tick+=6){
   if(g.state.time>=8)g.dispatch({type:'skill',skill:'food'});
@@ -135,21 +147,106 @@ for(const legacy of [false,true])for(const escape of [false,true])test(`actual t
  c.api.dismissModal();assert.equal(c.modal,null);c.api.update(true);assert.equal(c.modal,null);
 });
 
-for(const chapter of [0,5])test(`native double-click ${chapter===5?'final-next rejection':'chapter continuation'} cannot select Cards navigation`,()=>{
+for(const chapter of [0,5])test(`native double-click ${chapter===5?'prestige preview and confirmation':'chapter continuation'} cannot select Cards navigation`,()=>{
  const h=settledHarness(chapter,1,chapter===5),c=h.context,before=JSON.stringify(c.game.profile);
  h.click('next',1);
  if(chapter===5){
-  // Dependency checkpoint: final next intentionally rejects until Task 2 adds preview/confirmation.
-  assert.equal(c.game.state.phase,'won');assert.equal(c.modal,'result');assert.equal(JSON.stringify(c.game.profile),before);
+  assert.equal(c.game.state.phase,'won');assert.equal(c.modal,'prestige');assert.equal(JSON.stringify(c.game.profile),before);
+  h.click('confirm-prestige',2);assert.equal(c.modal,'prestige');assert.equal(JSON.stringify(c.game.profile),before);
+  h.click('confirm-prestige',1);assert.equal(c.game.state.phase,'ready');assert.equal(c.modal,null);assert.equal(c.game.profile.timeline,2);
  }else{assert.equal(c.game.state.phase,'ready');assert.equal(c.modal,null);}
  assert.equal(c.activeTab,'battle');
  const after=JSON.stringify(c.game.profile);
  // Continued modal-origin pointer input cannot select either exposed or isolated navigation.
  h.clickData({tab:'cards'},2);assert.equal(c.activeTab,'battle');assert.equal(JSON.stringify(c.game.profile),after);
  h.clickData({tab:'cards'},3);assert.equal(c.activeTab,'battle');
- // New single clicks work once chapter continuation reveals navigation; final results stay isolated.
- h.clickData({tab:'cards'},1);assert.equal(c.activeTab,chapter===5?'battle':'cards');
- if(chapter===5){assert.equal(c.modal,'result');assert.equal(JSON.stringify(c.game.profile),before);}
+ // New single clicks work after the explicit continuation/confirmation reveals navigation.
+ h.clickData({tab:'cards'},1);assert.equal(c.activeTab,'cards');
+});
+
+for(const origin of ['result','battles'])for(const route of ['close','Escape'])test(`prestige ${route} explicitly restores ${origin} with unchanged settled progress`,()=>{
+ const h=settledHarness(5),c=h.context;
+ if(origin==='battles'){assert.equal(c.game.dispatch({type:'retry'}),true);c.modal='battles';}
+ const before=JSON.stringify(c.game.profile);
+ h.click('next');assert.equal(c.modal,'prestige');assert.equal(c.prestigeOrigin,origin);assert.equal(c.prestigeExpectedTimeline,1);
+ if(route==='Escape')c.api.dismissModal();else h.click('close');
+ assert.equal(c.modal,origin);assert.equal(JSON.stringify(c.game.profile),before);assert.equal(c.prestigeOrigin,null);assert.equal(c.focusCommand,'next');
+ h.click('next');assert.equal(c.modal,'prestige');
+});
+for(const reload of [false,true])test(`real cleared-final loss ${reload?'reloaded picker':'result'} opens preview and cancellation preserves the loss ledger`,()=>{
+ const h=harness(),c=h.context;c.game=new Game(realVictory(5,1,false).profile);assert.equal(c.game.dispatch({type:'retry'}),true);assert.equal(c.game.dispatch({type:'start'}),true);
+ for(let tick=0;tick<54000&&c.game.state.phase==='running';tick++)c.game.step(1/60);
+ assert.equal(c.game.state.phase,'lost');assert.equal(c.game.profile.pendingVictory,null);
+ if(reload)c.game=new Game(c.game.profile);
+ c.modal=reload?'battles':'result';c.resultShown=reload?'':'lost';c.lastPhase=c.game.state.phase;
+ const before=JSON.stringify(c.game.profile);h.click('next');assert.equal(c.modal,'prestige');assert.equal(c.prestigeOrigin,reload?'battles':'result');
+ c.api.dismissModal();assert.equal(c.modal,reload?'battles':'result');assert.equal(JSON.stringify(c.game.profile),before);
+});
+test('prestige confirmation is capped, resets once, and preserves permanent holdings and counters',()=>{
+ const h=settledHarness(5),c=h.context;c.game.profile.gems=9999950;
+ const before=structuredClone(c.game.profile);h.click('next');h.click('confirm-prestige');
+ assert.equal(c.modal,null);assert.equal(c.game.state.phase,'ready');assert.equal(c.game.profile.timeline,2);assert.equal(c.game.profile.gems,10000000);assert.equal(c.game.profile.legacy.rank,1);
+ assert.deepEqual([c.game.profile.age,c.game.profile.enemyAge,c.game.profile.furthestBattle,c.game.profile.coins,c.game.profile.foodLevel,c.game.profile.baseLevel],[0,0,0,0,0,0]);
+ assert.deepEqual(c.game.profile.unlocked,[true,false,false]);assert.equal(c.game.profile.pendingVictory,null);assert.ok(c.game.profile.mastery.chapters.every((record:any)=>record.earnedMask===0&&record.bestSeconds===null&&record.bestGateDamage===null));
+ for(const field of ['cards','wins','kills','deployed','claimed','summonCount','summonSeed','dailyDay','dailyStreak','sound','speed','motion'])assert.deepEqual(c.game.profile[field],before[field]);
+ const after=JSON.stringify(c.game.profile);h.click('confirm-prestige');assert.equal(JSON.stringify(c.game.profile),after);assert.equal(c.prestigeOrigin,null);
+});
+for(const route of ['close','Escape','confirm-prestige'])test(`prestige ${route} yields to foreign-save recovery without stale payout`,()=>{
+ const h=settledHarness(5),c=h.context;h.click('next');assert.equal(c.modal,'prestige');const before=JSON.stringify(c.game.profile);h.foreign();
+ if(route==='Escape')c.api.dismissModal();else h.click(route);
+ assert.equal(c.modal,'session');assert.equal(JSON.stringify(c.game.profile),before);assert.equal(c.prestigeOrigin,null);assert.equal(c.prestigeDraft,null);assert.equal(c.prestigeExpectedTimeline,null);c.api.dismissModal();assert.equal(c.modal,'session');
+});
+test('persist conflict after an accepted prestige keeps recovery above the in-memory reset',()=>{
+ const h=settledHarness(5),c=h.context;h.click('next');
+ c.session.save=()=>{c.session.status='conflict';c.sessionReady=false;c.modal='session';h.dialogs.push('session');return {ok:false,reason:'conflict'};};
+ h.click('confirm-prestige');assert.equal(c.game.profile.timeline,2);assert.equal(c.modal,'session');assert.equal(c.activeTab,'battle');
+});
+test('stale expected timeline rejects confirmation and keeps truthful preview context',()=>{
+ const h=settledHarness(5),c=h.context;h.click('next');c.prestigeExpectedTimeline=2;const before=JSON.stringify(c.game.profile);
+ h.click('confirm-prestige');assert.equal(c.modal,'prestige');assert.equal(c.prestigeOrigin,'result');assert.equal(JSON.stringify(c.game.profile),before);assert.doesNotMatch(c.dialogHtml,/confirm-prestige/);
+});
+test('native preview radio changes only its draft and next effects, never the current battle or save',async()=>{
+ const h=settledHarness(5),c=h.context;c.game.profile.legacy={rank:1,selected:'hearth'};const before=JSON.stringify(c.game.profile),state=JSON.stringify(c.game.state);
+ h.click('next');await h.change('prestige-legacy','stillness');
+ assert.equal(c.prestigeDraft,'stillness');assert.equal(JSON.stringify(c.game.profile),before);assert.equal(JSON.stringify(c.game.state),state);
+ assert.match(c.$('prestige-preview-values').innerHTML,/Current legacy: Hearth/);assert.match(c.$('prestige-preview-values').innerHTML,/Next legacy: Stillness/);assert.match(c.$('prestige-preview-values').innerHTML,/Freeze: 8 seconds/);
+ await h.change('prestige-legacy','invalid');assert.equal(c.prestigeDraft,'stillness');
+ h.click('confirm-prestige');assert.equal(c.game.profile.legacy.selected,'stillness');assert.equal(c.game.state.phase,'ready');assert.equal(c.game.profile.legacy.rank,1);
+});
+test('ready Evolution radio dispatches real selection and preserves native nodes while refreshing current freeze and Skills',async()=>{
+ const h=harness(),c=h.context,p=defaultProfile();p.legacy={rank:2,selected:'hearth'};c.game=new Game(p);c.activeTab='evolution';
+ const radio={value:'stillness',checked:false},screen=c.$('secondary-screen');screen.querySelectorAll=()=>[radio];
+ const freeze={dataset:{skill:'freeze'},disabled:false,title:'',classList:{toggle(){}},setAttribute(name:string,value:string){(this as any)[name]=value;}};
+ c.root.querySelectorAll=(selector:string)=>selector==='[data-skill]'?[freeze]:[];
+ const before=structuredClone(c.game.profile);screen.innerHTML='stable radio nodes';
+ await h.change('ready-legacy','stillness');assert.equal(c.game.profile.legacy.selected,'stillness');assert.equal(c.game.state.food,6);assert.equal(c.game.profile.gems,before.gems);
+ assert.equal(screen.innerHTML,'stable radio nodes');assert.equal(radio.checked,true);assert.match(c.$('legacy-current').innerHTML,/Freeze: 9 seconds/);assert.equal(freeze.title,'Freeze enemies for 9 seconds');assert.equal((freeze as any)['aria-label'],'Freeze enemies for 9 seconds');
+ c.activeTab='skills';c.api.renderScreen();assert.match(screen.innerHTML,/Freeze every enemy for 9 seconds/);
+ c.game.dispatch({type:'start'});assert.equal(c.game.dispatch({type:'skill',skill:'freeze'}),true);c.api.update(true);assert.equal(freeze.title,'Freeze enemies for 9 seconds · used this battle');
+ c.activeTab='evolution';const running=JSON.stringify(c.game.profile);await h.change('ready-legacy','watch');assert.equal(JSON.stringify(c.game.profile),running);
+});
+for(const blocked of ['ordinary','uncleared','running','terminal'])test(`actual final preview route is absent for ${blocked} state`,()=>{
+ const h=harness(),c=h.context,p=defaultProfile();p.enemyAge=blocked==='ordinary'?0:5;p.furthestBattle=5;
+ if(blocked==='terminal'){p.timeline=1000;p.mastery.timeline=1000;}
+ if(blocked==='running')p.mastery.chapters[5].earnedMask=1;
+ c.game=new Game(p);if(blocked==='running')c.game.dispatch({type:'start'});c.modal='battles';const before=JSON.stringify(c.game.profile);
+ h.click('next');assert.equal(c.modal,'battles');assert.equal(c.prestigeOrigin,null);assert.equal(JSON.stringify(c.game.profile),before);
+});
+for(const failure of ['quota','temporary','conflict'] as const)test(`actual prestige handler with real SaveSession preserves ${failure} boundary`,async()=>{
+ const h=settledHarness(5),c=h.context,old=structuredClone(c.game.profile),values=new Map([[SAVE_KEY,JSON.stringify(old)],[BACKUP_KEY,JSON.stringify(old)]]);
+ let failWrites=false;const messages:string[]=[];c.toast=(message:string)=>messages.push(message);
+ const session=createSaveSession({storage:{getItem:key=>values.get(key)??null,setItem:(key,value)=>{if(failWrites)throw Error('quota');values.set(key,value);}},locks:failure==='temporary'?null:{request:async(name,_options,callback)=>callback({name})},onStatus:c.sessionPresentation});
+ c.session=session;
+ try{
+  await session.acquire();if(failure==='temporary')session.playTemporarily();c.sessionReady=true;c.modal='result';h.click('next');assert.equal(c.modal,'prestige');
+  if(failure==='quota')failWrites=true;
+  if(failure==='conflict')values.set(SAVE_KEY,JSON.stringify({...old,gems:old.gems+1}));
+  const bytes=[values.get(SAVE_KEY),values.get(BACKUP_KEY)];h.click('confirm-prestige');assert.deepEqual([values.get(SAVE_KEY),values.get(BACKUP_KEY)],bytes);
+  if(failure==='conflict'){assert.equal(c.modal,'session');assert.equal(JSON.stringify(c.game.profile),JSON.stringify(old));assert.equal(c.prestigeOrigin,null);}
+  else{assert.equal(c.game.profile.timeline,2);assert.equal(c.game.profile.gems,old.gems+100);assert.equal(c.modal,null);assert.equal(c.game.state.phase,'ready');assert.equal(c.prestigeOrigin,null);}
+  if(failure==='quota'){assert.equal(c.savedWarning,true);assert.deepEqual(messages,['Progress could not be saved. Export a backup from Settings before closing this tab.']);}
+  if(failure==='temporary')assert.deepEqual(messages,[]);
+ }finally{session.dispose();}
 });
 test('normal native double-click deployment still accepts both affordable troop actions',()=>{
  const h=harness(),c=h.context;c.game.dispatch({type:'start'});

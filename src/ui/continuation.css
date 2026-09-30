@@ -65,6 +65,28 @@
 .battle-option .mastery-marks { gap:4px; }
 .battle-option .mastery-mark { padding:3px 5px; }
 .battle-option .mastery-mark-title { display:none; }
+/* Legacy lives in the existing manuscript dialogs and Evolution preparation. */
+.prestige-dialog { text-align:left; }
+.prestige-dialog h2 { font-size:26px; line-height:1.15; padding-right:22px; }
+.prestige-values p,.legacy-preparation p,.prestige-reset li,.legacy-note { font-size:12px; line-height:1.5; overflow-wrap:anywhere; }
+.prestige-values small,.legacy-preparation small { display:block; font-size:11px; line-height:1.5; }
+.legacy-rank { padding:10px; border:1px solid var(--paper-edge); border-radius:8px; background:#e4ebd9; color:#294e36; }
+.legacy-rank>span { display:block; letter-spacing:4px; }
+.legacy-rank p { margin-bottom:0; }
+.legacy-choices { margin:14px 0; padding:10px; border:1px solid var(--paper-edge); border-radius:8px; min-width:0; }
+.legacy-choices legend { font-weight:700; font-size:13px; padding:0 5px; }
+.legacy-choice { display:grid; grid-template-columns:24px minmax(0,1fr); column-gap:7px; padding:8px 0; }
+.legacy-choice+.legacy-choice { border-top:1px solid var(--paper-edge); }
+.legacy-choice input { grid-row:1 / 3; width:20px; height:20px; margin:5px 0; accent-color:#345b3d; }
+.legacy-choice label { display:flex; align-items:center; min-height:32px; font-size:14px; font-weight:700; cursor:pointer; }
+.legacy-choice p { margin:0; font-size:11px; line-height:1.5; }
+.prestige-reset { border-block:1px solid var(--paper-edge); margin-block:16px; padding-block:12px; }
+.prestige-reset summary { min-height:36px; cursor:pointer; font-weight:700; font-size:13px; }
+.prestige-reset h3 { font-size:13px; }
+.prestige-reset ul { padding-left:20px; }
+.prestige-dialog .big-button { width:100%; min-height:48px; white-space:normal; line-height:1.35; }
+.legacy-preparation { padding:14px; border:1px solid var(--paper-edge); border-radius:12px; background:var(--paper); margin-bottom:18px; }
+.legacy-preparation h3 { margin-top:0; }
 @media(max-width:360px) {
  .result-dialog { padding:20px 14px; }
  .result-dialog .big-button { font-size:11px; }

@@ -7,7 +7,7 @@ import { icon } from '../view/icons.ts';
 import { compactNumber } from './battle-hud.ts';
 import { masteryMarksHtml, masteryAttemptText, masteryAdvice } from './mastery-presentation.ts';
 
-export const timelineResetText='Continuing starts a harder timeline. Your age, coins, upgrades and troop unlocks reset; seals and their rewards start afresh. Cards, gems, quests and lifetime records stay. You earn 100 gems.';
+export const timelineResetText='Preview the next timeline before you begin. In this harder timeline, your age, coins, upgrades and troop unlocks reset; seals and their rewards start afresh. Cards, gems, quests and lifetime records stay. Review the reset, actual gem credit and one lasting legacy before confirming.';
 const amount=(value:number)=>Math.floor(value).toLocaleString('en-US');
 
 export function resultsHtml(profile: Profile, state: BattleState): string {
