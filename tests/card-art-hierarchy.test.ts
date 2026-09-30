@@ -4,7 +4,7 @@ import {defaultProfile} from '../src/game/save.ts';
 import {readFileSync} from 'node:fs';
 import {CARD_DEFS,type CardRarity} from '../src/game/cards.ts';
 import {cardIllustration} from '../src/view/card-illustrations.ts';
-import {cardsScreenHtml,summonedCardsHtml} from '../src/ui/cards-screen.ts';
+import {cardsScreenHtml,summonedCardsHtml,multiplier} from '../src/ui/cards-screen.ts';
 
 async function frameModule(){
  const path='../src/view/card-frame.ts';
@@ -82,4 +82,10 @@ test('an owned card shows the multiplier it contributes on its own',()=>{
  assert.match(html,/LEVEL 1 · ×1\.03 health/);
  assert.match(html,/LEVEL 2 · ×[\d.]+ damage/);
  assert.match(html,/NOT DISCOVERED/);
+});
+
+test('card multipliers near 1000 never print as 1000.00',()=>{
+ assert.equal(multiplier(1),'1.00');assert.equal(multiplier(12.345),'12.35');assert.equal(multiplier(999.99),'999.99');
+ assert.equal(multiplier(999.999),'1k');assert.equal(multiplier(1000),'1k');assert.equal(multiplier(2500),'2.5k');
+ assert.equal(multiplier(Number.NaN),'0.00');
 });

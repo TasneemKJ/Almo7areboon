@@ -8,6 +8,18 @@ Seed victories use the public `Game.dispatch` and fixed-step simulation before b
 
 Local Chromium crashes before a page can open in the current execution environment. No browser replacement or workaround is used. `node --check scripts/capture-mastery-review.mjs` and `git diff --check` passed locally on 2026-09-30. A syntax pass does not establish that the 37 browser scenarios pass. Each scenario has a 210-second budget, natural battle results have a 150-second wait, and the combined workflow has a 30-minute budget. The first complete runtime verdict must come from the required CI gate. Pending CI and uncaptured screenshots remain unverified; later results should be recorded against their exact revision.
 
+## Current production integration and mastery readability — 2026-09-30
+
+The local no-commit merge of production `9828941b18981a97f0a1bd633e58e48fa55fc7b9` into mastery `346d8ca` retains all review commands, including overlap, monkey and mastery. Fresh `NODE_OPTIONS='--test-reporter=tap' npm test` passed **463 tests / 0 failures**, with no skips or cancellations; `npm run build`, syntax checks for mastery/save-session/monkey/overlap scripts, and staged/unstaged diff checks exited 0.
+
+The scoped readability adjustment raises visible mastery seal titles, objectives, remaining rewards, gate-damage and credited-receipt information to at least 11px, removes the small-phone title reduction, and uses flexible width/text wrapping. The 37-case browser gate now records native computed font sizes for visible mastery information and requires the 11px floor alongside existing viewport/action bounds and screenshots. Existing compact picker symbols retain accessible seal names. No CSS source-mirroring test was added. Actual 320px fit and rendered font acceptance require the new CI screenshots/verdict; no local browser launch was retried.
+
+## Protected-save integration and harness timing — 2026-09-30
+
+The local no-commit integration of production `e29b3e11560d0490d2280e775291baa456a37252` into mastery `d997a84` preserves both `review:mastery` and `review:monkey`, the current main `cueFor` audio mapping, and all mastery result/evolution guard routes. Fresh `NODE_OPTIONS='--test-reporter=tap' npm test` passed **460 tests / 0 failures**, with no skips or cancellations; `npm run build`, syntax checks for all three changed browser scripts, and staged/unstaged `git diff --check` exited 0.
+
+A deterministic orchestration regression runs an autosave after every browser task. It first demonstrated that the mastery foreign-Escape case let autosave detect the fault, while close/confirmation lost their controls before input. The three scenarios now inject unannounced save bytes and invoke the actual selected handler synchronously in one browser task; exact stored-byte, recovery priority, rescue receipt and reload checks are unchanged. Ordinary native click/keyboard routes remain separate. Native deployment clicks have a 750ms bound and excuse failure only after observing a natural won/lost transition; running/ready failures still propagate, and the original outcome/receipt assertions remain mandatory. The seven new mastery orchestration/boundary regressions plus the two production save-harness regressions pass. This is harness timing evidence, not a browser runtime pass; required CI remains the rendered acceptance boundary.
+
 ## Chapter mastery local evidence — 2026-09-30
 
 On baseline `92f0a03` plus the Task 2 followup, `NODE_OPTIONS='--test-reporter=tap' npm test` passed **442 tests / 0 failures**, with no skips or cancellations; `npm run build`, `node --check scripts/capture-mastery-review.mjs`, and `git diff --check` each exited 0. The build retains the existing Phaser chunk-size warning.

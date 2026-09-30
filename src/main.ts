@@ -20,7 +20,7 @@ import { unitPortrait } from './view/unit-illustrations.ts';
 import { chapterPresentation, unitPresentationName } from './ui/chapter-presentation.ts';
 import { evolutionScreenHtml } from './ui/evolution-screen.ts';
 import { icon } from './view/icons.ts';
-import { sound, unlockAudio, suspendAudio, disposeAudio, updateSoundscape } from './view/audio.ts';
+import { sound, cueFor, unlockAudio, suspendAudio, disposeAudio, updateSoundscape } from './view/audio.ts';
 import { createArmyUpdater, TROOP_SPECIALTIES } from './ui/army-screen.ts';
 import { cardsScreenHtml, summonedCardsHtml } from './ui/cards-screen.ts';
 import { resultsHtml } from './ui/results-screen.ts';
@@ -413,7 +413,7 @@ lifetime.listen(window,'pageshow',()=>{
 });
 lifetime.listen(motionQuery,'change',syncMotion);
 function events(batch:GameEvent[]){
-  const played=new Set<string>();for(const event of batch)if(!played.has(event.type)){sound(event.type,game.profile.sound&&!document.hidden);played.add(event.type);}
+  const played=new Set<string>();for(const event of batch){const cue=cueFor(event);if(!played.has(cue)){sound(cue,game.profile.sound&&!document.hidden);played.add(cue);}}
   if(batch.some(event=>event.type==='win'||event.type==='lose'))persist();
 }
 const port:GamePort={get profile(){return game.profile;},get state(){return game.state;},dispatch:action,step:dt=>{syncPause();if(playable())game.step(dt*game.profile.speed);},drainEvents:()=>game.drainEvents()};

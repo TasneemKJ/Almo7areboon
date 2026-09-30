@@ -150,6 +150,13 @@ async function inspect(page, name, seals = false) {
   });
   assert.ok(geometry.left >= -1 && geometry.right <= geometry.width + 1 && geometry.top >= -1 && geometry.bottom <= geometry.height + 1, JSON.stringify(geometry));
   assert.ok(geometry.scrollWidth <= geometry.width, 'no horizontal overflow'); assert.equal(geometry.motion, true);
+  const masteryCopy = await page.locator('#modal-layer .mastery-mark-title, #modal-layer .mastery-requirement, #modal-layer .mastery-remaining, #modal-layer .result-mastery p, #modal-layer .result-mastery small, #modal-layer .result-dialog .reward small, #modal-layer .chapter-continuation p').evaluateAll(nodes => nodes.flatMap(node => {
+    const style = getComputedStyle(node);
+    if (style.display === 'none' || style.visibility !== 'visible' || Number(style.opacity) === 0 || node.getClientRects().length === 0) return [];
+    return [{ text: node.textContent.trim(), fontSize: parseFloat(style.fontSize) }];
+  }));
+  if (seals) assert.ok(masteryCopy.length > 0, 'painted mastery information remains present');
+  assert.ok(masteryCopy.every(copy => copy.fontSize >= 11), `Readable mastery copy: ${JSON.stringify(masteryCopy)}`);
   if (seals) {
     const marks = await page.locator('#modal-layer .mastery-mark').evaluateAll(nodes => nodes.map(node => {
       const r = node.getBoundingClientRect(), style = getComputedStyle(node);
@@ -159,8 +166,8 @@ async function inspect(page, name, seals = false) {
     }));
     assert.ok(marks.length >= 3 && marks.every(mark => mark.label && mark.width > 0 && mark.height > 0 && mark.opacity !== '0' && mark.visibility === 'visible'), JSON.stringify(marks));
     assert.ok(marks.every(mark => mark.animation.split(',').every(value => parseFloat(value) === 0) && mark.transition.split(',').every(value => parseFloat(value) === 0)), 'reduced motion disables seal animation');
-    diagnostics.layouts.push({ name, geometry, marks });
-  } else diagnostics.layouts.push({ name, geometry });
+    diagnostics.layouts.push({ name, geometry, marks, masteryCopy });
+  } else diagnostics.layouts.push({ name, geometry, masteryCopy });
   await page.locator('#modal-layer .dialog').evaluate(node => { node.scrollTop = 0; });
   await page.screenshot({ path: `${output}/${name}.png` });
   const buttons = page.locator('#modal-layer button:not([disabled])');
@@ -190,6 +197,18 @@ async function scenario(name, viewport, callback, options = {}) {
     diagnostics.cases.push({ name, viewport, status: 'failed', error: error.stack });
     for (const [index, page] of context.pages().entries()) await page.screenshot({ path: `${output}/${name}-failure-${index}.png` }).catch(() => {});
   } finally { clearTimeout(timer); await context.close(); }
+}
+/** Keep native input bounded when real combat replaces controls during its await. */
+async function deployIfAvailable(page, kind) {
+  const button = page.locator(`[data-unit="${kind}"]`);
+  if (await page.locator('#world').getAttribute('data-phase') !== 'running' || !await button.isEnabled()) return;
+  try { await button.click({ timeout: 750 }); }
+  catch (error) {
+    const phase = await page.locator('#world').getAttribute('data-phase');
+    // Only a verified natural terminal transition excuses this input race.
+    // Ready/running, closed pages and all other input failures still fail the case.
+    if (phase !== 'won' && phase !== 'lost') throw error;
+  }
 }
 async function startAndLose(page) {
   await page.locator('[data-command="start"]').click();
@@ -320,10 +339,7 @@ try {
       await page.locator('[data-skill="food"]').click();
       const deadline = Date.now() + 150000;
       while (await page.locator('#world').getAttribute('data-phase') === 'running' && Date.now() < deadline) {
-        for (const kind of [2, 1, 0]) {
-          const button = page.locator(`[data-unit="${kind}"]`);
-          if (await button.isEnabled() && await page.locator('#world').getAttribute('data-phase') === 'running') await button.click().catch(error => { if (!error.message.includes('detached')) throw error; });
-        }
+        for (const kind of [2, 1, 0]) await deployIfAvailable(page, kind);
         await page.waitForTimeout(200);
       }
       await result(page); const before = await saved(source);
@@ -377,14 +393,21 @@ try {
   });
   for (const route of ['Escape', 'close', 'confirm-evolve']) await scenario(`foreign-during-evolution-${route}`, portrait, async context => {
     const source = await setup(context, seeds.evolve), page = await open(context); await result(page); await command(page, 'evolve').click();
-    // Suppress notification only: the production action/return route must still
-    // discover the foreign exact-byte baseline before mutating or reopening.
-    await page.evaluate(() => addEventListener('storage', event => event.stopImmediatePropagation(), { capture: true }));
-    await source.evaluate(({ profile, primary, backup }) => {
-      localStorage.setItem(primary, JSON.stringify(profile)); localStorage.setItem(backup, JSON.stringify(profile));
-    }, { profile: seeds.insufficient, primary: SAVE_KEY, backup: BACKUP_KEY });
-    const foreign = await bytes(source);
-    if (route === 'Escape') await page.keyboard.press('Escape'); else await command(page, route).last().click();
+    // Inject unannounced bytes and invoke the actual return/confirm handler in
+    // one browser task. A same-document write emits no storage event here; this
+    // prevents autosave/focus from replacing the confirmation before its input.
+    // Native ordinary-route clicks/keys and cross-tab notification checks remain above.
+    const foreign = await page.evaluate(({ profile, primary, backup, route }) => {
+      const confirmation = document.querySelector('#modal-layer [data-command="confirm-evolve"]');
+      const button = document.querySelector(`#modal-layer [data-command="${route === 'confirm-evolve' ? 'confirm-evolve' : 'close'}"]`);
+      if (!confirmation || (route !== 'Escape' && !button)) throw new Error('Evolution confirmation missing before fault injection');
+      localStorage.setItem(primary, JSON.stringify(profile));
+      localStorage.setItem(backup, JSON.stringify(profile));
+      const expected = [localStorage.getItem(primary), localStorage.getItem(backup)];
+      if (route === 'Escape') document.dispatchEvent(new KeyboardEvent('keydown', { key: 'Escape', bubbles: true }));
+      else button.click();
+      return expected;
+    }, { profile: seeds.insufficient, primary: SAVE_KEY, backup: BACKUP_KEY, route });
     await page.getByRole('heading', { name: 'Your save changed in another tab', exact: true }).waitFor();
     assert.equal(await page.locator('.result-dialog').count(), 0); assert.equal(await command(page, 'confirm-evolve').count(), 0);
     assert.deepEqual(await bytes(source), foreign);
@@ -421,8 +444,7 @@ try {
     await page.locator('[data-skill="food"]').click();
     const deadline = Date.now() + 150000;
     while (await page.locator('#world').getAttribute('data-phase') === 'running' && Date.now() < deadline) {
-      const troop = page.locator('[data-unit="0"]');
-      if (await troop.isEnabled()) await troop.click();
+      await deployIfAvailable(page, 0);
       await page.waitForTimeout(200);
     }
     await result(page); const won = await saved(source);
