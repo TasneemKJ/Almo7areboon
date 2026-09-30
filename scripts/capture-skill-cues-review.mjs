@@ -43,8 +43,10 @@ async function session(viewport,forced=false){
   const group=await capture(page,`skill-group-${name}`);await page.keyboard.press('Space');
   await page.waitForFunction(()=>document.querySelector('[data-skill="freeze"]')?.classList.contains('freeze-active'));
   assert.equal(await freeze.isDisabled(),true);assert.equal(await freeze.evaluate(node=>node.classList.contains('skill-opportunity')),false);
-  await page.locator('[data-command="pause"]').click();const paused=await freeze.locator('small').innerText();
-  await page.waitForTimeout(700);assert.equal(await freeze.locator('small').innerText(),paused,'manual pause holds the battle-clock countdown');
+  await page.locator('[data-command="pause"]').click();
+  await page.waitForFunction(()=>document.querySelector('#pause')?.getAttribute('aria-pressed')==='true'&&!document.querySelector('#pause-banner')?.hidden);
+  const paused=await freeze.locator('small').innerText();
+  await page.waitForTimeout(1200);assert.equal(await freeze.locator('small').innerText(),paused,'manual pause holds the battle-clock countdown across a full badge tick');
   assert.equal(await meteor.evaluate(node=>node.classList.contains('skill-opportunity')),false);
   const active=await capture(page,`skill-active-paused-${name}`);assert.ok(Number(active[0].opacity)>=.85,'active effect badge is not dimmed as spent');
   await page.locator('[data-command="pause"]').click();await page.waitForFunction(()=>document.querySelector('[data-skill="freeze"] small')?.textContent==='✓');
