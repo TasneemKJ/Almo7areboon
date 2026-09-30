@@ -52,3 +52,12 @@ test('first battle teaches food and automatic combat, with optional control and 
  assert.match(picker,/Each skill works once per battle/);assert.match(picker,/melee.*ranged.*heavy/i);
  assert.equal(JSON.stringify(g.profile),before);
 });
+test('tutorial warns that Freeze starts immediately even before enemies arrive',()=>{
+ const g=new Game(defaultProfile());g.dispatch({type:'start'});
+ assert.equal(g.state.units.filter(unit=>unit.side==='enemy').length,0);
+ assert.equal(g.dispatch({type:'skill',skill:'freeze'}),true);
+ assert.equal(g.canUseSkill('freeze'),false);
+ const picker=battleSelectionHtml(g.profile,g.state);
+ assert.match(picker,/Freeze starts immediately, even before enemies arrive/);
+ assert.doesNotMatch(picker,/A skill with no useful target stays available/);
+});

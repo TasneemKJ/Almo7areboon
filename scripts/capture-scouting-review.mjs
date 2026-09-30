@@ -18,6 +18,15 @@ export async function reviewScouting({scenario,seeds,setup,open,active,ready,res
    return {left:r.left,right:r.right,width:innerWidth,scrollWidth:dialog.scrollWidth,clientWidth:dialog.clientWidth};
   });
   assert.ok(bounds.left>=0&&bounds.right<=bounds.width&&bounds.scrollWidth<=bounds.clientWidth+1,JSON.stringify(bounds));
+  const paragraphs=page.locator(`${selector} p`);
+  for(let index=0;index<await paragraphs.count();index++){
+   const paragraph=paragraphs.nth(index);await paragraph.scrollIntoViewIfNeeded();
+   const painted=await paragraph.evaluate(node=>{
+    const r=node.getBoundingClientRect();return r.left>=0&&r.right<=innerWidth&&r.top>=0&&r.bottom<=innerHeight;
+   });
+   assert.equal(painted,true,'scrolled tutorial/scouting paragraph is fully painted');
+   await page.screenshot({path:`artifacts/browser-review/mastery/${name}-paragraph-${index}.png`});
+  }
   await inspect(page,name);
  }
  for(const viewport of [{width:320,height:568},{width:390,height:844}]){

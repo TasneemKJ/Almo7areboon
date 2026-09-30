@@ -449,6 +449,7 @@ try {
   for (const viewport of [{ width: 320, height: 568 }, { width: 390, height: 844 }]) await scenario(`fresh-win-paused-input-${viewport.width}`, viewport, async context => {
     const fresh = defaultProfile(); fresh.sound = false; fresh.motion = 'reduced';
     const source = await setup(context, fresh), page = await open(context); await active(page); await ready(page);
+    assert.match(await page.locator('#deploy-hint').innerText(),/Tap Battle.*spend food.*fight automatically/,'fresh play teaches the deploy loop');
     await page.locator('[data-command="settings"]').click();
     await command(page, 'speed').click(); assert.equal((await saved(source)).speed, 2);
     await command(page, 'close').first().click(); await ready(page);
