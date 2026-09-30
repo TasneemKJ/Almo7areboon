@@ -1,9 +1,9 @@
 import {SoundscapePlayer,type SoundscapeMood} from './soundscape-player.ts';
 import {createSoundscapeSynthesis} from './soundscape-worker-client.ts';
 let context:AudioContext|undefined;
-import {selectCombatCues,type CombatCueId,type CueCooldown} from './combat-cues.ts';
+import {selectCombatCues,type CombatCue,type CombatCueId,type CueCooldown} from './combat-cues.ts';
 import type {GameEvent} from '../game/types.ts';
-interface Effect {voice?:CueVoice;critical:boolean;closed:boolean}
+interface Effect {voice?:CueVoice;id:CombatCueId;critical:boolean;closed:boolean}
 interface Transients {total:number;ordinary:number;effects:Set<Effect>;last:Map<CueCooldown,number>}
 const freshTransients=():Transients=>({total:0,ordinary:0,effects:new Set(),last:new Map()});
 let transients=freshTransients();
@@ -45,6 +45,8 @@ type Point=readonly [seconds:number,value:number];
 interface CueDefinition {readonly wave:OscillatorType;readonly duration:number;readonly frequency:readonly Point[];readonly envelope:readonly Point[]}
 // Original short contours; these initial levels await perceptual/device review.
 const definitions:Readonly<Record<CombatCueId,CueDefinition>>={
+ death:{wave:'sine',duration:.140,frequency:[[0,260],[.140,70]],envelope:[[.003,.020],[.040,.010],[.140,0]]},
+ summon:{wave:'sine',duration:.320,frequency:[[0,660],[.100,990],[.260,1480]],envelope:[[.003,.035],[.090,.016],[.160,.028],[.240,.012],[.320,0]]},
  deploy:{wave:'triangle',duration:.080,frequency:[[0,330]],envelope:[[.003,.040],[.025,.026],[.080,0]]},
  'hit-neutral':{wave:'sine',duration:.065,frequency:[[0,130],[.065,80]],envelope:[[.003,.025],[.065,0]]},
  'hit-blunt':{wave:'triangle',duration:.090,frequency:[[0,150],[.090,65]],envelope:[[.003,.025],[.090,0]]},
@@ -85,15 +87,15 @@ export function renderCombatCue(context:BaseAudioContext,output:AudioNode,id:Com
   return {dispose:()=>release(true)};
  }catch{release(true);return undefined;}
 }
-const intervals:Readonly<Record<CueCooldown,number>>={deployment:.120,'unit-hit':.090,'base-hit':.180,coin:.250};
-export function playCombatEvents(events:readonly GameEvent[],enabled:boolean):void {
+const intervals:Readonly<Record<CueCooldown,number>>={deployment:.120,'unit-hit':.090,'base-hit':.180,coin:.250,death:.250};
+function playSelectedCues(cues:readonly CombatCue[],enabled:boolean):void {
  if(!enabled||!permitted||!context||context.state!=='running')return;
  const owner=transients,audioContext=context,now=audioContext.currentTime;
- for(const cue of selectCombatCues(events)){
+ for(const cue of cues){
   if(cue.cooldown&&now-(owner.last.get(cue.cooldown)??-Infinity)+1e-9<intervals[cue.cooldown])continue;
   if(!cue.critical&&owner.ordinary>=6)continue;
-  if(owner.total>=8&&(!soundscape.dropAccent()||owner.total>=8))continue;
-  const effect:Effect={critical:cue.critical,closed:false};owner.effects.add(effect);owner.total++;if(!cue.critical)owner.ordinary++;
+  if(owner.total>=8&&(!cue.critical||!soundscape.dropAccent()||owner.total>=8))continue;
+  const effect:Effect={id:cue.id,critical:cue.critical,closed:false};owner.effects.add(effect);owner.total++;if(!cue.critical)owner.ordinary++;
   const release=()=>{
    if(effect.closed)return;effect.closed=true;owner.effects.delete(effect);owner.total--;if(!cue.critical)owner.ordinary--;
   };
@@ -101,7 +103,14 @@ export function playCombatEvents(events:readonly GameEvent[],enabled:boolean):vo
   if(effect.voice&&!effect.closed&&cue.cooldown)owner.last.set(cue.cooldown,now);
  }
 }
-/** No resume/allocation/backlog: also clear audio-time history on lifecycle stops. */
-export function stopCombatAudio():void {
- for(const effect of transients.effects)effect.voice?.dispose();transients.last.clear();
+/** Drained summon metadata is recognized but only the direct accepted action plays it. */
+export function playCombatEvents(events:readonly GameEvent[],enabled:boolean):void {
+ playSelectedCues(selectCombatCues(events).filter(cue=>cue.id!=='summon'),enabled);
+}
+export function playSummonAudio(enabled:boolean):void {
+ playSelectedCues([{id:'summon',eventIndex:0,priority:1,critical:false,cooldown:null}],enabled);
+}
+/** Optional finite direct-summon tail; all other stops release every effect. */
+export function stopCombatAudio(preserveSummon=false):void {
+ for(const effect of transients.effects)if(!preserveSummon||effect.id!=='summon')effect.voice?.dispose();transients.last.clear();
 }

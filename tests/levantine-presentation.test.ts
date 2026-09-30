@@ -91,7 +91,7 @@ test('results show the next opponent chapter, not the player army or a fictional
  assert.equal(JSON.stringify(g.profile),before);
  g.profile.enemyAge=5;
  const final=resultsHtml(g.profile,g.state);
- assert.match(final,/NEXT TIMELINE/);assert.doesNotMatch(final,/undefined|NaN/);
+ assert.match(final,/Next Timeline/);assert.doesNotMatch(final,/undefined|NaN/);
 });
 
 test('HUD, unlock notifications and import previews share the presentation boundary (source contract)',()=>{

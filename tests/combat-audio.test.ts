@@ -7,7 +7,7 @@ import {recordedContext,installContext} from './helpers/audio-context.ts';
 const hit:GameEvent={type:'hit'},skill:GameEvent={type:'skill',skill:'freeze'};
 const tick=()=>new Promise(resolve=>setImmediate(resolve));
 function harness(){audio.disposeAudio();const c=recordedContext(),restore=installContext(c);audio.unlockAudio();return {...c,close(){audio.disposeAudio();restore();}};}
-const cueIds:CombatCueId[]=['deploy','hit-neutral','hit-blunt','hit-flick','hit-hollow','base-player','base-enemy','coin','freeze','meteor','food','upgrade','evolve','win','lose'];
+const cueIds:CombatCueId[]=['deploy','hit-neutral','hit-blunt','hit-flick','hit-hollow','base-player','base-enemy','coin','freeze','meteor','food','upgrade','evolve','win','lose','death','summon'];
 test('audioClockCooldownBoundaries',()=>{
  for(const [event,other,interval] of [
   [{type:'spawn',side:'player'},{type:'spawn',side:'player'},.120],
@@ -45,6 +45,23 @@ test('ordinaryAndCriticalCapacity',async()=>{
   count=h.oscillators.length;audio.playCombatEvents([{type:'win'}],true);assert.equal(h.oscillators.length,count,'eight effect/critical voices drop new critical');
   audio.stopCombatAudio();assert.equal(h.live(),0);
   audio.playCombatEvents([{type:'coin'},hit,{type:'win'}],true);assert.equal(h.live(),1);assert.ok(Math.abs(h.oscillators.at(-1).stops[0]-h.ctx.currentTime-.6)<1e-9);
+ }finally{h.close();}
+});
+test('ordinary cue cannot reclaim an accent even below its six-slot ceiling',async()=>{
+ const h=harness();try{
+  audio.updateSoundscape(0,true,{alarmMix:0,alarmSerial:0});await tick();
+  h.ctx.currentTime=3;audio.updateSoundscape(0,true,{alarmMix:1,alarmSerial:0});
+  h.ctx.currentTime=3.01;audio.updateSoundscape(0,true,{alarmMix:1,alarmSerial:1});
+  for(let i=0;i<5;i++)audio.playCombatEvents([{type:'upgrade'}],true);
+  audio.playCombatEvents([skill],true);assert.equal(h.live(),8);
+  const accents=h.oscillators.slice(0,2),count=h.oscillators.length;
+  audio.playCombatEvents([{type:'coin'}],true);
+  assert.equal(h.oscillators.length,count,'ordinary capacity drop never reclaims an ambient slot');
+  assert.ok(accents.every(n=>n.disconnects===0));
+  audio.playCombatEvents([{type:'skill',skill:'food'}],true);assert.equal(h.live(),8);
+  assert.equal(accents.filter(n=>n.disconnects===1).length,1,'critical cue may reclaim one accent');
+  h.oscillators[2].onended();audio.playCombatEvents([{type:'coin'}],true);
+  assert.equal(h.live(),8,'capacity drop did not consume coin cooldown');
  }finally{h.close();}
 });
 test('failed start and capacity drops consume no cooldown',()=>{
@@ -93,4 +110,21 @@ test('onsetAndResultDuration',()=>{
  }
  assert.equal(new Set(['hit-blunt','hit-flick','hit-hollow'].map(id=>shapes.get(id))).size,3);
  assert.equal(new Set(['freeze','meteor','food'].map(id=>shapes.get(id))).size,3);
+});
+
+test('death uses one shared audio-time cooldown across both sides',()=>{
+ const h=harness();try{
+  audio.playCombatEvents([{type:'death',side:'player'},{type:'death',side:'enemy'}],true);assert.equal(h.oscillators.length,1);
+  h.ctx.currentTime=1.249999;audio.playCombatEvents([{type:'death',side:'enemy'}],true);assert.equal(h.oscillators.length,1);
+  h.ctx.currentTime=1.25;audio.playCombatEvents([{type:'death',side:'enemy'}],true);assert.equal(h.oscillators.length,2);
+ }finally{h.close();}
+});
+test('summon bypasses batch playback only through its direct bounded entry and has finite preserved tail',()=>{
+ const h=harness();try{
+  audio.playCombatEvents([{type:'upgrade',cardIndices:[3]}],true);assert.equal(h.live(),0,'background batch does not play summon');
+  audio.playSummonAudio(false);assert.equal(h.live(),0);audio.playSummonAudio(true);assert.equal(h.live(),1);
+  audio.playCombatEvents([{type:'upgrade'}],true);assert.equal(h.live(),2);audio.stopCombatAudio(true);assert.equal(h.live(),1,'menu gate preserves only explicit summon tail');
+  audio.stopCombatAudio();assert.equal(h.live(),0,'settings/hidden suspension clears summon too');
+  for(let i=0;i<8;i++)audio.playSummonAudio(true);assert.equal(h.live(),6,'summon uses ordinary slots, never reserved critical capacity');
+ }finally{h.close();}
 });

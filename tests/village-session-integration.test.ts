@@ -10,7 +10,7 @@ import { advanceVillagePresentation } from '../src/view/village-mood.ts';
 
 const source=readFileSync(new URL('../src/main.ts',import.meta.url),'utf8');
 const ast=ts.createSourceFile('main.ts',source,ts.ScriptTarget.Latest,true,ts.ScriptKind.TS);
-const names=new Set(['playable','syncPause','syncVillagePresentation','events']);
+const names=new Set(['playable','syncPause','syncVillagePresentation','events','guardAction','action']);
 const functions=ast.statements.filter(node=>ts.isFunctionDeclaration(node)&&node.name&&names.has(node.name.text));
 assert.equal(functions.length,names.size);
 const code=ts.transpile(functions.map(node=>node.getText(ast)).join('\n'),{target:ts.ScriptTarget.ES2022});
@@ -46,8 +46,9 @@ function combatHarness(){
  const context:any={game,sessionReady:true,pagePresent:true,lifetime:{disposed:false},session:{status:'active'},
   manualPaused:false,activeTab:'battle',modal:null,document:{hidden:false},atmosphereEnabled:false,villagePresentation:null,
   pauseReason,ambienceAllowed,advanceVillagePresentation,updateSoundscape:audio.updateSoundscape,
+  unlockAudio:audio.unlockAudio,playSummonAudio:audio.playSummonAudio,rebuildArmy(){},update(){},renderScreen(){},
   playCombatEvents:audio.playCombatEvents,stopCombatAudio:audio.stopCombatAudio,persist:()=>persisted.push(c.oscillators.length)};
- runInNewContext(`${code}\nthis.api={syncPause,events};`,context);
+ runInNewContext(`${code}\nthis.api={syncPause,events,action};`,context);
  return {...c,context,persisted,close(){audio.disposeAudio();restore();}};
 }
 test('actual main preserves metadata and silences menu, modal, manual pause, hidden and unowned batches',()=>{
@@ -67,4 +68,26 @@ for(const dialogAt of [.350,1.300])test(`fresh result starts before persistence 
   c.api.events([{type:'skill',skill:'food'}]);assert.equal(h.oscillators.length,1,'result modal admits no new batch');
   h.oscillators[0].onended();assert.equal(h.live(),0);c.modal='settings';c.api.syncPause();assert.equal(h.live(),0);
  }finally{h.close();}
+});
+
+test('actual accepted card-summon action plays once through cards/modal lifecycle and never replays its drained event',()=>{
+ const h=combatHarness(),c=h.context;try{
+  c.game=new Game();c.game.profile.gems=1000;c.session.check=()=>true;c.activeTab='cards';
+  assert.equal(c.api.action({type:'summon',count:1}),true);assert.equal(h.live(),1);
+  assert.equal(h.oscillators[0].frequency.events[0][1],660);c.modal='summon';c.api.syncPause();assert.equal(h.live(),1,'finite shimmer survives its own modal');
+  const count=h.oscillators.length;c.api.events(c.game.drainEvents());assert.equal(h.oscillators.length,count);
+  c.modal=null;c.activeTab='battle';c.api.syncPause();c.api.events([{type:'upgrade',cardIndices:[3]}]);assert.equal(h.oscillators.length,count,'background summon metadata never replays even in battle');
+  c.modal='settings';c.api.syncPause();assert.equal(h.live(),0,'settings cancels the direct tail');
+ }finally{h.close();}
+});
+test('direct summon stays silent on rejected action, mute, hidden, settings or lost ownership',()=>{
+ for(const changes of [{gems:0},{sound:false},{hidden:true},{modal:'settings'},{status:'conflict'},{loseDuringPersist:true}]){
+  const h=combatHarness(),c=h.context;try{
+   c.game=new Game();c.game.profile.gems='gems' in changes?changes.gems:1000;c.session.check=()=>true;c.activeTab='cards';
+   if('sound' in changes)c.game.profile.sound=changes.sound;if('hidden' in changes)c.document.hidden=changes.hidden;
+   if('modal' in changes)c.modal=changes.modal;if('status' in changes)c.session.status=changes.status;
+   if('loseDuringPersist' in changes)c.persist=()=>{c.session.status='conflict';c.sessionReady=false;return false;};
+   c.api.action({type:'summon',count:1});assert.equal(h.oscillators.length,0,JSON.stringify(changes));
+  }finally{h.close();}
+ }
 });

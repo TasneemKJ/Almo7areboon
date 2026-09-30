@@ -214,14 +214,14 @@ test('defeat advice points at the most useful affordable improvement',()=>{
  p.unlocked=[true,true,false];p.coins=unlockCost(2,p);assert.match(defeatAdvice(p),/heavy troop/);
  p.unlocked=[true,true,true];p.coins=foodUpgradeCost(p);assert.match(defeatAdvice(p),/food production/);
  const g=new Game(p);g.state.phase='lost';
- assert.match(battleGuidance(g.profile,g.state),/^Your coins are safe\. Upgrade food production/);
+ assert.match(battleGuidance(g.profile,g.state),/^Your coins are safe\. Deploy warriors/);
 });
 
 test('the final victory spells out what the next timeline resets and keeps',()=>{
  const p=defaultProfile();p.enemyAge=5;p.furthestBattle=5;
  const g=new Game(p);g.state.phase='won';
  const html=resultsHtml(g.profile,g.state);
- assert.match(html,/harder timeline/);assert.match(html,/coins, upgrades and troop unlocks reset/);assert.match(html,/cards, gems and records stay/);
+ assert.match(html,/harder timeline/);assert.match(html,/coins, upgrades and troop unlocks reset/);assert.match(html,/Cards, gems, quests and lifetime records stay/);
 });
 
 test('new players are pointed at the skill buttons once, until they cast one',()=>{
@@ -246,4 +246,15 @@ test('battle choices show how much more later opponents pay',()=>{
  assert.match(html,/AVAILABLE TO REPLAY · COINS ×1</);
  assert.match(html,/CURRENT BATTLE · COINS ×512</);
  assert.match(html,/LOCKED</);
+});
+
+test('compactNumber promotes values that round up to 1000 instead of showing 1000k or 1000m',()=>{
+ assert.equal(compactNumber(999_949),'999.9k');
+ assert.equal(compactNumber(999_950),'1m');
+ assert.equal(compactNumber(999_999),'1m');
+ assert.equal(compactNumber(999_999_999),'1b');
+ assert.equal(compactNumber(999_999_999_999),'1t');
+ assert.equal(compactNumber(999_999_999_999_999),'1e15');
+ assert.equal(compactNumber(1_500),'1.5k');assert.equal(compactNumber(2_000_000),'2m');assert.equal(compactNumber(12_345),'12.3k');
+ assert.equal(compactNumber(999),'999');assert.equal(compactNumber(0),'0');assert.equal(compactNumber(999.4),'1k','a fraction that rounds up to 1000 reads 1k');
 });

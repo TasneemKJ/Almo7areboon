@@ -2,6 +2,8 @@ import { ERAS, foodRate, foodUpgradeCost, unlockCost } from '../game/data.ts';
 import { cardPackCost } from '../game/cards.ts';
 import type { WavePreview, WaveStatus } from '../game/encounters.ts';
 import type { BattleState, Profile } from '../game/types.ts';
+import { chapterMastery } from '../game/mastery.ts';
+import { masteryAdvice } from './mastery-presentation.ts';
 
 /** What most improves the next attempt, judged from what the player can afford right now. */
 export function defeatAdvice(profile: Profile): string {
@@ -16,7 +18,7 @@ export function defeatAdvice(profile: Profile): string {
 export function battleGuidance(profile: Profile, state: BattleState, preview?: WavePreview | null): string {
   if (state.phase === 'ready') return 'Tap Battle, then spend food to deploy warriors.';
   if (state.phase === 'won') return 'Victory! Continue to the next battle when you are ready.';
-  if (state.phase === 'lost') return `Your coins are safe. ${defeatAdvice(profile)}`;
+  if (state.phase === 'lost') return `Your coins are safe. ${masteryAdvice(profile,state)}`;
   if (state.paused) return 'Battle paused. Resume to deploy your army.';
   if (state.playerHp / state.playerMaxHp <= 0.3) return 'Your base is in danger. Deploy reinforcements or use a skill.';
   if (state.stats.deployed === 0 && state.food >= ERAS[profile.age].units[0].cost) return 'Deploy a melee warrior. Save some food for the next wave.';
@@ -31,16 +33,25 @@ export function battleGuidance(profile: Profile, state: BattleState, preview?: W
   }
   if (!profile.unlocked[1] && profile.coins >= unlockCost(1, profile)) return 'Ranged troops are affordable. Unlock them behind your front line.';
   if (state.food >= 90) return 'Food storage is nearly full. Deploy a stronger army now.';
+  const objective=chapterMastery(profile,profile.enemyAge);
+  if(!(objective.record.earnedMask&4))return objective.thirdRequirement;
   return profile.unlocked[1] ? 'Protect ranged troops with a front line of melee warriors.' : 'Save food and deploy together to overwhelm the enemy.';
 }
 
 export function compactNumber(value: number): string {
   const safe = Number.isFinite(value) ? Math.max(0, value) : 0;
   if (safe >= 1e15) return safe.toExponential(1).replace('e+', 'e');
-  for (const [limit, suffix] of [[1e12, 't'], [1e9, 'b'], [1e6, 'm'], [1e3, 'k']] as const) {
-    if (safe >= limit) return `${(safe / limit).toFixed(1).replace(/\.0$/, '')}${suffix}`;
+  const tiers = [[1e12, 't'], [1e9, 'b'], [1e6, 'm'], [1e3, 'k']] as const;
+  for (let index = 0; index < tiers.length; index++) {
+    const [limit, suffix] = tiers[index];
+    if (safe < limit) continue;
+    const rounded = Number((safe / limit).toFixed(1));
+    // 999,950 rounds to 1000.0k: show it as 1m instead of 1000k.
+    if (rounded >= 1000) return index === 0 ? '1e15' : `1${tiers[index - 1][1]}`;
+    return `${String(rounded)}${suffix}`;
   }
-  return Math.ceil(safe).toString();
+  const whole = Math.ceil(safe);
+  return whole >= 1000 ? '1k' : whole.toString();
 }
 
 export function baseHealthDisplay(hp: number, maximum: number): { ratio: number; label: string; danger: boolean } {

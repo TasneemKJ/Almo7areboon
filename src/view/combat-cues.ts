@@ -1,6 +1,6 @@
 import type {GameEvent} from '../game/types.ts';
-export type CombatCueId='deploy'|'hit-neutral'|'hit-blunt'|'hit-flick'|'hit-hollow'|'base-player'|'base-enemy'|'coin'|'freeze'|'meteor'|'food'|'upgrade'|'evolve'|'win'|'lose';
-export type CueCooldown='deployment'|'unit-hit'|'base-hit'|'coin';
+export type CombatCueId='deploy'|'hit-neutral'|'hit-blunt'|'hit-flick'|'hit-hollow'|'base-player'|'base-enemy'|'coin'|'freeze'|'meteor'|'food'|'upgrade'|'evolve'|'win'|'lose'|'death'|'summon';
+export type CueCooldown='deployment'|'unit-hit'|'base-hit'|'coin'|'death';
 export interface CombatCue {
  readonly id:CombatCueId;readonly eventIndex:number;readonly priority:number;
  readonly critical:boolean;readonly cooldown:CueCooldown|null;
@@ -27,7 +27,9 @@ export function selectCombatCues(events:readonly GameEvent[]):readonly CombatCue
     if(!hit||priority>hit.priority)hit={id,eventIndex:index,priority,critical,cooldown};continue;
    case 'spawn':if(event.side!=='player')continue;id='deploy';priority=2;cooldown='deployment';break;
    case 'coin':id='coin';cooldown='coin';break;
-   case 'upgrade':case 'evolve':id=event.type;break;
+   case 'death':id='death';priority=0;cooldown='death';break;
+   case 'upgrade':id=Array.isArray(event.cardIndices)&&event.cardIndices.length>0&&event.cardIndices.length<=50&&event.cardIndices.every(index=>Number.isInteger(index)&&index>=0)?'summon':'upgrade';break;
+   case 'evolve':id=event.type;break;
    default:continue;
   }
   if(!other.has(id))other.set(id,{id,eventIndex:index,priority,critical,cooldown});

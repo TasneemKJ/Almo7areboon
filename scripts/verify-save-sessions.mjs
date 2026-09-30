@@ -105,12 +105,19 @@ try {
   });
   for (const trigger of ['preference', 'focus']) await scenario(`baseline-before-${trigger}`, async context => {
     const source = await setup(context), a = await open(context); await active(a); await a.locator('[data-command="settings"]').click();
-    // Suppress notification at the browser boundary: action/resume must independently check real bytes.
-    await a.evaluate(() => addEventListener('storage', event => event.stopImmediatePropagation(), { capture: true }));
-    await source.evaluate(({ key, profile }) => localStorage.setItem(key, JSON.stringify(profile)), { key: primary, profile: fixture({ gems: 543 }) });
-    const foreign = await bytes(source);
-    if (trigger === 'preference') await a.locator('#modal-layer [data-command="speed"]').evaluate(button => button.click());
-    else await a.evaluate(() => dispatchEvent(new Event('focus')));
+    // Inject unannounced foreign bytes and trigger the real handler in one task.
+    // A write in this document emits no storage event here. Keeping the trigger
+    // synchronous prevents autosave from replacing Settings before its click.
+    // Cross-tab storage notifications are covered by the foreign-* scenarios.
+    const foreign = await a.evaluate(({ primary, backup, profile, trigger }) => {
+      const button = document.querySelector('#modal-layer [data-command="speed"]');
+      if (trigger === 'preference' && !button) throw new Error('Settings speed control missing before fault injection');
+      localStorage.setItem(primary, JSON.stringify(profile));
+      const expected = [localStorage.getItem(primary), localStorage.getItem(backup)];
+      if (trigger === 'preference') button.click();
+      else dispatchEvent(new Event('focus'));
+      return expected;
+    }, { primary, backup, profile: fixture({ gems: 543 }), trigger });
     await blocked(a, 'Your save changed in another tab'); assert.deepEqual(await bytes(source), foreign);
     const rescue = await exported(a); assert.equal(rescue.speed, 1); assert.equal(rescue.gems, 100);
   });

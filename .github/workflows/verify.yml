@@ -9,7 +9,7 @@ permissions:
 jobs:
   verify:
     runs-on: ubuntu-latest
-    timeout-minutes: 20
+    timeout-minutes: 40
     steps:
       - uses: actions/checkout@v4
         with:
@@ -34,6 +34,22 @@ jobs:
       - name: Install browser for visual verification
         if: steps.tests.outcome == 'success' && steps.build.outcome == 'success'
         run: npx playwright install --with-deps chromium
+      - name: Verify production offline audio waveforms
+        id: offline_audio
+        if: steps.tests.outcome == 'success' && steps.build.outcome == 'success'
+        continue-on-error: true
+        run: |
+          set -o pipefail
+          node scripts/review-audio.mjs --offline --output artifacts/audio-review/task-1 | tee verification-audio.log
+      - name: Publish offline audio WAVs and measured diagnostics
+        if: always() && steps.offline_audio.outcome != 'skipped'
+        uses: actions/upload-artifact@v4
+        with:
+          name: offline-audio-review
+          path: |
+            artifacts/audio-review/task-1/
+            verification-audio.log
+          retention-days: 7
       - name: Capture portrait browser states
         id: browser
         if: steps.tests.outcome == 'success' && steps.build.outcome == 'success'
@@ -49,6 +65,18 @@ jobs:
         if: steps.tests.outcome == 'success' && steps.build.outcome == 'success'
         continue-on-error: true
         run: npm run review:save-sessions
+      - name: Verify mastery progression and guarded result routes
+        id: mastery
+        if: steps.tests.outcome == 'success' && steps.build.outcome == 'success'
+        continue-on-error: true
+        run: npm run review:mastery
+      - name: Publish mastery screenshots and diagnostics
+        if: always() && steps.mastery.outcome != 'skipped'
+        uses: actions/upload-artifact@v4
+        with:
+          name: mastery-browser-review
+          path: artifacts/browser-review/mastery/
+          retention-days: 7
       - name: Publish save-session screenshots and diagnostics
         if: always() && steps.save_sessions.outcome != 'skipped'
         uses: actions/upload-artifact@v4
@@ -110,5 +138,5 @@ jobs:
           path: ${{ runner.temp }}/game-workspace.tar.gz
           retention-days: 3
       - name: Require passing checks
-        if: steps.tests.outcome != 'success' || steps.build.outcome != 'success' || steps.browser.outcome != 'success' || steps.layering.outcome != 'success' || steps.save_sessions.outcome != 'success'
+        if: steps.tests.outcome != 'success' || steps.build.outcome != 'success' || steps.browser.outcome != 'success' || steps.layering.outcome != 'success' || steps.save_sessions.outcome != 'success' || steps.offline_audio.outcome != 'success' || steps.mastery.outcome != 'success'
         run: exit 1

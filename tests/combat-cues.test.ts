@@ -24,11 +24,18 @@ test('stablePriorityAndCap',()=>{
  assert.deepEqual(ids([{type:'evolve'},{type:'upgrade'},{type:'coin'}]),['evolve','upgrade','coin']);
 });
 test('silenceAndNeutralFallback',()=>{
- assert.deepEqual(ids(malformed([{type:'spawn',side:'enemy'},{type:'death'},{type:'unknown'},null,{}, {type:'skill',skill:'bad'}, {type:'hit',target:'bad'}])),[]);
+ assert.deepEqual(ids(malformed([{type:'spawn',side:'enemy'},{type:'unknown'},null,{}, {type:'skill',skill:'bad'}, {type:'hit',target:'bad'}])),[]);
  for(const event of [{type:'hit'},{type:'hit',target:'unit',source:{kind:9}},{type:'hit',target:'base'},{type:'hit',target:'base',side:'bad'}])assert.deepEqual(ids(malformed([event])),['hit-neutral']);
 });
 test('boundedCoalescing',()=>{
  const batch=Object.freeze(Array.from({length:100},()=>[{type:'spawn',side:'player'},{type:'hit'},{type:'coin'}] as const).flat().map(e=>Object.freeze(e)));
  const before=JSON.stringify(batch);assert.deepEqual(ids(batch),['hit-neutral','deploy','coin']);assert.equal(JSON.stringify(batch),before);
  assert.deepEqual(ids([{type:'skill',skill:'freeze'},{type:'skill',skill:'freeze'},{type:'skill',skill:'freeze'},{type:'skill',skill:'meteor'}]),['freeze','freeze','freeze']);
+});
+
+test('death is coalesced across both sides at lower priority and results suppress it',()=>{
+ const deaths:GameEvent[]=[{type:'death',side:'enemy'},{type:'death',side:'player'},{type:'death',side:'enemy'}];
+ assert.deepEqual(ids(deaths),['death']);const cue=selectCombatCues(deaths)[0];assert.equal(cue.eventIndex,0);assert.equal(cue.critical,false);assert.equal(cue.cooldown,'death');
+ assert.deepEqual(ids([...deaths,{type:'coin'},{type:'spawn',side:'player'},{type:'hit'}]),['hit-neutral','deploy','coin']);
+ assert.deepEqual(ids([...deaths,{type:'lose'}]),['lose']);
 });

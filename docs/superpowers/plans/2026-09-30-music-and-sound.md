@@ -22,6 +22,10 @@
 - Preserve the village's sole `alarmMix`/`alarmSerial` owner, `.6`-second gain/filter ramps, knock/pulse admission and all existing lifecycle regressions. Reduced motion is independent of sound.
 - Numeric/render tests cannot establish musical identity, timbral appeal, masking, repetition fatigue or device loudness. Record unavailable browser or listening gates explicitly; do not mark them passed from descriptors, PCM hashes or screenshots.
 
+## Authorized reconciliation with concurrently merged audio
+
+Main `6b1db227` includes dedicated death, skill, summon and ranged/heavy roles from PRs 73–76. Preserve skill/material distinction through the semantic renderer. Replace the earlier death-silence decision with one low-priority dedicated death cue and a shared 250 ms cooldown. Preserve summon only through its accepted Cards action; general menu/drained audio remains suppressed. Extend the fixture to seventeen isolated cues plus the unchanged crowded reference. This is a narrow Task 1 scope amendment; Task 2 remains deferred. Regression coverage must fail before these two roles and the direct path are implemented.
+
 ## Review Focus
 
 - Malformed runtime events and contradictory result batches: explicit silence/neutral fallback and one stable result, never a deployment fallback (Task 1 mapper tests).
@@ -58,8 +62,8 @@
 // src/view/combat-cues.ts
 export type CombatCueId = 'deploy' | 'hit-neutral' | 'hit-blunt' | 'hit-flick'
   | 'hit-hollow' | 'base-player' | 'base-enemy' | 'coin'
-  | 'freeze' | 'meteor' | 'food' | 'upgrade' | 'evolve' | 'win' | 'lose';
-export type CueCooldown = 'deployment' | 'unit-hit' | 'base-hit' | 'coin';
+  | 'freeze' | 'meteor' | 'food' | 'upgrade' | 'evolve' | 'win' | 'lose' | 'death' | 'summon';
+export type CueCooldown = 'deployment' | 'unit-hit' | 'base-hit' | 'coin' | 'death';
 export interface CombatCue {
   readonly id: CombatCueId;
   readonly eventIndex: number;
@@ -74,7 +78,8 @@ export interface CueVoice { dispose(): void }
 export function renderCombatCue(context: BaseAudioContext, output: AudioNode,
   id: CombatCueId, at: number, onRelease: () => void): CueVoice | undefined;
 export function playCombatEvents(events: readonly GameEvent[], enabled: boolean): void;
-export function stopCombatAudio(): void;
+export function playSummonAudio(enabled: boolean): void;
+export function stopCombatAudio(preserveSummon?: boolean): void;
 ```
 
 `renderCombatCue` allocates exactly one oscillator and one envelope gain. `onRelease` runs exactly once on natural end, explicit disposal or construction/scheduling failure; failures return `undefined`, detach callbacks and disconnect partial nodes. The caller reserves a slot before calling it. `dispose()` stops/disconnects immediately and is idempotent. An effect scheduled to stop still occupies its slot until its handle is released. No exported diagnostic mutable game state is required.
@@ -87,12 +92,12 @@ export function stopCombatAudio(): void;
   | `kindAndSkillMetadataSurvive` | Separate unit hits with kinds 0/1/2 → blunt/flick/hollow; `[skill freeze, skill meteor, skill food]` → those three IDs in order, all critical. |
   | `resultSuppressesBatch` | `[coin, hit, lose, win, skill]` → `['lose']`; two contradictory results choose the first original event, not an invented combined cue. |
   | `stablePriorityAndCap` | `[coin, spawn player, upgrade, hit unit, skill meteor]` → `['meteor','hit-neutral','deploy']`; length ≤3 even with 100,000 events. Do not use a timing-sensitive benchmark as proof of complexity. |
-  | `silenceAndNeutralFallback` | Enemy spawn, death, unknown type, null, missing type, invalid skill → `[]`; `{type:'hit'}` or missing/invalid `source.kind` on a unit hit → `['hit-neutral']`. |
+  | `silenceAndNeutralFallback` | Enemy spawn, unknown type, null, missing type, invalid skill → `[]`; `{type:'hit'}` or missing/invalid `source.kind` on a unit hit → `['hit-neutral']`. |
   | `boundedCoalescing` | Repeated player spawns/hits/coins → at most one of each; valid repeated skill events remain separately eligible up to the three-cue cap. Freeze the input and assert it is unchanged. |
 
 - [ ] **Run RED:** `node --experimental-strip-types --test tests/combat-cues.test.ts`. Require missing-export/module or behavioral assertion failures, not syntax/fixture errors.
 
-- [ ] **Implement `selectCombatCues` in `src/view/combat-cues.ts`.** Retain bounded candidates per fixed category and at most the first three skill events; never sort/copy the whole batch. One result suppresses everything. Otherwise priorities are result 7, skill 6, player-base 5, enemy-base 4, unit hit 3, deployment 2, reward/upgrade/evolve 1. Select one hit-family candidate per batch (highest priority, then earliest index); coalesce deployment/coin/upgrade/evolve by ID. Merge the fixed candidates by priority descending, index ascending and return the first three. Only a known player spawn is audible. Missing hit metadata means neutral unit hit; a base hit with missing/invalid attacker side also falls back to neutral rather than inventing player damage. An explicitly invalid target value is malformed and silent. Critical IDs are result, skills and `base-player`; cooldown groups are deployment `.120`, unit-hit `.090`, base-hit `.180`, coin `.250` seconds; other cues have no extra cooldown.
+- [ ] **Implement `selectCombatCues` in `src/view/combat-cues.ts`.** Retain bounded candidates per fixed category and at most the first three skill events; never sort/copy the whole batch. One result suppresses everything. Otherwise priorities are result 7, skill 6, player-base 5, enemy-base 4, unit hit 3, deployment 2, reward/upgrade/evolve 1. Select one hit-family candidate per batch (highest priority, then earliest index); coalesce deployment/coin/upgrade/evolve/summon/death by ID. Death has priority 0 and a shared `.250`-second cooldown across both sides; reward/upgrade/evolve/summon retain priority 1. A nonempty array of at most 50 nonnegative integer card indices distinguishes summon from plain upgrade. `playCombatEvents` excludes the summon descriptor so a drained event never replays the direct cue. Merge the fixed candidates by priority descending, index ascending and return the first three. Only a known player spawn is audible. Missing hit metadata means neutral unit hit; a base hit with missing/invalid attacker side also falls back to neutral rather than inventing player damage. An explicitly invalid target value is malformed and silent. Critical IDs are result, skills and `base-player`; cooldown groups are deployment `.120`, unit-hit `.090`, base-hit `.180`, coin `.250` seconds; other cues have no extra cooldown.
 
 - [ ] **Run mapper GREEN:** repeat its command; all cases pass. Check the implementation retains constant-size candidates as well as a fixed output size.
 
@@ -110,6 +115,8 @@ export function stopCombatAudio(): void;
 
   | ID(s) | Waveform; duration; peak | Distinguishing contour |
   | --- | --- | --- |
+  | death | sine; `.140`; `.020` | 260→70 Hz; 3 ms attack, quiet 40 ms shoulder; lowest priority. |
+  | summon | sine; `.320`; `.035` | 660→990→1480 Hz with a rounded second envelope lobe; direct accepted-action entry only. |
   | deploy | triangle; `.080`; `.040` | Fixed 330 Hz, 3 ms attack, rounded decay; no sweep. |
   | hit-neutral / hit-blunt | sine / triangle; `.065` / `.090`; `.025` | 130→80 / 150→65 Hz; 3 ms attack then monotone decay. |
   | hit-flick | sawtooth; `.035`; `.012` | 360→180 Hz; 2 ms attack, fastest decay. |
@@ -122,15 +129,15 @@ export function stopCombatAudio(): void;
   | upgrade / evolve | triangle; `.180` / `.360`; `.040` | 330→440 Hz confirmation; evolution extends to 660 Hz. |
   | win / lose | sine; `.600`; `.045` | Three connected tones 330→440→660 / 330→311→294 Hz with softened envelope valleys. |
 
-  Retain a per-context set of effect handles and four last-successful-start values. `playCombatEvents` checks enabled/permitted/running state, then iterates mapper output using `context.currentTime`. Reject an ordinary cue if six ordinary voices already exist; at the total cap, reclaim only an existing village accent when otherwise eligible. Reserve before allocation; release via a closure bound to that context generation. Commit cooldown only when rendering returns a handle. Keep all eight effect slots and both ambient slots accounted through existing shared ownership. `stopCombatAudio()` releases effects and clears cooldown state without creating/resuming anything. Invoke it on suspend, dispose and context replacement.
+  Retain a per-context set of effect handles and five last-successful-start values. `playCombatEvents` checks enabled/permitted/running state, then iterates mapper output using `context.currentTime`. Reject an ordinary cue if six ordinary voices already exist; at the total cap, only a critical cue may reclaim an existing village accent when otherwise eligible. Reserve before allocation; release via a closure bound to that context generation. Commit cooldown only when rendering returns a handle. Keep all eight effect slots and both ambient slots accounted through existing shared ownership. `stopCombatAudio()` releases effects and clears cooldown state without creating/resuming anything. Its optional `preserveSummon` flag retains only a finite direct summon voice; settings, hidden/unowned state, suspend, dispose and context replacement always release it. Invoke it on suspend, dispose and context replacement.
 
-- [ ] **Integrate the complete batch in root-owned `main.ts`.** Replace the type Set/`sound(event.type,…)` loop with one `playCombatEvents(batch, game.profile.sound && playable() && !document.hidden)` call inside the existing event owner. Keep village batch delivery and result `persist()` ordering. Gate stale events while a modal/menu/manual pause owns the session; permit the fresh result batch before the result modal opens. In `syncPause`, stop effects when hidden, paused, in another screen or a non-result modal, or not playable; a result modal alone allows the already-started finite result cue to finish, while admitting no new batches or ambience. Test this with reduced motion's earlier result dialog as well as the ordinary dialog. Do not gate fresh win/lose solely because the simulation phase is terminal. Remove `sound(kind:string,…)` after migrating all callers/tests, including the old budget test to semantic events; retain its original ownership assertions.
+- [ ] **Integrate the complete batch in root-owned `main.ts`.** Replace the type Set/`sound(event.type,…)` loop with one `playCombatEvents(batch, game.profile.sound && playable() && !document.hidden)` call inside the existing event owner. Keep village batch delivery and result `persist()` ordering. Gate stale events while a modal/menu/manual pause owns the session; permit the fresh result batch before the result modal opens. In `syncPause`, stop effects when hidden, paused, in another screen or a non-result modal, or not playable; a result modal alone allows the already-started finite result cue to finish, while admitting no new batches or ambience. Narrow reconciliation after merged audio PRs 73–76: `action({type:'summon'})` calls `playSummonAudio` only after an accepted simulation dispatch and the existing persist/pause/UI sequence. Require playable ownership, Sound, visible page, Cards tab, no manual pause and no modal; never trigger from menu/event drain or settings. Cards with no modal or the summon modal may preserve only its 320 ms tail during pause synchronization; other effect voices still stop. Test direct accepted/rejected actions, mute/hidden/settings/ownership loss, persistence-time loss, tail cleanup and stale drained summon metadata. Test this with reduced motion's earlier result dialog as well as the ordinary dialog. Do not gate fresh win/lose solely because the simulation phase is terminal. Remove `sound(kind:string,…)` after migrating all callers/tests, including the old budget test to semantic events; retain its original ownership assertions.
 
 - [ ] **Run playback GREEN:** repeat focused tests, then `node --experimental-strip-types --test tests/soundscape-integration.test.ts tests/soundscape-player.test.ts tests/soundscape-worker.test.ts tests/village-integration.test.ts`. Require existing bed/worker and village lifecycle assertions to remain passing.
 
 - [ ] **Create the real offline export in `scripts/review-audio.mjs` and the audio-review fixture.** The script starts/stops a local Vite server and Playwright Chromium, imports production `selectCombatCues`, `renderCombatCue` and `synthesizeSoundscape` through the fixture, and uses browser `OfflineAudioContext(2, seconds*16000,16000)`. Write one 1-second WAV per cue and a fixed 20-second crowded reference: a production First Fires bed at `.35`; unit-hit batches every `.100` seconds from `.5` to `18.5`, kinds rotating 0/1/2; coin every `.500`; player spawn every `1.5`; enemy-side base hits at `3,8,13,18`; freeze/meteor/food at `4,9,14`; win+coin+hit at `19`. Combine events sharing a time and pass each batch through the production mapper. Schedule selected production voices at those times; do not reproduce oscillator math in the script. This reference deliberately uses cadence above the live cooldown limits; it is a waveform fixture, not proof of real-time admission or ambient-accent mixing.
 
-  Measure pre-WAV float data (do not hide clipping with the WAV encoder): all samples finite, `0 < RMS`, `peak < 1`, isolated start/end residual `<1e-5`, duration/rate/channels exact. Report peak/RMS and fixture parameters in JSON alongside WAVs; include sample interval around each onset/end for inspection. Throw on failures or missing OfflineAudioContext/browser. `node scripts/review-audio.mjs --offline --output artifacts/audio-review/task-1` must exit 0 and emit 15 isolated WAVs plus the crowded WAV and metrics. These are actual production-rendered cues; hearing distinctions remains unverified until listening.
+  Measure pre-WAV float data (do not hide clipping with the WAV encoder): all samples finite, `0 < RMS`, `peak < 1`, isolated start/end residual `<1e-5`, duration/rate/channels exact. Report peak/RMS and fixture parameters in JSON alongside WAVs; include sample interval around each onset/end for inspection. Throw on failures or missing OfflineAudioContext/browser. `node scripts/review-audio.mjs --offline --output artifacts/audio-review/task-1` must exit 0 and emit 17 isolated WAVs (including death and summon; runner derives counts from the fixture) plus the crowded WAV and metrics. These are actual production-rendered cues; hearing distinctions remains unverified until listening.
 
 - [ ] **Review and commit Task 1 during execution.** Run `npm test` and `npm run build`; record commands and offline artifacts in `docs/reviews/2026-09-30-music-and-sound.md`. Independently review mapper/admission/render/cleanup and inspect the crowded waveform. Record listening observations if a reviewer is available, otherwise “Listening not performed; combat distinction and masking unverified.” Root stages only Task 1 files and commits `feat: add semantic bounded combat audio` after review.
 
@@ -138,7 +145,7 @@ export function stopCombatAudio(): void;
 
 **Files:** Create `src/view/chapter-score.ts`, `tests/chapter-score.test.ts`, `tests/audio-preferences.test.ts`. Modify generator, preferences, audio owner, player, root-owned UI/style, review scripts/report and existing soundscape/worker/audio tests. Preserve Task 1 contracts.
 
-**Consumes:** Task 1 `playCombatEvents`, `renderCombatCue`, `stopCombatAudio`; existing `SoundscapePCM`, `soundscapeAge`, `synthesizeSoundscape(input:number, requestedRate=16000):SoundscapePCM`; `SoundscapeMood`; `createSoundscapeSynthesis`; `loadAtmosphere`, `saveAtmosphere`, `ambienceAllowed`; integrated save-session guard.
+**Consumes:** Task 1 `playCombatEvents`, `playSummonAudio`, `renderCombatCue`, `stopCombatAudio`; existing `SoundscapePCM`, `soundscapeAge`, `synthesizeSoundscape(input:number, requestedRate=16000):SoundscapePCM`; `SoundscapeMood`; `createSoundscapeSynthesis`; `loadAtmosphere`, `saveAtmosphere`, `ambienceAllowed`; integrated save-session guard.
 
 **Produces:**
 
