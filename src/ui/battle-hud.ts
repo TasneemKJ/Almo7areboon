@@ -1,4 +1,5 @@
 import { ERAS, foodRate, foodUpgradeCost, unlockCost } from '../game/data.ts';
+import { cardPackCost } from '../game/cards.ts';
 import type { WavePreview, WaveStatus } from '../game/encounters.ts';
 import type { BattleState, Profile } from '../game/types.ts';
 
@@ -7,7 +8,8 @@ export function defeatAdvice(profile: Profile): string {
   if (!profile.unlocked[1] && profile.coins >= unlockCost(1, profile)) return 'Unlock your ranged troop so it can strike from behind your front line, then retry.';
   if (!profile.unlocked[2] && profile.coins >= unlockCost(2, profile)) return 'Unlock your heavy troop to hold the front line, then retry.';
   if (profile.foodLevel < 100 && profile.coins >= foodUpgradeCost(profile)) return 'Upgrade food production to deploy faster, then retry.';
-  return 'Deploy earlier and mix melee with ranged troops, then retry.';
+  if (profile.gems >= cardPackCost(1)) return `You have ${profile.gems.toLocaleString('en-US')} gems: summon a card in Cards for a permanent boost, then retry.`;
+  return 'Deploy earlier and mix melee with ranged troops. Winning any battle pays gems for cards.';
 }
 
 /** A single contextual instruction, not an onboarding panel over the battlefield. */
