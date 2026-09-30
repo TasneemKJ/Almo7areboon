@@ -15,10 +15,10 @@ import { chapterPresentation, unitPresentationName } from './ui/chapter-presenta
 import { evolutionScreenHtml } from './ui/evolution-screen.ts';
 import { icon } from './view/icons.ts';
 import { sound, unlockAudio, suspendAudio, disposeAudio, updateSoundscape } from './view/audio.ts';
-import { createArmyUpdater } from './ui/army-screen.ts';
+import { createArmyUpdater, TROOP_SPECIALTIES } from './ui/army-screen.ts';
 import { cardsScreenHtml, summonedCardsHtml } from './ui/cards-screen.ts';
 import { resultsHtml } from './ui/results-screen.ts';
-import { battleGuidance, baseHealthDisplay, compactNumber } from './ui/battle-hud.ts';
+import { battleGuidance, baseHealthDisplay, compactNumber, waveLabel, waveAccessibleLabel } from './ui/battle-hud.ts';
 import { battleSelectionHtml, evolutionDialogHtml } from './ui/progression-screen.ts';
 import { createModalIsolation, modalFocusables, nextFocusIndex, isEditingTarget } from './ui/accessibility.ts';
 import { pauseReason } from './ui/pause.ts';
@@ -45,7 +45,7 @@ root.innerHTML = `
       <div id="battlefield"></div>
       <div class="stage"><div id="timeline" class="eyebrow"></div><h1 id="age-title"></h1><p id="scene-name" class="scene-name"></p><button id="battle-select" class="battle-select" data-command="battles" aria-label="Choose a battle"><span class="stage-progress" id="stage-progress"></span></button></div>
       <div class="world-tools"><button id="quests" class="square-button" data-command="quests" aria-label="Quests">${icon('quest')}<i class="notification"></i></button><button class="square-button" data-command="settings" aria-label="Settings">${icon('gear')}</button></div>
-      <div class="battle-meta"><span id="wave-label"></span><div class="battle-toggles"><button id="speed" data-command="speed" aria-label="Change battle speed">1×</button><button id="pause" data-command="pause" aria-label="Pause battle">Ⅱ</button></div></div>
+      <div class="battle-meta"><span id="wave-label" role="img"></span><div class="battle-toggles"><button id="speed" data-command="speed" aria-label="Change battle speed">1×</button><button id="pause" data-command="pause" aria-label="Pause battle">Ⅱ</button></div></div>
       <div id="ready" class="ready"><div class="ready-title">YOUR ARMY. YOUR ERA.</div><button class="big-button green" data-command="start">BATTLE ${icon('battle')}</button><p>Destroy the enemy base!</p></div>
       <p id="base-status" class="sr-only"></p><p id="game-status" class="sr-only" role="status" aria-live="polite"></p><div id="pause-banner" class="pause-banner" hidden>PAUSED</div>
       <div class="battle-skills" id="battle-skills"></div>
@@ -115,8 +115,9 @@ function update(force=false){
   textIfChanged($('speed'),`${p.speed}×`);$('speed').setAttribute('aria-label',`Battle speed ${p.speed} times. Change speed.`);
   $('battle-select').toggleAttribute('disabled',s.phase!=='ready');
   const wave=game.waveStatus();
-  textIfChanged($('wave-label'),s.phase==='running'?(wave.nextIn===null?(wave.cleared?'WAVES CLEARED · ATTACK THE BASE':`${wave.enemiesRemaining} ENEMIES REMAIN`):`WAVE ${wave.spawned} / ${wave.total} · NEXT ${Math.ceil(wave.nextIn)}s`):s.phase==='ready'?'CHOOSE YOUR ARMY':'BATTLE COMPLETE');
-  textIfChanged($('deploy-hint'),battleGuidance(p,s));
+  textIfChanged($('wave-label'),s.phase==='running'?waveLabel(wave):s.phase==='ready'?'CHOOSE YOUR ARMY':'BATTLE COMPLETE');
+  $('wave-label').setAttribute('aria-label',s.phase==='running'?waveAccessibleLabel(wave):$('wave-label').textContent??'');
+  textIfChanged($('deploy-hint'),battleGuidance(p,s,wave.preview));
   const health=baseHealthDisplay(s.playerHp,s.playerMaxHp);
   $('world').classList.toggle('base-danger',s.phase==='running'&&health.danger);
   textIfChanged($('base-status'),`Your base: ${health.label}. Enemy base: ${baseHealthDisplay(s.enemyHp,s.enemyMaxHp).label}.`);
@@ -126,7 +127,7 @@ function update(force=false){
     button.disabled=locked?p.coins<unlockCost(kind,p):!status.allowed;
     button.classList.toggle('affordable',!button.disabled);
     const hint=status.reason==='food'?`Ready in ${Math.ceil(status.waitSeconds)} seconds`:status.reason==='blocked'?'Deployment area full':status.reason==='capacity'?'Army limit reached':status.reason==='paused'?'Resume battle to deploy':status.reason==='ready'?'Start battle to deploy':'Tap to deploy';
-    button.title=locked?`Unlock for ${unlockCost(kind,p).toLocaleString('en-US')} coins`:hint;
+    button.title=`${locked?`Unlock for ${unlockCost(kind,p).toLocaleString('en-US')} coins`:hint}. ${TROOP_SPECIALTIES[kind].effect}`;
     (button.querySelector('.unit-fill') as HTMLElement).style.transform=`scaleX(${Math.max(0,Math.min(1,s.food/ERAS[p.age].units[kind].cost))})`;
   });
   root!.querySelectorAll<HTMLButtonElement>('[data-skill]').forEach(button=>{

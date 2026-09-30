@@ -77,7 +77,7 @@ test('deployment cards identify their tactical role without changing prices or a
  const targets={units:{innerHTML:''},skills:{innerHTML:''},stages:{innerHTML:''}};
  const render=createArmyUpdater(targets,()=>'/portrait.svg');render(defaultProfile());
  const html=targets.units.innerHTML;
- for(const role of ['Melee','Ranged','Heavy'])assert.match(html,new RegExp(`class="unit-role"[^>]*>${role}`));
+ for(const role of ['Melee · Guard','Ranged · Pierce','Heavy · Sweep'])assert.match(html,new RegExp(`class="unit-role"[^>]*>${role}`));
  assert.match(html,/data-unit="0"/);assert.match(html,/150/);assert.match(html,/400/);
 });
 
@@ -118,4 +118,13 @@ test('pale rib collectibles have a dark structural silhouette over the parchment
  const m=await moduleAt('card-illustrations');
  const svg=decodeURIComponent(m.cardIllustration(2).split(',')[1]);
  assert.ok((svg.match(/stroke="#354f55"/g)||[]).length>=5,'bone outlines must not disappear into the pale card');
+});
+
+test('troop accessible labels retain deployment and unlock prices and explain specialties',()=>{
+ const targets={units:{innerHTML:''},skills:{innerHTML:''},stages:{innerHTML:''}};
+ const render=createArmyUpdater(targets,()=>'/portrait.svg');render(defaultProfile());
+ const html=targets.units.innerHTML;
+ assert.match(html,/aria-label="Deploy Pathkeeper, 3 food\. Takes less damage from ranged enemies\./);
+ assert.match(html,/aria-label="Unlock Thrower, 150 coins\. Deals extra damage to heavy enemies\./);
+ assert.match(html,/aria-label="Unlock Dino Rider, 400 coins\. Hits a second nearby enemy\./);
 });
