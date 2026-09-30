@@ -115,6 +115,15 @@ jobs:
           name: mastery-browser-review
           path: artifacts/browser-review/mastery/
           retention-days: 7
+      - name: Publish focused scouting evidence
+        if: always() && steps.mastery.outcome != 'skipped'
+        uses: actions/upload-artifact@v4
+        with:
+          name: chapter-scouting-review
+          path: |
+            artifacts/browser-review/mastery/diagnostics.json
+            artifacts/browser-review/mastery/scouting*.png
+          retention-days: 7
       - name: Publish save-session screenshots and diagnostics
         if: always() && steps.save_sessions.outcome != 'skipped'
         uses: actions/upload-artifact@v4
