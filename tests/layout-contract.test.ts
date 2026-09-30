@@ -23,3 +23,8 @@ test('rarity captions use dark ink so rare and epic headers stay legible',()=>{
  const css=readFileSync(new URL('../src/ui/readability.css',import.meta.url),'utf8');
  assert.match(css,/\.rarity\s*\{\s*color:\s*#1[0-9a-f]{5}/i);
 });
+
+test('the resource header precedes the battle view so keyboard focus follows the visual order',()=>{
+ const main=readFileSync(new URL('../src/main.ts',import.meta.url),'utf8');
+ assert.ok(main.indexOf('<header class="resources">')<main.indexOf('id="battle-view"'));
+});
