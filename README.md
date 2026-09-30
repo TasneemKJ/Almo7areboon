@@ -30,7 +30,7 @@ Serve the generated `dist/` directory on a static HTTP host. Opening `index.html
 
 Tap **Battle**, accumulate food, then tap a troop to deploy it. Troops march, fight and attack bases automatically. Combine melee or heavy troops with ranged support. Coins earned during defeat remain available for production, base health and troop upgrades.
 
-Victory unlocks the next opponent. **Choose a battle** replays unlocked opponents while ready. **Evolution** strengthens your own army but clears coins, upgrades, troop unlocks and unlocked battles; its confirmation explains exactly what resets. Finishing the final opponent begins a harder timeline.
+Victory unlocks the next opponent. **Choose a battle** replays unlocked opponents while ready. **Evolution** strengthens your own army and clears coins, upgrades and troop unlocks. Your selected opponent, unlocked chapters and earned seals stay; its confirmation explains exactly what resets. Finishing the final opponent begins a harder timeline.
 
 The 30-card collection applies passive bonuses automatically. Summon packs contain 1, 10 or 50 cards, cost earned gems and use a saved random stream. Duplicates advance levels. The interface shows rarity odds, duplicate progress and the arithmetic safety cap. There are no real-money purchases.
 
@@ -50,7 +50,7 @@ If this browser cannot safely acquire ownership, or a future-version save is pre
 
 An unfinished battle reloads ready while preserving already earned coins. An unacknowledged victory reloads its result without awarding rewards again. Import validates first, asks before replacement and changes the active game only after storage succeeds. Export provides a separate backup. Older already-open builds and console scripts may ignore Web Locks; baseline checks detect their changes but are not an atomic transaction against an uncooperative writer. Close older tabs and reload after a conflict. Browser storage eviction, clearing site data, and termination before a save can still lose progress.
 
-`npm run review:save-sessions` checks the built app with same-context Chromium tabs on port 4175, real buttons, takeover, recovery/export, import, and controlled pagehide/pageshow events. CI requires it alongside the portrait and layering gates; diagnostics and 320px recovery screenshots are collected. Controlled lifecycle events do not prove actual BFCache eligibility, and this gate does not establish WebKit or physical-device acceptance.
+`npm run review:save-sessions` checks the built app with same-context Chromium tabs on port 4175, real buttons, takeover, recovery/export, import, confirmed Start over, and controlled pagehide/pageshow events. CI requires it alongside the portrait and layering gates; diagnostics and 320px recovery screenshots are collected. Controlled lifecycle events do not prove actual BFCache eligibility, and this gate does not establish WebKit or physical-device acceptance.
 
 ## Source boundaries
 
@@ -60,7 +60,7 @@ An unfinished battle reloads ready while preserving already earned coins. An una
 - `src/main.ts`: input, screen navigation and lifecycle integration.
 - `tests/`: simulation, progression, persistence, components, audio failures and explicit source/CSS contracts.
 
-`npm run review:monkey` (against a running preview) starts the game on seven damaged or missing saves and then feeds it random taps and keys, failing on any uncaught page error; set `CHROMIUM_PATH` to reuse an installed Chromium. `npm run review:overlap` checks that the main HUD elements never overlap at six phone and tablet sizes, even with very large coin and gem totals.
+The browser probes are summarised in [docs/quality-probes.md](docs/quality-probes.md). `npm run review:monkey` (against a running preview) starts the game on seven damaged or missing saves and then feeds it random taps and keys, failing on any uncaught page error; set `CHROMIUM_PATH` to reuse an installed Chromium. `npm run review:contrast` screenshots the area behind every text element on each screen and dialog and lists candidates below WCAG AA (read the list: partly hidden elements and containers with icons can be false positives). `npm run review:clip` measures every text run on each screen and dialog at 320 and 390px and fails if an `overflow: hidden` ancestor cuts it off or it runs past the viewport (text inside scrolling containers is fine). `npm run review:overlap` checks that the main HUD elements never overlap at six phone and tablet sizes, even with very large coin and gem totals.
 
 GitHub Actions runs tests and the production build with read-only repository permissions. The `almo7areboon-web-build` artifact is published only when both checks succeed; this is a downloadable artifact, not a deployment.
 

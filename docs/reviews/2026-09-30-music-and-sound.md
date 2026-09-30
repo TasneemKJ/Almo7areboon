@@ -105,3 +105,31 @@ Fresh evidence:
 - `node --experimental-strip-types scripts/export-soundscape-review.mjs artifacts/audio-review/after --baseline artifacts/audio-review/before/metrics.json` exit 0. All six source and preview-mix RMS changes are negative (−1.663 to −0.203 dB); no >3 dB rise flag. Source peaks range .05019–.07261 and maximum seam-adjacent differences .00001799–.00008550. These are numerical observations, not auditory judgments.
 
 Remaining Task 2 work: stable guarded settings controls; pending-generation/output replacement/failure race coverage; native production-page UI and lifecycle runner; native offline bus-integrated rerun and required CI/browser gates after root integrates parent fixes. Local Chromium remains unavailable; no launch or workaround attempted. Auditory acceptance not established: three consecutive loops for all six chapters on headphones and phone speaker, and live quiet→alarm→recovery combat in First Fires, Harbor and Courtyards, remain unverified.
+
+## Task 2 browser RED harness checkpoint
+
+The accepted score/preferences/buses checkpoint is committed as `59f6e44`; the reviewed modal click and recovery fixes are integrated in current base `f955b37`. Before/after exported metric files record the pre-commit base `7af7153` because export occurred before that checkpoint commit. The retained before/after paths, exporter-only baseline patch and reviewed checkpoint diff identify their distinct generator states; `59f6e44` is the committed identity of the revised score. These WAVs remain **gain-only PCM previews**. The reported `filterCutoff:5000` is metadata for a live mix setting; the exporter does not execute the player's low-pass filter, start/stop fades or dynamic village ramps.
+
+The native `--browser` mode now implements required Task 2 production-page cases 1–3 in five isolated scenarios. It uses the real application root, valid muted save fixtures, genuine Web Locks and same-origin peer storage changes, native keyboard/mouse range input, and the explicit temporary-play route when native localStorage methods throw. The connected-input fault injection verifies ownership synchronously before a storage notification; a separate peer-change scenario checks a retained range after genuine ownership loss. No duplicate Settings page or simulated browser audio graph is used.
+
+Before the production script loads, transparent proxies delegate all AudioContext/Worker construction and native node methods to their original implementations. They record live native contexts/workers, current/retiring beds, shared transients and atmosphere-routed accents, parameter events, source starts/stops/disconnects and storage write outcomes. Cases require zero graph construction while muted, latest 50/25 bus initialization after an enabled gesture, stable DOM identity/focus and exact keyboard steps, native pointer drag, persistence through switch cycles/reload, silent Settings input, protected mix/save/backup bytes on ownership loss and in-memory controls under blocked storage. The first expected product gap is the explicit assertion: “Missing labeled native ranges: Effects volume and Atmosphere volume.” Markup and input handlers are still absent intentionally.
+
+CI invokes this command immediately after browser installation, uploads JSON/logs/screenshots immediately, then continues every existing offline, portrait, layering, save-session and mastery gate. `audio_browser` is included in the final required-gate expression. A failed native assertion or browser launch keeps diagnostics and fails the command/job; it is never an optional skip.
+
+Fresh local verification at this harness checkpoint:
+
+- CLI test RED: `--browser --help` rejected as unsupported; GREEN: browser/offline help and conflicting-mode validation, 1/1. Help never initializes the browser.
+- `node --check` on the runner, browser scenarios and native observer: exit 0.
+- `npm test`: exit 0, **506 passed**, zero failures/skips.
+- `npm run build`: exit 0, TypeScript/Vite production build; existing large-chunk warning remains.
+- `git diff --check`: exit 0.
+
+Native UI RED execution is **unavailable locally**, due the already-established Chromium SIGTRAP before page creation. No local launch, reinstall or workaround was attempted, and no fake browser result substitutes for it. Root must commit this harness checkpoint and inspect actual CI failure diagnostics before controls are implemented. Native lifecycle case 4 and controlled-export case 5 remain outstanding in addition to the eventual GREEN replay of these exact cases. Auditory acceptance not established; headphone/phone-speaker listening and live mood/combat listening remain outstanding.
+
+### Scoped native harness correction before RED publication
+
+At integrated base `48acf398872fa8d0cfc2f978ba7c8325f4963452`, the independent review of harness commit `0ebefdb` found that the enabled mid-battle Settings scenario exercised only Home-to-zero input; its pointer check was confined to the muted scenario. A positive-only preview defect could therefore escape that coverage.
+
+Case 2 now drags both real native thumbs to changed positive five-point values while Sound and Atmosphere remain enabled. Retained handles verify the same DOM inputs and active focus before/after the observation window, alongside percentage output and aria-valuetext. After each positive drag, cumulative source starts, created workers and created contexts must remain unchanged, live beds/transients must remain zero, and both switches must remain enabled. A transparent wrapper delegates native `AudioContext.prototype.resume` to its original method/promise and requires zero calls during these inputs. The zero keyboard check and screenshot remain, with an additional positive-pointer screenshot. This case observes retirement of its running bed and zero remaining transients; it does not claim that an accent was active before opening Settings.
+
+Fresh scoped checks: browser-scenario/runner syntax, the existing no-launch CLI test (1/1), and `git diff --check` all exit 0. No product UI, observer module, dependencies or CI configuration changed. Native execution remains pending actual CI; the established local SIGTRAP restriction was preserved. No commit or browser launch was made. Cases 4–5 and auditory acceptance remain outstanding.

@@ -59,6 +59,7 @@ test('the worker precaches the page bundles and trims old ones',()=>{
 test('the page paints the game colour and a loading or no-script message before any script runs',()=>{
  const html=readFileSync(new URL('../index.html',import.meta.url),'utf8');
  assert.match(html,/html,body\{[^}]*background:#293541/);
+ assert.doesNotMatch(html.match(/html,body\{[^}]*\}/)![0],/color:(?!#293541)|font-family/,'the inline rule must not override the ink colour or font that :root provides');
  assert.match(html,/<div id="app"><p class="boot" role="status">Loading/);
  assert.match(html,/<noscript>.*needs JavaScript/);
 });
@@ -75,4 +76,20 @@ test('touch surfaces suppress Safari text selection and long-press callouts',()=
  const css=readFileSync(new URL('../src/style.css',import.meta.url),'utf8');
  assert.match(css,/button,\.game-shell\s*\{[^}]*-webkit-user-select:\s*none[^}]*-webkit-touch-callout:\s*none/);
  assert.match(css,/svg,img\s*\{[^}]*-webkit-touch-callout:\s*none/);
+});
+
+test('quest progress uses the same thousands separators as the quest titles',()=>{
+ const main=readFileSync(new URL('../src/main.ts',import.meta.url),'utf8');
+ assert.match(main,/Math\.min\(count,q\.target\)\.toLocaleString\('en-US'\)\} \/ \$\{q\.target\.toLocaleString\('en-US'\)\}/);
+});
+
+test('muted body copy and blue button gradients keep AA contrast on their surfaces',()=>{
+ const css=readFileSync(new URL('../src/style.css',import.meta.url),'utf8');
+ const hex=(name:string)=>css.match(new RegExp(`--${name}:\\s*(#[0-9a-f]{6})`,'i'))![1];
+ const lum=(color:string)=>[1,3,5].map(i=>parseInt(color.slice(i,i+2),16)/255).map(v=>v<=0.03928?v/12.92:((v+0.055)/1.055)**2.4).reduce((sum,v,i)=>sum+v*[0.2126,0.7152,0.0722][i],0);
+ const ratio=(a:string,b:string)=>(Math.max(lum(a),lum(b))+0.05)/(Math.min(lum(a),lum(b))+0.05);
+ assert.ok(ratio(hex('muted'),hex('paper'))>=5.5,'muted copy on paper');
+ assert.ok(ratio(hex('muted'),'#e1e7cd')>=4.5,'muted copy on the tinted panels');
+ for(const top of css.match(/linear-gradient\(#3[0-9a-f]{5},#244d64\)/g)??[])assert.ok(ratio('#fff3d7',top.slice(16,23))>=4.5,top);
+ assert.equal((css.match(/linear-gradient\(#326a86,#244d64\)/g)??[]).length,2,'both blue button surfaces use the darker gradient');
 });

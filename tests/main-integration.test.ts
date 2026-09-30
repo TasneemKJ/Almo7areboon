@@ -150,3 +150,19 @@ test('normal native double-click deployment still accepts both affordable troop 
  h.clickData({unit:'0'},1);h.clickData({unit:'0'},2);
  assert.equal(c.game.state.stats.deployed,2);assert.equal(c.game.state.food,0);
 });
+
+
+test('actual optional-probe evolution route retains Battle 5 and seals while resetting local army progress',()=>{
+ const h=harness(),c=h.context,p=defaultProfile();
+ Object.assign(p,{age:4,enemyAge:4,furthestBattle:4,coins:14000000,foodLevel:5,baseLevel:3,unlocked:[true,true,true]});
+ p.mastery.chapters[4]={earnedMask:3,bestSeconds:81,bestGateDamage:0};c.game=new Game(p);
+ const mastery=structuredClone(c.game.profile.mastery);
+ c.textIfChanged=(target:any,value:string)=>{target.textContent=value;};
+ h.clickData({tab:'evolution'},1);assert.equal(c.activeTab,'evolution');
+ h.click('evolve',1);assert.equal(c.modal,'evolve');h.click('confirm-evolve',1);
+ assert.equal(c.modal,null);assert.equal(c.activeTab,'battle');assert.equal(c.game.state.phase,'ready');
+ assert.deepEqual([c.game.profile.age,c.game.profile.enemyAge,c.game.profile.furthestBattle],[5,4,4]);
+ assert.deepEqual([c.game.profile.coins,c.game.profile.foodLevel,c.game.profile.baseLevel],[0,0,0]);
+ assert.deepEqual(c.game.profile.unlocked,[true,false,false]);assert.deepEqual(c.game.profile.mastery,mastery);
+ assert.equal(c.$('timeline').textContent,'TIMELINE 1 · BATTLE 5');
+});
