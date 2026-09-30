@@ -56,7 +56,7 @@ test('newly finished battles delay the result, but reacquired saved victories op
   c.game.dispatch({ type: 'start' }); c.api.update(true);
   c.game.state.enemyHp = 0; c.game.step(1 / 60); c.api.update(true);
   h.clock(1400); c.api.update(true); assert.deepEqual(h.dialogs, ['result']);
-  const saved = defaultProfile(); saved.pendingVictory = { timeline: 1, battle: 0, earned: 10, seconds: 3, playerHp: 100 };
+  const saved = defaultProfile(); saved.pendingVictory = { settlement: 'legacy', timeline: 1, battle: 0, earned: 10, seconds: 3, playerHp: 100 };
   c.lastPhase = 'running'; c.resultDue = 99999; c.sessionReady = false;
   c.session.acquire = async () => ({ status: 'active', profile: saved, loadStatus: 'loaded' });
   await c.api.acquireSession();

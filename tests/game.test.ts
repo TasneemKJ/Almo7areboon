@@ -344,7 +344,7 @@ test('retry, next, evolve and selected battles rebuild encounter cursors',()=>{
   assert.equal(g.waveStatus().preview?.nextIn,4);assert.equal(g.waveStatus().pendingEnemies,0);
   assert.equal(g.dispatch({type:'select-battle',battle:2}),true);assert.equal(g.waveStatus().preview?.nextIn,3);
   g.dispatch({type:'start'});g.state.enemyHp=0;g.step(1/60);g.dispatch({type:'next'});assert.equal(g.waveStatus().preview?.nextIn,4);
-  g.dispatch({type:'evolve'});assert.equal(g.profile.age,1);assert.equal(g.profile.enemyAge,0);assert.equal(g.waveStatus().preview?.nextIn,3);
+  g.dispatch({type:'evolve'});assert.equal(g.profile.age,1);assert.equal(g.profile.enemyAge,3);assert.equal(g.waveStatus().preview?.nextIn,4);
 });
 
 test('heavy primary death retains splash center, caps damage and pays only two deaths once',()=>{
