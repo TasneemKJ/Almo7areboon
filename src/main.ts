@@ -19,7 +19,7 @@ import { unitPortrait } from './view/unit-illustrations.ts';
 import { chapterPresentation, unitPresentationName } from './ui/chapter-presentation.ts';
 import { evolutionScreenHtml } from './ui/evolution-screen.ts';
 import { icon } from './view/icons.ts';
-import { sound, unlockAudio, suspendAudio, disposeAudio, updateSoundscape } from './view/audio.ts';
+import { playCombatEvents, stopCombatAudio, unlockAudio, suspendAudio, disposeAudio, updateSoundscape } from './view/audio.ts';
 import { createArmyUpdater, TROOP_SPECIALTIES } from './ui/army-screen.ts';
 import { cardsScreenHtml, summonedCardsHtml } from './ui/cards-screen.ts';
 import { resultsHtml } from './ui/results-screen.ts';
@@ -134,6 +134,7 @@ function persist():boolean{
 }
 function syncPause(){
   game.state.paused=!playable()||pauseReason({phase:game.state.phase,manual:manualPaused,tab:activeTab,modal,hidden:document.hidden})!==null;
+  if(!game.profile.sound||!playable()||document.hidden||manualPaused||activeTab!=='battle'||(modal!==null&&modal!=='result'))stopCombatAudio();
   syncVillagePresentation();
 }
 function syncVillagePresentation(dt=0,batch:readonly GameEvent[]=[]){
@@ -377,7 +378,9 @@ lifetime.listen(window,'pageshow',()=>{
 });
 lifetime.listen(motionQuery,'change',syncMotion);
 function events(batch:GameEvent[]){
-  const played=new Set<string>();for(const event of batch)if(!played.has(event.type)){sound(event.type,game.profile.sound&&!document.hidden);played.add(event.type);}
+  // Fresh terminal results are admitted before their dialog; menus and all
+  // modal owners block new batches, including accepted menu confirmations.
+  playCombatEvents(batch,game.profile.sound&&playable()&&!document.hidden&&!manualPaused&&!game.state.paused&&activeTab==='battle'&&modal===null);
   if(batch.some(event=>event.type==='win'||event.type==='lose'))persist();
 }
 const port:GamePort={get profile(){return game.profile;},get state(){return game.state;},dispatch:action,step:dt=>{syncPause();if(playable())game.step(dt*game.profile.speed);},drainEvents:()=>game.drainEvents()};

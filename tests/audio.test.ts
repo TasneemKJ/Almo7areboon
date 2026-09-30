@@ -15,7 +15,7 @@ test('P32: audio is lazy when muted and rejected browser audio operations stay o
  Object.defineProperty(globalThis,'AudioContext',{configurable:true,value:BlockedAudio});
  try{
   audio.unlockAudio(false);assert.equal(created,0);audio.unlockAudio(true);assert.equal(created,1);
-  assert.doesNotThrow(()=>audio.sound('hit',true));assert.doesNotThrow(()=>audio.suspendAudio());assert.doesNotThrow(()=>audio.disposeAudio());
+  assert.doesNotThrow(()=>audio.playCombatEvents([{type:'hit'}],true));assert.doesNotThrow(()=>audio.suspendAudio());assert.doesNotThrow(()=>audio.disposeAudio());
   await new Promise(resolve=>setImmediate(resolve));
  }finally{audio.disposeAudio();if(previous)Object.defineProperty(globalThis,'AudioContext',previous);else delete (globalThis as Record<string,unknown>).AudioContext;}
 });

@@ -126,11 +126,12 @@ test('Sound and Atmosphere gating share the global eight voices while combat can
  try{
   audio.updateSoundscape(0,true,alarm);assert.equal(created,0);audio.unlockAudio();await new Promise(resolve=>setImmediate(resolve));
   c.ctx.currentTime=1;audio.updateSoundscape(0,true,{alarmMix:1,alarmSerial:2});
-  for(const kind of ['spawn','hit','coin','upgrade','win','lose','skill'])audio.sound(kind,true);
+  for(let i=0;i<5;i++)audio.playCombatEvents([{type:'upgrade'}],true);
+  audio.playCombatEvents([{type:'win'}],true);audio.playCombatEvents([{type:'skill',skill:'food'}],true);
   assert.equal(c.nodes.filter(n=>n.frequency&&n.disconnects===0).length,8);
-  audio.sound('evolve',true);assert.equal(c.nodes.filter(n=>n.frequency&&n.disconnects===0).length,8,'combat replaces rather than exceeds accent ceiling');
-  audio.updateSoundscape(0,false,alarm);const count=c.nodes.length;c.ctx.currentTime=2;audio.sound('spawn',true);assert.equal(c.nodes.length,count,'all eight combat voices still count');
-  for(const n of c.nodes.filter(n=>n.frequency))n.onended?.();audio.sound('hit',true);assert.equal(c.nodes.length,count+1,'Atmosphere off preserves combat');
-  audio.suspendAudio();const stopped=c.nodes.length;audio.updateSoundscape(0,true,{alarmMix:1,alarmSerial:4});audio.sound('coin',true);assert.equal(c.nodes.length,stopped);
+  audio.playCombatEvents([{type:'skill',skill:'meteor'}],true);assert.equal(c.nodes.filter(n=>n.frequency&&n.disconnects===0).length,8,'combat replaces rather than exceeds accent ceiling');
+  audio.updateSoundscape(0,false,alarm);const count=c.nodes.length;c.ctx.currentTime=2;audio.playCombatEvents([{type:'spawn',side:'player'}],true);assert.equal(c.nodes.length,count,'all eight combat voices still count');
+  for(const n of c.nodes.filter(n=>n.frequency))n.onended?.();audio.playCombatEvents([{type:'hit'}],true);assert.equal(c.nodes.length,count+1,'Atmosphere off preserves combat');
+  audio.suspendAudio();const stopped=c.nodes.length;audio.updateSoundscape(0,true,{alarmMix:1,alarmSerial:4});audio.playCombatEvents([{type:'coin'}],true);assert.equal(c.nodes.length,stopped);
  }finally{audio.disposeAudio();for(const [name,descriptor] of [['AudioContext',previous],['Worker',previousWorker]] as const){if(descriptor)Object.defineProperty(globalThis,name,descriptor);else delete (globalThis as any)[name];}}
 });
