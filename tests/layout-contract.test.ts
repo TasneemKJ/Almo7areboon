@@ -76,3 +76,8 @@ test('touch surfaces suppress Safari text selection and long-press callouts',()=
  assert.match(css,/button,\.game-shell\s*\{[^}]*-webkit-user-select:\s*none[^}]*-webkit-touch-callout:\s*none/);
  assert.match(css,/svg,img\s*\{[^}]*-webkit-touch-callout:\s*none/);
 });
+
+test('quest progress uses the same thousands separators as the quest titles',()=>{
+ const main=readFileSync(new URL('../src/main.ts',import.meta.url),'utf8');
+ assert.match(main,/Math\.min\(count,q\.target\)\.toLocaleString\('en-US'\)\} \/ \$\{q\.target\.toLocaleString\('en-US'\)\}/);
+});
