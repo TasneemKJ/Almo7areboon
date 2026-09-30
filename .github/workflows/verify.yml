@@ -34,6 +34,18 @@ jobs:
       - name: Install browser for visual verification
         if: steps.tests.outcome == 'success' && steps.build.outcome == 'success'
         run: npx playwright install --with-deps chromium
+      - name: Verify enlarged upgrade text in production
+        id: upgrade_text
+        if: steps.tests.outcome == 'success' && steps.build.outcome == 'success'
+        continue-on-error: true
+        run: npm run review:upgrade-text
+      - name: Publish upgrade-text screenshots and diagnostics
+        if: always() && steps.upgrade_text.outcome != 'skipped'
+        uses: actions/upload-artifact@v4
+        with:
+          name: upgrade-text-browser-review
+          path: artifacts/browser-review/upgrade-text/
+          retention-days: 7
       - name: Verify production offline audio waveforms
         id: offline_audio
         if: steps.tests.outcome == 'success' && steps.build.outcome == 'success'
@@ -138,5 +150,5 @@ jobs:
           path: ${{ runner.temp }}/game-workspace.tar.gz
           retention-days: 3
       - name: Require passing checks
-        if: steps.tests.outcome != 'success' || steps.build.outcome != 'success' || steps.browser.outcome != 'success' || steps.layering.outcome != 'success' || steps.save_sessions.outcome != 'success' || steps.offline_audio.outcome != 'success' || steps.mastery.outcome != 'success'
+        if: steps.tests.outcome != 'success' || steps.build.outcome != 'success' || steps.browser.outcome != 'success' || steps.layering.outcome != 'success' || steps.save_sessions.outcome != 'success' || steps.offline_audio.outcome != 'success' || steps.mastery.outcome != 'success' || steps.upgrade_text.outcome != 'success'
         run: exit 1
