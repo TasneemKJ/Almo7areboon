@@ -75,3 +75,11 @@ test('a summon reveal lists the rarest cards first and flags first-time cards',(
  assert.deepEqual(order,['legendary','rare','common','common']);
  assert.equal((html.match(/· NEW/g)??[]).length,3,'three cards were new; the duplicate is not');
 });
+
+test('an owned card shows the multiplier it contributes on its own',()=>{
+ const p=defaultProfile();p.cards[0]=1;p.cards[28]=3;
+ const html=cardsScreenHtml(p);
+ assert.match(html,/LEVEL 1 · ×1\.03 health/);
+ assert.match(html,/LEVEL 2 · ×[\d.]+ damage/);
+ assert.match(html,/NOT DISCOVERED/);
+});
