@@ -74,9 +74,11 @@ async function recoverySession(viewport,foreign=false){
   const winBytes=await bytes();await page.reload({waitUntil:'networkidle'});await page.locator('.result-dialog').waitFor();await settled();assert.deepEqual(await bytes(),winBytes,'reload keeps exactly one victory receipt');
   await page.locator('[data-command="retry"]').click();await page.locator('[data-command="upgrade-food"]').click();await settled();
   const purchased=JSON.parse((await bytes())[0]);assert.equal(purchased.foodLevel,1);assert.equal(purchased.coins,win.saved.coins-204800,'age4 level0 food costs 50 × 4096');
+  assert.equal(purchased.pendingVictory,null,'preparation consumes the victory receipt without paying again');
   assert.deepEqual({...purchased,foodLevel:0,coins:win.saved.coins,pendingVictory:win.saved.pendingVictory},win.saved,'only the accepted upgrade and cleared result receipt change');
   await page.screenshot({path:`${output}/${name}-funded-upgrade.png`});
   await page.reload({waitUntil:'networkidle'});await page.waitForFunction(()=>document.querySelector('#app')?.dataset.saveSession==='active');await settled();assert.deepEqual(JSON.parse((await bytes())[0]),purchased);
+  assert.equal(await page.locator('#world').getAttribute('data-phase'),'ready');
   diagnostics.cases.push({name,status:'passed',fixture:'age4/frontier5 zero coins, no cards/upgrades/skills; native melee-only battles',bounds,textBounds,realLossCoins:0,earned:win.saved.coins,seconds:win.saved.pendingVictory.seconds,cancelPreserved:true,selectionPersisted:true,victoryReloadPreserved:true,actualFoodPurchase:204800,purchaseReloadPreserved:true});
  }catch(error){diagnostics.cases.push({name,status:'failed',error:error.stack});await page?.screenshot({path:`${output}/${name}-failure.png`}).catch(()=>{});throw error;}
  finally{await context.close();}
