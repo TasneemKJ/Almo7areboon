@@ -46,7 +46,8 @@ export function compactNumber(value: number): string {
     if (rounded >= 1000) return index === 0 ? '1e15' : `1${tiers[index - 1][1]}`;
     return `${String(rounded)}${suffix}`;
   }
-  return Math.ceil(safe).toString();
+  const whole = Math.ceil(safe);
+  return whole >= 1000 ? '1k' : whole.toString();
 }
 
 export function baseHealthDisplay(hp: number, maximum: number): { ratio: number; label: string; danger: boolean } {
