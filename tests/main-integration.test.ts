@@ -28,13 +28,13 @@ function harness(motion = 'full') {
   const node = () => ({ dataset: {}, style: {}, hidden: false, classList: { toggle() {} }, setAttribute() {}, toggleAttribute() {}, querySelector() { return null; }, querySelectorAll() { return []; } });
   class BoundaryButton {
     dataset:Record<string,string>;disabled=false;
-    constructor(command:string){this.dataset={command};}
+    constructor(dataset:Record<string,string>){this.dataset=dataset;}
     closest(selector:string){return selector==='button'||selector==='#modal-layer'?this:null;}
   }
   const root = node(), elements = new Map<string, ReturnType<typeof node>>();
   const context: any = {
     Element:BoundaryButton, Game, game: new Game(defaultProfile()), sessionReady: true, pagePresent: true, lifetime: { disposed: false },
-    acquiring: null, acquisitionVersion: 0, hasPlayed: true, manualPaused: false, savedWarning: false, pendingImport: null, modal: null, evolutionFromResult: false,
+    acquiring: null, acquisitionVersion: 0, hasPlayed: true, manualPaused: false, savedWarning: false, pendingImport: null, modal: null, evolutionFromResult: false, modalPointerSequence: false,
     lastUpdate: 0, lastSave: 100, lastPhase: 'ready', resultDue: 0, resultShown: '', activeTab: 'battle', root,
     performance: { now: () => now }, document: { documentElement: { dataset: { motion } } },
     $: (id: string) => { if (!elements.has(id)) elements.set(id, node()); return elements.get(id); },
@@ -48,9 +48,9 @@ function harness(motion = 'full') {
     },
   };
   context.persist = () => context.session.save(context.game.profile).ok;
-  context.switchTab = () => context.update(true);
+  context.switchTab = (tab:string) => {context.activeTab=tab;context.update(true);};
   runInNewContext(`${code}\nthis.api = { update, action, acquireSession, dismissModal, returnToChapters, showResult }; this.update = update;`, context);
-  return { context, dialogs, click:(command:string)=>context.handleClick({target:new BoundaryButton(command)}), clock: (value: number) => { now = value; }, foreign: () => { foreign = true; } };
+  return { context, dialogs, click:(command:string,detail=0)=>context.handleClick({target:new BoundaryButton({command}),detail,preventDefault(){}}), clickData:(dataset:Record<string,string>,detail=0)=>context.handleClick({target:new BoundaryButton(dataset),detail,preventDefault(){}}), clock: (value: number) => { now = value; }, foreign: () => { foreign = true; } };
 }
 for (const [motion, delay] of [['full', 1300], ['reduced', 350]] as const) test(`${motion} result delay yields to save recovery before opening`, () => {
   const h = harness(motion), c = h.context;
@@ -133,4 +133,20 @@ for(const legacy of [false,true])for(const escape of [false,true])test(`actual t
  assert.equal(c.game.state.phase,'ready');assert.equal(c.modal,'battles');assert.equal(c.game.profile.pendingVictory,null);
  for(const field of ['timeline','mastery','wins','coins','gems','furthestBattle'])assert.deepEqual(c.game.profile[field],before[field]);
  c.api.dismissModal();assert.equal(c.modal,null);c.api.update(true);assert.equal(c.modal,null);
+});
+
+for(const chapter of [0,5])test(`native double-click continuation from chapter ${chapter} cannot select revealed Cards navigation`,()=>{
+ const h=settledHarness(chapter,1,chapter===5),c=h.context;
+ h.click('next',1);assert.equal(c.game.state.phase,'ready');assert.equal(c.modal,null);assert.equal(c.activeTab,'battle');
+ const after=JSON.stringify(c.game.profile);
+ // A second pointer click at the removed modal's coordinates retargets the exposed nav.
+ h.clickData({tab:'cards'},2);assert.equal(c.activeTab,'battle');assert.equal(JSON.stringify(c.game.profile),after);
+ h.clickData({tab:'cards'},3);assert.equal(c.activeTab,'battle');
+ // A subsequent intentional single click is a new native sequence and still works.
+ h.clickData({tab:'cards'},1);assert.equal(c.activeTab,'cards');
+});
+test('normal native double-click deployment still accepts both affordable troop actions',()=>{
+ const h=harness(),c=h.context;c.game.dispatch({type:'start'});
+ h.clickData({unit:'0'},1);h.clickData({unit:'0'},2);
+ assert.equal(c.game.state.stats.deployed,2);assert.equal(c.game.state.food,0);
 });

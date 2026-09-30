@@ -65,3 +65,20 @@ for(const phase of ['won','lost','running','ready'])test(`bounded native troop c
  else await assert.rejects(activate(page,0),(failure:unknown)=>failure===error);
  assert.ok(clickTimeout>0&&clickTimeout<=1000,'native click remains bounded');
 });
+
+test('fresh ready flow changes speed through visible Settings before native Battle activation',async()=>{
+ let callback='';
+ function find(node:ts.Node){if(ts.isCallExpression(node)&&node.expression.getText(ast)==='scenario'&&node.arguments[0]?.getText(ast).startsWith('`fresh-win-paused-input-'))callback=node.arguments[2].getText(ast);ts.forEachChild(node,find);}
+ find(ast);assert.ok(callback);
+ let settings=false,speed=1;const reachedBattle=Error('reached the native Battle activation');
+ const page={locator(selector:string){return{async click(){
+  if(selector==='[data-command="settings"]'){settings=true;return;}
+  if(selector==='[data-command="speed"]')throw Error('the ready battlefield speed control is hidden');
+  if(selector==='[data-command="start"]'){assert.equal(settings,false);assert.equal(speed,2);throw reachedBattle;}
+  throw Error(`unexpected prefix input ${selector}`);
+ }};}};
+ const command=(_page:unknown,name:string)=>({first(){return this;},async click(){assert.equal(settings,true);if(name==='speed')speed=2;else if(name==='close')settings=false;else throw Error(name);}});
+ const context={assert,viewport:{width:320,height:568},defaultProfile:()=>({speed:1}),setup:async()=>page,open:async()=>page,
+  active:async()=>{},ready:async()=>assert.equal(settings,false),command,saved:async()=>({speed})};
+ await assert.rejects(runInNewContext(`(${callback})(null)`,context),(error:unknown)=>error===reachedBattle);
+});

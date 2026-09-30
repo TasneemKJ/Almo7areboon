@@ -44,6 +44,8 @@ let lastUpdate=0,lastSave=0,resultShown='',lastPhase=game.state.phase,resultDue=
 let savedWarning=false,pendingImport:Profile|null=null;
 // Transient modal context only; the saved receipt remains the outcome authority.
 let evolutionFromResult=false;
+// A native multi-click that starts in a modal must not hit controls it reveals.
+let modalPointerSequence=false;
 let sessionReady=false,pagePresent=true,resumeOwnership=false,acquisitionVersion=0,hasPlayed=false;
 let acquiring:Promise<void>|null=null;
 const money=(value:number)=>value>=10000?compactNumber(value):Math.floor(value).toLocaleString('en-US');
@@ -301,6 +303,12 @@ function exportSave(){
 lifetime.listen<MouseEvent>(root,'click',e=>{
   const button=e.target instanceof Element?e.target.closest<HTMLButtonElement>('button'):null;
   if(!button||button.disabled)return;
+  if(e.detail===1)modalPointerSequence=modal!==null;
+  else if(e.detail>1&&modalPointerSequence){
+    e.preventDefault();
+    if(!modal)root!.querySelector<HTMLElement>(`[data-tab="${activeTab}"]`)?.focus();
+    return;
+  }
   const command=button.dataset.command;
   if(command==='export'){exportSave();return;}
   if(command==='session-continue'){void acquireSession();return;}
