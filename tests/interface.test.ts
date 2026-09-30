@@ -162,7 +162,8 @@ test('compactNumber switches to exponent notation for astronomically large value
 
 test('defeat advice points at the most useful affordable improvement',()=>{
  const p=defaultProfile();
- assert.match(defeatAdvice(p),/Deploy earlier/);
+ p.gems=0;assert.match(defeatAdvice(p),/Deploy earlier/);assert.match(defeatAdvice(p),/Winning any battle pays gems/);
+ p.gems=250;assert.match(defeatAdvice(p),/250 gems: summon a card/);p.gems=0;
  p.coins=unlockCost(1,p);assert.match(defeatAdvice(p),/ranged troop/);
  p.unlocked=[true,true,false];p.coins=unlockCost(2,p);assert.match(defeatAdvice(p),/heavy troop/);
  p.unlocked=[true,true,true];p.coins=foodUpgradeCost(p);assert.match(defeatAdvice(p),/food production/);
