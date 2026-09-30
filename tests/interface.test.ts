@@ -148,3 +148,12 @@ test('new players are pointed at the skill buttons once, until they cast one',()
  g.state.stats.skillsCast=0;g.profile.wins=3;
  assert.doesNotMatch(battleGuidance(g.profile,g.state),/Try a skill/);
 });
+
+test('battle choices show how much more later opponents pay',()=>{
+ const p=defaultProfile();p.furthestBattle=3;p.enemyAge=3;
+ const g=new Game(p);
+ const html=battleSelectionHtml(g.profile,g.state);
+ assert.match(html,/AVAILABLE TO REPLAY · COINS ×1</);
+ assert.match(html,/CURRENT BATTLE · COINS ×512</);
+ assert.match(html,/LOCKED</);
+});
