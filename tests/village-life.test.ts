@@ -1,0 +1,91 @@
+import test from 'node:test';
+import assert from 'node:assert/strict';
+import {readFileSync} from 'node:fs';
+import {createHash} from 'node:crypto';
+import {arenaLayout,landscapePlacement} from '../src/view/visual-theme.ts';
+import {advanceVillageMood,createVillageMood,type VillageMoodState} from '../src/view/village-mood.ts';
+async function life(){const m=await import('../src/view/village-life.ts').catch(()=>null);assert.ok(m,'anchored village life is missing');return m;}
+const quiet={mood:'quiet',alarmMix:0,alarmSerial:0,time:0,alarmEnteredAt:null} as const;
+const viewport={placement:{x:0,y:0,scale:1},cssWorldScale:1,visibleSource:[0,0,900,1000] as const,hudSourceBounds:[]};
+const safeMoodInput={phase:'running',hpFraction:1,nearestEnemyX:Infinity,playerBaseHit:false,paused:false} as const;
+function advanceTo(state:VillageMoodState,time:number){while(time-state.time>1e-8)state=advanceVillageMood(state,safeMoodInput,Math.min(.05,time-state.time));return state;}
+function hit(state:VillageMoodState){return advanceVillageMood(state,{...safeMoodInput,playerBaseHit:true},0);}
+test('a passage suppressed during alarm stays absent through recovery and repeated alarm entries',async()=>{
+ const m=await life();let state=hit(advanceTo(createVillageMood(),3));
+ const bird=()=>m.villageFrame({age:0,time:state.time,reduced:false,mood:state,viewport}).bird;
+ state=advanceTo(state,8.95);assert.equal(state.mood,'alarmed');assert.equal(bird(),null);
+ state=advanceTo(state,9);assert.equal(state.mood,'recovering');assert.equal(bird(),null,'the t=8 suppressed flight must not appear at recovery');
+ state=hit(state);assert.equal(state.alarmSerial,2);assert.equal(bird(),null,'a later alarm must retain the earlier suppression');
+ state=advanceTo(state,15);assert.equal(state.mood,'recovering');assert.equal(bird(),null,'suppression survives two completed alarm intervals');
+ state=hit(state);state=advanceTo(state,15.2);assert.equal(bird(),null,'a third entry must not discard admission history before the flight ends');
+});
+test('an admitted passage keeps flying through recovery and re-alarm until its scheduled end',async()=>{
+ const m=await life();let state=hit(advanceTo(createVillageMood(),9));
+ for(const time of [9,14.95,15,15.2]){
+  state=advanceTo(state,time);if(time===15)assert.equal(state.mood,'recovering');
+  const actual=m.villageFrame({age:0,time:state.time,reduced:false,mood:state,viewport}).bird;
+  const expected=m.villageFrame({age:0,time:state.time,reduced:false,mood:quiet,viewport}).bird;
+  assert.ok(actual,'the t=8 quiet-admitted passage must keep flying');assert.deepEqual(actual,expected);
+  if(time===15)state=hit(state);
+ }
+ state=advanceTo(state,15.55);assert.equal(m.villageFrame({age:0,time:state.time,reduced:false,mood:state,viewport}).bird,null);
+});
+test('reduced-motion danger stays still through evolving audio ramps and restores a full occupant only in late recovery',async()=>{
+ const m=await life();let state=hit(createVillageMood());
+ const frame=()=>m.villageFrame({age:0,time:state.time,reduced:true,mood:state,viewport});
+ state=advanceTo(state,.15);const danger=frame(),firstMix=state.alarmMix;
+ state=advanceTo(state,.30);assert.notEqual(state.alarmMix,firstMix,'the shared audio mix keeps its continuous ramp');
+ assert.deepEqual(frame(),danger,'visual opacity must have settled within150ms');
+ state=advanceTo(state,.60);assert.deepEqual(frame(),danger);
+ state=advanceTo(state,6.15);assert.equal(state.mood,'recovering');const early=frame(),earlyMix=state.alarmMix;
+ state=advanceTo(state,8.4);assert.notEqual(state.alarmMix,earlyMix);assert.deepEqual(frame(),early,'lights and panes stay still through the early recovery ramp');
+ assert.ok(frame().residents.every(resident=>resident.panes.every(pane=>pane.alpha<=.2)),'no early occupant');
+ state=advanceTo(state,8.65);const late=frame();assert.ok(late.residents.some(resident=>resident.panes.some(pane=>pane.alpha>.2)),'late recovery restores one coherent occupant');
+ state=advanceTo(state,9.8);assert.deepEqual(frame(),late,'occupancy does not fade throughout the last1.5seconds');
+ state=advanceTo(state,10.1);assert.equal(state.mood,'quiet');assert.deepEqual(frame(),late);
+ state=hit(state);assert.deepEqual(frame(),danger,'a renewed danger switches to the same still composition');
+});
+const inside=(p:any,b:readonly number[])=>p.x>=b[0]-1e-7&&p.y>=b[1]-1e-7&&p.x<=b[2]+1e-7&&p.y<=b[3]+1e-7;
+function convex(p:any,polygon:readonly any[]){return polygon.every((a,i)=>{const b=polygon[(i+1)%polygon.length];return (b.x-a.x)*(p.y-a.y)-(b.y-a.y)*(p.x-a.x)>=-1e-6;});}
+// Independent measurements, rather than trusting the renderer's own pane construction.
+const apertures=[
+ [[227,349,247,377],[[234,349,238,377],[227,359,247,363]]],[[729,465,748,489],[[737,465,740,489],[729,475,748,478]]],
+ [[109,283,122,300],[[114,283,117,300],[109,290,122,293]]],[[177,298,187,313],[[180,298,183,313],[177,303,187,306]]],
+ [[86,286,107,325],[[94,286,98,325],[86,303,107,308]]],[[193,319,207,348],[[198,319,202,348],[193,331,207,335]]],
+ [[221,282,236,310],[]],[[695,354,713,391],[[702,354,706,391],[695,369,713,375]]],
+ [[434,287,451,307],[[440,287,444,307],[434,297,451,300]]],[[807,333,824,359],[[815,333,819,359],[807,345,824,349]]],
+ [[186,271,198,292],[]],[[782,324,800,349],[[789,324,793,349],[782,335,800,339]]],
+] as const;
+function crossesInterior(a:any,b:any,rect:readonly number[]){
+ let lo=0,hi=1;
+ for(const [start,end,min,max] of [[a.x,b.x,rect[0]+1e-6,rect[2]-1e-6],[a.y,b.y,rect[1]+1e-6,rect[3]-1e-6]]){
+  const delta=end-start;
+  if(Math.abs(delta)<1e-10){if(start<min||start>max)return false;continue;}
+  const one=(min-start)/delta,two=(max-start)/delta;lo=Math.max(lo,Math.min(one,two));hi=Math.min(hi,Math.max(one,two));
+ }
+ return hi>lo;
+}
+test('resident edges obey the independently measured arches and framing exclusions',async()=>{
+ const m=await life();
+ for(let age=0;age<6;age++)for(let time=.8;time<35;time+=.4){
+  const frame=m.villageFrame({age,time,reduced:false,mood:quiet,viewport});
+  for(const resident of frame.residents){
+   const index=m.VILLAGE_PLATES[age].windows.findIndex(w=>w.id===resident.apertureId),[bounds,framing]=apertures[age*2+index];
+   const [l,t,r,b]=bounds,w=r-l,h=b-t;
+   const arch=age===4&&index===0?[{x:l,y:t},{x:r,y:t},{x:r,y:b},{x:l,y:b}]:[{x:l,y:t+.35*h},{x:l+.35*w,y:t+.10*h},{x:l+.65*w,y:t+.10*h},{x:r,y:t+.35*h},{x:r,y:b},{x:l,y:b}];
+   for(const mark of resident.panes)for(let vertex=0;vertex<mark.points.length;vertex++){
+    const point=mark.points[vertex],next=mark.points[(vertex+1)%mark.points.length];
+    assert.ok(convex(point,arch),'complete outline stays inside the inscribed arch');
+    for(const mullion of framing)assert.equal(crossesInterior(point,next,mullion),false,'no edge crosses a mullion interior');
+   }
+  }
+ }
+});
+// Catches stale registration after plate replacement, including a same-size changed plate.
+test('all measured anchors identify the inspected 900 by 1000 plates',async()=>{const m=await life();assert.equal(m.VILLAGE_PLATES.length,6);for(const plate of m.VILLAGE_PLATES){const bytes=readFileSync(new URL('../'+plate.path,import.meta.url));assert.equal(createHash('sha256').update(bytes).digest('hex'),plate.sha256);assert.equal(bytes.toString('ascii',0,4),'RIFF');const extended=bytes.toString('ascii',12,16)==='VP8X';assert.equal(extended?1+bytes.readUIntLE(24,3):bytes.readUInt16LE(26)&0x3fff,900);assert.equal(extended?1+bytes.readUIntLE(27,3):bytes.readUInt16LE(28)&0x3fff,1000);assert.equal(plate.windows.length,2);}});
+// Catches a complete silhouette or an edge bridging a painted mullion.
+test('every complete resident polygon stays in a single allowed pane',async()=>{const m=await life();let silhouettes=0;for(let age=0;age<6;age++)for(let time=0;time<180;time+=.37){const f=m.villageFrame({age,time,reduced:false,mood:quiet,viewport});assert.ok(f.residents.length<=2);assert.ok(f.lamps.length<=4);assert.ok(f.water.length<=3);for(const resident of f.residents){const aperture=m.VILLAGE_PLATES[age].windows.find((w:any)=>w.id===resident.apertureId);assert.ok(aperture);for(const painted of resident.panes){assert.ok(aperture.panes.some((pane:readonly any[])=>painted.points.every((p:any)=>convex(p,pane))),`${age}:${time} entire polygon contained in one pane`);for(const p of painted.points)assert.ok(inside(p,aperture.bounds));if(painted.alpha>.2)silhouettes++;}}}assert.ok(silhouettes>100,'habitation must be visible, not just empty output');});
+test('harbor reflections remain short and bounded, and measured lights retain their centers',async()=>{const m=await life();for(let age=0;age<6;age++)for(const time of [0,5,23,50]){const f=m.villageFrame({age,time,reduced:false,mood:quiet,viewport});f.lamps.forEach((lamp:any,i:number)=>{assert.deepEqual([lamp.center.x,lamp.center.y,lamp.rx,lamp.ry],m.VILLAGE_PLATES[age].lamps[i].slice(0,4));assert.ok(lamp.alpha>=.082&&lamp.alpha<=.178);});for(const stroke of f.water){assert.equal(age,2);assert.ok(inside(stroke.from,[480,473,591,526])&&inside(stroke.to,[480,473,591,526]));assert.equal(stroke.from.y,stroke.to.y);assert.ok(stroke.to.x-stroke.from.x>=12&&stroke.to.x-stroke.from.x<=22);}}});
+test('complete birds avoid HUD and roofs, need readable continuous travel, and finish through alarm',async()=>{const m=await life();let birds=0;for(let age=0;age<6;age++)for(let time=0;time<180;time+=.25){const f=m.villageFrame({age,time,reduced:false,mood:quiet,viewport});if(f.bird){birds++;for(const poly of f.bird)for(const p of poly.points)assert.ok(inside(p,m.VILLAGE_PLATES[age].sky));}}assert.ok(birds>100);const flying=m.villageFrame({age:0,time:10,reduced:false,mood:quiet,viewport});assert.ok(flying.bird);assert.deepEqual(m.villageFrame({age:0,time:10,reduced:false,mood:{...quiet,mood:'alarmed',alarmMix:1,alarmEnteredAt:9},viewport}).bird,flying.bird);assert.equal(m.villageFrame({age:0,time:10,reduced:false,mood:{...quiet,mood:'alarmed',alarmEnteredAt:7},viewport}).bird,null);for(const clipped of [{...viewport,cssWorldScale:.1},{...viewport,visibleSource:[0,200,900,1000] as const},{...viewport,hudSourceBounds:[[230,90,670,195] as const]},{...viewport,visibleSource:[300,100,400,180] as const}])assert.equal(m.villageFrame({age:0,time:10,reduced:false,mood:quiet,viewport:clipped}).bird,null);});
+test('reduced motion is still inhabited and identical across clocks, with no bird',async()=>{const m=await life();for(let age=0;age<6;age++){const a=m.villageFrame({age,time:0,reduced:true,mood:quiet,viewport});assert.deepEqual(a,m.villageFrame({age,time:99,reduced:true,mood:quiet,viewport}));assert.ok(a.residents.some((r:any)=>r.panes.some((p:any)=>p.alpha>.2)));assert.equal(a.bird,null);const alarm=m.villageFrame({age,time:0,reduced:true,mood:{...quiet,mood:'alarmed',alarmMix:1},viewport});assert.ok(alarm.residents.every((r:any)=>r.panes.every((p:any)=>p.alpha<=.2)));}});
+test('source registration follows uniform painted placement at narrow and short layouts',async()=>{const m=await life();for(const [width,height] of [[320,300],[390,430],[450,430],[320,180]]){const layout=arenaLayout(width,height),placement=landscapePlacement(450,layout.height,layout.groundY);const f=m.villageFrame({age:5,time:0,reduced:true,mood:quiet,viewport:{...viewport,placement,cssWorldScale:width/450}});assert.equal(f.lamps[3].center.x,placement.x+871*placement.scale);assert.equal(f.lamps[3].center.y,placement.y+365*placement.scale);assert.equal(f.lamps[3].color,0x8edfc9);assert.equal(f.lamps[0].color,0xffd08a);assert.ok(f.residents.every((r:any)=>r.panes.every((p:any)=>p.points.every((point:any)=>Number.isFinite(point.x)&&Number.isFinite(point.y)))));}});

@@ -3,6 +3,9 @@ import { Game } from '../../src/game/simulation.ts';
 import { defaultProfile } from '../../src/game/save.ts';
 import type { GameEvent, GamePort, Unit } from '../../src/game/types.ts';
 import { mountBattlefield } from '../../src/view/battlefield.ts';
+import type {VillageMoodSnapshot} from '../../src/view/village-mood.ts';
+import {VILLAGE_PLATES,type VillageViewport} from '../../src/view/village-life.ts';
+import {visualAssets} from '../../src/view/visual-assets.ts';
 
 // This entry is served only by the Vite development server. Production main.ts
 // never imports it, and the production build has no route to this fixture.
@@ -24,6 +27,20 @@ const reduced=query.get('motion')==='reduced';
 const width=numberParam('width',450,[320,390,450]);
 if(width!==450){document.querySelector<HTMLElement>('main')!.style.width=`${width}px`;document.querySelector<HTMLElement>('#battlefield')!.style.width=`${width}px`;}
 const includeTroops = query.get('troops') !== '0';
+const village = query.get('village') === '1';
+const crop = numberParam('crop',430,[220,430]);
+const moodName = query.get('mood') ?? 'quiet';
+if(!['quiet','alarmed','recovering'].includes(moodName))throw new Error('Invalid village mood');
+let villageMood:VillageMoodSnapshot={mood:moodName as VillageMoodSnapshot['mood'],alarmMix:moodName==='quiet'?0:moodName==='alarmed'?1:.25,alarmSerial:moodName==='quiet'?0:1,time:2,alarmEnteredAt:moodName==='quiet'?null:0,alarmHistory:moodName==='recovering'?[{enteredAt:0,endedAt:1}]:[]};
+if(village){
+ const main=document.querySelector<HTMLElement>('main')!,field=document.querySelector<HTMLElement>('#battlefield')!;
+ main.style.width=`${width}px`;field.style.width=`${width}px`;field.style.height=`${crop*width/450}px`;main.classList.add('game-shell');
+ // Representative occupied production HUD selectors, actually measured by the
+ // renderer's resize cache. This intentionally leaves a safe central sky gap.
+ const hud=document.createElement('div');hud.className='resources';hud.style.cssText='position:absolute;inset:0;pointer-events:none;z-index:2';
+ hud.innerHTML='<span class="currency" style="position:absolute;left:6px;top:6px;background:#17252abb;padding:4px">COINS 240</span><span class="currency" style="position:absolute;right:6px;top:6px;background:#17252abb;padding:4px">FOOD 8</span>';
+ field.append(hud);
+}
 const description = `Chapters ${age + 1}/${enemyAge + 1} · ${health}% base health · lane ${lane} · ${effectMode} effects`;
 document.querySelector('#description')!.textContent = description;
 
@@ -74,11 +91,38 @@ type DisplayObject = Phaser.GameObjects.GameObject & Partial<Phaser.GameObjects.
 type RendererDiagnostics = Phaser.Scene & {
   groundFx?: Phaser.GameObjects.Graphics[];
   baseDamage?: Phaser.GameObjects.Graphics;
+  ambience?:Phaser.GameObjects.Graphics;
+  stageLight?:Phaser.GameObjects.Container;
+  shadows?:Phaser.GameObjects.Graphics;
+  halos?:Phaser.GameObjects.Graphics;
+  sky?:Phaser.GameObjects.Image;
+  armyLayer?:Phaser.GameObjects.Container;
+  stars?:Phaser.GameObjects.Container;
+  clouds?:Phaser.GameObjects.Container;
+  mist?:Phaser.GameObjects.Container;
+  villageViewport?:VillageViewport;
   impactCues?: {trait?:string;x:number;y:number;lane?:number;life:number}[];
   attackCues?: unknown[];
   bolts?: unknown[];
   reduce?: boolean;
 };
+// Decode the actual Graphics path stream emitted by the production renderer.
+// These Phaser command IDs are stable in the pinned 3.90 Graphics API. Unknown
+// commands fail diagnostics rather than silently substituting model output.
+function paths(graphic:Phaser.GameObjects.Graphics|undefined){
+ const fills:Array<{points:number[][];alpha:number}>=[],strokes:Array<{points:number[][];alpha:number;lineWidth:number}>=[];
+ const commands=graphic?.commandBuffer??[];let points:number[][]=[],alpha=1,lineAlpha=1,lineWidth=1;
+ for(let i=0;i<commands.length;){const command=commands[i++];switch(command){
+  case 1:points=[];break;case 2:break;
+  case 4:case 5:points.push([commands[i++],commands[i++]]);break;
+  case 6:lineWidth=commands[i++];i++;lineAlpha=commands[i++];break;
+  case 7:i++;alpha=commands[i++];break;
+  case 8:fills.push({points:points.slice(),alpha});break;
+  case 9:strokes.push({points:points.slice(),alpha:lineAlpha,lineWidth});break;
+  default:throw new Error(`Unexpected village Graphics command ${command}`);
+ }}
+ return {fills,strokes};
+}
 function inspect() {
   const leaves: DisplayObject[] = [];
   function walk(objects: Phaser.GameObjects.GameObject[]) {
@@ -101,14 +145,24 @@ function inspect() {
     paintIndex: leaves.indexOf(object), depth: object.depth,
     commandCount: object.commandBuffer.length,
   } : null;
+  let objects=0;const count=(items:Phaser.GameObjects.GameObject[])=>{for(const item of items){objects++;if(item instanceof Phaser.GameObjects.Container)count(item.list);}};count(scene.children.list);
+  const textures=scene.textures.getTextureKeys(),light=scene.textures.exists('village-light')?scene.textures.get('village-light').getSourceImage() as HTMLImageElement|HTMLCanvasElement:null;
+  const decodedAssetBytes=visualAssets().reduce((bytes,asset)=>{const source=scene.textures.get(asset.key).getSourceImage() as HTMLImageElement|HTMLCanvasElement;return bytes+source.width*source.height*4;},0);
   return {
-    ready: frames >= 6, age, enemyAge, lane, health, effectMode, includeTroops,
+    ready: frames >= 6, age:game.profile.age, enemyAge:game.profile.enemyAge, lane, health, effectMode, includeTroops,
     images, groundEffects: actual.groundFx?.map(graphics) ?? [],
     baseDamage: graphics(actual.baseDamage),
     traits:actual.impactCues?.filter(cue=>cue.trait).map(cue=>({...cue}))??[],
     sourceCues:actual.attackCues?.length??0,projectiles:actual.bolts?.length??0,reduced:actual.reduce,
     state: { time: game.state.time, paused: game.state.paused, unitCount: game.state.units.length },
     canvas: { width: scene.game.canvas.width, height: scene.game.canvas.height },
+    village:village?{mood:{...villageMood},plate:VILLAGE_PLATES[game.profile.age],viewport:actual.villageViewport,
+     paths:paths(actual.ambience),ambience:graphics(actual.ambience),shadows:graphics(actual.shadows),halos:graphics(actual.halos),
+     skyIndex:actual.sky?leaves.indexOf(actual.sky):-1,
+     lamps:actual.stageLight?.list.map(object=>{const lamp=object as Phaser.GameObjects.Image;return {visible:lamp.visible,paintIndex:leaves.indexOf(lamp),x:lamp.x,y:lamp.y,width:lamp.displayWidth,height:lamp.displayHeight,alpha:lamp.alpha,tint:lamp.tintTopLeft};})??[],
+     pools:{lights:actual.stageLight?.length,stars:actual.stars?.length,clouds:actual.clouds?.length,mist:actual.mist?.length},
+     objects,textures,decodedBytes:decodedAssetBytes+(light?light.width*light.height*4:0),light:light?{width:light.width,height:light.height}:null,softLight:scene.textures.exists('soft-light'),
+    }:null,
   };
 }
 
@@ -121,9 +175,12 @@ const renderer = mountBattlefield(battlefield, port, () => {
     document.body.dataset.ready = 'true';
     document.querySelector('#status')!.textContent = 'Frozen state ready · actual Phaser renderer';
   }
-}, () => {});
+}, () => {},village?{villageMood:()=>villageMood}:{});
 
 // Diagnostic access belongs exclusively to this test document.
-declare global { interface Window { layeringReview: { inspect: typeof inspect; resumeEffects(): void; resetEffects(): void; destroy(): void }; } }
-window.layeringReview = { inspect, resumeEffects:()=>{game.state.paused=false;}, resetEffects:()=>{game.state={...game.state,units:[]};}, destroy: () => renderer.destroy() };
+async function setClock(time:number){villageMood={...villageMood,time};await new Promise<void>(resolve=>requestAnimationFrame(()=>requestAnimationFrame(()=>resolve())));return inspect();}
+async function crossing(x:number){for(const unit of game.state.units)unit.x=x;await new Promise<void>(resolve=>requestAnimationFrame(()=>requestAnimationFrame(()=>resolve())));return inspect();}
+async function chapter(age:number){if(!Number.isInteger(age)||age<0||age>5)throw Error('Invalid chapter');game.profile.age=age;game.profile.enemyAge=age;for(const unit of game.state.units)unit.age=age;await new Promise<void>(resolve=>requestAnimationFrame(()=>requestAnimationFrame(()=>resolve())));return inspect();}
+declare global { interface Window { layeringReview: { inspect: typeof inspect;setClock:typeof setClock;crossing:typeof crossing;chapter:typeof chapter; resumeEffects():void;resetEffects():void;destroy():void }; } }
+window.layeringReview = { inspect,setClock,crossing,chapter,resumeEffects:()=>{game.state.paused=false;},resetEffects:()=>{game.state={...game.state,units:[]};},destroy:()=>renderer.destroy() };
 window.addEventListener('pagehide', () => renderer.destroy(), { once: true });

@@ -3,6 +3,8 @@ import {storybookArt} from './storybook-art.ts';
 import {reducedMotion,projectileForHit,traitCueForHit} from './combat-feedback.ts';
 import {arenaLayout,foregroundPlacement,landscapePlacement,troopPose,visualEra} from './visual-theme.ts';
 import {atmosphereFrame} from './era-atmosphere.ts';
+import {ensureVillageLight,villageFrame,villageSkyPath,type Bounds,type VillageViewport} from './village-life.ts';
+import {createVillageMood,type VillageMoodSnapshot} from './village-mood.ts';
 import {duskAtmosphereFrame,paintDuskAtmosphere} from './dusk-atmosphere.ts';
 import {lightingHierarchyFrame,paintLightingHierarchy} from './lighting-hierarchy.ts';
 import {baseDamageFrame,baseDamagePalette,baseDamageStage} from './base-damage.ts';
@@ -39,7 +41,7 @@ const noise=(n:number)=>{const value=Math.sin(n*117.13)*43758.5453;return value-
 const tint=(hex:string)=>parseInt(hex.slice(1),16);
 
 /** Raster and SVG art share logical anchors; simulation remains the gameplay owner. */
-export function mountBattlefield(element:HTMLElement,game:GamePort,onFrame:()=>void,onEvents:(events:GameEvent[])=>void,options:{isVisible?:()=>boolean}={}):{destroy():void} {
+export function mountBattlefield(element:HTMLElement,game:GamePort,onFrame:()=>void,onEvents:(events:GameEvent[])=>void,options:{isVisible?:()=>boolean;villageMood?:()=>Readonly<VillageMoodSnapshot>;onPresentation?:(dt:number,events:readonly GameEvent[])=>void}={}):{destroy():void} {
  let disposed=false;
  const motionQuery=window.matchMedia('(prefers-reduced-motion: reduce)');
  const loading=document.createElement('div');loading.className='world-loader';loading.setAttribute('role','status');loading.textContent='Preparing the battlefield…';element.append(loading);
@@ -55,6 +57,8 @@ export function mountBattlefield(element:HTMLElement,game:GamePort,onFrame:()=>v
   private fx!:Phaser.GameObjects.Graphics;
   private bars!:Phaser.GameObjects.Graphics;
   private stageLight!:Phaser.GameObjects.Container;
+  private villageViewport!:VillageViewport;
+  private quietVillage=createVillageMood();
   private halos!:Phaser.GameObjects.Graphics;
   private glow!:Phaser.GameObjects.Graphics;
   private mist!:Phaser.GameObjects.Container;
@@ -106,6 +110,7 @@ export function mountBattlefield(element:HTMLElement,game:GamePort,onFrame:()=>v
    this.clouds=this.add.container();this.world.add(this.clouds);
    this.ambience=this.add.graphics();this.world.add(this.ambience);
    this.stageLight=this.add.container();this.world.add(this.stageLight);
+   if(storybookArt(game.profile.age))this.initVillageLights();
    this.shadows=this.add.graphics();this.world.add(this.shadows);
    this.halos=this.add.graphics().setBlendMode(Phaser.BlendModes.ADD);this.world.add(this.halos);
    this.armyLayer=this.add.container();this.world.add(this.armyLayer);
@@ -134,7 +139,27 @@ export function mountBattlefield(element:HTMLElement,game:GamePort,onFrame:()=>v
    this.world.setScale(this.layout.scale); // one scale: heads, circles and bodies never stretch
    this.placeLandscape();
    this.placeForeground();
+   this.cacheVillageViewport();
    this.resetEffects();
+  }
+  private cacheVillageViewport():void {
+   const placement=landscapePlacement(450,this.layout.height,this.layout.groundY),cssWorldScale=(element.clientWidth||450)/450;
+   const visibleSource:Bounds=[Math.max(0,-placement.x/placement.scale),Math.max(0,-placement.y/placement.scale),Math.min(900,(450-placement.x)/placement.scale),Math.min(1000,(this.layout.height-placement.y)/placement.scale)];
+   const hudSourceBounds:Bounds[]=[],shell=element.closest<HTMLElement>('.game-shell'),origin=element.getBoundingClientRect();
+   if(shell)for(const node of Array.from(shell.querySelectorAll<HTMLElement>('.resources .currency,.resources .game-wordmark,.stage .eyebrow,.stage h1,.stage .scene-name,.stage .battle-select,.world-tools button,.battle-meta span,.battle-meta button'))){
+    const rect=node.getBoundingClientRect();if(!rect.width||!rect.height)continue;
+    const sourceX=(x:number)=>((x-origin.left)/cssWorldScale-placement.x)/placement.scale;
+    const sourceY=(y:number)=>((y-origin.top)/cssWorldScale-placement.y)/placement.scale;
+    hudSourceBounds.push([sourceX(rect.left),sourceY(rect.top),sourceX(rect.right),sourceY(rect.bottom)]);
+   }
+   const viewport:VillageViewport={placement,cssWorldScale,visibleSource,hudSourceBounds};
+   viewport.skyPath=villageSkyPath(game.profile.age,viewport);this.villageViewport=viewport;
+  }
+  private initVillageLights():void {
+   const key=ensureVillageLight(this.textures);
+   // Four scene-lifetime quads; chapters only retint/resize these existing objects.
+   while(this.stageLight.length<4)this.stageLight.add(this.add.image(0,0,key).setBlendMode(Phaser.BlendModes.ADD).setVisible(false));
+   for(let i=0;i<4;i++)(this.stageLight.getAt(i) as Phaser.GameObjects.Image).setTexture(key);
   }
   /**
    * Bakes the chapter grade into its static art once: no per-frame post pass, and Canvas and WebGL match.
@@ -220,6 +245,8 @@ export function mountBattlefield(element:HTMLElement,game:GamePort,onFrame:()=>v
    if(this.textures.exists(backdrop))this.sky.setTexture(backdrop).clearTint();else this.sky.setTexture('__WHITE').setTint(tint(visualEra(p.age).ground));
    if(this.textures.exists(foreground))this.foreground.setTexture(foreground).setVisible(true).clearTint();else this.foreground.setVisible(false);
    this.placeLandscape();this.placeForeground();
+   if(storybookArt(p.age))this.initVillageLights();
+   this.cacheVillageViewport();
    this.playerBase?.destroy();this.enemyBase?.destroy();
    this.playerBase=this.createBase(p.age,'player');this.enemyBase=this.createBase(p.enemyAge,'enemy');
    this.armyLayer.add([this.playerBase,this.enemyBase]);
@@ -286,6 +313,20 @@ export function mountBattlefield(element:HTMLElement,game:GamePort,onFrame:()=>v
   }
   private drawAtmosphere():void {
    const g=this.ambience;g.clear();
+   if(storybookArt(game.profile.age)){
+    this.streak.clear();this.stars.setVisible(false);this.clouds.setVisible(false);this.mist.setVisible(false);this.stageLight.setVisible(true);
+    const mood=options.villageMood?.()??this.quietVillage;
+    const frame=villageFrame({age:game.profile.age,time:options.villageMood?mood.time:this.clock,reduced:this.reduce,mood,viewport:this.villageViewport});
+    for(const resident of frame.residents)for(const pane of resident.panes){g.fillStyle(pane.color,pane.alpha);g.fillPoints(pane.points as Phaser.Types.Math.Vector2Like[],true);}
+    for(const mark of frame.water){g.lineStyle(mark.width,mark.color,mark.alpha);g.lineBetween(mark.from.x,mark.from.y,mark.to.x,mark.to.y);}
+    if(frame.bird)for(const shape of frame.bird){g.fillStyle(shape.color,shape.alpha);g.fillPoints(shape.points as Phaser.Types.Math.Vector2Like[],true);}
+    for(let i=0;i<this.stageLight.length;i++){
+     const image=this.stageLight.getAt(i) as Phaser.GameObjects.Image,mark=frame.lamps[i];
+     if(!mark){image.setVisible(false);continue;}
+     image.setVisible(true).setPosition(mark.center.x,mark.center.y).setDisplaySize(mark.rx*2,mark.ry*2).setTint(mark.color).setAlpha(mark.alpha);
+    }
+    return;
+   }
    if(!storybookArt(game.profile.age)){
     paintDuskAtmosphere(g,duskAtmosphereFrame(game.profile.age,this.clock,this.reduce),landscapePlacement(450,this.layout.height,this.layout.groundY));
     paintLightingHierarchy(g,lightingHierarchyFrame(game.profile.age,this.clock,this.reduce),landscapePlacement(450,this.layout.height,this.layout.groundY));
@@ -573,7 +614,7 @@ export function mountBattlefield(element:HTMLElement,game:GamePort,onFrame:()=>v
   update(_time:number,delta:number):void {
    if(disposed||!this.world)return;
    const dt=Math.min(.05,Math.max(0,delta/1000));game.step(dt);
-   const events=game.drainEvents();if(events.length)onEvents(events);
+   const events=game.drainEvents();options.onPresentation?.(dt,events);if(events.length)onEvents(events);
    if(options.isVisible&&!options.isVisible()){onFrame();return;}
    if(this.lastState!==game.state){this.lastState=game.state;this.resetEffects();for(const view of this.units.values())view.body.destroy();this.units.clear();}
    const reduced=reducedMotion(game.profile.motion,motionQuery.matches);

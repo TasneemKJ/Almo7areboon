@@ -11,6 +11,7 @@ import { loadProfileWithStatus, saveProfile, MAX_SAVE_CHARS } from './game/save.
 import { exportBackup, importBackup, restoreBackup } from './game/backup.ts';
 import type { Action, GameEvent, GamePort, Profile, Skill, UnitKind } from './game/types.ts';
 import { mountBattlefield } from './view/battlefield.ts';
+import {advanceVillagePresentation,type VillagePresentation} from './view/village-mood.ts';
 import { unitPortrait } from './view/unit-illustrations.ts';
 import { chapterPresentation, unitPresentationName } from './ui/chapter-presentation.ts';
 import { evolutionScreenHtml } from './ui/evolution-screen.ts';
@@ -33,6 +34,7 @@ const root=document.querySelector<HTMLDivElement>('#app');
 if(!root)throw new Error('The game mount element is missing.');
 const lifetime=createLifetime();
 let activeTab='battle',modal:string|null=null,manualPaused=false;
+let villagePresentation:VillagePresentation|null=null;
 let atmosphereEnabled=loadAtmosphere();
 let lastUpdate=0,lastSave=0,resultShown='',lastPhase=game.state.phase,resultDue=0,toastTimer=0,focusFrame=0,modalVersion=0;
 let savedWarning=false,pendingImport:Profile|null=null;
@@ -84,7 +86,13 @@ function persist():boolean{
 }
 function syncPause(){
   game.state.paused=pauseReason({phase:game.state.phase,manual:manualPaused,tab:activeTab,modal,hidden:document.hidden})!==null;
-  updateSoundscape(game.profile.age,ambienceAllowed({sound:game.profile.sound,atmosphere:atmosphereEnabled,paused:game.state.paused,phase:game.state.phase,tab:activeTab,modal,hidden:document.hidden}));
+  syncVillagePresentation();
+}
+function syncVillagePresentation(dt=0,batch:readonly GameEvent[]=[]){
+  villagePresentation=advanceVillagePresentation(villagePresentation,game.state,game.profile.age,dt,batch,document.hidden||activeTab!=='battle'||modal!==null);
+  // The renderer calls this after stepping and draining events, so a delayed
+  // result dialog still gates audio with the actual terminal phase this frame.
+  updateSoundscape(game.profile.age,ambienceAllowed({sound:game.profile.sound,atmosphere:atmosphereEnabled,paused:game.state.paused,phase:game.state.phase,tab:activeTab,modal,hidden:document.hidden}),villagePresentation.mood);
 }
 function syncMotion(){document.documentElement.dataset.motion=game.profile.motion==='reduced'||motionQuery.matches?'reduced':'full';}
 function action(a:Action):boolean{
@@ -292,7 +300,7 @@ function events(batch:GameEvent[]){
 }
 const port:GamePort={get profile(){return game.profile;},get state(){return game.state;},dispatch:a=>game.dispatch(a),step:dt=>{syncPause();game.step(dt*game.profile.speed);},drainEvents:()=>game.drainEvents()};
 rebuildArmy();syncMotion();syncPause();update(true);
-const renderer=mountBattlefield($('battlefield'),port,()=>update(),events,{isVisible:()=>activeTab==='battle'&&!document.hidden});
+const renderer=mountBattlefield($('battlefield'),port,()=>update(),events,{isVisible:()=>activeTab==='battle'&&!document.hidden,villageMood:()=>villagePresentation!.mood,onPresentation:syncVillagePresentation});
 lifetime.add(()=>renderer.destroy());lifetime.add(disposeAudio);
 lifetime.add(()=>{window.clearTimeout(toastTimer);window.cancelAnimationFrame(focusFrame);isolateModal(false);});
 if(import.meta.hot)import.meta.hot.dispose(()=>{persist();lifetime.dispose();});
