@@ -1,5 +1,5 @@
 import type {GameEvent} from '../game/types.ts';
-export type CombatCueId='deploy'|'hit-neutral'|'hit-blunt'|'hit-flick'|'hit-hollow'|'base-player'|'base-enemy'|'coin'|'freeze'|'meteor'|'food'|'upgrade'|'evolve'|'win'|'lose'|'death'|'summon';
+export type CombatCueId='story-rally'|'story-bell'|'story-shatter'|'story-protect'|'deploy'|'hit-neutral'|'hit-blunt'|'hit-flick'|'hit-hollow'|'base-player'|'base-enemy'|'coin'|'freeze'|'meteor'|'food'|'upgrade'|'evolve'|'win'|'lose'|'death'|'summon';
 export type CueCooldown='deployment'|'unit-hit'|'base-hit'|'coin'|'death';
 export interface CombatCue {
  readonly id:CombatCueId;readonly eventIndex:number;readonly priority:number;
@@ -11,6 +11,12 @@ export function selectCombatCues(events:readonly GameEvent[]):readonly CombatCue
  for(let index=0;index<events.length;index++){
   const event=events[index];if(!event||typeof event!=='object')continue;
   let id:CombatCueId,priority=1,critical=false,cooldown:CueCooldown|null=null;
+  if(event.storyCue){
+   const accents:Partial<Record<NonNullable<GameEvent['storyCue']>,CombatCueId>>={rally:'story-rally','bell-warning':'story-bell','bell-ring':'story-bell','bell-stilled':'story-protect',shatter:'story-shatter',captain:'story-protect',rescued:'story-rally',landmark:'story-rally'};
+   const accent=accents[event.storyCue];
+   if(accent&&!other.has(accent))other.set(accent,{id:accent,eventIndex:index,priority:event.storyCue==='bell-warning'?6:4,critical:event.storyCue==='bell-warning',cooldown:event.storyCue==='shatter'?'unit-hit':null});
+   if((event.amount??0)<=0)continue;
+  }
   switch(event.type){
    case 'win':case 'lose':return [{id:event.type,eventIndex:index,priority:7,critical:true,cooldown:null}];
    case 'skill':if(event.skill!=='freeze'&&event.skill!=='meteor'&&event.skill!=='food')continue;

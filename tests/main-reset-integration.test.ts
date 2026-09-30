@@ -1,3 +1,6 @@
+import {chronicleScreenHtml,chronicleActionFromData} from '../src/ui/chronicle-screen.ts';
+import {chronicleGuidance} from '../src/game/chronicle-combat.ts';
+import {CAPTAINS,routeDefinition,createChronicle} from '../src/game/chronicle.ts';
 import test from 'node:test';
 import assert from 'node:assert/strict';
 import { readFileSync } from 'node:fs';
@@ -23,6 +26,7 @@ const locks: SaveSessionLocks = { request: (name, _options, callback) => Promise
 async function harness(mode = 'active') {
   const old = defaultProfile();
   Object.assign(old, { timeline: 4, age: 3, enemyAge: 3, furthestBattle: 3, coins: 9000, gems: 777, sound: false, speed: 2, motion: 'reduced', dailyDay: 20000, dailyStreak: 5, kills: 90 });
+  old.chronicle = createChronicle(old.timeline,old.enemyAge);
   old.mastery.timeline = 4;
   old.mastery.chapters[0] = { earnedMask: 7, bestSeconds: 60, bestGateDamage: 0 };
   old.cards[3] = 4;
@@ -40,7 +44,7 @@ async function harness(mode = 'active') {
     if (!nodes.has(id)) nodes.set(id, { hidden: false, querySelector: () => null });
     return nodes.get(id);
   };
-  const context: any = {
+  const context: any = {chronicleScreenHtml,chronicleActionFromData,chronicleGuidance,CAPTAINS,routeDefinition,
     Element: ElementBoundary, root: { dataset: {} }, game: new Game(old), sessionReady: true, retriedSession: false, pagePresent: true,
     pendingImport: null, hasPlayed: true, savedWarning: false, manualPaused: true, lastPhase: 'won', resultDue: 99, resultShown: 'old', modal: 'settings', atmosphereEnabled: false, audioMix: { effects: 100, atmosphere: 100 }, evolutionFromResult: false, modalPointerSequence: false,prestigeOrigin:null,prestigeDraft:null,prestigeExpectedTimeline:null,
     lifetime: { disposed: false, listen: (_root: unknown, _event: string, handler: Function) => { context.click = handler; } },

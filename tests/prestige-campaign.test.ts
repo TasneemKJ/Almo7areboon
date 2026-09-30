@@ -1,3 +1,4 @@
+import {chronicleStartingFood} from '../src/game/chronicle-combat.ts';
 import test from 'node:test';
 import assert from 'node:assert/strict';
 import { Game } from '../src/game/simulation.ts';
@@ -90,7 +91,7 @@ for(const rank of [1,2,3] as const)test(`Stillness rank ${rank} suppresses a rea
 });
 test('Watch cap arithmetic joins card and age product before rounding and preserves recorded gate damage',()=>{
  const p=defaultProfile();Object.assign(p,{age:5,enemyAge:5,timeline:1000,mastery:{...p.mastery,timeline:1000},foodLevel:100,baseLevel:99,coins:1e9,cards:Array(30).fill(1000),legacy:{rank:3,selected:'watch'}});
- const g=new Game(p);const next=g.upgradeStatus('base').nextValue!;assert.ok(Number.isFinite(next));assert.ok(next>g.state.playerMaxHp);assert.equal(g.dispatch({type:'upgrade',stat:'base'}),true);assert.equal(g.state.playerMaxHp,next);assert.equal(g.upgradeStatus('base').reason,'max');assert.equal(g.dispatch({type:'select-legacy',legacy:'hearth'}),true);assert.equal(g.state.food,12);assert.ok(Number.isFinite(g.state.enemyMaxHp));
+ const g=new Game(p);const next=g.upgradeStatus('base').nextValue!;assert.ok(Number.isFinite(next));assert.ok(next>g.state.playerMaxHp);assert.equal(g.dispatch({type:'upgrade',stat:'base'}),true);assert.equal(g.state.playerMaxHp,next);assert.equal(g.upgradeStatus('base').reason,'max');assert.equal(g.dispatch({type:'select-legacy',legacy:'hearth'}),true);assert.equal(g.state.food,12+chronicleStartingFood(g.profile));assert.ok(Number.isFinite(g.state.enemyMaxHp));
  const q=defaultProfile();q.age=5;q.coins=2e6;q.legacy={rank:3,selected:'watch'};const attacked=new Game(q);attacked.dispatch({type:'start'});for(let i=0;i<18000&&attacked.state.stats.gateDamageTaken===0;i++)attacked.step(1/60);assert.ok(attacked.state.stats.gateDamageTaken>0);const damage=attacked.state.stats.gateDamageTaken;assert.equal(attacked.dispatch({type:'upgrade',stat:'base'}),true);assert.equal(attacked.state.stats.gateDamageTaken,damage);
 });
 test('Stillness simulation time matches equivalent frame partitions and wall pacing',()=>{

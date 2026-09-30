@@ -1,0 +1,12 @@
+import {test} from 'node:test';
+import assert from 'node:assert/strict';
+import {createChronicle} from '../src/game/chronicle.ts';
+import {chronicleScreenHtml,chronicleResultHtml,chronicleActionFromData} from '../src/ui/chronicle-screen.ts';
+import type {Profile,BattleState} from '../src/game/types.ts';
+const profile=()=>({timeline:1,enemyAge:0,furthestBattle:0,age:0,chronicle:createChronicle()} as Profile);
+const state=(phase:BattleState['phase']='ready')=>({phase,stats:{deployedByKind:[0,0,0]}} as BattleState);
+test('journey exposes actual mission actions without extra persistent navigation',()=>{const html=chronicleScreenHtml(profile(),state());assert.match(html,/id="dialog-title"/);assert.match(html,/data-story-route="escort"/);assert.match(html,/data-story-route="watch"/);assert.match(html,/data-story-route="bell"[^>]*disabled/);assert.match(html,/The first telling/);assert.doesNotMatch(html,/data-tab=/);});
+test('all action identifiers are validated, including malformed battle numbers',()=>{assert.deepEqual(chronicleActionFromData({storyRoute:'escort',storyBattle:'0'}),{type:'chronicle-route',route:'escort',battle:0});assert.equal(chronicleActionFromData({storyRoute:'escort',storyBattle:''}),null);assert.equal(chronicleActionFromData({storyCaptain:'<script>'}),null);assert.equal(chronicleActionFromData({storyBattle:'Infinity',storyRoute:'road'}),null);assert.equal(chronicleActionFromData({storyRoute:'road',storyBattle:'5x'}),null);});
+test('only a victorious cleared field offers discoveries',()=>{const p=profile();p.chronicle!.clears[0]=1;assert.match(chronicleResultHtml(p,state('won')),/data-story-discovery="door"/);assert.doesNotMatch(chronicleResultHtml(p,state('lost')),/data-story-discovery=/);});
+test('expedition results give a real continue command, not a legacy next',()=>{const p=profile();p.chronicle!.expedition={stage:1,chapter:0,reserve:8,provision:'supplies'};const html=chronicleResultHtml(p,state('won'));assert.match(html,/data-command="story-continue"/);assert.doesNotMatch(html,/data-command="next"/);assert.match(html,/8 food/);});
+test('locked captains and tales explain how they are earned',()=>{const html=chronicleScreenHtml(profile(),state());assert.match(html,/Rescue a scout or restore the courtyard/);assert.match(html,/Find all three/);});

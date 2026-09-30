@@ -47,7 +47,7 @@ test('schemas one through four normalize and round trip without wallet settlemen
   const source=completed(18).profile;Object.assign(source,{coins:1234,gems:5678,dailyDay:20726,dailyStreak:3,kills:31,wins:7,deployed:90,claimed:['first-blood'],summonCount:4,summonSeed:12345,legacy:{rank:3,selected:'watch'}});
   for(const version of [1,2,3,4])for(const timeline of [1,2]) {
     const raw={...source,version,timeline,mastery:{...source.mastery,timeline},pendingVictory:{...source.pendingVictory,timeline}};
-    const p=decodeSave(JSON.stringify(raw)).profile!;assert.equal(p.version,4);assert.equal(p.coins,1234);assert.equal(p.gems,5678);assert.equal(p.dailyDay,20726);assert.equal(p.dailyStreak,3);assert.equal(p.summonSeed,12345);assert.equal(p.wins,7);
+    const p=decodeSave(JSON.stringify(raw)).profile!;assert.equal(p.version,5);assert.equal(p.coins,1234);assert.equal(p.gems,5678);assert.equal(p.dailyDay,20726);assert.equal(p.dailyStreak,3);assert.equal(p.summonSeed,12345);assert.equal(p.wins,7);
     assert.deepEqual(p.legacy,{rank:version===4?3:timeline>1?1:0,selected:version===4?'watch':'hearth'});assert.equal(currentSealCount(p),version>=3?18:0);
     let bytes='';assert.equal(saveProfile(p,{setItem:(_k,v)=>{bytes=v;}}),true);assert.deepEqual(loadProfile({getItem:()=>bytes}),p);
   }
@@ -58,10 +58,10 @@ test('schemas one through four normalize and round trip without wallet settlemen
   }
   const capped={...source,coins:1e9,gems:1e7,foodLevel:100,baseLevel:100,cards:Array(30).fill(1000),summonCount:1e9,kills:1e9,wins:1e9,deployed:1e9};assert.ok(JSON.stringify(decodeSave(JSON.stringify(capped)).profile).length<MAX_SAVE_CHARS);
 });
-test('future schema five protects both primary and backup bytes',async()=>{
+test('future schema six protects both primary and backup bytes',async()=>{
   const {SAVE_KEY,BACKUP_KEY,decodeSave,loadProfileWithStatus,saveProfile}=await import('../src/game/save.ts');
   for(const key of [SAVE_KEY,BACKUP_KEY]) {
-    const values=new Map<string,string>([[key,JSON.stringify({...defaultProfile(),version:5})]]),storage={getItem:(k:string)=>values.get(k)??null,setItem:(k:string,v:string)=>values.set(k,v)};
+    const values=new Map<string,string>([[key,JSON.stringify({...defaultProfile(),version:6})]]),storage={getItem:(k:string)=>values.get(k)??null,setItem:(k:string,v:string)=>values.set(k,v)};
     const before=[...values];assert.equal(decodeSave(storage.getItem(key)!).problem,'unsupported');assert.equal(loadProfileWithStatus(storage).status,'unsupported');assert.equal(saveProfile(defaultProfile(),storage),false);assert.deepEqual([...values],before);
   }
 });

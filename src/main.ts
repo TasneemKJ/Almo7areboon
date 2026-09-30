@@ -1,3 +1,7 @@
+import './ui/chronicle.css';
+import { chronicleScreenHtml, chronicleActionFromData } from './ui/chronicle-screen.ts';
+import { chronicleGuidance } from './game/chronicle-combat.ts';
+import { CAPTAINS, routeDefinition } from './game/chronicle.ts';
 import {storybookArt} from './view/storybook-art.ts';
 import './style.css';
 import './ui/continuation.css';
@@ -69,14 +73,14 @@ root.innerHTML = `
       <div class="stage"><div id="timeline" class="eyebrow"></div><h1 id="age-title"></h1><p id="scene-name" class="scene-name"></p><button id="battle-select" class="battle-select" data-command="battles" aria-label="Choose a battle"><span class="stage-progress" id="stage-progress"></span></button></div>
       <div class="world-tools"><button id="quests" class="square-button" data-command="quests" aria-label="Quests">${icon('quest')}<i class="notification"></i></button><button class="square-button" data-command="settings" aria-label="Settings">${icon('gear')}</button></div>
       <div class="battle-meta"><button id="wave-label" class="wave-inspect" data-command="wave-help"></button><div class="battle-toggles"><button id="speed" data-command="speed" aria-label="Change battle speed">1×</button><button id="pause" data-command="pause" aria-label="Pause battle">Ⅱ</button></div></div>
-      <div id="ready" class="ready"><div class="ready-title">YOUR ARMY. YOUR ERA.</div><button class="big-button green" data-command="start">BATTLE ${icon('battle')}</button><p>Destroy the enemy base!</p></div>
+      <div id="ready" class="ready"><div class="ready-title">YOUR ARMY. YOUR ERA.</div><button class="big-button green" data-command="start">BATTLE ${icon('battle')}</button><p id="story-ready-rule">Destroy the enemy base!</p><button class="story-open" data-command="chronicle">Open the storybook</button></div>
       <p id="base-status" class="sr-only"></p><p id="game-status" class="sr-only" role="status" aria-live="polite"></p><div id="pause-banner" class="pause-banner" hidden>PAUSED</div>
       <div class="battle-skills" id="battle-skills"></div>
     </section>
     <section class="deployment" aria-label="Deploy your army">
       <div class="food-line"><div class="food-total">${icon('food')}<strong id="food-count">6</strong><div class="food-meter"><i id="food-fill"></i></div></div><span id="production"></span></div>
       <div class="unit-cards" id="unit-cards"></div>
-      <div class="deploy-hint" id="deploy-hint">Tap a troop to send it into battle</div>
+      <div class="chronicle-command-row"><div class="deploy-hint" id="deploy-hint">Tap a troop to send it into battle</div><button id="story-rally" class="story-rally" data-command="story-rally" aria-pressed="false" aria-label="Gather newly deployed troops, then release them together">Gather</button></div>
     </section>
     <section class="upgrades" aria-label="Army upgrades"><div class="upgrade-row"><div class="upgrade-label">${icon('food')}<div>Food Production<small id="food-level"></small></div></div><button id="food-upgrade" class="buy-button" data-command="upgrade-food"></button></div><div class="upgrade-row"><div class="upgrade-label">${icon('heart')}<div>Base Health<small id="base-level"></small></div></div><button id="base-upgrade" class="buy-button" data-command="upgrade-base"></button></div></section>
   </div>
@@ -225,6 +229,20 @@ function update(force=false){
   });
   const notification=$('quests').querySelector<HTMLElement>('.notification');
   if(notification)notification.hidden=!(dailyReward(p,localDay()).available||QUESTS.some(q=>p[q.stat]>=q.target&&!p.claimed.includes(q.id)));
+  const story=s.chronicle;
+  $('story-rally').hidden=!story?.enabled;
+  $('story-rally').toggleAttribute('disabled',s.phase!=='running'||s.paused);
+  $('story-rally').setAttribute('aria-pressed',String(story?.rally??false));
+  textIfChanged($('story-rally'),story?.rally?`Release ${story.gathered.length}/6`:'Gather');
+  if(story?.enabled){
+    const instruction=chronicleGuidance(p,s);
+    if(s.phase==='running'&&!s.paused&&(!health.danger)&&(story.route!=='road'||story.rally||p.unlocked[1]))textIfChanged($('deploy-hint'),instruction);
+    textIfChanged($('story-ready-rule'),p.wins===0&&story.route==='road'?'Rima waits at the gate. Tap Battle, then send a defender. The company fights together.':routeDefinition(story.route).rule);
+    if(p.chronicle?.captain&&p.chronicle.captain!=='none'){
+      const captain=CAPTAINS.find(c=>c.id===p.chronicle!.captain)!,button=root!.querySelector<HTMLButtonElement>('[data-skill="food"]');
+      if(button){button.title=captain.skill;button.setAttribute('aria-label',`${captain.skill}. ${captain.description} Once per battle.`);button.classList.remove('skill-opportunity');const badge=button.querySelector('small');if(badge)textIfChanged(badge,s.skillsUsed.includes('food')?'USED':p.chronicle.captain==='gatekeeper'?'GUARD':'LIGHT');}
+    }
+  }
   // Let the finishing blow and base collapse play before the result dialog covers them.
   if(s.phase!==lastPhase){if(lastPhase==='running'&&(s.phase==='won'||s.phase==='lost'))resultDue=now+(document.documentElement.dataset.motion==='reduced'?350:1300);lastPhase=s.phase;}
   if(playable()&&modal!=='session'&&(s.phase==='won'||s.phase==='lost')&&resultShown!==s.phase&&now>=resultDue){resultShown=s.phase;showResult();}
@@ -261,7 +279,7 @@ function showModal(id:string,html:string,focusCommand?:string){
   const replacing=modal!==null,command=(document.activeElement as HTMLElement|null)?.dataset.command;
   if(!replacing)focusBefore=document.activeElement as HTMLElement;
   modal=id;modalVersion++;const version=modalVersion,layer=$('modal-layer');
-  layer.hidden=false;layer.innerHTML=`<section class="dialog ${id==='result'?'result-dialog':id==='session'?'session-dialog':id==='prestige'?'prestige-dialog':''}" role="dialog" tabindex="-1" aria-modal="true" aria-labelledby="dialog-title">${id!=='result'&&id!=='session'?`<button class="close-button" data-command="close" aria-label="Close">${icon('close')}</button>`:''}${html}</section>`;
+  layer.hidden=false;layer.innerHTML=`<section class="dialog ${id==='result'?'result-dialog':id==='session'?'session-dialog':id==='prestige'?'prestige-dialog':id==='chronicle'?'chronicle-dialog':''}" role="dialog" tabindex="-1" aria-modal="true" aria-labelledby="dialog-title">${id!=='result'&&id!=='session'?`<button class="close-button" data-command="close" aria-label="Close">${icon('close')}</button>`:''}${html}</section>`;
   isolateModal(true);syncPause();window.cancelAnimationFrame(focusFrame);
   focusFrame=requestAnimationFrame(()=>{
     if(lifetime.disposed||layer.hidden||version!==modalVersion)return;
@@ -322,6 +340,7 @@ function returnToChapters(){
 }
 function dismissModal(){
   if(modal==='session')return;
+  if(modal==='chronicle'&&(game.state.phase==='won'||game.state.phase==='lost')){showResult();return;}
   if(modal==='prestige'){returnFromPrestige();return;}
   if(modal==='result'){
     if(advanceStatus(game.profile,game.state).reason==='complete')returnToChapters();
@@ -386,6 +405,24 @@ lifetime.listen<MouseEvent>(root,'click',e=>{
   if(!guardAction())return;
   if(modal&&!button.closest('#modal-layer'))return;
   unlockAudio(game.profile.sound);
+  if(command==='chronicle'){showModal('chronicle',chronicleScreenHtml(game.profile,game.state));return;}
+  if(button.dataset.storyPage!==undefined){
+    const page=Number(button.dataset.storyPage);if(Number.isInteger(page)&&page>=0&&page<=game.profile.furthestBattle)showModal('chronicle',chronicleScreenHtml(game.profile,game.state,page));return;
+  }
+  const storyAction=chronicleActionFromData(button.dataset);
+  if(storyAction){
+    if(action(storyAction)&&playable()&&modal!=='session'){
+      if(storyAction.type==='rally')return;
+      if(storyAction.type==='chronicle-discover'||storyAction.type==='chronicle-provision'){
+        if(game.state.phase==='won'||game.state.phase==='lost'){showResult();$('modal-layer').querySelector<HTMLDetailsElement>('.story-discoveries')?.setAttribute('open','');}
+        else showModal('chronicle',chronicleScreenHtml(game.profile,game.state));
+      }else if(['chronicle-route','chronicle-expedition','chronicle-continue','chronicle-abandon'].includes(storyAction.type)){
+        closeModal(false);manualPaused=false;switchTab('battle');
+        if(storyAction.type==='chronicle-abandon')showModal('chronicle',chronicleScreenHtml(game.profile,game.state));
+      }else {showModal('chronicle',chronicleScreenHtml(game.profile,game.state));$('modal-layer').querySelector<HTMLDetailsElement>('.story-company')?.setAttribute('open','');}
+    }
+    return;
+  }
   if(button.dataset.tab){switchTab(button.dataset.tab);return;}
   if(button.dataset.unit!==undefined){const kind=Number(button.dataset.unit) as UnitKind;if(!game.profile.unlocked[kind]){if(action({type:'unlock',kind})&&playable()&&!savedWarning)toast(troopUnlockMessage(game.profile,game.state.phase,kind,game.deploymentStatus(kind)),7000);}else action({type:'spawn',kind});return;}
   if(button.dataset.skill){action({type:'skill',skill:button.dataset.skill as Skill});return;}

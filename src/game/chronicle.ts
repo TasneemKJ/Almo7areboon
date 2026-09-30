@@ -1,5 +1,5 @@
 /** Bounded, serializable folktale progression. No clock, renderer or storage ownership here. */
-export type RouteId = 'road' | 'escort' | 'watch' | 'scout' | 'lantern' | 'bell';
+export type RouteId = 'road' | 'escort' | 'watch' | 'scout' | 'lantern' | 'bell' | 'whisper';
 export type CaptainId = 'none' | 'gatekeeper' | 'lantern';
 export type TaleId = 'none' | 'empty-bowl' | 'borrowed-bell' | 'olive-thread';
 export type Preparation = 'none' | 'bread' | 'repair';
@@ -23,6 +23,7 @@ export const ROUTES: readonly RouteDefinition[] = Object.freeze([
   { id:'scout', name:'The crooked alley', objective:'rescue', rule:'Hold the scout’s cage for four seconds, then escort the scout home.', reward:'The first rescued scout reveals the Bell Keeper’s preparations.', duration:0 },
   { id:'lantern', name:'The unlit path', objective:'light', rule:'Hold the lantern for 18 seconds in total, then break the enemy gate. Its light weakens shadow troops.', reward:'An optional night tale, never required to advance.', duration:18 },
   { id:'bell', name:'The Bell Keeper', objective:'boss', rule:'A heavy strike interrupts the bell’s wind-up. Defeat its keeper and break the gate.', reward:'A chapter finale with an interruptible, visible rule.', duration:0 },
+  { id:'whisper', name:'The missing page', objective:'rescue', rule:'Follow the cat to the forgotten courtyard. Free the neighbour who was left behind and bring them home.', reward:'The three discoveries become a playable epilogue.', duration:0 },
 ]);
 export const CAPTAINS = Object.freeze([
   { id:'none' as const, name:'The whole company', skill:'Food Drop', description:'Keep the original ten-food reinforcement skill.' },
@@ -61,12 +62,13 @@ export function normalizeChronicle(value: unknown, timeline: number, chapter: nu
   result.tutorial=finite(data.tutorial,0,0,4);
   result.expeditionsWon=finite(data.expeditionsWon,0,0,999);
   if(data.timeline===result.timeline){
-    result.clears=Array.from({length:6},(_,index)=>mask(Array.isArray(data.clears)?data.clears[index]:0,63));
+    result.clears=Array.from({length:6},(_,index)=>mask(Array.isArray(data.clears)?data.clears[index]:0,127));
     result.choices=Array.from({length:6},(_,index)=>{const choice=Array.isArray(data.choices)?data.choices[index]:null;return choice==='cart'||choice==='scout'?choice:'none';});
     if(data.chapter===result.chapter && routeIds.includes(data.route as RouteId))result.route=data.route as RouteId;
     const run=object(data.expedition);
     if([0,1,2].includes(run.stage as number)&&chapterValid(run.chapter as number)){
       result.expedition={stage:run.stage as Expedition['stage'],chapter:run.chapter as number,reserve:finite(run.reserve,0,0,12),provision:run.provision==='shelter'?'shelter':'supplies'};
+      // Saved expeditions own their chapter and route until explicitly abandoned.
       result.chapter=result.expedition.chapter;
       result.route=expeditionRoute(result.expedition.stage);
     }
@@ -78,10 +80,11 @@ export function normalizeChronicle(value: unknown, timeline: number, chapter: nu
 }
 export function routeDefinition(route: RouteId): RouteDefinition { return ROUTES.find(item=>item.id===route)??ROUTES[0]; }
 export function routeBit(route: RouteId): number { const index=routeIds.indexOf(route);return index<0?0:1<<index; }
-export function distinctVictories(c: ChronicleProgress): number { return c.clears.reduce((sum,value)=>sum+Array.from({length:6},(_,i)=>(value>>i)&1).reduce((a,b)=>a+b,0),0); }
+export function distinctVictories(c: ChronicleProgress): number { return c.clears.reduce((sum,value)=>sum+Array.from({length:7},(_,i)=>(value>>i)&1).reduce((a,b)=>a+b,0),0); }
 export function routeAvailable(c: ChronicleProgress, route: RouteId, chapter: number, furthest: number): boolean {
   if(!chapterValid(chapter)||!Number.isInteger(furthest)||chapter>furthest||!routeIds.includes(route))return false;
   if(c.expedition)return chapter===c.expedition.chapter && route===expeditionRoute(c.expedition.stage);
+  if(route==='whisper')return c.discoveries===7;
   if(route==='bell')return (c.clears[chapter]??0)!==0;
   if(route==='lantern')return (c.clears[chapter]??0)!==0||c.discoveries!==0;
   return true;
@@ -177,3 +180,14 @@ export type ChronicleAction =
   | {type:'chronicle-expedition';battle:number}
   | {type:'chronicle-continue'|'chronicle-abandon'}
   | {type:'chronicle-provision';provision:'supplies'|'shelter'};
+
+/** A terminal receipt is deliberately smaller than the transient battlefield. */
+export interface ChronicleReceipt {
+ route:RouteId;enemyHp:number;cartX:number;cartHp:number;cartMaxHp:number;rescued:boolean;
+ rescueProgress:number;lightSeconds:number;bossDefeated:boolean;interrupts:number;coveredHits:number;shatters:number;
+}
+export function normalizeChronicleReceipt(value:unknown,route:RouteId):ChronicleReceipt|undefined {
+ const d=object(value);if(d.route!==route||!routeIds.includes(route))return undefined;
+ const bounded=(v:unknown,lo:number,hi:number)=>typeof v==='number'&&Number.isFinite(v)?Math.max(lo,Math.min(hi,v)):lo;
+ return {route,enemyHp:bounded(d.enemyHp,0,1e12),cartX:bounded(d.cartX,90,910),cartHp:bounded(d.cartHp,0,1e6),cartMaxHp:bounded(d.cartMaxHp,1,1e6),rescued:d.rescued===true,rescueProgress:bounded(d.rescueProgress,0,4),lightSeconds:bounded(d.lightSeconds,0,18),bossDefeated:d.bossDefeated===true,interrupts:finite(d.interrupts,0,0,1e5),coveredHits:finite(d.coveredHits,0,0,1e6),shatters:finite(d.shatters,0,0,1e6)};
+}
