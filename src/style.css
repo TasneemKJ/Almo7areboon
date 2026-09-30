@@ -69,6 +69,8 @@ button,.game-shell { -webkit-user-select:none; -webkit-touch-callout:none; }
 .big-button.green { background:linear-gradient(#ffe4a8,#e3bb70); border-color:#98783f; box-shadow:0 4px 0 #8a683c,inset 0 2px 0 #fff5d0; color:#24434a; }
 .big-button.blue { background:linear-gradient(#4388aa,#2a5a78); }
 .big-button.secondary { background:#e3e6d4; color:#314f57; border-color:#9bad9b; box-shadow:0 3px #a2b2a1,inset 0 1px #ffffe6; }
+.backup-actions [data-command="reset"] { grid-column:1/-1; }
+.big-button.danger { background:linear-gradient(#b3413a,#8f2f29); color:#fff3ea; border-color:#6f231f; box-shadow:0 3px #571b18,inset 0 1px #ffb4a744; }
 .big-button:disabled { background:#d5d8c9; border-color:#adb8a9; color:#627270; box-shadow:0 3px 0 #a5b3a6; text-shadow:none; }
 .pause-banner { position:absolute; z-index:3; top:40%; left:50%; transform:translateX(-50%); padding:9px 20px; background:#14394de6; border:1px solid #d9cc9d; border-radius:10px; font-size:24px; color:#ffedbe; letter-spacing:4px; pointer-events:none; }
 .battle-skills { position:absolute; z-index:2; bottom:10px; left:12px; display:flex; gap:8px; }
