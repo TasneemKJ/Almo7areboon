@@ -48,11 +48,12 @@ async function session(viewport, manual) {
       assert.ok(b.left >= 0 && b.right <= b.width && b.top >= 0 && b.bottom <= b.height && !b.overflow, JSON.stringify(b)); bounds.push(b);
       await page.screenshot({ path: `${output}/wave-notes-${name}-${i}.png` });
     }
-    const close = page.locator('#modal-layer [data-command="close"]'); await close.scrollIntoViewIfNeeded();
+    const returnSelector = '#modal-layer .big-button[data-command="close"]';
+    const close = page.locator(returnSelector); assert.equal(await close.count(), 1); await close.scrollIntoViewIfNeeded();
     const action = await close.evaluate(node => { const r = node.getBoundingClientRect(); return { height: r.height, top: r.top, bottom: r.bottom, viewport: innerHeight, hit: node.contains(document.elementFromPoint(r.x + r.width / 2, r.y + r.height / 2)) }; });
     assert.ok(action.height >= 44 && action.top >= 0 && action.bottom <= action.viewport && action.hit, JSON.stringify(action));
     await page.screenshot({ path: `${output}/wave-close-${name}.png` }); assert.deepEqual(await bytes(), before, 'viewing wave notes preserves both save streams');
-    await tabTo(page, '#modal-layer [data-command="close"]'); await page.keyboard.press('Enter');
+    await tabTo(page, returnSelector); await page.keyboard.press('Enter');
     await page.waitForFunction(() => document.querySelector('#modal-layer')?.hidden && document.activeElement === document.querySelector('#wave-label'));
     assert.equal(await page.locator('#pause').getAttribute('aria-pressed'), String(manual));
     const resumedFrom = await page.locator('#wave-label').innerText();
