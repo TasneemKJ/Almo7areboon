@@ -32,7 +32,7 @@ test('capped upgrades and unavailable summon pools never produce funded purchase
  const p=defaultProfile();p.age=5;p.enemyAge=5;p.furthestBattle=5;p.foodLevel=100;p.baseLevel=100;p.unlocked=[true,true,true];p.coins=1e9;p.gems=1e7;p.cards.fill(1000);
  const g=new Game(p);g.dispatch({type:'start'});g.dispatch({type:'retreat'});
  const html=regroupLearningHtml(g.profile,g.state);
- assert.doesNotMatch(html,/is affordable|can afford|Upgrade food|Unlock/);
+ assert.doesNotMatch(html,/is affordable|can afford|can be upgraded|You have enough|Unlock/);
  assert.match(html,/Earlier unlocked chapters/);assert.match(html,/army and upgrades stay/);
  g.profile.timeline=1000;g.profile.mastery.timeline=1000;
  const terminal=regroupLearningHtml(g.profile,g.state);
