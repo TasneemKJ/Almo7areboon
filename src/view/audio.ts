@@ -10,11 +10,14 @@ export function updateSoundscape(age:number,audible:boolean,mood:SoundscapeMood=
   intent={age,audible,mood};soundscape.update(context,age,permitted&&audible,mood);
 }
 const lastTone=new Map<string,number>();
-const tones:Record<string,[number,number,number]>={spawn:[430,300,.08],hit:[130,55,.04],coin:[890,1150,.07],upgrade:[530,850,.18],win:[520,1040,.4],lose:[240,90,.5],skill:[700,120,.35],evolve:[400,1400,.55],death:[260,70,.14],'skill-freeze':[1500,650,.4],'skill-meteor':[190,38,.5],'skill-food':[520,900,.22]};
+const tones:Record<string,[number,number,number]>={spawn:[430,300,.08],hit:[130,55,.04],coin:[890,1150,.07],upgrade:[530,850,.18],win:[520,1040,.4],lose:[240,90,.5],skill:[700,120,.35],evolve:[400,1400,.55],death:[260,70,.14],'skill-freeze':[1500,650,.4],'skill-meteor':[190,38,.5],'skill-food':[520,900,.22],summon:[660,1480,.32]};
 
 /** Skills share one game event, so pick the cue from the skill that was cast. */
-export function cueFor(event:{type:string;skill?:string}):string {
-  return event.type==='skill'&&event.skill&&`skill-${event.skill}` in tones?`skill-${event.skill}`:event.type;
+export function cueFor(event:{type:string;skill?:string;cardIndices?:readonly number[]}):string {
+  if(event.type==='skill'&&event.skill&&`skill-${event.skill}` in tones)return `skill-${event.skill}`;
+  // A card summon is the one 'upgrade' event that carries the drawn cards; give it a longer shimmer.
+  if(event.type==='upgrade'&&Array.isArray(event.cardIndices)&&event.cardIndices.length>0)return 'summon';
+  return event.type;
 }
 
 /** Audio stays optional: no context before an enabled user gesture. */
