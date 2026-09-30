@@ -1,8 +1,8 @@
 /**
- * Geometry probe: at six viewport sizes and with very large coin and gem totals, checks that the main heads-up
+ * Geometry and legibility probe: at six viewport sizes and with very large coin and gem totals, checks that the main heads-up
  * elements (currencies, title, chapter dots, wave readout, speed and pause, skill buttons, ready panel, hint) never overlap.
  * Run against a running preview:  node scripts/hud-overlap-check.mjs [url=http://127.0.0.1:4173/]
- * Set CHROMIUM_PATH to reuse an installed Chromium. Exits 1 when any pair overlaps by more than 2px each way.
+ * Set CHROMIUM_PATH to reuse an installed Chromium. Also checks that the Settings and Quests dialog titles contrast with their parchment. Exits 1 when any pair overlaps by more than 2px each way or a title is illegible.
  */
 import {chromium} from 'playwright';
 
@@ -44,6 +44,28 @@ for (const [width, height] of sizes) {
     console.log(`${overlaps.length ? 'FAIL' : 'ok  '} ${width}x${height} ${phase}${overlaps.length ? `: ${overlaps.join('; ')}` : ''}`);
   }
   await page.close();
+}
+
+// Legibility smoke test: dialog text must contrast with the parchment behind it (a stray inherited light colour once hid every label).
+const page = await browser.newPage({viewport: {width: 390, height: 844}});
+await page.addInitScript(value => localStorage.setItem('almo7areboon.save.v1', value), JSON.stringify(save));
+await page.goto(url);
+await page.waitForSelector('#age-title');
+for (const command of ['settings', 'quests']) {
+  await page.click(`[data-command=${command}]`);
+  await page.waitForTimeout(500);
+  const ratio = await page.evaluate(() => {
+    const channels = value => value.match(/[\d.]+/g).slice(0, 3).map(Number);
+    const luminance = ([r, g, b]) => [r, g, b].map(v => { v /= 255; return v <= 0.03928 ? v / 12.92 : ((v + 0.055) / 1.055) ** 2.4; }).reduce((sum, v, i) => sum + v * [0.2126, 0.7152, 0.0722][i], 0);
+    const foreground = luminance(channels(getComputedStyle(document.querySelector('#dialog-title')).color));
+    const background = luminance(channels(getComputedStyle(document.querySelector('.dialog')).backgroundColor));
+    return (Math.max(foreground, background) + 0.05) / (Math.min(foreground, background) + 0.05);
+  });
+  const ok = ratio >= 4.5;
+  if (!ok) failed = true;
+  console.log(`${ok ? 'ok  ' : 'FAIL'} ${command} dialog title contrast ${ratio.toFixed(1)}:1`);
+  await page.keyboard.press('Escape');
+  await page.waitForTimeout(200);
 }
 await browser.close();
 process.exit(failed ? 1 : 0);

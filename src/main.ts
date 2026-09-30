@@ -12,6 +12,7 @@ import { defaultProfile, MAX_SAVE_CHARS, SAVE_KEY, BACKUP_KEY } from './game/sav
 import { createSaveSession } from './game/save-session.ts';
 import type { SaveSessionStatus } from './game/save-session.ts';
 import { saveSessionDialogHtml, temporarySessionNotice } from './ui/save-session-screen.ts';
+import { startOverProfile } from './game/reset.ts';
 import { exportBackup, importBackup, restoreBackupWithSave } from './game/backup.ts';
 import type { Action, GameEvent, GamePort, Profile, Skill, UnitKind } from './game/types.ts';
 import { mountBattlefield } from './view/battlefield.ts';
@@ -284,7 +285,7 @@ function showSettings(){
   <p class="save-note">Quiet original music and environmental sound. Pauses in menus and when the battle is paused. Sound is the master switch.</p>
   <button class="setting-row" data-command="speed">${icon('evolution')} Battle speed <b>${game.profile.speed}×</b></button>
   <button class="setting-row" data-command="motion" aria-pressed="${game.profile.motion==='reduced'}">Motion <b>${game.profile.motion==='reduced'?'REDUCED':'SYSTEM'}</b></button>
-  <div class="backup-actions"><button class="big-button blue" data-command="export">EXPORT SAVE</button><button class="big-button secondary" data-command="import" ${session.status!=='active'?'disabled':''}>IMPORT SAVE</button><input id="import-save" type="file" accept=".json,application/json" hidden></div>
+  <div class="backup-actions"><button class="big-button blue" data-command="export">EXPORT SAVE</button><button class="big-button secondary" data-command="import" ${session.status!=='active'?'disabled':''}>IMPORT SAVE</button><button class="big-button secondary" data-command="reset" ${session.status!=='active'?'disabled':''}>START OVER</button><input id="import-save" type="file" accept=".json,application/json" hidden></div>
   <details class="help-box"><summary>How to play</summary><p>Tap Battle, collect food and deploy troops. Your army fights automatically.</p><p>Keep ranged troops behind a melee or heavy front line. Spend earned coins on food production and new troops.</p><p>Battle victories unlock opponents. Evolution upgrades your own army and resets coins and upgrades. Your selected opponent, unlocked battles and chapter seals stay.</p><small>1–3 troops · Q / W / E skills · Space pause · Escape closes menus.</small></details>
   <p class="save-note">${session.status==='temporary'?temporarySessionNotice:savedWarning?'Saving is unavailable. Export a backup before closing.':'Progress saves on this browser. Export a backup to keep a separate copy.'}</p>`);
 }
@@ -296,7 +297,7 @@ function dailyRow(p:Profile){
 }
 function showQuests(){
   const p=game.profile;
-  showModal('quests',`<span class="eyebrow">EARN YOUR GLORY</span><h2 id="dialog-title">Quests</h2><p>Complete milestones to earn gems for cards.</p><div class="quest-list">${dailyRow(p)}${QUESTS.map(q=>{const count=p[q.stat],done=count>=q.target,claimed=p.claimed.includes(q.id);return `<div class="quest-row"><div><h3>${q.title}</h3><div class="quest-meter"><i style="width:${Math.min(100,count/q.target*100)}%"></i></div><small>${Math.min(count,q.target)} / ${q.target}</small></div><button class="buy-button" data-claim="${q.id}" aria-label="${claimed?'Claimed':`Claim ${q.reward} gems for ${q.title}`}" ${!done||claimed?'disabled':''}>${claimed?'✓':icon('gem')+q.reward}</button></div>`;}).join('')}</div>`);
+  showModal('quests',`<span class="eyebrow">EARN YOUR GLORY</span><h2 id="dialog-title">Quests</h2><p>Complete milestones to earn gems for cards.</p><div class="quest-list">${dailyRow(p)}${QUESTS.map(q=>{const count=p[q.stat],done=count>=q.target,claimed=p.claimed.includes(q.id);return `<div class="quest-row"><div><h3>${q.title}</h3><div class="quest-meter"><i style="width:${Math.min(100,count/q.target*100)}%"></i></div><small>${Math.min(count,q.target).toLocaleString('en-US')} / ${q.target.toLocaleString('en-US')}</small></div><button class="buy-button" data-claim="${q.id}" aria-label="${claimed?'Claimed':`Claim ${q.reward} gems for ${q.title}`}" ${!done||claimed?'disabled':''}>${claimed?'✓':icon('gem')+q.reward}</button></div>`;}).join('')}</div>`);
 }
 function exportSave(){
   try{
@@ -368,6 +369,13 @@ lifetime.listen<MouseEvent>(root,'click',e=>{
     case 'atmosphere':atmosphereEnabled=!atmosphereEnabled;saveAtmosphere(atmosphereEnabled);syncPause();showSettings();break;
     case 'motion':game.profile.motion=game.profile.motion==='reduced'?'system':'reduced';syncMotion();persist();if(playable())showSettings();break;
     case 'import':$('import-save')?.click();break;
+    case 'reset':if(session.status!=='active')break;showModal('reset',`<h2 id="dialog-title">Start over?</h2><p>This deletes your progress on this browser: your age, coins, upgrades, unlocked battles, every card and all gems, quests and records.</p><p>Your sound, speed and motion choices stay. Export a save first if you might want this progress back.</p><button class="big-button blue" data-command="export">EXPORT SAVE FIRST</button><button class="big-button danger" data-command="confirm-reset">DELETE PROGRESS AND START OVER</button><button class="big-button secondary" data-command="close">KEEP MY PROGRESS</button>`);break;
+    case 'confirm-reset':{
+      if(session.status!=='active')break;
+      const restored=restoreBackupWithSave(game,startOverProfile(game.profile),profile=>session.save(profile).ok);
+      if(!restored.ok){toast('The new game could not be saved. Your current progress was not deleted.');break;}
+      game=restored.game;lastPhase=game.state.phase;resultDue=0;manualPaused=false;resultShown='';savedWarning=false;rebuildArmy();syncMotion();closeModal(false);switchTab('battle');toast('Started a new game.');break;
+    }
     case 'confirm-import':{
       if(!pendingImport||session.status!=='active')break;const restored=restoreBackupWithSave(game,pendingImport,profile=>session.save(profile).ok);
       if(!restored.ok){toast('The save could not be written. Your current game was not replaced.');break;}
