@@ -28,3 +28,45 @@ test('the resource header precedes the battle view so keyboard focus follows the
  const main=readFileSync(new URL('../src/main.ts',import.meta.url),'utf8');
  assert.ok(main.indexOf('<header class="resources">')<main.indexOf('id="battle-view"'));
 });
+
+test('the wave and threat readout keeps the 11px floor',()=>{
+ const css=readFileSync(new URL('../src/ui/readability.css',import.meta.url),'utf8');
+ assert.match(css,/\.battle-meta>span\s*\{\s*font-size:\s*11px/);
+});
+
+test('troop role captions are at least 10px',()=>{
+ const css=readFileSync(new URL('../src/ui/readability.css',import.meta.url),'utf8');
+ assert.match(css,/\.unit-role\s*\{\s*font-size:\s*10px/);
+});
+
+test('offline support: a same-origin GET-only worker is registered in production builds only',()=>{
+ const worker=readFileSync(new URL('../public/sw.js',import.meta.url),'utf8'),main=readFileSync(new URL('../src/main.ts',import.meta.url),'utf8');
+ assert.match(worker,/request\.method !== 'GET'/);
+ assert.match(worker,/origin !== self\.location\.origin/);
+ assert.match(worker,/request\.mode === 'navigate'/);
+ assert.match(main,/import\.meta\.env\.PROD&&'serviceWorker' in navigator/);
+ assert.match(main,/register\('\.\/sw\.js'\)\.catch/);
+});
+
+test('the worker precaches the page bundles and trims old ones',()=>{
+ const worker=readFileSync(new URL('../public/sw.js',import.meta.url),'utf8');
+ assert.match(worker,/async function precache/);
+ assert.match(worker,/event\.waitUntil\(precache\(\)/);
+ assert.match(worker,/KEEP_BUNDLES = \d+/);
+ assert.match(worker,/trimBundles\(cache\)/);
+});
+
+test('the page paints the game colour and a loading or no-script message before any script runs',()=>{
+ const html=readFileSync(new URL('../index.html',import.meta.url),'utf8');
+ assert.match(html,/html,body\{[^}]*background:#293541/);
+ assert.match(html,/<div id="app"><p class="boot" role="status">Loading/);
+ assert.match(html,/<noscript>.*needs JavaScript/);
+});
+
+test('install and sharing metadata: manifest identity, maskable icon and link preview tags',()=>{
+ const manifest=JSON.parse(readFileSync(new URL('../public/manifest.webmanifest',import.meta.url),'utf8')),html=readFileSync(new URL('../index.html',import.meta.url),'utf8');
+ for(const key of ['id','scope','lang','description','categories'])assert.ok(manifest[key],key);
+ assert.ok(manifest.icons.some((icon:{purpose:string;sizes:string})=>icon.purpose==='maskable'&&icon.sizes==='512x512'));
+ for(const icon of manifest.icons)assert.equal(existsSync(new URL(`../public/${icon.src.replace('./','')}`,import.meta.url)),true,icon.src);
+ for(const tag of ['og:title','og:description','og:type','twitter:card','apple-mobile-web-app-title'])assert.ok(html.includes(tag),tag);
+});

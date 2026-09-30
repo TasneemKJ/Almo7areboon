@@ -29,7 +29,7 @@ export function drawTroop(g:G,age:number,kind:UnitKind,side:Side,clock:number,at
   g.clear();
   const accent=side==='player'?0x358bea:0xe85849;
   const uniform=[0xb78451,0xd8c9a0,0xe1b778,0x637bb2,0x6b8a55,0xd3e0e4][age%6];
-  const gait=attacking?0:Math.sin(clock*11)*3.4;
+  const gait=attacking?0:Math.sin(clock*Math.PI*2)*3.4;
   const swing=attacking?Math.sin(clock*17)*5:Math.sin(clock*6)*1.1;
   const heavy=kind===2;
   const rider=heavy&&(age===0||age===2);

@@ -379,5 +379,6 @@ lifetime.add(()=>renderer.destroy());lifetime.add(disposeAudio);
 lifetime.add(()=>{window.clearTimeout(toastTimer);window.cancelAnimationFrame(focusFrame);isolateModal(false);});
 lifetime.add(()=>{acquisitionVersion++;sessionReady=false;session.dispose();});
 if(import.meta.hot)import.meta.hot.dispose(()=>{suspendSession();lifetime.dispose();});
+if(import.meta.env.PROD&&'serviceWorker' in navigator)window.addEventListener('load',()=>{navigator.serviceWorker.register('./sw.js').catch(()=>{/* Offline play is optional. */});},{once:true});
 sessionPresentation('starting');
 void acquireSession();
