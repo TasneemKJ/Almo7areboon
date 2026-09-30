@@ -9,7 +9,7 @@ permissions:
 jobs:
   verify:
     runs-on: ubuntu-latest
-    timeout-minutes: 10
+    timeout-minutes: 20
     steps:
       - uses: actions/checkout@v4
         with:
@@ -44,6 +44,18 @@ jobs:
         if: steps.tests.outcome == 'success' && steps.build.outcome == 'success'
         continue-on-error: true
         run: npm run review:layering
+      - name: Verify exclusive save sessions and recovery
+        id: save_sessions
+        if: steps.tests.outcome == 'success' && steps.build.outcome == 'success'
+        continue-on-error: true
+        run: npm run review:save-sessions
+      - name: Publish save-session screenshots and diagnostics
+        if: always() && steps.save_sessions.outcome != 'skipped'
+        uses: actions/upload-artifact@v4
+        with:
+          name: save-session-browser-review
+          path: artifacts/save-session-review/
+          retention-days: 7
       - name: Publish layering screenshots and diagnostics
         if: always() && steps.layering.outcome != 'skipped'
         uses: actions/upload-artifact@v4
@@ -90,7 +102,7 @@ jobs:
       - name: Package reproducible verification workspace
         if: always()
         run: |
-          tar --exclude='./.git' --exclude='./dist' -czf "$RUNNER_TEMP/game-workspace.tar.gz" .
+          tar --exclude='./.git' --exclude='./dist' --exclude='./node_modules' -czf "$RUNNER_TEMP/game-workspace.tar.gz" .
       - uses: actions/upload-artifact@v4
         if: always()
         with:
@@ -98,5 +110,5 @@ jobs:
           path: ${{ runner.temp }}/game-workspace.tar.gz
           retention-days: 3
       - name: Require passing checks
-        if: steps.tests.outcome != 'success' || steps.build.outcome != 'success' || steps.browser.outcome != 'success' || steps.layering.outcome != 'success'
+        if: steps.tests.outcome != 'success' || steps.build.outcome != 'success' || steps.browser.outcome != 'success' || steps.layering.outcome != 'success' || steps.save_sessions.outcome != 'success'
         run: exit 1

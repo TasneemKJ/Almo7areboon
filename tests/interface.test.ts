@@ -6,9 +6,9 @@ import { defaultProfile, SAVE_KEY, BACKUP_KEY } from '../src/game/save.ts';
 import { exportBackup, importBackup, restoreBackup, restoreBackupWithSave } from '../src/game/backup.ts';
 import { createSaveSession, type SaveSessionLocks } from '../src/game/save-session.ts';
 import { pauseReason } from '../src/ui/pause.ts';
-import { isEditingTarget, nextFocusIndex } from '../src/ui/accessibility.ts';
+import { isEditingTarget, nextFocusIndex, createModalIsolation } from '../src/ui/accessibility.ts';
 import { createArmyUpdater } from '../src/ui/army-screen.ts';
-import { baseHealthDisplay, battleGuidance } from '../src/ui/battle-hud.ts';
+import { baseHealthDisplay, battleGuidance, compactNumber } from '../src/ui/battle-hud.ts';
 import { battleSelectionHtml, evolutionDialogHtml } from '../src/ui/progression-screen.ts';
 import { createLifetime } from '../src/ui/lifetime.ts';
 const main=()=>readFileSync(new URL('../src/main.ts',import.meta.url),'utf8');
@@ -138,4 +138,28 @@ for(const failure of ['conflict','unsupported','quota'] as const)test(`guarded $
   assert.equal(result.ok,false);assert.equal(result.game,current);assert.equal(JSON.stringify(current.profile),inMemory);
   assert.deepEqual([storage.getItem(SAVE_KEY),storage.getItem(BACKUP_KEY)],before);
  } finally {session.dispose();}
+});
+
+test('a backup saved with a UTF-8 byte-order mark still imports',()=>{
+ const text=exportBackup(defaultProfile(),new Date('2026-09-28T00:00:00Z'));
+ assert.equal(importBackup('﻿'+text).ok,true);
+});
+
+test('modal isolation inerts siblings once, spares the layer and toast, and restores prior state',()=>{
+ class HTMLElementStub{}
+ const previous=(globalThis as any).HTMLElement;(globalThis as any).HTMLElement=HTMLElementStub;
+ const el=(id:string,inert=false)=>Object.assign(new HTMLElementStub(),{id,inert}) as any;
+ const layer=el('modal-layer'),toast=el('toast'),plain=el('battle'),alreadyInert=el('nav',true);
+ (layer as any).parentElement={children:[layer,toast,plain,alreadyInert]};
+ const isolate=createModalIsolation(layer as any);
+ isolate(true);isolate(true);
+ assert.deepEqual([layer.inert,toast.inert,plain.inert,alreadyInert.inert],[false,false,true,true]);
+ isolate(false);
+ assert.deepEqual([plain.inert,alreadyInert.inert],[false,true]);
+ (globalThis as any).HTMLElement=previous;
+});
+
+test('compactNumber switches to exponent notation for astronomically large values',()=>{
+ assert.equal(compactNumber(2.5e15),'2.5e15');
+ assert.equal(compactNumber(Number.NaN),'0');
 });

@@ -9,14 +9,15 @@
     "preview": "vite preview --host 0.0.0.0",
     "test": "node --experimental-strip-types --test tests/*.test.ts",
     "review:browser": "node scripts/capture-browser-review.mjs",
-    "review:layering": "node scripts/capture-layering-review.mjs"
+    "review:layering": "node scripts/capture-layering-review.mjs",
+    "review:save-sessions": "node scripts/verify-save-sessions.mjs"
   },
   "dependencies": {
     "phaser": "^3.90.0"
   },
   "devDependencies": {
     "@types/node": "^24.5.2",
-    "playwright": "^1.55.0",
+    "playwright": "^1.55.1",
     "typescript": "^5.9.3",
     "vite": "^7.1.7"
   }

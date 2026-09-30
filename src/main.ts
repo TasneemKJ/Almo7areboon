@@ -6,8 +6,11 @@ import './ui/combat-focus.css';
 import './ui/era-glow.css';
 import { Game } from './game/simulation.ts';
 import { ERAS, foodRate, unlockCost, QUESTS } from './game/data.ts';
-import { loadProfileWithStatus, saveProfile, MAX_SAVE_CHARS } from './game/save.ts';
-import { exportBackup, importBackup, restoreBackup } from './game/backup.ts';
+import { defaultProfile, MAX_SAVE_CHARS, SAVE_KEY, BACKUP_KEY } from './game/save.ts';
+import { createSaveSession } from './game/save-session.ts';
+import type { SaveSessionStatus } from './game/save-session.ts';
+import { saveSessionDialogHtml, temporarySessionNotice } from './ui/save-session-screen.ts';
+import { exportBackup, importBackup, restoreBackupWithSave } from './game/backup.ts';
 import type { Action, GameEvent, GamePort, Profile, Skill, UnitKind } from './game/types.ts';
 import { mountBattlefield } from './view/battlefield.ts';
 import { unitPortrait } from './view/unit-illustrations.ts';
@@ -26,8 +29,8 @@ import { loadAtmosphere, saveAtmosphere, ambienceAllowed } from './ui/audio-pref
 import { createLifetime } from './ui/lifetime.ts';
 import { textIfChanged, htmlIfChanged } from './ui/dom-state.ts';
 
-const loaded=loadProfileWithStatus();
-let game=new Game(loaded.profile);
+// The initial render is a non-playable default. Only ownership makes a loaded Game authoritative.
+let game=new Game(defaultProfile());
 const root=document.querySelector<HTMLDivElement>('#app');
 if(!root)throw new Error('The game mount element is missing.');
 const lifetime=createLifetime();
@@ -35,7 +38,8 @@ let activeTab='battle',modal:string|null=null,manualPaused=false;
 let atmosphereEnabled=loadAtmosphere();
 let lastUpdate=0,lastSave=0,resultShown='',toastTimer=0,focusFrame=0,modalVersion=0;
 let savedWarning=false,pendingImport:Profile|null=null;
-const persistenceBlocked=loaded.status==='unsupported';
+let sessionReady=false,pagePresent=true,resumeOwnership=false,acquisitionVersion=0,hasPlayed=false;
+let acquiring:Promise<void>|null=null;
 const money=(value:number)=>value>=10000?compactNumber(value):Math.floor(value).toLocaleString('en-US');
 const coin=(value:number)=>`${icon('coin')}<span>${money(value)}</span>`;
 root.innerHTML = `
@@ -59,6 +63,7 @@ root.innerHTML = `
   </div>
   <header class="resources"><div class="currency">${icon('coin')}<span id="coins">0</span></div><button class="currency gems" data-command="quests" aria-label="Gems and quests">${icon('gem')}<span id="gems">100</span></button><div class="game-wordmark">ALMO7AREBOON</div></header>
   <section id="secondary-screen" class="secondary-screen" aria-labelledby="secondary-title" hidden></section>
+  <p id="session-notice" class="session-notice" role="status" aria-live="polite" hidden></p>
   <nav class="bottom-nav" aria-label="Game screens">${[['battle','Battle'],['evolution','Evolution'],['cards','Cards'],['skills','Skills']].map(([id,label])=>`<button data-tab="${id}" class="nav-item ${id==='battle'?'active':''}" aria-label="${label}" aria-current="${id==='battle'?'page':'false'}">${icon(id)}<span>${label}</span></button>`).join('')}</nav>
   <div id="toast" class="toast" role="status" aria-live="polite"></div>
   <div id="modal-layer" class="modal-layer" hidden></div>
@@ -69,24 +74,68 @@ const updateArmy=createArmyUpdater({units:$('unit-cards'),skills:$('battle-skill
 const isolateModal=createModalIsolation($('modal-layer'));
 const motionQuery=window.matchMedia('(prefers-reduced-motion: reduce)');
 let focusBefore:HTMLElement|null=null;
+const session=createSaveSession({
+  // Access storage inside the guarded read/write, since the browser getter itself can throw.
+  storage:{getItem:key=>window.localStorage.getItem(key),setItem:(key,value)=>window.localStorage.setItem(key,value)},
+  locks:navigator.locks??null,
+  onStatus:sessionPresentation,
+});
+function playable(){return sessionReady&&pagePresent&&!lifetime.disposed&&(session.status==='active'||session.status==='temporary');}
+function guardAction(){return playable()&&session.check();}
+function sessionPresentation(status:SaveSessionStatus){
+  root!.dataset.saveSession=status;
+  const notice=$('session-notice');
+  notice.hidden=status!=='starting'&&status!=='temporary';
+  textIfChanged(notice,status==='temporary'?temporarySessionNotice:'Opening your saved game…');
+  if(status!=='active'&&status!=='temporary')sessionReady=false;
+  const html=saveSessionDialogHtml(status);
+  if(html){pendingImport=null;showModal('session',html);}
+  else if(status==='starting'){
+    // An immediate acquisition has no transient modal focus loop.
+    isolateModal(true);notice.inert=false;
+    $('modal-layer').querySelector<HTMLButtonElement>('[data-command="session-continue"]')?.setAttribute('disabled','');
+  }
+  syncPause();
+}
+async function acquireSession(){
+  if(acquiring||lifetime.disposed||!pagePresent)return acquiring;
+  const version=acquisitionVersion;
+  acquiring=(async()=>{
+    const loaded=await session.acquire();
+    if(lifetime.disposed||version!==acquisitionVersion||!pagePresent)return;
+    if(loaded.status==='active'&&loaded.profile){
+      game=new Game(loaded.profile);hasPlayed=true;sessionReady=true;
+      manualPaused=false;resultShown='';savedWarning=false;pendingImport=null;
+      closeModal(false);rebuildArmy();syncMotion();switchTab('battle');
+      if(loaded.loadStatus==='recovered')toast('Recovered your progress from the backup save.');
+      else if(loaded.loadStatus==='corrupt')toast('The stored save could not be recovered. A new game has started.');
+    }else if(!hasPlayed&&loaded.profile){
+      // Safe preview for explicit temporary play only; never replace conflicted work.
+      game=new Game(loaded.profile);rebuildArmy();syncMotion();update(true);
+    }
+  })().finally(()=>{if(version===acquisitionVersion)acquiring=null;});
+  return acquiring;
+}
+
 function rebuildArmy(){updateArmy(game.profile);}
 function toast(message:string){
   textIfChanged($('toast'),message);$('toast').classList.add('visible');
   window.clearTimeout(toastTimer);toastTimer=window.setTimeout(()=>$('toast').classList.remove('visible'),4200);
 }
 function persist():boolean{
-  if(persistenceBlocked)return false;
-  const ok=saveProfile(game.profile);lastSave=performance.now();
-  if(!ok&&!savedWarning){savedWarning=true;toast('Progress could not be saved. Export a backup from Settings before closing this tab.');}
+  if(!playable()||session.status==='temporary')return false;
+  const result=session.save(game.profile),ok=result.ok;lastSave=performance.now();
+  if(result.reason==='write-failed'&&!savedWarning){savedWarning=true;toast('Progress could not be saved. Export a backup from Settings before closing this tab.');}
   if(ok)savedWarning=false;
   return ok;
 }
 function syncPause(){
-  game.state.paused=pauseReason({phase:game.state.phase,manual:manualPaused,tab:activeTab,modal,hidden:document.hidden})!==null;
+  game.state.paused=!playable()||pauseReason({phase:game.state.phase,manual:manualPaused,tab:activeTab,modal,hidden:document.hidden})!==null;
   updateSoundscape(game.profile.age,ambienceAllowed({sound:game.profile.sound,atmosphere:atmosphereEnabled,paused:game.state.paused,phase:game.state.phase,tab:activeTab,modal,hidden:document.hidden}));
 }
 function syncMotion(){document.documentElement.dataset.motion=game.profile.motion==='reduced'||motionQuery.matches?'reduced':'full';}
 function action(a:Action):boolean{
+  if(!guardAction())return false;
   unlockAudio(game.profile.sound);const ok=game.dispatch(a);
   if(ok){persist();syncPause();rebuildArmy();update(true);if(activeTab!=='battle')renderScreen();}
   return ok;
@@ -136,12 +185,12 @@ function update(force=false){
   });
   const notification=$('quests').querySelector<HTMLElement>('.notification');
   if(notification)notification.hidden=!QUESTS.some(q=>p[q.stat]>=q.target&&!p.claimed.includes(q.id));
-  if((s.phase==='won'||s.phase==='lost')&&resultShown!==s.phase){resultShown=s.phase;showResult();}
+  if(playable()&&(s.phase==='won'||s.phase==='lost')&&resultShown!==s.phase){resultShown=s.phase;showResult();}
   if(s.phase==='ready'||s.phase==='running')resultShown='';
-  if(now-lastSave>5000)persist();
+  if(playable()&&session.status==='active'&&now-lastSave>5000)persist();
 }
 function switchTab(tab:string){
-  if(!['battle','evolution','cards','skills'].includes(tab))return;
+  if(!playable()||!['battle','evolution','cards','skills'].includes(tab))return;
   activeTab=tab;
   root!.querySelectorAll<HTMLElement>('[data-tab]').forEach(button=>{button.classList.toggle('active',button.dataset.tab===tab);button.setAttribute('aria-current',button.dataset.tab===tab?'page':'false');});
   $('secondary-screen').hidden=tab==='battle';$('battle-view').inert=tab!=='battle';
@@ -161,10 +210,11 @@ function renderScreen(){
   if(activeTab!=='battle')htmlIfChanged($('secondary-screen'),html);
 }
 function showModal(id:string,html:string){
+  if(id!=='session'&&!playable())return;
   const replacing=modal!==null,command=(document.activeElement as HTMLElement|null)?.dataset.command;
   if(!replacing)focusBefore=document.activeElement as HTMLElement;
   modal=id;modalVersion++;const version=modalVersion,layer=$('modal-layer');
-  layer.hidden=false;layer.innerHTML=`<section class="dialog ${id==='result'?'result-dialog':''}" role="dialog" tabindex="-1" aria-modal="true" aria-labelledby="dialog-title">${id!=='result'?`<button class="close-button" data-command="close" aria-label="Close">${icon('close')}</button>`:''}${html}</section>`;
+  layer.hidden=false;layer.innerHTML=`<section class="dialog ${id==='result'?'result-dialog':id==='session'?'session-dialog':''}" role="dialog" tabindex="-1" aria-modal="true" aria-labelledby="dialog-title">${id!=='result'&&id!=='session'?`<button class="close-button" data-command="close" aria-label="Close">${icon('close')}</button>`:''}${html}</section>`;
   isolateModal(true);syncPause();window.cancelAnimationFrame(focusFrame);
   focusFrame=requestAnimationFrame(()=>{
     if(lifetime.disposed||layer.hidden||version!==modalVersion)return;
@@ -173,13 +223,14 @@ function showModal(id:string,html:string){
   });
 }
 function closeModal(refresh=true){
+  if(!playable()||!session.check())return;
   modal=null;modalVersion++;pendingImport=null;window.cancelAnimationFrame(focusFrame);
   $('modal-layer').hidden=true;$('modal-layer').innerHTML='';isolateModal(false);syncPause();
   if(focusBefore?.isConnected&&!focusBefore.hasAttribute('disabled'))focusBefore.focus();
   else root!.querySelector<HTMLElement>(`[data-tab="${activeTab}"]`)?.focus();
   if(refresh)update(true);
 }
-function showResult(){persist();showModal('result',resultsHtml(game.profile,game.state));}
+function showResult(){persist();if(playable())showModal('result',resultsHtml(game.profile,game.state));}
 function showSettings(){
   showModal('settings',`<span class="eyebrow">ALMO7AREBOON</span><h2 id="dialog-title">Settings</h2>
   <button class="setting-row" data-command="sound" aria-pressed="${game.profile.sound}">${icon('sound')} Sound <b>${game.profile.sound?'ON':'OFF'}</b></button>
@@ -187,9 +238,9 @@ function showSettings(){
   <p class="save-note">Quiet original music and environmental sound. Pauses in menus and when the battle is paused. Sound is the master switch.</p>
   <button class="setting-row" data-command="speed">${icon('evolution')} Battle speed <b>${game.profile.speed}×</b></button>
   <button class="setting-row" data-command="motion" aria-pressed="${game.profile.motion==='reduced'}">Motion <b>${game.profile.motion==='reduced'?'REDUCED':'SYSTEM'}</b></button>
-  <div class="backup-actions"><button class="big-button blue" data-command="export">EXPORT SAVE</button><button class="big-button secondary" data-command="import" ${persistenceBlocked?'disabled':''}>IMPORT SAVE</button><input id="import-save" type="file" accept=".json,application/json" hidden></div>
+  <div class="backup-actions"><button class="big-button blue" data-command="export">EXPORT SAVE</button><button class="big-button secondary" data-command="import" ${session.status!=='active'?'disabled':''}>IMPORT SAVE</button><input id="import-save" type="file" accept=".json,application/json" hidden></div>
   <details class="help-box"><summary>How to play</summary><p>Tap Battle, collect food and deploy troops. Your army fights automatically.</p><p>Keep ranged troops behind a melee or heavy front line. Spend earned coins on food production and new troops.</p><p>Battle victories unlock opponents. Evolution upgrades your own army but resets coins, upgrades and battle unlocks.</p><small>1–3 troops · Q / W / E skills · Space pause · Escape closes menus.</small></details>
-  <p class="save-note">${persistenceBlocked?'A newer save was found. It is protected from overwrite; this session is temporary.':savedWarning?'Saving is unavailable. Export a backup before closing.':'Progress saves on this browser. Export a backup to keep a separate copy.'}</p>`);
+  <p class="save-note">${session.status==='temporary'?temporarySessionNotice:savedWarning?'Saving is unavailable. Export a backup before closing.':'Progress saves on this browser. Export a backup to keep a separate copy.'}</p>`);
 }
 function showQuests(){
   const p=game.profile;
@@ -207,7 +258,19 @@ function exportSave(){
 
 lifetime.listen<MouseEvent>(root,'click',e=>{
   const button=e.target instanceof Element?e.target.closest<HTMLButtonElement>('button'):null;
-  if(!button||button.disabled)return;unlockAudio(game.profile.sound);
+  if(!button||button.disabled)return;
+  const command=button.dataset.command;
+  if(command==='export'){exportSave();return;}
+  if(command==='session-continue'){void acquireSession();return;}
+  if(command==='session-temporary'){
+    if(pagePresent&&session.playTemporarily()){
+      sessionReady=true;hasPlayed=true;closeModal(false);rebuildArmy();syncMotion();switchTab('battle');
+    }return;
+  }
+  // Also protects direct preference mutations and synthetic clicks on isolated controls.
+  if(!guardAction())return;
+  if(modal&&!button.closest('#modal-layer'))return;
+  unlockAudio(game.profile.sound);
   if(button.dataset.tab){switchTab(button.dataset.tab);return;}
   if(button.dataset.unit!==undefined){const kind=Number(button.dataset.unit) as UnitKind;if(!game.profile.unlocked[kind]){if(action({type:'unlock',kind}))toast(`${unitPresentationName(game.profile.age,kind)} unlocked!`);}else action({type:'spawn',kind});return;}
   if(button.dataset.skill){action({type:'skill',skill:button.dataset.skill as Skill});return;}
@@ -215,7 +278,7 @@ lifetime.listen<MouseEvent>(root,'click',e=>{
   if(button.dataset.battle!==undefined){if(action({type:'select-battle',battle:Number(button.dataset.battle)}))closeModal();return;}
   if(button.dataset.pack!==undefined){
     const before=[...game.profile.cards],count=Number(button.dataset.pack) as 1|10|50;
-    if(action({type:'summon',count}))showModal('summon',summonedCardsHtml(before,game.profile));
+    if(action({type:'summon',count})&&playable())showModal('summon',summonedCardsHtml(before,game.profile));
     else toast('This pack is unavailable. Your gems were not spent.');return;
   }
   switch(button.dataset.command){
@@ -227,16 +290,15 @@ lifetime.listen<MouseEvent>(root,'click',e=>{
     case 'confirm-evolve':if(action({type:'evolve'})){closeModal(false);switchTab('battle');toast(`Entering ${chapterPresentation(game.profile.age).title}.`);}break;
     case 'next':case 'retry':if(action({type:button.dataset.command})){closeModal(false);manualPaused=false;switchTab('battle');}break;
     case 'pause':if(game.state.phase==='running'){manualPaused=!manualPaused;syncPause();update(true);}break;
-    case 'speed':game.profile.speed=game.profile.speed===1?2:1;persist();update(true);if(modal==='settings')showSettings();break;
+    case 'speed':game.profile.speed=game.profile.speed===1?2:1;persist();update(true);if(modal==='settings'&&playable())showSettings();break;
     case 'settings':showSettings();break;
     case 'quests':showQuests();break;
-    case 'sound':game.profile.sound=!game.profile.sound;if(game.profile.sound)unlockAudio(true);else suspendAudio();persist();showSettings();break;
+    case 'sound':game.profile.sound=!game.profile.sound;if(game.profile.sound)unlockAudio(true);else suspendAudio();persist();if(playable())showSettings();break;
     case 'atmosphere':atmosphereEnabled=!atmosphereEnabled;saveAtmosphere(atmosphereEnabled);syncPause();showSettings();break;
-    case 'motion':game.profile.motion=game.profile.motion==='reduced'?'system':'reduced';syncMotion();persist();showSettings();break;
-    case 'export':exportSave();break;
+    case 'motion':game.profile.motion=game.profile.motion==='reduced'?'system':'reduced';syncMotion();persist();if(playable())showSettings();break;
     case 'import':$('import-save')?.click();break;
     case 'confirm-import':{
-      if(!pendingImport)break;const restored=restoreBackup(game,pendingImport);
+      if(!pendingImport||session.status!=='active')break;const restored=restoreBackupWithSave(game,pendingImport,profile=>session.save(profile).ok);
       if(!restored.ok){toast('The save could not be written. Your current game was not replaced.');break;}
       game=restored.game;manualPaused=false;resultShown='';savedWarning=false;rebuildArmy();syncMotion();closeModal(false);switchTab('battle');toast('Save restored.');break;
     }
@@ -245,11 +307,12 @@ lifetime.listen<MouseEvent>(root,'click',e=>{
 });
 lifetime.listen<Event>(root,'change',async e=>{
   const input=e.target;if(!(input instanceof HTMLInputElement)||input.id!=='import-save')return;
+  if(session.status!=='active'||!guardAction())return;
   const file=input.files?.[0],version=modalVersion;if(!file)return;
   if(file.size>MAX_SAVE_CHARS){toast('Choose a save file smaller than 100 KB.');input.value='';return;}
   try{
     const decoded=importBackup(await file.text());
-    if(lifetime.disposed||version!==modalVersion||modal!=='settings')return;
+    if(lifetime.disposed||version!==modalVersion||modal!=='settings'||session.status!=='active'||!guardAction())return;
     if(!decoded.ok){toast(decoded.error);input.value='';return;}
     pendingImport=decoded.profile;
     showModal('import',`<h2 id="dialog-title">Replace this save?</h2><p>Import timeline ${pendingImport.timeline}, ${chapterPresentation(pendingImport.age).title}, with ${money(pendingImport.coins)} coins.</p><p>Your current progress in this browser will be replaced. Export it first to keep a separate copy.</p><button class="big-button blue" data-command="confirm-import">REPLACE WITH THIS SAVE</button><button class="big-button secondary" data-command="close">CANCEL</button>`);
@@ -257,13 +320,13 @@ lifetime.listen<Event>(root,'change',async e=>{
 });
 lifetime.listen<KeyboardEvent>(document,'keydown',e=>{
   if(modal){
-    if(e.key==='Escape'&&modal!=='result'){closeModal();e.preventDefault();}
+    if(e.key==='Escape'&&modal!=='result'&&modal!=='session'){closeModal();e.preventDefault();}
     if(e.key==='Tab'){
       const elements=modalFocusables($('modal-layer')),index=nextFocusIndex(elements.indexOf(document.activeElement as HTMLElement),elements.length,e.shiftKey);
       e.preventDefault();(index===null?$('modal-layer').querySelector<HTMLElement>('.dialog'):elements[index])?.focus();
     }return;
   }
-  if(activeTab!=='battle'||e.repeat||e.ctrlKey||e.altKey||e.metaKey||e.isComposing||document.hidden||isEditingTarget(e.target instanceof HTMLElement?e.target:null))return;
+  if(!guardAction()||activeTab!=='battle'||e.repeat||e.ctrlKey||e.altKey||e.metaKey||e.isComposing||document.hidden||isEditingTarget(e.target instanceof HTMLElement?e.target:null))return;
   if(['1','2','3'].includes(e.key)){e.preventDefault();action({type:'spawn',kind:(Number(e.key)-1) as UnitKind});}
   const skillIndex=['q','w','e'].indexOf(e.key.toLowerCase());
   if(skillIndex>=0){e.preventDefault();action({type:'skill',skill:(['freeze','meteor','food'] as Skill[])[skillIndex]});}
@@ -272,20 +335,38 @@ lifetime.listen<KeyboardEvent>(document,'keydown',e=>{
   }
 });
 lifetime.listen(root,'visual-fallback',()=>toast('Some artwork could not load. The simplified battlefield is active.'));
-lifetime.listen(document,'visibilitychange',()=>{syncPause();if(document.hidden){persist();suspendAudio();}});
-lifetime.listen(window,'pagehide',()=>{persist();suspendAudio();});
+lifetime.listen<StorageEvent>(window,'storage',event=>{
+  if(event.key===SAVE_KEY||event.key===BACKUP_KEY||event.key===null)session.check();
+});
+lifetime.listen(window,'focus',()=>{if(pagePresent)session.check();syncPause();});
+lifetime.listen(document,'visibilitychange',()=>{
+  if(document.hidden){persist();syncPause();suspendAudio();}
+  else{session.check();syncPause();}
+});
+function suspendSession(){
+  // Save while still active, then deactivate synchronously before releasing the lock.
+  persist();resumeOwnership=resumeOwnership||session.status==='active'||session.status==='starting';
+  pagePresent=false;acquisitionVersion++;acquiring=null;sessionReady=false;
+  if(resumeOwnership)session.release();
+  syncPause();suspendAudio();
+}
+lifetime.listen(window,'pagehide',suspendSession);
+lifetime.listen(window,'pageshow',()=>{
+  pagePresent=true;
+  if(session.status==='temporary'){sessionReady=true;syncPause();}
+  else if(resumeOwnership){resumeOwnership=false;void acquireSession();}
+});
 lifetime.listen(motionQuery,'change',syncMotion);
 function events(batch:GameEvent[]){
   const played=new Set<string>();for(const event of batch)if(!played.has(event.type)){sound(event.type,game.profile.sound&&!document.hidden);played.add(event.type);}
   if(batch.some(event=>event.type==='win'||event.type==='lose'))persist();
 }
-const port:GamePort={get profile(){return game.profile;},get state(){return game.state;},dispatch:a=>game.dispatch(a),step:dt=>{syncPause();game.step(dt*game.profile.speed);},drainEvents:()=>game.drainEvents()};
+const port:GamePort={get profile(){return game.profile;},get state(){return game.state;},dispatch:action,step:dt=>{syncPause();if(playable())game.step(dt*game.profile.speed);},drainEvents:()=>game.drainEvents()};
 rebuildArmy();syncMotion();syncPause();update(true);
 const renderer=mountBattlefield($('battlefield'),port,()=>update(),events,{isVisible:()=>activeTab==='battle'&&!document.hidden});
 lifetime.add(()=>renderer.destroy());lifetime.add(disposeAudio);
 lifetime.add(()=>{window.clearTimeout(toastTimer);window.cancelAnimationFrame(focusFrame);isolateModal(false);});
-if(import.meta.hot)import.meta.hot.dispose(()=>{persist();lifetime.dispose();});
-if(loaded.status==='recovered')toast('Recovered your progress from the backup save.');
-else if(persistenceBlocked)toast('A newer save is protected. This session will not overwrite it.');
-else if(loaded.status==='corrupt')toast('The stored save could not be recovered. A new game has started.');
-else if(loaded.status==='unavailable')toast('Browser storage is unavailable. Use Settings to export your progress.');
+lifetime.add(()=>{acquisitionVersion++;sessionReady=false;session.dispose();});
+if(import.meta.hot)import.meta.hot.dispose(()=>{suspendSession();lifetime.dispose();});
+sessionPresentation('starting');
+void acquireSession();
