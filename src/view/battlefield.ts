@@ -535,7 +535,7 @@ export function mountBattlefield(element:HTMLElement,game:GamePort,onFrame:()=>v
   private floatText(x:number,y:number,value:string,color='#fff1c8',large=false,heavy=false):void {
    const life=large?1.05:.62;
    const px=Math.max(22,Math.min(428,x));
-   if(!large)y=stackedY(this.floaters.map(f=>({x:f.text.x,startY:f.startY,life:f.life,max:f.max,banner:f.banner})),px,y);
+   y=stackedY(this.floaters.map(f=>({x:f.text.x,startY:f.startY,life:f.life,max:f.max,banner:f.banner})),px,y,large);
    const text=this.add.text(px,y,value,{fontFamily:'Trebuchet MS, Arial, sans-serif',fontSize:large?'22px':heavy?'15px':'13px',fontStyle:'bold',color,stroke:'#132a33',strokeThickness:large?5:3}).setOrigin(.5).setShadow(0,2,'#08171d',large?6:3,true,true);
    this.world.add(text);this.floaters.push({text,life,max:life,startY:y,banner:large});
    // Skill and reward banners never compete with damage numbers for the 24 recycled slots.
