@@ -18,11 +18,16 @@ const lane = numberParam('lane', 0, [0, 1, 2]);
 const health = numberParam('health', 25, [25, 70, 100]);
 const effectMode = query.get('effects') ?? 'both';
 if (!['none', 'attack', 'dust', 'both'].includes(effectMode)) throw new Error('Invalid fixture effects');
+const traitMode=query.get('traits')??'none';
+if(!['none','guard','pierce','sweep','all'].includes(traitMode))throw new Error('Invalid fixture traits');
+const reduced=query.get('motion')==='reduced';
+const width=numberParam('width',450,[320,390,450]);
+if(width!==450){document.querySelector<HTMLElement>('main')!.style.width=`${width}px`;document.querySelector<HTMLElement>('#battlefield')!.style.width=`${width}px`;}
 const includeTroops = query.get('troops') !== '0';
 const description = `Chapters ${age + 1}/${enemyAge + 1} · ${health}% base health · lane ${lane} · ${effectMode} effects`;
 document.querySelector('#description')!.textContent = description;
 
-const game = new Game({ ...defaultProfile(), age, enemyAge, motion: 'system' });
+const game = new Game({ ...defaultProfile(), age, enemyAge, motion: reduced?'reduced':'system' });
 Object.assign(game.state, {
   phase: 'running', paused: true, time: 0,
   playerHp: game.state.playerMaxHp * health / 100,
@@ -45,8 +50,9 @@ for (const unit of units) {
     side: unit.side, amount: 0,
   });
 }
+for(const [index,trait] of (['guard','pierce','sweep'] as const).entries())if(traitMode===trait||traitMode==='all')pending.push({type:'hit',target:'unit',amount:4,x:300+index*200,lane,side:'player',trait,source:{id:10+index,kind:trait==='sweep'?2:1,age:3,side:'player',x:250,lane:0}});
 const port: GamePort = {
-  profile: game.profile, state: game.state,
+  profile: game.profile, get state(){return game.state;},
   dispatch: () => false, step: () => {},
   // Allow the initial ResizeObserver/layout pass to finish before emitting.
   drainEvents: () => { if (frames < 3) return []; const events = pending; pending = []; return events; },
@@ -68,6 +74,10 @@ type DisplayObject = Phaser.GameObjects.GameObject & Partial<Phaser.GameObjects.
 type RendererDiagnostics = Phaser.Scene & {
   groundFx?: Phaser.GameObjects.Graphics[];
   baseDamage?: Phaser.GameObjects.Graphics;
+  impactCues?: {trait?:string;x:number;y:number;lane?:number;life:number}[];
+  attackCues?: unknown[];
+  bolts?: unknown[];
+  reduce?: boolean;
 };
 function inspect() {
   const leaves: DisplayObject[] = [];
@@ -95,6 +105,8 @@ function inspect() {
     ready: frames >= 6, age, enemyAge, lane, health, effectMode, includeTroops,
     images, groundEffects: actual.groundFx?.map(graphics) ?? [],
     baseDamage: graphics(actual.baseDamage),
+    traits:actual.impactCues?.filter(cue=>cue.trait).map(cue=>({...cue}))??[],
+    sourceCues:actual.attackCues?.length??0,projectiles:actual.bolts?.length??0,reduced:actual.reduce,
     state: { time: game.state.time, paused: game.state.paused, unitCount: game.state.units.length },
     canvas: { width: scene.game.canvas.width, height: scene.game.canvas.height },
   };
@@ -112,6 +124,6 @@ const renderer = mountBattlefield(battlefield, port, () => {
 }, () => {});
 
 // Diagnostic access belongs exclusively to this test document.
-declare global { interface Window { layeringReview: { inspect: typeof inspect; destroy(): void }; } }
-window.layeringReview = { inspect, destroy: () => renderer.destroy() };
+declare global { interface Window { layeringReview: { inspect: typeof inspect; resumeEffects(): void; resetEffects(): void; destroy(): void }; } }
+window.layeringReview = { inspect, resumeEffects:()=>{game.state.paused=false;}, resetEffects:()=>{game.state={...game.state,units:[]};}, destroy: () => renderer.destroy() };
 window.addEventListener('pagehide', () => renderer.destroy(), { once: true });

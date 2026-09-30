@@ -1,6 +1,6 @@
 import Phaser from 'phaser';
 import {storybookArt} from './storybook-art.ts';
-import {reducedMotion,projectileForHit} from './combat-feedback.ts';
+import {reducedMotion,projectileForHit,traitCueForHit} from './combat-feedback.ts';
 import {arenaLayout,foregroundPlacement,landscapePlacement,troopPose,visualEra} from './visual-theme.ts';
 import {atmosphereFrame} from './era-atmosphere.ts';
 import {duskAtmosphereFrame,paintDuskAtmosphere} from './dusk-atmosphere.ts';
@@ -30,7 +30,7 @@ type Bolt={from:{x:number;y:number};to:{x:number;y:number};life:number;max:numbe
 type Ring={x:number;y:number;life:number;max:number;radius:number;color:number};
 type Floater={text:Phaser.GameObjects.Text;life:number;max:number;startY:number;banner:boolean};
 type AttackCue={x:number;y:number;lane:number;age:number;kind:Unit['kind'];side:Side;life:number;max:number};
-type ImpactCue={x:number;y:number;age:number;kind:Unit['kind'];side:Side;life:number;max:number};
+type ImpactCue={x:number;y:number;age:number;kind:Unit['kind'];side:Side;life:number;max:number;trait?:'guard'|'pierce'|'sweep';lane?:number};
 type Flare={x:number;y:number;life:number;max:number;radius:number;color:number};
 const xAt=(x:number)=>x*.45;
 /** View-only: nudges bodies sharing a lane by a few pixels so crowded columns read as individuals, not one stacked sprite. */
@@ -427,6 +427,19 @@ export function mountBattlefield(element:HTMLElement,game:GamePort,onFrame:()=>v
    const g=this.fx;
    for(const cue of this.impactCues){
     cue.life-=dt;const progress=1-Math.max(0,cue.life)/cue.max;
+    if(cue.trait){
+     const layer=groundEffectLayer(this.groundFx,g,cue.lane),alpha=this.reduce?.85:Math.max(0,1-progress),size=this.reduce?11:11+progress*5;
+     const x=cue.x,y=cue.y;
+     layer.lineStyle(2,cue.trait==='guard'?0xa8e9ef:cue.trait==='pierce'?0xffe5a2:0xf6b993,alpha);
+     if(cue.trait==='guard'){
+      layer.beginPath();layer.moveTo(x-size*.7,y-size);layer.lineTo(x+size*.7,y-size);layer.lineTo(x+size*.6,y+size*.2);layer.lineTo(x,y+size*.85);layer.lineTo(x-size*.6,y+size*.2);layer.closePath();layer.strokePath();
+     }else if(cue.trait==='pierce'){
+      layer.lineBetween(x-size,y+size*.65,x+size,y-size*.65);layer.lineBetween(x+size*.25,y-size*.65,x+size,y-size*.65);layer.lineBetween(x+size,y-size*.65,x+size,y+size*.1);
+     }else{
+      layer.beginPath();layer.arc(x,y,size*1.15,.15,Math.PI-.15);layer.strokePath();layer.lineBetween(x-size*.9,y+size*.2,x-size*1.2,y-size*.2);
+     }
+     continue;
+    }
     for(const mark of impactMaterialFrame(cue.age,cue.kind,cue.side,progress,this.reduce)){
      const x=cue.x+mark.x,y=cue.y+mark.y,size=mark.size;
      if(mark.kind==='flash'){
@@ -494,7 +507,9 @@ export function mountBattlefield(element:HTMLElement,game:GamePort,onFrame:()=>v
    const x=xAt(e.x??500),y=this.yAt(e.lane??1);
    if(e.type==='spawn'){this.emit(x,y,5,0xdfd4b1,true,.4,e.lane??1);this.ring(x,y,0xc9e2b3,13);this.flare(x,y-4,16,e.side==='enemy'?0xff8b55:0x6fd6ff,.3);}
    if(e.type==='hit'){
-    if(e.source){this.attackCues.push({x:xAt(e.source.x),y:this.yAt(e.source.lane),lane:e.source.lane,age:e.source.age,kind:e.source.kind,side:e.source.side,life:.18,max:.18});if(this.attackCues.length>42)this.attackCues.shift();}
+    const trait=traitCueForHit(e);
+    if(trait){this.impactCues.push({x:xAt(trait.x),y:this.yAt(trait.lane)-22,lane:trait.lane,trait:trait.trait,age:e.source?.age??0,kind:e.source?.kind??0,side:e.source?.side??'player',life:.28,max:.28});if(this.impactCues.length>54)this.impactCues.shift();}
+    if(e.source&&e.trait!=='sweep'){this.attackCues.push({x:xAt(e.source.x),y:this.yAt(e.source.lane),lane:e.source.lane,age:e.source.age,kind:e.source.kind,side:e.source.side,life:.18,max:.18});if(this.attackCues.length>42)this.attackCues.shift();}
     const shot=projectileForHit(e),targetBase=e.target==='base',targetSide:Side=e.side==='player'?'enemy':'player';
     const targetAge=targetSide==='player'?game.profile.age:game.profile.enemyAge;
     if(shot&&!this.reduce){

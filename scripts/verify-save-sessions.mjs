@@ -64,7 +64,7 @@ try {
     await a.close(); await peer.locator('[data-command="session-continue"]').click(); await active(peer);
     assert.equal(await peer.locator('#gems').textContent(), '0');
     await peer.getByRole('button', { name: 'Cards', exact: true }).click(); assert.match(await peer.locator('.collection-summary').textContent(), /^1 \/ 30 discovered/);
-    await peer.getByRole('button', { name: 'Battle', exact: true }).click(); await peer.locator('[data-command="settings"]').click(); await peer.locator('[data-command="speed"]').click();
+    await peer.getByRole('button', { name: 'Battle', exact: true }).click(); await peer.locator('[data-command="settings"]').click(); await peer.locator('#modal-layer [data-command="speed"]').click();
     assert.equal(JSON.parse((await bytes(source))[0]).speed, 2);
     await peer.reload({ waitUntil: 'networkidle' }); await active(peer); assert.equal(await peer.locator('#speed').textContent(), '2×'); assert.equal(await peer.locator('#gems').textContent(), '0');
   });
@@ -92,7 +92,7 @@ try {
     await a.evaluate(() => addEventListener('storage', event => event.stopImmediatePropagation(), { capture: true }));
     await source.evaluate(({ key, profile }) => localStorage.setItem(key, JSON.stringify(profile)), { key: primary, profile: fixture({ gems: 543 }) });
     const foreign = await bytes(source);
-    if (trigger === 'preference') await a.locator('[data-command="speed"]').evaluate(button => button.click());
+    if (trigger === 'preference') await a.locator('#modal-layer [data-command="speed"]').evaluate(button => button.click());
     else await a.evaluate(() => dispatchEvent(new Event('focus')));
     await blocked(a, 'Your save changed in another tab'); assert.deepEqual(await bytes(source), foreign);
     const rescue = await exported(a); assert.equal(rescue.speed, 1); assert.equal(rescue.gems, 100);
@@ -113,7 +113,7 @@ try {
     await a.locator('[data-command="settings"]').click();
     await a.locator('#import-save').setInputFiles({ name: 'restore.json', mimeType: 'application/json', buffer: Buffer.from(JSON.stringify(fixture({ gems: 450, coins: 900 }))) });
     await a.locator('[data-command="confirm-import"]').click(); assert.equal(await a.locator('#gems').textContent(), '450'); assert.equal(JSON.parse((await bytes(source))[0]).coins, 900);
-    await a.locator('[data-command="settings"]').click(); await a.locator('[data-command="speed"]').click(); assert.equal(JSON.parse((await bytes(source))[0]).speed, 2);
+    await a.locator('[data-command="settings"]').click(); await a.locator('#modal-layer [data-command="speed"]').click(); assert.equal(JSON.parse((await bytes(source))[0]).speed, 2);
     await a.locator('#import-save').setInputFiles({ name: 'invalid.json', mimeType: 'application/json', buffer: Buffer.from('{invalid') });
     await a.getByText('Invalid JSON backup. Your current game was not changed.', { exact: true }).waitFor(); assert.equal(await a.locator('[data-command="confirm-import"]').count(), 0);
     // A primary quota rejection must reject replacement, keep the old Game/export and old bytes.
@@ -127,7 +127,7 @@ try {
     const source = await setup(context), a = await open(context); await active(a); await summon(a);
     // Synthetic lifecycle events cover BFCache event handling without pretending to prove actual BFCache eligibility.
     await a.evaluate(() => dispatchEvent(new PageTransitionEvent('pagehide', { persisted: true })));
-    const b = await open(context); await active(b); await b.locator('[data-command="settings"]').click(); await b.locator('[data-command="speed"]').click(); await b.close();
+    const b = await open(context); await active(b); await b.locator('[data-command="settings"]').click(); await b.locator('#modal-layer [data-command="speed"]').click(); await b.close();
     await a.evaluate(() => dispatchEvent(new PageTransitionEvent('pageshow', { persisted: true }))); await active(a);
     assert.equal(await a.locator('#speed').textContent(), '2×'); assert.equal(await a.locator('#gems').textContent(), '0'); assert.equal(JSON.parse((await bytes(source))[0]).cards.reduce((sum, n) => sum + n, 0), 1);
   });
@@ -136,7 +136,7 @@ try {
     await blocked(a, 'Saving is unavailable'); await a.screenshot({ path: `${output}/unavailable-320.png` }); await a.locator('[data-command="session-temporary"]').click(); await a.getByText('Temporary play — progress is not saved.', { exact: true }).waitFor();
     await summon(a); await a.locator('[data-command="close"]').last().click();
     await a.getByRole('button', { name: 'Battle', exact: true }).click(); await a.locator('[data-command="settings"]').click(); assert.equal(await a.locator('[data-command="import"]').isDisabled(), true);
-    await a.locator('[data-command="speed"]').click(); await a.locator('[data-command="sound"]').click(); await a.locator('[data-command="motion"]').click(); const rescue = await exported(a); assert.equal(rescue.gems, 0); assert.equal(rescue.speed, 2); assert.equal(rescue.motion, 'system');
+    await a.locator('#modal-layer [data-command="speed"]').click(); await a.locator('[data-command="sound"]').click(); await a.locator('[data-command="motion"]').click(); const rescue = await exported(a); assert.equal(rescue.gems, 0); assert.equal(rescue.speed, 2); assert.equal(rescue.motion, 'system');
     await a.evaluate(() => { dispatchEvent(new PageTransitionEvent('pagehide', { persisted: true })); dispatchEvent(new PageTransitionEvent('pageshow', { persisted: true })); });
     assert.equal(await a.locator('#app').getAttribute('data-save-session'), 'temporary'); await a.waitForTimeout(5500); assert.deepEqual(await bytes(source), initial); await a.close(); assert.deepEqual(await bytes(source), initial);
   }, { noLocks: true });

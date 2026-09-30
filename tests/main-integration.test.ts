@@ -6,7 +6,7 @@ import ts from 'typescript';
 import { Game } from '../src/game/simulation.ts';
 import { defaultProfile } from '../src/game/save.ts';
 import { ERAS, QUESTS, foodRate, unlockCost, dailyReward, localDay } from '../src/game/data.ts';
-import { battleGuidance, baseHealthDisplay, compactNumber } from '../src/ui/battle-hud.ts';
+import { battleGuidance, baseHealthDisplay, compactNumber, waveLabel, waveAccessibleLabel } from '../src/ui/battle-hud.ts';
 import { chapterPresentation } from '../src/ui/chapter-presentation.ts';
 import { resultsHtml } from '../src/ui/results-screen.ts';
 
@@ -28,7 +28,7 @@ function harness(motion = 'full') {
     lastUpdate: 0, lastSave: 100, lastPhase: 'ready', resultDue: 0, resultShown: '', activeTab: 'battle', root,
     performance: { now: () => now }, document: { documentElement: { dataset: { motion } } },
     $: (id: string) => { if (!elements.has(id)) elements.set(id, node()); return elements.get(id); },
-    ERAS, QUESTS, foodRate, unlockCost, dailyReward, localDay, battleGuidance, baseHealthDisplay, compactNumber, chapterPresentation, resultsHtml,
+    ERAS, QUESTS, foodRate, unlockCost, dailyReward, localDay, battleGuidance, baseHealthDisplay, compactNumber, waveLabel, waveAccessibleLabel, chapterPresentation, resultsHtml,
     storybookArt: () => false, money: String, coin: String, textIfChanged() {}, htmlIfChanged() {}, unlockAudio() {}, syncPause() {}, rebuildArmy() {}, syncMotion() {}, renderScreen() {}, toast() {},
     closeModal() {}, showModal: (id: string) => dialogs.push(id),
     session: {
