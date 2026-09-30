@@ -201,3 +201,14 @@ test('battle choices show how much more later opponents pay',()=>{
  assert.match(html,/CURRENT BATTLE · COINS ×512</);
  assert.match(html,/LOCKED</);
 });
+
+test('compactNumber promotes values that round up to 1000 instead of showing 1000k or 1000m',()=>{
+ assert.equal(compactNumber(999_949),'999.9k');
+ assert.equal(compactNumber(999_950),'1m');
+ assert.equal(compactNumber(999_999),'1m');
+ assert.equal(compactNumber(999_999_999),'1b');
+ assert.equal(compactNumber(999_999_999_999),'1t');
+ assert.equal(compactNumber(999_999_999_999_999),'1e15');
+ assert.equal(compactNumber(1_500),'1.5k');assert.equal(compactNumber(2_000_000),'2m');assert.equal(compactNumber(12_345),'12.3k');
+ assert.equal(compactNumber(999),'999');assert.equal(compactNumber(0),'0');
+});
