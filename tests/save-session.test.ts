@@ -266,3 +266,28 @@ test('invalid candidate never changes the baseline or either stored copy', async
   assert.equal(session.status, 'active'); assert.equal(session.check(), true); assert.deepEqual(storage.bytes(), before);
   session.dispose(); await flush();
 });
+
+test('schema-3 settled ledger and receipt persist together through guarded import, conflict and temporary play', async () => {
+  const { restoreBackupWithSave, exportBackup, importBackup } = await import('../src/game/backup.ts');
+  const storage = new MemoryStorage(), locks = new ExclusiveLocks(), session = create({storage,locks});
+  await session.acquire();
+  try {
+    const g = new Game(); g.dispatch({type:'start'});
+    for(let tick=0;tick<18000 && g.state.phase==='running';tick++) {
+      if(g.state.time>=8)g.dispatch({type:'skill',skill:'food'});
+      if(g.state.time>=10)g.dispatch({type:'spawn',kind:0});
+      if(g.state.time>=33&&g.state.units.filter(u=>u.side==='enemy'&&u.hp>0).length>=3)g.dispatch({type:'skill',skill:'meteor'});
+      if(g.state.time>=44)g.dispatch({type:'skill',skill:'freeze'});
+      g.step(1/60);
+    }
+    assert.equal(g.state.phase,'won'); assert.equal(g.profile.pendingVictory?.settlement,'mastery-v1'); assert.ok(g.profile.mastery.chapters[0].earnedMask & 1);
+    assert.equal(session.save(g.profile).ok,true);
+    const persisted=JSON.parse(storage.getItem(SAVE_KEY)!); assert.equal(persisted.version,3);assert.deepEqual(persisted.mastery,g.profile.mastery);assert.deepEqual(persisted.pendingVictory,g.profile.pendingVictory);
+    const parsed=importBackup(exportBackup(g.profile)); assert.equal(parsed.ok,true);
+    if(!parsed.ok)throw Error('Backup round trip failed');
+    const imported=restoreBackupWithSave(new Game(),parsed.profile,p=>session.save(p).ok);assert.equal(imported.ok,true);assert.deepEqual(imported.game.profile,g.profile);
+    const foreign={...persisted,gems:persisted.gems+1};storage.setItem(BACKUP_KEY,JSON.stringify(foreign));const bytes=storage.bytes();
+    const rejected=restoreBackupWithSave(imported.game,parsed.profile,p=>session.save(p).ok);assert.equal(rejected.ok,false);assert.equal(rejected.game,imported.game);assert.equal(session.status,'conflict');assert.deepEqual(storage.bytes(),bytes);
+    const temporary=create({storage,locks:null});await temporary.acquire();assert.equal(temporary.playTemporarily(),true);assert.equal(temporary.save(g.profile).ok,false);assert.deepEqual(storage.bytes(),bytes);temporary.dispose();
+  } finally {session.dispose();await flush();}
+});

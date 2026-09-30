@@ -23,7 +23,7 @@ export function characterGesture(input:number,time:number,moving:boolean,attacki
     return {forward:-.55*phase,lift:0,angle:-.22*phase,sx:1+.018*phase,sy:1-.024*phase};
   }
   if(moving){
-    const cycle=Math.sin(t*9),rise=Math.abs(cycle);
+    const cycle=Math.sin(t*Math.PI*2),rise=Math.abs(cycle);
     if(kind===0)return {forward:.55+.18*cycle,lift:.3*rise,angle:.9*cycle,sx:1+.005*rise,sy:1-.005*rise};
     if(kind===1)return {forward:.26+.08*cycle,lift:.12*rise,angle:.35*cycle,sx:1+.003*rise,sy:1-.003*rise};
     return {forward:.09+.03*cycle,lift:.05*rise,angle:.12*cycle,sx:1+.002*rise,sy:1-.002*rise};
