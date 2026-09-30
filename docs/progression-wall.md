@@ -24,3 +24,20 @@ The summoning run owns four cards and has 60 gems left. The no-summon run owns n
 The current policy spends coins on upgrades before attempting evolution. Another policy may preserve evolution funds or replay an earlier opponent. Evaluate those choices with accepted public actions and real terminal outcomes before drawing balancing conclusions. Chapter mastery and prestige require their own versioned traces because their rewards and evolution rules differ.
 
 No gameplay constants changed in this correction. Both commands completed with the explicit timeout report and passed the internal `started = wins + losses + timedOut` invariant.
+
+## With chapter mastery, step-downs and retreat
+
+The probe now models three things a player can do that the earlier policy could not: replay the previous chapter after three losses in a row (`stepDowns`, because evolution keeps the chapter frontier), retreat from a battle still running after 240 simulation seconds (`retreats`, the new Settings action; the earlier `battle-timeout` cases were fights that had stalled with neither base able to fall), and collect chapter mastery, whose per-timeline seals pay gems.
+
+Runs on main `f9b00e8` plus these two policy changes (heuristic play, not optimal play):
+
+| Command arguments | Stop reason | Started attempts | Wins / losses | Step-downs / retreats | Longest loss streak | Cards | Gems left |
+| --- | --- | ---: | ---: | ---: | ---: | ---: | ---: |
+| `12 1 1500` | target-reached (timeline 12) | 494 | 159 / 335 | 93 / 24 | 3 | 69 | 255 |
+| `12 0 1500` | attempt-limit (timeline 9) | 1500 | 401 / 1099 | 348 / 113 | 9 | 0 | 8,715 |
+
+Reading, with the same caution as above:
+
+- With mastery, a policy that spends its gems on cards completes twelve timelines in under 500 attempts, while the same policy that never summons reaches timeline 9 in 1,500 attempts with almost 9,000 gems unspent. Gems still matter, but they are no longer scarce; the earlier "wall near timeline 6" was a property of the pre-mastery economy plus a policy that could not step down or retreat.
+- Stalled fights do happen (a weak army against long-range defenders can neither win nor lose). Without a way out, only a reload ended them, which is why Settings now offers **Retreat from this battle** while one is running. Retreating is an ordinary loss: earned coins stay, no seals or rewards are added.
+- These runs say nothing about how fun the pacing is, or about how a human would play.
