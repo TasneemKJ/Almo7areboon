@@ -28,3 +28,8 @@ test('the resource header precedes the battle view so keyboard focus follows the
  const main=readFileSync(new URL('../src/main.ts',import.meta.url),'utf8');
  assert.ok(main.indexOf('<header class="resources">')<main.indexOf('id="battle-view"'));
 });
+
+test('the wave and threat readout keeps the 11px floor',()=>{
+ const css=readFileSync(new URL('../src/ui/readability.css',import.meta.url),'utf8');
+ assert.match(css,/\.battle-meta>span\s*\{\s*font-size:\s*11px/);
+});
