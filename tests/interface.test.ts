@@ -172,7 +172,7 @@ test('guidance teaches affordable opening, counters, unlock fallback and precede
  g.profile.unlocked=[true,true,true];
  assert.equal(battleGuidance(g.profile,g.state,{...preview,intent:'rush'}),'A rush is coming. A heavy warrior can hit two enemies.');
  assert.equal(battleGuidance(g.profile,g.state,{...preview,intent:'bulwark'}),'A heavy enemy is coming. Ranged troops deal extra damage to it.');
- g.state.food=0;assert.match(battleGuidance(g.profile,g.state,preview),/More food/);
+ g.state.food=0;assert.match(battleGuidance(g.profile,g.state,preview),/Food Drop adds 10 now.*wait 4s/);
  g.state.playerHp=10;assert.match(battleGuidance(g.profile,g.state,preview),/danger/);
  g.state.paused=true;assert.match(battleGuidance(g.profile,g.state,preview),/paused/);
  g.state.paused=false;g.state.playerHp=g.state.playerMaxHp;g.state.food=20;

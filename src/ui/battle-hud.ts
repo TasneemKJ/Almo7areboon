@@ -24,7 +24,9 @@ export function battleGuidance(profile: Profile, state: BattleState, preview?: W
   if (state.playerHp / state.playerMaxHp <= 0.3) return 'Your base is in danger. Deploy reinforcements or use a skill.';
   if (state.stats.deployed === 0 && state.food >= ERAS[profile.age].units[0].cost) return 'Deploy a melee warrior. Save some food for the next wave.';
   const wait = Math.ceil((ERAS[profile.age].units[0].cost - state.food) / foodRate(profile));
-  if (wait > 0) return `More food in ${wait}s. Your warriors fight automatically.`;
+  if (wait > 0) return profile.wins<3&&!state.skillsUsed.includes('food')
+    ? `Food Drop adds 10 now, once per battle; or wait ${wait}s.`
+    : `More food in ${wait}s. Your warriors fight automatically.`;
   if (profile.wins < 3 && state.stats.skillsCast === 0 && state.time >= 25 && (!preview || preview.nextIn > 8)) {
     const enemies = state.units.some(unit => unit.side === 'enemy' && unit.hp > 0);
     const skills = [
