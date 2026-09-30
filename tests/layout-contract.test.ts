@@ -70,3 +70,9 @@ test('install and sharing metadata: manifest identity, maskable icon and link pr
  for(const icon of manifest.icons)assert.equal(existsSync(new URL(`../public/${icon.src.replace('./','')}`,import.meta.url)),true,icon.src);
  for(const tag of ['og:title','og:description','og:type','twitter:card','apple-mobile-web-app-title'])assert.ok(html.includes(tag),tag);
 });
+
+test('touch surfaces suppress Safari text selection and long-press callouts',()=>{
+ const css=readFileSync(new URL('../src/style.css',import.meta.url),'utf8');
+ assert.match(css,/button,\.game-shell\s*\{[^}]*-webkit-user-select:\s*none[^}]*-webkit-touch-callout:\s*none/);
+ assert.match(css,/svg,img\s*\{[^}]*-webkit-touch-callout:\s*none/);
+});

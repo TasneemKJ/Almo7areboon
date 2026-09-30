@@ -22,7 +22,9 @@ button:disabled { cursor:default; }
 button:focus-visible, summary:focus-visible, a:focus-visible { outline:3px solid #edb755; outline-offset:3px; }
 button:not(:disabled):active { transform:translateY(2px); filter:brightness(.96); }
 button svg { pointer-events:none; }
-svg,img { user-select:none; -webkit-user-select:none; }
+svg,img { user-select:none; -webkit-user-select:none; -webkit-touch-callout:none; -webkit-user-drag:none; }
+/* Safari only honours the prefixed forms: without them, rapid taps or a long press on a troop card can select text or open the callout. */
+button,.game-shell { -webkit-user-select:none; -webkit-touch-callout:none; }
 [hidden] { display:none!important; }
 .icon { width:26px; height:26px; flex-shrink:0; vertical-align:middle; overflow:visible; }
 .game-shell { width:100%; max-width:480px; height:100dvh; min-height:540px; max-height:1020px; margin:auto; position:relative; overflow:hidden; background:var(--paper); box-shadow:0 0 0 1px #d6cdac3a,0 22px 90px #071c24aa; display:flex; flex-direction:column; --era-accent:#b9db8d; }
