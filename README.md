@@ -4,7 +4,7 @@ A mobile-first, portrait web recreation of the **We Are Warriors!** core loop, b
 
 ## Current delivery
 
-The deterministic core, 30-card collection, progression and save recovery are implemented. The illustrated visual overhaul adds six environments, redesigned armies and a coordinated mobile interface. Its current local suite has **284 passing tests** and the production build succeeds. This is **not** a verified pixel-exact clone or a complete recreation of the reference's live-service systems.
+The deterministic core, 30-card collection, progression and save recovery are implemented. The illustrated visual overhaul adds six environments, redesigned armies and a coordinated mobile interface. Its local suite (`npm test`) and the production build pass; the test count is deliberately not quoted here because it changes with every iteration. This is **not** a verified pixel-exact clone or a complete recreation of the reference's live-service systems.
 
 Rendered browser, screenshot, touch-device and Safari verification remain pending because the available browser route was blocked. Component tests and CSS/source checks do not replace those checks. See the [visual-overhaul evidence](docs/VISUAL-OVERHAUL.md), [core verification](docs/VERIFICATION.md) and the [original 40-pass record](docs/ITERATIONS.md).
 
@@ -33,6 +33,8 @@ Tap **Battle**, accumulate food, then tap a troop to deploy it. Troops march, fi
 Victory unlocks the next opponent. **Choose a battle** replays unlocked opponents while ready. **Evolution** strengthens your own army but clears coins, upgrades, troop unlocks and unlocked battles; its confirmation explains exactly what resets. Finishing the final opponent begins a harder timeline.
 
 The 30-card collection applies passive bonuses automatically. Summon packs contain 1, 10 or 50 cards, cost earned gems and use a saved random stream. Duplicates advance levels. The interface shows rarity odds, duplicate progress and the arithmetic safety cap. There are no real-money purchases.
+
+Quests pay gems for kill, deployment and win milestones, and a daily reward pays 30 gems (rising 10 per consecutive local day to 90) once per local calendar day; missing a day restarts the streak. Both light the notification dot on the quests button.
 
 Freeze, Meteor and Food Drop can each be used once per battle. A Meteor without enemies and a Food Drop at full storage do not consume the skill. Result screens show real deployment, damage, food, kill and army-size statistics.
 
