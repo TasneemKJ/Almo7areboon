@@ -1,0 +1,6 @@
+/* A static timing cue on existing controls: no pulse, extra panel or new motion. */
+.skill-circle.skill-opportunity:not(:disabled):not(.used) { border:2px solid #f4d18b; }
+.skill-circle:focus-visible { outline:3px solid #edb755; outline-offset:-3px; }
+.skill-circle.used.freeze-active { opacity:.9; }
+.skill-circle small { font-size:.625rem; min-width:16px; text-align:center; line-height:1.2; }
+@media(forced-colors:active) { .skill-circle.skill-opportunity:not(:disabled):not(.used) { border-color:Highlight; } .skill-circle:focus-visible { outline-color:Highlight; } }
