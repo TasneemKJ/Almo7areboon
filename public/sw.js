@@ -33,14 +33,21 @@ self.addEventListener('activate', event => {
 self.addEventListener('fetch', event => {
   const request = event.request;
   if (request.method !== 'GET' || new URL(request.url).origin !== self.location.origin) return;
+  const opened = caches.open(CACHE);
+  const refresh = opened.then(() => fetch(request));
+  // Keep background revalidation alive after a cached response is delivered.
+  // Cache writes/trim do not delay the page or a newly fetched asset.
+  event.waitUntil(refresh.then(async response => {
+    if (response.ok && response.type === 'basic') {
+      const cache = await opened;
+      await cache.put(request, response.clone());
+      await trimBundles(cache);
+    }
+  }).catch(() => {}));
   event.respondWith((async () => {
-    const cache = await caches.open(CACHE);
+    const cache = await opened;
     // Pages: prefer the network so updates arrive, but fall back to the last copy offline.
     // Everything else: answer from the cache at once and refresh it in the background.
-    const refresh = fetch(request).then(response => {
-      if (response.ok && response.type === 'basic') cache.put(request, response.clone()).then(() => trimBundles(cache)).catch(() => {});
-      return response;
-    });
     if (request.mode === 'navigate') return refresh.catch(async () => (await cache.match(request, { ignoreSearch: true })) || (await cache.match('./')) || Response.error());
     const cached = await cache.match(request);
     if (cached) { refresh.catch(() => {}); return cached; }
