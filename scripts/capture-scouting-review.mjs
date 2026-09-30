@@ -1,4 +1,14 @@
 import assert from 'node:assert/strict';
+import { SAVE_KEY, BACKUP_KEY } from '../src/game/save.ts';
+
+async function settleScoutingBaseline(source,keys) {
+ // Retry commits primary immediately; periodic persistence rotates it into backup.
+ // Observe that transition before proving disclosure keys preserve both byte streams.
+ await source.waitForFunction(({primary,backup})=>{
+  const current=localStorage.getItem(primary);
+  return current!==null&&current===localStorage.getItem(backup);
+ },keys,{timeout:10000});
+}
 
 /** Reuse real mastery seeds and native production startup/session authority. */
 export async function reviewScouting({scenario,seeds,setup,open,active,ready,result,saved,bytes,command,inspect}) {
@@ -36,7 +46,9 @@ export async function reviewScouting({scenario,seeds,setup,open,active,ready,res
    await inspect(page,`scouting-victory-${viewport.width}`);
    await command(page,'retry').click();await ready(page);
    assert.match(await page.locator('#deploy-hint').innerText(),/1 melee in 4s/);
-   await page.locator('[data-command="battles"]').click();const before=await bytes(source);
+   await page.locator('[data-command="battles"]').click();
+   await settleScoutingBaseline(source,{primary:SAVE_KEY,backup:BACKUP_KEY});
+   const before=await bytes(source);
    const scout='.chapter-scouting:not(.battle-teaching)';
    assert.equal(await page.locator(scout).getAttribute('open'),null);
    assert.match(await page.locator(`${scout} summary`).innerText(),/Olive Terraces/);
