@@ -1,9 +1,15 @@
-import { CARD_DEFS, availableSummonOdds, cardPackCost, cardProgress, summonLevel } from '../game/cards.ts';
+import { CARD_DEFS, availableSummonOdds, cardBonuses, cardPackCost, cardProgress, summonLevel } from '../game/cards.ts';
 import { cardBonus } from '../game/data.ts';
 import type { Profile } from '../game/types.ts';
 import { cardIllustration } from '../view/card-illustrations.ts';
 import { icon } from '../view/icons.ts';
 import { compactNumber } from './battle-hud.ts';
+
+/** The stat multiplier this one card contributes alone, so its level has a visible payoff. */
+function cardEffect(index: number, copies: number): number {
+  const owned = CARD_DEFS.map((_, i) => (i === index ? copies : 0));
+  return cardBonuses(owned)[CARD_DEFS[index].stat];
+}
 
 export function multiplier(value: number): string { return value < 1000 ? value.toFixed(2) : compactNumber(value); }
 
@@ -21,7 +27,7 @@ export function cardsScreenHtml(profile: Profile): string {
   <p class="collection-summary">${profile.cards.filter(count=>count>0).length} / ${CARD_DEFS.length} discovered · All bonuses apply automatically.</p>
   <div class="collection-grid">${CARD_DEFS.map((card,i)=>{
     const progress=cardProgress(profile.cards[i]);
-    return `<article class="collection-card ${progress.level?'owned':'unowned'}" data-rarity="${card.rarity}" style="--card-color:${card.color}"><div class="rarity">${card.rarity.toUpperCase()}</div><div class="card-art"><img alt="" loading="lazy" src="${cardIllustration(i)}"/></div><h3>${card.name}</h3><p>${card.description}</p><div class="card-level">${progress.level?`LEVEL ${progress.level}`:'NOT DISCOVERED'}</div><small class="card-copies">${profile.cards[i]>=1000?'COLLECTION LIMIT':`${progress.owned} / ${progress.required} copies to next level`}${progress.level>=100?' · bonus cap 100':''}</small></article>`;
+    return `<article class="collection-card ${progress.level?'owned':'unowned'}" data-rarity="${card.rarity}" style="--card-color:${card.color}"><div class="rarity">${card.rarity.toUpperCase()}</div><div class="card-art"><img alt="" loading="lazy" src="${cardIllustration(i)}"/></div><h3>${card.name}</h3><p>${card.description}</p><div class="card-level">${progress.level?`LEVEL ${progress.level} · ×${multiplier(cardEffect(i,profile.cards[i]))} ${card.stat}`:'NOT DISCOVERED'}</div><small class="card-copies">${profile.cards[i]>=1000?'COLLECTION LIMIT':`${progress.owned} / ${progress.required} copies to next level`}${progress.level>=100?' · bonus cap 100':''}</small></article>`;
   }).join('')}</div>`;
 }
 
