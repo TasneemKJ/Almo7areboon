@@ -10,13 +10,16 @@ export function updateSoundscape(age:number,audible:boolean,mood:SoundscapeMood=
   intent={age,audible,mood};soundscape.update(context,age,permitted&&audible,mood);
 }
 const lastTone=new Map<string,number>();
-const tones:Record<string,[number,number,number]>={spawn:[430,300,.08],hit:[130,55,.04],coin:[890,1150,.07],upgrade:[530,850,.18],win:[520,1040,.4],lose:[240,90,.5],skill:[700,120,.35],evolve:[400,1400,.55],death:[260,70,.14],'skill-freeze':[1500,650,.4],'skill-meteor':[190,38,.5],'skill-food':[520,900,.22],summon:[660,1480,.32]};
+const tones:Record<string,[number,number,number]>={spawn:[430,300,.08],hit:[130,55,.04],coin:[890,1150,.07],upgrade:[530,850,.18],win:[520,1040,.4],lose:[240,90,.5],skill:[700,120,.35],evolve:[400,1400,.55],death:[260,70,.14],'skill-freeze':[1500,650,.4],'skill-meteor':[190,38,.5],'skill-food':[520,900,.22],summon:[660,1480,.32],'hit-ranged':[560,240,.05],'hit-heavy':[95,38,.09]};
 
 /** Skills share one game event, so pick the cue from the skill that was cast. */
-export function cueFor(event:{type:string;skill?:string;cardIndices?:readonly number[]}):string {
+export function cueFor(event:{type:string;skill?:string;cardIndices?:readonly number[];source?:{kind?:number}}):string {
   if(event.type==='skill'&&event.skill&&`skill-${event.skill}` in tones)return `skill-${event.skill}`;
   // A card summon is the one 'upgrade' event that carries the drawn cards; give it a longer shimmer.
   if(event.type==='upgrade'&&Array.isArray(event.cardIndices)&&event.cardIndices.length>0)return 'summon';
+  // Hits keep the base thud for melee; ranged and heavy attackers sound different, so a battle can be followed by ear.
+  if(event.type==='hit'&&event.source?.kind===1)return 'hit-ranged';
+  if(event.type==='hit'&&event.source?.kind===2)return 'hit-heavy';
   return event.type;
 }
 
@@ -49,7 +52,8 @@ export function disposeAudio():void {
 export function sound(kind:string,enabled:boolean):void {
   if(!enabled||!permitted||!context||context.state!=='running')return;
   const owner=context,now=owner.currentTime;
-  const interval=kind==='hit'?.07:kind==='coin'?.09:.04;
+  const isHit=kind.startsWith('hit');
+  const interval=isHit?.07:kind==='coin'?.09:.04;
   if(now-(lastTone.get(kind)??-Infinity)<interval)return;
   if(voices>=8&&!soundscape.dropAccent())return;
   let oscillator:OscillatorNode|undefined,gain:GainNode|undefined,counted=false,cleaned=false;
@@ -61,8 +65,8 @@ export function sound(kind:string,enabled:boolean):void {
   try{
     const [from,to,duration]=tones[kind]||tones.spawn;
     oscillator=owner.createOscillator();gain=owner.createGain();
-    oscillator.type=kind==='hit'?'triangle':'sine';oscillator.frequency.setValueAtTime(from,now);oscillator.frequency.exponentialRampToValueAtTime(to,now+duration);
-    gain.gain.setValueAtTime(kind==='hit'?.025:.055,now);gain.gain.exponentialRampToValueAtTime(.001,now+duration);
+    oscillator.type=isHit?'triangle':'sine';oscillator.frequency.setValueAtTime(from,now);oscillator.frequency.exponentialRampToValueAtTime(to,now+duration);
+    gain.gain.setValueAtTime(isHit?.025:.055,now);gain.gain.exponentialRampToValueAtTime(.001,now+duration);
     oscillator.connect(gain);gain.connect(owner.destination);oscillator.onended=cleanup;
     voices++;counted=true;lastTone.set(kind,now);oscillator.start(now);oscillator.stop(now+duration);
   }catch{cleanup();}

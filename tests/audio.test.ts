@@ -33,10 +33,11 @@ test('every game event has its own cue, so a defeated unit does not sound like a
  Object.defineProperty(globalThis,'AudioContext',{configurable:true,value:RunningAudio});
  try{
   audio.unlockAudio(true);
-  for(const kind of ['spawn','hit','death','coin','upgrade','win','lose','skill','evolve','skill-freeze','skill-meteor','skill-food','summon']){current=kind;audio.sound(kind,true);}
+  for(const kind of ['spawn','hit','death','coin','upgrade','win','lose','skill','evolve','skill-freeze','skill-meteor','skill-food','summon','hit-ranged','hit-heavy']){current=kind;audio.sound(kind,true);}
   const fromSpawn=Object.entries(starts).filter(([,value])=>value===starts.spawn).map(([kind])=>kind);
   assert.deepEqual(fromSpawn,['spawn'],'no other event may reuse the spawn cue');
-  assert.equal(Object.keys(starts).length,13);
+  assert.equal(Object.keys(starts).length,15);
+  assert.equal(new Set([starts.hit,starts['hit-ranged'],starts['hit-heavy']]).size,3,'melee, ranged and heavy hits differ');
   assert.notEqual(starts.summon,starts.upgrade,'a summon does not reuse the plain upgrade cue');
   assert.equal(new Set(['skill-freeze','skill-meteor','skill-food'].map(kind=>starts[kind])).size,3,'each skill has a distinct cue');
  }finally{audio.disposeAudio();if(previous)Object.defineProperty(globalThis,'AudioContext',previous);else delete (globalThis as Record<string,unknown>).AudioContext;}
@@ -55,4 +56,11 @@ test('a card summon is cued differently from a plain upgrade',()=>{
  assert.equal(audio.cueFor({type:'upgrade',cardIndices:[3,9]}),'summon');
  assert.equal(audio.cueFor({type:'upgrade',cardIndices:[]}),'upgrade');
  assert.equal(audio.cueFor({type:'upgrade'}),'upgrade');
+});
+
+test('hits are cued by the attacking troop kind',()=>{
+ assert.equal(audio.cueFor({type:'hit',source:{kind:0}}),'hit');
+ assert.equal(audio.cueFor({type:'hit',source:{kind:1}}),'hit-ranged');
+ assert.equal(audio.cueFor({type:'hit',source:{kind:2}}),'hit-heavy');
+ assert.equal(audio.cueFor({type:'hit'}),'hit');
 });
