@@ -1,3 +1,4 @@
+import { createMastery, normalizeMastery, masteryReward } from './mastery.ts';
 import { battleStats } from './statistics.ts';
 import { CARD_DEFS, MAX_DAILY_DAY, QUESTS } from './data.ts';
 import type { Profile } from './types.ts';
@@ -8,7 +9,7 @@ export const MAX_SAVE_CHARS = 100_000;
 export type LoadStatus = 'loaded' | 'new' | 'recovered' | 'corrupt' | 'unsupported' | 'unavailable';
 
 export function defaultProfile(): Profile {
-  return { version: 2, timeline: 1, age: 0, enemyAge: 0, furthestBattle: 0, coins: 0, gems: 100, foodLevel: 0, baseLevel: 0, unlocked: [true, false, false], cards: CARD_DEFS.map(() => 0), summonCount: 0, summonSeed: 0x6d2b79f5, pendingVictory: null, kills: 0, wins: 0, deployed: 0, claimed: [], dailyDay: 0, dailyStreak: 0, sound: true, speed: 1, motion: 'system' };
+  return { version: 3, mastery: createMastery(1), timeline: 1, age: 0, enemyAge: 0, furthestBattle: 0, coins: 0, gems: 100, foodLevel: 0, baseLevel: 0, unlocked: [true, false, false], cards: CARD_DEFS.map(() => 0), summonCount: 0, summonSeed: 0x6d2b79f5, pendingVictory: null, kills: 0, wins: 0, deployed: 0, claimed: [], dailyDay: 0, dailyStreak: 0, sound: true, speed: 1, motion: 'system' };
 }
 
 function integer(value: unknown, fallback: number, min: number, max: number): number {
@@ -19,8 +20,9 @@ function validate(value: unknown): Profile {
   const clean = defaultProfile();
   if (!value || typeof value !== 'object' || Array.isArray(value)) return clean;
   const data = value as Record<string, unknown>;
-  if (data.version !== 1 && data.version !== 2) return clean;
+  if (data.version !== 1 && data.version !== 2 && data.version !== 3) return clean;
   clean.timeline = integer(data.timeline, 1, 1, 1000);
+  clean.mastery = data.version === 3 ? normalizeMastery(data.mastery, clean.timeline) : createMastery(clean.timeline);
   clean.age = integer(data.age, 0, 0, 5);
   clean.enemyAge = integer(data.enemyAge, 0, 0, 5);
   clean.furthestBattle = Math.max(clean.enemyAge, integer(data.furthestBattle, clean.enemyAge, 0, 5));
@@ -50,12 +52,25 @@ function validate(value: unknown): Profile {
     const finiteFields = ['earned', 'seconds', 'playerHp'].every(key => typeof victory[key] === 'number' && Number.isFinite(victory[key]) && (victory[key] as number) >= 0);
     if (victory.timeline === clean.timeline && victory.battle === clean.enemyAge && finiteFields) {
       clean.pendingVictory = {
+        settlement: 'legacy',
         stats: battleStats(victory.stats),
         timeline: clean.timeline, battle: clean.enemyAge,
         earned: integer(victory.earned, 0, 0, 1e9),
         seconds: Math.min(86400, victory.seconds as number),
         playerHp: victory.playerHp as number,
       };
+      const validMask = (value: unknown): value is number => typeof value === 'number' && Number.isInteger(value) && value >= 0 && value <= 7;
+      const { eligibleMask, newMask, masteryCoins, masteryGems } = victory;
+      if (data.version === 3 && victory.settlement === 'mastery-v1' && validMask(eligibleMask) && validMask(newMask)
+          && (eligibleMask & 1) !== 0 && (newMask & ~eligibleMask) === 0
+          && (clean.mastery.chapters[clean.enemyAge].earnedMask & eligibleMask) === eligibleMask
+          && typeof masteryCoins === 'number' && Number.isInteger(masteryCoins) && masteryCoins >= 0
+          && typeof masteryGems === 'number' && Number.isInteger(masteryGems) && masteryGems >= 0) {
+        const reward = masteryReward(clean.enemyAge,newMask);
+        if (masteryCoins <= reward.coins && masteryGems <= reward.gems && masteryCoins <= clean.pendingVictory.earned) {
+          clean.pendingVictory = { ...clean.pendingVictory, settlement: 'mastery-v1', eligibleMask, newMask, masteryCoins, masteryGems };
+        }
+      }
     }
   }
   if (Array.isArray(data.claimed)) clean.claimed = QUESTS.filter(quest => (data.claimed as unknown[]).includes(quest.id)).map(quest => quest.id);
@@ -73,7 +88,7 @@ export function decodeSave(raw: string): { profile: Profile | null; problem: 'co
     const value: unknown = JSON.parse(raw);
     if (!value || typeof value !== 'object' || Array.isArray(value)) return { profile: null, problem: 'corrupt' };
     const version = (value as Record<string, unknown>).version;
-    if (version !== 1 && version !== 2) return { profile: null, problem: typeof version === 'number' ? 'unsupported' : 'corrupt' };
+    if (version !== 1 && version !== 2 && version !== 3) return { profile: null, problem: typeof version === 'number' ? 'unsupported' : 'corrupt' };
     const data = value as Record<string, unknown>;
     if (!Array.isArray(data.cards) || !['timeline', 'age', 'enemyAge', 'coins'].every(key => key in data)) return { profile: null, problem: 'corrupt' };
     return { profile: validate(value), problem: null };

@@ -8,6 +8,8 @@ import { startOverProfile } from '../src/game/reset.ts';
 function advancedProfile() {
   const p = defaultProfile();
   Object.assign(p, { timeline: 4, age: 3, enemyAge: 3, furthestBattle: 3, coins: 9000, gems: 777, foodLevel: 9, baseLevel: 7, unlocked: [true, true, true], summonCount: 60, kills: 90, wins: 12, deployed: 300, claimed: ['first-blood', 'veteran'], sound: false, speed: 2, motion: 'reduced', dailyDay: 20000, dailyStreak: 5 });
+  p.mastery.timeline = 4;
+  p.mastery.chapters[0] = { earnedMask: 7, bestSeconds: 60, bestGateDamage: 0 };
   p.cards = p.cards.map((_, i) => (i % 3 === 0 ? 4 : 0));
   return p;
 }

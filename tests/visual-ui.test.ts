@@ -22,7 +22,7 @@ test('era journey shows all six landscapes and preserves the actual evolution ga
  g.profile.coins=ERAS[0].evolveCost;
  html=m.evolutionScreenHtml(g.profile,g.state);
  assert.match(html,/data-command="evolve" >/);
- assert.match(html,/All coins, upgrades, troop unlocks, and unlocked battles reset/);
+ assert.match(html,/All coins, upgrades and troop unlocks reset/);assert.match(html,/selected opponent and unlocked battles stay/);
  g.dispatch({type:'start'});
  assert.match(m.evolutionScreenHtml(g.profile,g.state),/data-command="evolve" disabled/);
 });

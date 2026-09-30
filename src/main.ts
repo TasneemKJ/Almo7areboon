@@ -6,6 +6,7 @@ import './ui/combat-focus.css';
 import './ui/era-glow.css';
 import './ui/readability.css';
 import { Game } from './game/simulation.ts';
+import { advanceStatus } from './game/mastery.ts';
 import { ERAS, foodRate, unlockCost, QUESTS, dailyReward, localDay } from './game/data.ts';
 import { defaultProfile, MAX_SAVE_CHARS, SAVE_KEY, BACKUP_KEY } from './game/save.ts';
 import { createSaveSession } from './game/save-session.ts';
@@ -42,6 +43,10 @@ let villagePresentation:VillagePresentation|null=null;
 let atmosphereEnabled=loadAtmosphere();
 let lastUpdate=0,lastSave=0,resultShown='',lastPhase=game.state.phase,resultDue=0,toastTimer=0,focusFrame=0,modalVersion=0;
 let savedWarning=false,pendingImport:Profile|null=null;
+// Transient modal context only; the saved receipt remains the outcome authority.
+let evolutionFromResult=false;
+// A native multi-click that starts in a modal must not hit controls it reveals.
+let modalPointerSequence=false;
 let sessionReady=false,pagePresent=true,resumeOwnership=false,acquisitionVersion=0,hasPlayed=false;
 let acquiring:Promise<void>|null=null;
 const money=(value:number)=>value>=10000?compactNumber(value):Math.floor(value).toLocaleString('en-US');
@@ -93,7 +98,7 @@ function sessionPresentation(status:SaveSessionStatus){
   textIfChanged(notice,status==='temporary'?temporarySessionNotice:'Opening your saved game…');
   if(status!=='active'&&status!=='temporary')sessionReady=false;
   const html=saveSessionDialogHtml(status);
-  if(html){pendingImport=null;showModal('session',html);}
+  if(html){pendingImport=null;evolutionFromResult=false;showModal('session',html);}
   else if(status==='starting'){
     // An immediate acquisition has no transient modal focus loop.
     isolateModal(true);notice.inert=false;
@@ -109,7 +114,7 @@ async function acquireSession(){
     if(lifetime.disposed||version!==acquisitionVersion||!pagePresent)return;
     if(loaded.status==='active'&&loaded.profile){
       game=new Game(loaded.profile);lastPhase=game.state.phase;resultDue=0;hasPlayed=true;sessionReady=true;
-      manualPaused=false;resultShown='';savedWarning=false;pendingImport=null;
+      manualPaused=false;resultShown='';savedWarning=false;pendingImport=null;evolutionFromResult=false;
       closeModal(false);rebuildArmy();syncMotion();switchTab('battle');
       if(loaded.loadStatus==='recovered')toast('Recovered your progress from the backup save.');
       else if(loaded.loadStatus==='corrupt')toast('The stored save could not be recovered. A new game has started.');
@@ -198,7 +203,7 @@ function update(force=false){
   if(notification)notification.hidden=!(dailyReward(p,localDay()).available||QUESTS.some(q=>p[q.stat]>=q.target&&!p.claimed.includes(q.id)));
   // Let the finishing blow and base collapse play before the result dialog covers them.
   if(s.phase!==lastPhase){if(lastPhase==='running'&&(s.phase==='won'||s.phase==='lost'))resultDue=now+(document.documentElement.dataset.motion==='reduced'?350:1300);lastPhase=s.phase;}
-  if(playable()&&(s.phase==='won'||s.phase==='lost')&&resultShown!==s.phase&&now>=resultDue){resultShown=s.phase;showResult();}
+  if(playable()&&modal!=='session'&&(s.phase==='won'||s.phase==='lost')&&resultShown!==s.phase&&now>=resultDue){resultShown=s.phase;showResult();}
   if(s.phase==='ready'||s.phase==='running')resultShown='';
   if(playable()&&session.status==='active'&&now-lastSave>5000)persist();
 }
@@ -243,7 +248,28 @@ function closeModal(refresh=true){
   else root!.querySelector<HTMLElement>(`[data-tab="${activeTab}"]`)?.focus();
   if(refresh)update(true);
 }
-function showResult(){persist();if(playable())showModal('result',resultsHtml(game.profile,game.state));}
+function showResult(){
+  if(!guardAction()||modal==='session')return;
+  if(game.state.phase!=='won'&&game.state.phase!=='lost')return;
+  persist();
+  // A failed ownership check/save may synchronously replace this modal with recovery.
+  if(playable()&&modal!=='session')showModal('result',resultsHtml(game.profile,game.state));
+}
+function returnToChapters(){
+  if(advanceStatus(game.profile,game.state).reason!=='complete'||!action({type:'retry'}))return;
+  if(!guardAction()||modal==='session')return;
+  evolutionFromResult=false;manualPaused=false;closeModal(false);switchTab('battle');
+  showModal('battles',battleSelectionHtml(game.profile,game.state));
+}
+function dismissModal(){
+  if(modal==='session')return;
+  if(modal==='result'){
+    if(advanceStatus(game.profile,game.state).reason==='complete')returnToChapters();
+    return;
+  }
+  if(modal==='evolve'&&evolutionFromResult){evolutionFromResult=false;showResult();return;}
+  evolutionFromResult=false;closeModal();
+}
 function showSettings(){
   showModal('settings',`<span class="eyebrow">ALMO7AREBOON</span><h2 id="dialog-title">Settings</h2>
   <button class="setting-row" data-command="sound" aria-pressed="${game.profile.sound}">${icon('sound')} Sound <b>${game.profile.sound?'ON':'OFF'}</b></button>
@@ -252,7 +278,7 @@ function showSettings(){
   <button class="setting-row" data-command="speed">${icon('evolution')} Battle speed <b>${game.profile.speed}×</b></button>
   <button class="setting-row" data-command="motion" aria-pressed="${game.profile.motion==='reduced'}">Motion <b>${game.profile.motion==='reduced'?'REDUCED':'SYSTEM'}</b></button>
   <div class="backup-actions"><button class="big-button blue" data-command="export">EXPORT SAVE</button><button class="big-button secondary" data-command="import" ${session.status!=='active'?'disabled':''}>IMPORT SAVE</button><button class="big-button secondary" data-command="reset" ${session.status!=='active'?'disabled':''}>START OVER</button><input id="import-save" type="file" accept=".json,application/json" hidden></div>
-  <details class="help-box"><summary>How to play</summary><p>Tap Battle, collect food and deploy troops. Your army fights automatically.</p><p>Keep ranged troops behind a melee or heavy front line. Spend earned coins on food production and new troops.</p><p>Battle victories unlock opponents. Evolution upgrades your own army but resets coins, upgrades and battle unlocks.</p><small>1–3 troops · Q / W / E skills · Space pause · Escape closes menus.</small></details>
+  <details class="help-box"><summary>How to play</summary><p>Tap Battle, collect food and deploy troops. Your army fights automatically.</p><p>Keep ranged troops behind a melee or heavy front line. Spend earned coins on food production and new troops.</p><p>Battle victories unlock opponents. Evolution upgrades your own army and resets coins and upgrades. Your selected opponent, unlocked battles and chapter seals stay.</p><small>1–3 troops · Q / W / E skills · Space pause · Escape closes menus.</small></details>
   <p class="save-note">${session.status==='temporary'?temporarySessionNotice:savedWarning?'Saving is unavailable. Export a backup before closing.':'Progress saves on this browser. Export a backup to keep a separate copy.'}</p>`);
 }
 function dailyRow(p:Profile){
@@ -278,6 +304,12 @@ function exportSave(){
 lifetime.listen<MouseEvent>(root,'click',e=>{
   const button=e.target instanceof Element?e.target.closest<HTMLButtonElement>('button'):null;
   if(!button||button.disabled)return;
+  if(e.detail===1)modalPointerSequence=modal!==null;
+  else if(e.detail>1&&modalPointerSequence){
+    e.preventDefault();
+    if(!modal)root!.querySelector<HTMLElement>(`[data-tab="${activeTab}"]`)?.focus();
+    return;
+  }
   const command=button.dataset.command;
   if(command==='export'){exportSave();return;}
   if(command==='session-continue'){void acquireSession();return;}
@@ -306,9 +338,21 @@ lifetime.listen<MouseEvent>(root,'click',e=>{
     case 'upgrade-food':action({type:'upgrade',stat:'food'});break;
     case 'upgrade-base':action({type:'upgrade',stat:'base'});break;
     case 'battles':showModal('battles',battleSelectionHtml(game.profile,game.state));break;
-    case 'evolve':{const html=evolutionDialogHtml(game.profile,game.state);if(html)showModal('evolve',html);break;}
-    case 'confirm-evolve':if(action({type:'evolve'})){closeModal(false);switchTab('battle');toast(`Entering ${chapterPresentation(game.profile.age).title}.`);}break;
-    case 'next':case 'retry':if(action({type:button.dataset.command})){closeModal(false);manualPaused=false;switchTab('battle');}break;
+    case 'evolve':{const html=evolutionDialogHtml(game.profile,game.state);if(html){evolutionFromResult=modal==='result';showModal('evolve',html);}break;}
+    case 'confirm-evolve':{
+      const returnToResult=evolutionFromResult,ok=action({type:'evolve'});
+      if(!playable()||modal==='session')break;
+      if(ok){
+        evolutionFromResult=false;
+        if(returnToResult)showResult();else{closeModal(false);switchTab('battle');}
+        toast(`Entering ${chapterPresentation(game.profile.age).title}.`);
+      }else{
+        const html=evolutionDialogHtml(game.profile,game.state);
+        if(html)showModal('evolve',html);else dismissModal();
+      }break;
+    }
+    case 'return-chapters':returnToChapters();break;
+    case 'next':case 'retry':if(action({type:button.dataset.command})&&playable()&&modal!=='session'){evolutionFromResult=false;closeModal(false);manualPaused=false;switchTab('battle');}break;
     case 'pause':if(game.state.phase==='running'){manualPaused=!manualPaused;syncPause();update(true);}break;
     case 'speed':game.profile.speed=game.profile.speed===1?2:1;persist();update(true);if(modal==='settings'&&playable())showSettings();break;
     case 'settings':showSettings();break;
@@ -329,7 +373,7 @@ lifetime.listen<MouseEvent>(root,'click',e=>{
       if(!restored.ok){toast('The save could not be written. Your current game was not replaced.');break;}
       game=restored.game;lastPhase=game.state.phase;resultDue=0;manualPaused=false;resultShown='';savedWarning=false;rebuildArmy();syncMotion();closeModal(false);switchTab('battle');toast('Save restored.');break;
     }
-    case 'close':closeModal();break;
+    case 'close':dismissModal();break;
   }
 });
 lifetime.listen<Event>(root,'change',async e=>{
@@ -347,7 +391,7 @@ lifetime.listen<Event>(root,'change',async e=>{
 });
 lifetime.listen<KeyboardEvent>(document,'keydown',e=>{
   if(modal){
-    if(e.key==='Escape'&&modal!=='result'&&modal!=='session'){closeModal();e.preventDefault();}
+    if(e.key==='Escape'){dismissModal();e.preventDefault();}
     if(e.key==='Tab'){
       const elements=modalFocusables($('modal-layer')),index=nextFocusIndex(elements.indexOf(document.activeElement as HTMLElement),elements.length,e.shiftKey);
       e.preventDefault();(index===null?$('modal-layer').querySelector<HTMLElement>('.dialog'):elements[index])?.focus();

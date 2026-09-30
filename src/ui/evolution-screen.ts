@@ -17,7 +17,7 @@ export function evolutionScreenHtml(profile:Profile,state:BattleState):string {
  <div class="era-copy"><small>${chapterPresentation(age).period}</small><h3>${chapterPresentation(age).title}</h3><p>${chapterPresentation(age).subtitle}</p></div>
  ${age===profile.age?'<span class="current-badge">NOW</span>':age>profile.age?icon('lock'):icon('flag')}
  </article>`).join('')}</div>
- <div class="screen-bottom"><p>${next?`Evolve to the <strong>${chapterPresentation(profile.age+1).title}</strong>. All coins, upgrades, troop unlocks, and unlocked battles reset. Cards and gems stay.`:'Win the final battle to begin a new timeline.'}</p>
+ <div class="screen-bottom"><p>${next?`Evolve to the <strong>${chapterPresentation(profile.age+1).title}</strong>. All coins, upgrades and troop unlocks reset. Your selected opponent and unlocked battles stay, along with seals, cards and gems.`:'Win the final battle to begin a new timeline.'}</p>
  <button class="big-button green" data-command="evolve" ${blocked?'disabled':''}>${next?`EVOLVE ${icon('coin')}<span>${compactNumber(cost)}</span>`:'FINAL AGE'}</button>
  ${next?`<small>${state.phase==='running'?'Finish the current battle to evolve.':profile.age>profile.enemyAge?'Defeat the enemy to continue evolving.':'Your cards and gems stay with you.'}</small>`:''}</div>`;
 }

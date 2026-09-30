@@ -23,6 +23,8 @@ const locks: SaveSessionLocks = { request: (name, _options, callback) => Promise
 async function harness(mode = 'active') {
   const old = defaultProfile();
   Object.assign(old, { timeline: 4, age: 3, enemyAge: 3, furthestBattle: 3, coins: 9000, gems: 777, sound: false, speed: 2, motion: 'reduced', dailyDay: 20000, dailyStreak: 5, kills: 90 });
+  old.mastery.timeline = 4;
+  old.mastery.chapters[0] = { earnedMask: 7, bestSeconds: 60, bestGateDamage: 0 };
   old.cards[3] = 4;
   const values = new Map([[SAVE_KEY, JSON.stringify(old)], [BACKUP_KEY, JSON.stringify(old)]]);
   let quota = false, foreignAfterCheck = false;
@@ -40,7 +42,7 @@ async function harness(mode = 'active') {
   };
   const context: any = {
     Element: ElementBoundary, root: { dataset: {} }, game: new Game(old), sessionReady: true, pagePresent: true,
-    pendingImport: null, hasPlayed: true, savedWarning: false, manualPaused: true, lastPhase: 'won', resultDue: 99, resultShown: 'old', modal: 'settings', atmosphereEnabled: false,
+    pendingImport: null, hasPlayed: true, savedWarning: false, manualPaused: true, lastPhase: 'won', resultDue: 99, resultShown: 'old', modal: 'settings', atmosphereEnabled: false, evolutionFromResult: false, modalPointerSequence: false,
     lifetime: { disposed: false, listen: (_root: unknown, _event: string, handler: Function) => { context.click = handler; } },
     $: node, textIfChanged() {}, syncPause() {}, isolateModal() {}, icon: () => '', unlockAudio() {},
     saveSessionDialogHtml, temporarySessionNotice, restoreBackup, restoreBackupWithSave, startOverProfile,
@@ -67,7 +69,7 @@ async function harness(mode = 'active') {
   context.modal = 'settings'; dialogs.length = 0;
   return {
     context, session, values, dialogs, messages,
-    click: (command: string) => context.click({ target: new ElementBoundary(command) }),
+    click: (command: string) => context.click({ target: new ElementBoundary(command), detail: 1, preventDefault() {} }),
     quota: () => { quota = true; }, foreign: () => values.set(SAVE_KEY, JSON.stringify({ ...old, coins: 9001 })),
     writerConflict: () => { foreignAfterCheck = true; },
     bytes: () => [values.get(SAVE_KEY), values.get(BACKUP_KEY)],
@@ -80,6 +82,8 @@ test('confirmed Start over commits fresh progress and keeps preferences and dail
     h.click('confirm-reset'); const fresh = h.context.game.profile;
     assert.notEqual(h.context.game, current); assert.equal(h.context.modal, null); assert.equal(h.context.activeTab, 'battle');
     assert.deepEqual([fresh.timeline, fresh.age, fresh.coins, fresh.gems, fresh.kills, fresh.cards[3]], [1, 0, 0, 100, 0, 0]);
+    assert.equal(fresh.mastery.timeline, 1);
+    assert.ok(fresh.mastery.chapters.every((chapter: Profile['mastery']['chapters'][number]) => chapter.earnedMask === 0 && chapter.bestSeconds === null && chapter.bestGateDamage === null), 'Start over clears all paid chapter seals and records');
     assert.deepEqual([fresh.sound, fresh.speed, fresh.motion, fresh.dailyDay, fresh.dailyStreak], [false, 2, 'reduced', 20000, 5]);
     assert.equal(h.context.game.dispatch({ type: 'daily', day: 20000 }), false);
     assert.equal(JSON.parse(h.bytes()[0]!).coins, 0); assert.equal(JSON.parse(h.bytes()[1]!).coins, 9000);

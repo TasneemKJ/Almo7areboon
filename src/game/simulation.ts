@@ -1,3 +1,4 @@
+import { advanceStatus, canRetry, createMastery, masteryAward } from './mastery.ts';
 import { encounterForAge, scheduledSpawns, wavePreview } from './encounters.ts';
 import type { Encounter, ScheduledSpawn, WaveStatus } from './encounters.ts';
 import { resolveRoleHit, sweepTarget } from './role-traits.ts';
@@ -28,6 +29,10 @@ export class Game implements GamePort {
   constructor(profile: Profile = defaultProfile()) {
     this.profile = loadProfile({ getItem: () => JSON.stringify(profile) });
     this.state = this.newBattle();
+    this.restorePendingVictory();
+  }
+
+  private restorePendingVictory(): void {
     const victory = this.profile.pendingVictory;
     if (victory) {
       this.state.phase = 'won';
@@ -84,24 +89,26 @@ export class Game implements GamePort {
         this.state.food -= ERAS[this.profile.age].units[action.kind].cost;
         this.profile.deployed++;
         this.state.stats.deployed++;
+        this.state.stats.deployedByKind[action.kind]++;
         this.state.stats.foodSpent += ERAS[this.profile.age].units[action.kind].cost;
         this.state.stats.peakArmy = Math.max(this.state.stats.peakArmy, this.state.units.filter(unit => unit.side === 'player' && unit.hp > 0).length);
         return true;
       case 'skill': return this.skill(action.skill);
       case 'retry':
-        if (this.state.phase !== 'lost' && this.state.phase !== 'won') return false;
+        if (!canRetry(this.profile,this.state)) return false;
         this.profile.pendingVictory = null;
         this.state = this.newBattle();
         return true;
       case 'next':
-        if (this.state.phase !== 'won') return false;
+        if (!advanceStatus(this.profile,this.state).allowed) return false;
         this.profile.pendingVictory = null;
         if (this.profile.enemyAge < 5) {
           this.profile.enemyAge++;
           this.profile.furthestBattle = Math.max(this.profile.furthestBattle, this.profile.enemyAge);
         }
         else {
-          this.profile.timeline = Math.min(1000, this.profile.timeline + 1);
+          this.profile.timeline++;
+          this.profile.mastery = createMastery(this.profile.timeline);
           this.profile.enemyAge = 0;
           this.profile.furthestBattle = 0;
           this.profile.coins = 0;
@@ -138,15 +145,13 @@ export class Game implements GamePort {
       }
       case 'evolve':
         if (this.state.phase === 'running' || this.profile.age >= 5 || this.profile.age > this.profile.enemyAge || !this.spend(ERAS[this.profile.age].evolveCost)) return false;
-        this.profile.pendingVictory = null;
         this.profile.age++;
         this.profile.coins = 0;
-        this.profile.enemyAge = 0;
-        this.profile.furthestBattle = 0;
         this.profile.foodLevel = 0;
         this.profile.baseLevel = 0;
         this.profile.unlocked = [true, false, false];
         this.state = this.newBattle();
+        this.restorePendingVictory();
         this.events.push({ type: 'evolve' });
         return true;
       case 'summon': {
@@ -272,10 +277,16 @@ export class Game implements GamePort {
     this.state.skillsUsed.push(skill);
     this.state.stats.skillsCast++;
     if (skill === 'food') this.state.food = Math.min(99, this.state.food + 10);
-    if (skill === 'freeze') this.state.freezeUntil = this.state.time + 7;
+    if (skill === 'freeze') {
+      this.state.stats.maxFreezeTargets = Math.max(this.state.stats.maxFreezeTargets,this.state.units.filter(unit=>unit.side === 'enemy' && unit.hp > 0).length);
+      this.state.freezeUntil = this.state.time + 7;
+    }
     if (skill === 'meteor') {
       const damage = 36 * 1.65 ** this.profile.age * this.bonuses().damage;
-      for (const unit of this.state.units) if (unit.side === 'enemy' && unit.hp > 0) this.hurt(unit, damage);
+      for (const unit of this.state.units) if (unit.side === 'enemy' && unit.hp > 0) {
+        this.hurt(unit, damage);
+        if (unit.hp === 0) this.state.stats.meteorKills++;
+      }
       this.state.units = this.state.units.filter(u => u.hp > 0);
     }
     this.events.push({ type: 'skill', skill, amount: skill === 'food' ? foodGain : undefined });
@@ -389,6 +400,7 @@ export class Game implements GamePort {
     } else {
       const actual = Math.min(this.state.playerHp, damage);
       this.state.stats.damageTaken += actual;
+      this.state.stats.gateDamageTaken += actual;
       this.state.playerHp = Math.max(0, this.state.playerHp - actual);
       return actual;
     }
@@ -421,7 +433,16 @@ export class Game implements GamePort {
       this.profile.wins++;
       this.reward(120 * (1 + this.profile.enemyAge), 910);
       this.profile.gems = Math.min(1e7, this.profile.gems + 10);
-      this.profile.pendingVictory = { stats: { ...this.state.stats }, timeline: this.profile.timeline, battle: this.profile.enemyAge, earned: this.state.earned, seconds: this.state.time, playerHp: this.state.playerHp };
+      const award = masteryAward(this.profile,this.state);
+      this.state.earned = Math.min(1e9,this.state.earned + award.coins);
+      const mastery = { ...this.profile.mastery, chapters: [...this.profile.mastery.chapters] as Profile['mastery']['chapters'] };
+      mastery.chapters[this.profile.enemyAge] = award.record;
+      Object.assign(this.profile, {
+        mastery, coins: this.profile.coins + award.coins, gems: this.profile.gems + award.gems,
+        furthestBattle: Math.max(this.profile.furthestBattle,Math.min(5,this.profile.enemyAge+1)),
+        pendingVictory: { settlement: 'mastery-v1', stats: battleStats(this.state.stats), timeline: this.profile.timeline, battle: this.profile.enemyAge, earned: this.state.earned, seconds: this.state.time, playerHp: this.state.playerHp, eligibleMask: award.eligibleMask, newMask: award.newMask, masteryCoins: award.coins, masteryGems: award.gems },
+      });
+      if (award.coins) this.events.push({type:'coin',x:910,amount:award.coins});
       this.events.push({ type: 'win' });
       return true;
     }

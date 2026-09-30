@@ -1,7 +1,7 @@
 /**
  * Robustness probe for a built or running game: starts it against damaged saves, then feeds it random taps, keys and
  * button presses, plus one end-to-end evolution. It fails on any uncaught page error, when the game does not start, or when
- * evolving does not reset the chapter state.
+ * evolving does not reset local army progress while retaining the selected opponent.
  * Run: npm run build && npm run preview, then  node scripts/monkey-test.mjs [url=http://127.0.0.1:4173/] [seconds=30]
  * Set CHROMIUM_PATH to use an existing Chromium instead of the one Playwright downloads.
  */
@@ -37,7 +37,8 @@ for (const [name, raw] of Object.entries(saves)) {
   await page.close();
 }
 
-// Evolution flow: the confirmed evolve must move to the next chapter and reset coins, upgrades, unlocks and battle progress.
+// Evolution flow: confirmed evolution changes army age and resets coins, upgrades and troop unlocks.
+// The selected opponent, unlocked chapter frontier and earned seals stay. This seed selects opponent 5.
 {
   const flow = await browser.newPage({viewport: {width: 390, height: 844}});
   const flowErrors = [];
@@ -55,7 +56,7 @@ for (const [name, raw] of Object.entries(saves)) {
     coins: document.getElementById('coins').textContent,
     locked: [...document.querySelectorAll('.unit-card')].map(card => card.classList.contains('locked') ? 'L' : 'U').join(''),
   }));
-  const good = after.title === 'Courtyards Beyond' && after.timeline.includes('BATTLE 1') && after.coins === '0' && after.locked === 'ULL' && flowErrors.length === 0;
+  const good = after.title === 'Courtyards Beyond' && after.timeline.includes('BATTLE 5') && after.coins === '0' && after.locked === 'ULL' && flowErrors.length === 0;
   console.log(`${good ? 'ok  ' : 'FAIL'} evolution flow: ${JSON.stringify(after)}${flowErrors.length ? ` errors=${flowErrors.join(' | ')}` : ''}`);
   if (!good) failures.push('evolution flow');
   await flow.close();

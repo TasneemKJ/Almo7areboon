@@ -214,14 +214,14 @@ test('defeat advice points at the most useful affordable improvement',()=>{
  p.unlocked=[true,true,false];p.coins=unlockCost(2,p);assert.match(defeatAdvice(p),/heavy troop/);
  p.unlocked=[true,true,true];p.coins=foodUpgradeCost(p);assert.match(defeatAdvice(p),/food production/);
  const g=new Game(p);g.state.phase='lost';
- assert.match(battleGuidance(g.profile,g.state),/^Your coins are safe\. Upgrade food production/);
+ assert.match(battleGuidance(g.profile,g.state),/^Your coins are safe\. Deploy warriors/);
 });
 
 test('the final victory spells out what the next timeline resets and keeps',()=>{
  const p=defaultProfile();p.enemyAge=5;p.furthestBattle=5;
  const g=new Game(p);g.state.phase='won';
  const html=resultsHtml(g.profile,g.state);
- assert.match(html,/harder timeline/);assert.match(html,/coins, upgrades and troop unlocks reset/);assert.match(html,/cards, gems and records stay/);
+ assert.match(html,/harder timeline/);assert.match(html,/coins, upgrades and troop unlocks reset/);assert.match(html,/Cards, gems, quests and lifetime records stay/);
 });
 
 test('new players are pointed at the skill buttons once, until they cast one',()=>{
