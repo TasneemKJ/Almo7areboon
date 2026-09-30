@@ -54,7 +54,7 @@ async function assertTacticalLayout(page) {
  const wave=geometry.wave,world=geometry.world;
  assert.ok(wave.left>=world.left&&wave.right<=world.right&&wave.top>=world.top&&wave.bottom<=world.bottom,'wave chip stays in the world');
  for(const control of geometry.controls)assert.ok(wave.right<=control.left||wave.left>=control.right||wave.bottom<=control.top||wave.top>=control.bottom,'wave chip clears skills and pause');
- assert.equal(await page.locator('#wave-label').getAttribute('role'),'img','expanded wave name is exposed accessibly');
+ assert.equal(await page.getByRole('button',{name:/^Inspect wave\./}).count(),1,'wave inspection exposes one named native button');
  assert.equal(await page.locator('#wave-label').getAttribute('aria-live'),null,'countdown is not a live region');
  assert.match(await page.locator('#wave-label').getAttribute('aria-label'),/wave|Waves|enemies/i);
  assert.equal(await page.locator('body').getAttribute('data-review-fallback'),null,'production art loads');
