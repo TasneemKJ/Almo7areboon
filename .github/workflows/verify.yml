@@ -88,6 +88,18 @@ jobs:
             artifacts/audio-review/task-1/
             verification-audio.log
           retention-days: 7
+      - name: Verify production offline return and deployment
+        id: offline_game
+        if: steps.tests.outcome == 'success' && steps.build.outcome == 'success'
+        continue-on-error: true
+        run: node --experimental-strip-types scripts/capture-offline-game-review.mjs
+      - name: Publish offline game evidence
+        if: always() && steps.offline_game.outcome != 'skipped'
+        uses: actions/upload-artifact@v4
+        with:
+          name: offline-game-browser-review
+          path: artifacts/browser-review/offline-game/
+          retention-days: 7
       - name: Verify native skill timing cues
         id: skill_cues
         if: steps.tests.outcome == 'success' && steps.build.outcome == 'success'
@@ -221,5 +233,5 @@ jobs:
         if: always()
         env:
           VERIFICATION_STEPS: ${{ toJSON(steps) }}
-          REQUIRED_CHECKS: tests build audio_browser upgrade_text offline_audio skill_cues regroup browser layering save_sessions mastery
+          REQUIRED_CHECKS: tests build audio_browser upgrade_text offline_audio offline_game skill_cues regroup browser layering save_sessions mastery
         run: node scripts/require-verification.mjs
