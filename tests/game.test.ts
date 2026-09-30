@@ -1,7 +1,7 @@
 import test from 'node:test';
 import assert from 'node:assert/strict';
 import { Game } from '../src/game/simulation.ts';
-import { ERAS, cardBonus, foodRate, foodUpgradeCost, baseUpgradeCost } from '../src/game/data.ts';
+import { ERAS, QUESTS, dailyReward, localDay, cardBonus, foodRate, foodUpgradeCost, baseUpgradeCost } from '../src/game/data.ts';
 import { defaultProfile, loadProfile, saveProfile, SAVE_KEY } from '../src/game/save.ts';
 import type { Unit } from '../src/game/types.ts';
 
@@ -408,4 +408,44 @@ test('legacy victories without stats complete the scheduler while invalid victor
     assert.equal(g.state.phase,'ready');assert.equal(g.waveStatus().preview?.nextIn,4);
     g.dispatch({type:'start'});advance(g,4);assert.equal(g.state.wave,1);assert.equal(g.state.units.length,1);
   }
+});
+
+test('milestone quests have unique ids, rising targets per stat and claimable rewards', () => {
+  const ids = QUESTS.map(q => q.id);
+  assert.equal(new Set(ids).size, ids.length);
+  for (const stat of ['kills', 'wins', 'deployed'] as const) {
+    const targets = QUESTS.filter(q => q.stat === stat).map(q => q.target);
+    assert.ok(targets.length >= 3, `${stat} needs a ladder of milestones`);
+    assert.deepEqual(targets, [...targets].sort((a, b) => a - b));
+  }
+  assert.ok(QUESTS.every(q => Number.isInteger(q.reward) && q.reward > 0));
+  const game = new Game();
+  game.profile.kills = 100;
+  assert.equal(game.dispatch({ type: 'claim', id: 'veteran' }), true);
+  assert.equal(game.profile.gems, 200);
+  assert.equal(game.dispatch({ type: 'claim', id: 'legion' }), false);
+  assert.deepEqual(new Game(game.profile).profile.claimed, ['veteran']);
+});
+
+test('daily reward pays once per local day, builds a streak and survives a reload', () => {
+  const game = new Game();
+  assert.equal(game.dispatch({ type: 'daily', day: 20000 }), true);
+  assert.equal(game.profile.gems, 130);
+  assert.equal(game.dispatch({ type: 'daily', day: 20000 }), false);
+  assert.equal(game.dispatch({ type: 'daily', day: 19999 }), false);
+  assert.equal(game.dispatch({ type: 'daily', day: 20001 }), true);
+  assert.equal(game.profile.dailyStreak, 2);
+  assert.equal(game.profile.gems, 130 + 40);
+  const reloaded = new Game(game.profile);
+  assert.deepEqual([reloaded.profile.dailyDay, reloaded.profile.dailyStreak], [20001, 2]);
+  assert.equal(game.dispatch({ type: 'daily', day: 20005 }), true);
+  assert.equal(game.profile.dailyStreak, 1, 'a missed day restarts the streak');
+  for (let day = 20006; day < 20016; day++) game.dispatch({ type: 'daily', day });
+  assert.equal(dailyReward(game.profile, 20016).gems, 90, 'reward caps at 90 gems');
+  assert.equal(dailyReward(defaultProfile(), Number.NaN).available, false);
+});
+
+test('local day follows the player\'s timezone offset', () => {
+  const noon = new Date('2026-09-30T12:00:00Z');
+  assert.equal(localDay(noon) - Math.floor(noon.getTime() / 86_400_000) <= 1, true);
 });

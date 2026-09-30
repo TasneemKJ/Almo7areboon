@@ -8,9 +8,10 @@ import { pauseReason } from '../src/ui/pause.ts';
 import { isEditingTarget, nextFocusIndex, createModalIsolation } from '../src/ui/accessibility.ts';
 import { createArmyUpdater } from '../src/ui/army-screen.ts';
 import * as hud from '../src/ui/battle-hud.ts';
+import { unlockCost, foodUpgradeCost } from '../src/game/data.ts';
 import { battleSelectionHtml, evolutionDialogHtml } from '../src/ui/progression-screen.ts';
 import { createLifetime } from '../src/ui/lifetime.ts';
-const {baseHealthDisplay,battleGuidance,compactNumber}=hud;
+const {baseHealthDisplay,battleGuidance,compactNumber,defeatAdvice}=hud;
 const main=()=>readFileSync(new URL('../src/main.ts',import.meta.url),'utf8');
 
 test('P17: closing one pause owner cannot clear another owner',()=>{
@@ -156,4 +157,14 @@ test('modal isolation inerts siblings once, spares the layer and toast, and rest
 test('compactNumber switches to exponent notation for astronomically large values',()=>{
  assert.equal(compactNumber(2.5e15),'2.5e15');
  assert.equal(compactNumber(Number.NaN),'0');
+});
+
+test('defeat advice points at the most useful affordable improvement',()=>{
+ const p=defaultProfile();
+ assert.match(defeatAdvice(p),/Deploy earlier/);
+ p.coins=unlockCost(1,p);assert.match(defeatAdvice(p),/ranged troop/);
+ p.unlocked=[true,true,false];p.coins=unlockCost(2,p);assert.match(defeatAdvice(p),/heavy troop/);
+ p.unlocked=[true,true,true];p.coins=foodUpgradeCost(p);assert.match(defeatAdvice(p),/food production/);
+ const g=new Game(p);g.state.phase='lost';
+ assert.match(battleGuidance(g.profile,g.state),/^Your coins are safe\. Upgrade food production/);
 });

@@ -3,7 +3,7 @@ import type { Encounter, ScheduledSpawn, WaveStatus } from './encounters.ts';
 import { resolveRoleHit, sweepTarget } from './role-traits.ts';
 import { battleStats } from './statistics.ts';
 import { cardPackCost, drawCard, nextCardRandom } from './cards.ts';
-import { ERAS, QUESTS, eraEconomyScale, baseUpgradeCost, cardBonus, foodRate, foodUpgradeCost, unlockCost } from './data.ts';
+import { ERAS, QUESTS, dailyReward, eraEconomyScale, baseUpgradeCost, cardBonus, foodRate, foodUpgradeCost, unlockCost } from './data.ts';
 import { defaultProfile, loadProfile } from './save.ts';
 import type { Action, BattleState, DeploymentStatus, GameEvent, GamePort, Profile, Side, Skill, Unit, UnitKind } from './types.ts';
 
@@ -175,6 +175,15 @@ export class Game implements GamePort {
         this.profile.summonSeed = seed;
         this.profile.summonCount = draws;
         this.events.push({ type: 'upgrade', amount: indices[0], cardIndices: indices });
+        return true;
+      }
+      case 'daily': {
+        const reward = dailyReward(this.profile, action.day);
+        if (!reward.available) return false;
+        this.profile.dailyDay = action.day;
+        this.profile.dailyStreak = Math.min(1e6, reward.streak);
+        this.profile.gems = Math.min(1e7, this.profile.gems + reward.gems);
+        this.events.push({ type: 'upgrade' });
         return true;
       }
       case 'claim': {
