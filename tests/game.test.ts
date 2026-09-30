@@ -301,3 +301,111 @@ function unit(id: number, side: 'player' | 'enemy', x: number, hp = 26, kind: 0 
   advance(game, 1);
   assert.ok(Number.isFinite(game.state.playerHp));
 });
+
+test('nominal launches expose delayed arrivals and freeze does not postpone them',()=>{
+  const p=defaultProfile();p.age=4;p.enemyAge=1;
+  const g=new Game(p);g.dispatch({type:'start'});
+  advance(g,3.99);assert.equal(g.state.wave,0);
+  advance(g,0.02);assert.equal(g.state.wave,1);
+  assert.equal(g.state.units[0].age,1);assert.equal(g.state.units[0].maxHp,Math.round(ERAS[1].units[0].hp*.94));
+  advance(g,11);assert.equal(g.state.wave,2);assert.equal(g.waveStatus().pendingEnemies,1);
+  assert.equal(g.waveStatus().preview?.number,3);
+  g.dispatch({type:'skill',skill:'freeze'});g.dispatch({type:'pause'});
+  const before=JSON.stringify(g.state);advance(g,2);assert.equal(JSON.stringify(g.state),before);
+  g.dispatch({type:'pause'});advance(g,.6);
+  assert.equal(g.waveStatus().pendingEnemies,0);
+  assert.equal(g.state.units.filter(u=>u.side==='enemy').length,3);
+});
+
+test('final delayed member blocks clearance and capacity rejection is consumed exactly once',()=>{
+  const p=defaultProfile();p.enemyAge=1;
+  const g=new Game(p);g.dispatch({type:'start'});g.state.time=56;
+  g.state.units=Array.from({length:60},(_,i)=>({...unit(100+i,'enemy',800),attackTimer:100}));
+  g.step(1/60);assert.equal(g.state.wave,5);assert.equal(g.waveStatus().pendingEnemies,1);
+  g.state.units=[];assert.equal(g.waveStatus().cleared,false);
+  advance(g,.5);assert.equal(g.state.units.length,0);
+  advance(g,.5);assert.equal(g.state.units.length,1);assert.equal(g.waveStatus().pendingEnemies,0);
+  g.state.units=[];advance(g,1);assert.equal(g.state.units.length,0);assert.equal(g.waveStatus().cleared,true);
+});
+
+test('early victory cancels arrivals while reconstructed victory reports completed waves',()=>{
+  const p=defaultProfile();p.enemyAge=1;
+  const g=new Game(p);g.dispatch({type:'start'});g.state.time=56;
+  g.step(1/60);assert.equal(g.waveStatus().pendingEnemies,1);
+  g.state.enemyHp=0;g.step(1/60);const before=JSON.stringify(g.state);advance(g,4);assert.equal(JSON.stringify(g.state),before);
+  assert.equal(g.waveStatus().pendingEnemies,0);
+  const restored=new Game(g.profile);assert.equal(restored.waveStatus().cleared,true);assert.equal(restored.waveStatus().pendingEnemies,0);assert.equal(restored.waveStatus().preview,null);
+});
+
+test('retry, next, evolve and selected battles rebuild encounter cursors',()=>{
+  const p=defaultProfile();p.enemyAge=1;p.furthestBattle=2;p.coins=10000;
+  const g=new Game(p);g.dispatch({type:'start'});g.state.time=15;g.step(1/60);
+  g.state.playerHp=0;g.step(1/60);assert.equal(g.dispatch({type:'retry'}),true);
+  assert.equal(g.waveStatus().preview?.nextIn,4);assert.equal(g.waveStatus().pendingEnemies,0);
+  assert.equal(g.dispatch({type:'select-battle',battle:2}),true);assert.equal(g.waveStatus().preview?.nextIn,3);
+  g.dispatch({type:'start'});g.state.enemyHp=0;g.step(1/60);g.dispatch({type:'next'});assert.equal(g.waveStatus().preview?.nextIn,4);
+  g.dispatch({type:'evolve'});assert.equal(g.profile.age,1);assert.equal(g.profile.enemyAge,0);assert.equal(g.waveStatus().preview?.nextIn,3);
+});
+
+test('heavy primary death retains splash center, caps damage and pays only two deaths once',()=>{
+  const g=new Game();g.dispatch({type:'start'});
+  const primary=unit(91,'enemy',470,2),secondary=unit(92,'enemy',490,3),third=unit(93,'enemy',492,30);
+  g.state.units=[unit(90,'player',450,100,2),primary,secondary,third];
+  g.step(1/60);
+  const hits=g.drainEvents().filter(e=>e.type==='hit'&&e.side==='player');
+  assert.deepEqual(hits.map(e=>[e.amount,e.trait,e.x]),[[2,undefined,470],[3,'sweep',490]]);
+  assert.equal(third.hp,30);assert.equal(g.state.stats.damageDealt,5);assert.equal(g.state.stats.kills,2);assert.equal(g.profile.coins,24);
+  g.step(1/60);assert.equal(g.profile.coins,24);assert.equal(g.profile.kills,2);
+});
+
+test('guard and pierce are symmetric powered unit hits, never skill or base multipliers',()=>{
+  for(const side of ['player','enemy'] as const)for(const [kind,multiplier,trait] of [[0,.75,'guard'],[2,1.35,'pierce']] as const){
+    const g=new Game();g.dispatch({type:'start'});
+    const attacker=unit(90,side,450,100,1),defender=unit(91,side==='player'?'enemy':'player',500,100,kind);defender.attackTimer=100;
+    g.state.units=[attacker,defender];g.step(1/60);
+    const hit=g.drainEvents().find(e=>e.type==='hit'&&e.source?.id===90)!;
+    assert.equal(hit.amount,6*(side==='player'?1:.94)*multiplier);assert.equal(hit.trait,trait);
+  }
+  const g=new Game();g.dispatch({type:'start'});g.state.units=[unit(90,'player',900,100,2)];g.step(1/60);
+  const hit=g.drainEvents().find(e=>e.type==='hit')!;assert.equal(hit.amount,12);assert.equal(hit.trait,undefined);assert.equal(g.profile.coins,3);
+  g.state.units=[unit(91,'enemy',500,100,2)];g.dispatch({type:'skill',skill:'meteor'});assert.equal(g.state.units[0].hp,64);
+});
+
+test('fixed tick action replay has identical state and events across frame chunks',()=>{
+  const run=(chunk:number)=>{
+    const p=defaultProfile();p.coins=1000;const g=new Game(p);g.dispatch({type:'unlock',kind:1});g.dispatch({type:'unlock',kind:2});g.dispatch({type:'start'});
+    const events=[];
+    for(let tick=0;tick<4200;tick+=6){
+      g.dispatch({type:'spawn',kind:([2,0,1] as const)[Math.floor(tick/60)%3]});
+      if(tick===1800)g.dispatch({type:'skill',skill:'freeze'});
+      for(let frame=0;frame<6;frame+=chunk)g.step(chunk/60);
+      events.push(...g.drainEvents());
+    }
+    return {state:g.state,profile:g.profile,events};
+  };
+  assert.deepEqual(run(1),run(2));assert.deepEqual(run(1),run(3));
+});
+
+test('terminal wins and losses consume no additional arrivals or combat actions',()=>{
+  for(const outcome of ['won','lost'] as const){
+    const p=defaultProfile();p.enemyAge=5;const g=new Game(p);g.dispatch({type:'start'});
+    if(outcome==='won')g.state.enemyHp=0;else g.state.playerHp=0;
+    g.step(1/60);assert.equal(g.state.phase,outcome);g.drainEvents();
+    const before=JSON.stringify({state:g.state,profile:g.profile});
+    for(const dt of [1/60,1/30,1/20,.25])for(let i=0;i<1000;i++)g.step(dt);
+    assert.equal(g.dispatch({type:'spawn',kind:0}),false);assert.equal(g.dispatch({type:'skill',skill:'food'}),false);
+    assert.equal(JSON.stringify({state:g.state,profile:g.profile}),before);assert.deepEqual(g.drainEvents(),[]);
+  }
+});
+
+test('legacy victories without stats complete the scheduler while invalid victories start normally',()=>{
+  const legacy={...defaultProfile(),version:1,cards:[0,0,0,0,0,0],enemyAge:1,pendingVictory:{timeline:1,battle:1,earned:10,seconds:2,playerHp:100}};
+  const valid=loadProfile({getItem:()=>JSON.stringify(legacy)}),restored=new Game(valid);
+  assert.equal(restored.state.phase,'won');assert.equal(restored.waveStatus().cleared,true);assert.equal(restored.waveStatus().pendingEnemies,0);assert.equal(restored.waveStatus().preview,null);
+  assert.equal(restored.state.stats.kills,0);
+  for(const victory of [{...legacy.pendingVictory,battle:0},{...legacy.pendingVictory,seconds:-1},{...legacy.pendingVictory,playerHp:NaN}]){
+    const profile=loadProfile({getItem:()=>JSON.stringify({...legacy,pendingVictory:victory})}),g=new Game(profile);
+    assert.equal(g.state.phase,'ready');assert.equal(g.waveStatus().preview?.nextIn,4);
+    g.dispatch({type:'start'});advance(g,4);assert.equal(g.state.wave,1);assert.equal(g.state.units.length,1);
+  }
+});
