@@ -150,6 +150,19 @@ jobs:
           name: food-drop-browser-review
           path: artifacts/browser-review/food-drop/
           retention-days: 7
+      - name: Verify card summon learning in production
+        id: card_learning
+        if: steps.tests.outcome == 'success' && steps.build.outcome == 'success'
+        continue-on-error: true
+        timeout-minutes: 5
+        run: node --experimental-strip-types scripts/capture-card-learning-review.mjs
+      - name: Publish card learning evidence
+        if: always() && steps.card_learning.outcome != 'skipped'
+        uses: actions/upload-artifact@v4
+        with:
+          name: card-learning-browser-review
+          path: artifacts/browser-review/card-learning/
+          retention-days: 7
       - name: Verify native skill timing cues
         id: skill_cues
         if: steps.tests.outcome == 'success' && steps.build.outcome == 'success'
@@ -292,5 +305,5 @@ jobs:
         if: always()
         env:
           VERIFICATION_STEPS: ${{ toJSON(steps) }}
-          REQUIRED_CHECKS: tests build audio_browser upgrade_text offline_audio offline_game troop_unlock wave_help legacy_learning food_teaching skill_cues regroup browser layering save_sessions mastery
+          REQUIRED_CHECKS: tests build audio_browser upgrade_text offline_audio offline_game troop_unlock wave_help legacy_learning food_teaching card_learning skill_cues regroup browser layering save_sessions mastery
         run: node scripts/require-verification.mjs

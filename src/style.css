@@ -182,6 +182,7 @@ button,.game-shell { -webkit-user-select:none; -webkit-touch-callout:none; }
 .summon-results article>div { flex:1; min-width:0; }
 .summon-results strong { font-size:13px; }
 .summon-results small { display:block; font-size:9px; color:var(--muted); margin-top:4px; }
+.summon-results .summon-learning { margin:6px 0 0; font-size:12px; line-height:1.5; color:var(--ink); }
 .skill-list { display:grid; gap:15px; }
 .skill-detail { display:flex; align-items:center; gap:13px; padding:14px 12px; border:1px solid #b3c0ad; border-radius:13px; background:#faf4df; box-shadow:0 3px #bdc5af; }
 .skill-art { width:66px; height:77px; display:grid; place-items:center; flex-shrink:0; border:1px solid #5e827f; border-radius:14px; box-shadow:inset 0 1px #ffeedf77,0 3px #bdc3a8; }
