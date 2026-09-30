@@ -5,3 +5,5 @@
 .skill-detail small { font-size:10px; }
 /* Dark ink keeps the rarity caption above 4.5:1 on the rare (blue) and epic (violet) card headers. */
 .rarity { color:#132a30; }
+/* The wave and incoming-threat readout is tactical information, so it follows the same floor. */
+.battle-meta>span { font-size:11px; }
