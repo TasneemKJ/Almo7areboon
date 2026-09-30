@@ -24,7 +24,24 @@ async function setup(context, profile = fixture(), backupProfile = profile) {
 }
 async function bytes(page) { return page.evaluate(({ primary, backup }) => [localStorage.getItem(primary), localStorage.getItem(backup)], { primary, backup }); }
 async function active(page) { await page.waitForFunction(() => document.querySelector('#app')?.dataset.saveSession === 'active' && !document.querySelector('#modal-layer .session-dialog') && document.querySelector('#battle-view')?.inert === false); }
-async function blocked(page, title = 'Game open in another tab') { await page.getByRole('heading', { name: title, exact: true }).waitFor(); }
+async function blocked(page, title = 'Game open in another tab') {
+  const heading = page.getByRole('heading', { name: title, exact: true });
+  await heading.waitFor();
+  const contrast = await heading.evaluate(node => {
+    const luminance = color => {
+      const channels = color.match(/[\d.]+/g).slice(0, 3).map(Number).map(value => {
+        const channel = value / 255;
+        return channel <= .04045 ? channel / 12.92 : ((channel + .055) / 1.055) ** 2.4;
+      });
+      return channels[0] * .2126 + channels[1] * .7152 + channels[2] * .0722;
+    };
+    const foreground = getComputedStyle(node).color;
+    const background = getComputedStyle(node.closest('.dialog')).backgroundColor;
+    const a = luminance(foreground), b = luminance(background);
+    return { foreground, background, ratio: (Math.max(a, b) + .05) / (Math.min(a, b) + .05) };
+  });
+  assert.ok(contrast.ratio >= 4.5, `${title} must be readable on its paper dialog: ${JSON.stringify(contrast)}`);
+}
 async function exported(page) { const download = page.waitForEvent('download'); await page.locator('[data-command="export"]').click(); const result = await download; return JSON.parse(readFileSync(await result.path(), 'utf8')).profile; }
 async function summon(page) { await page.getByRole('button', { name: 'Cards', exact: true }).click(); await page.getByRole('button', { name: 'Summon 1 card for 100 gems', exact: true }).click(); await page.getByRole('heading', { name: '1 card summoned', exact: true }).waitFor(); }
 async function scenario(name, callback, options = {}) {

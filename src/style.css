@@ -27,7 +27,7 @@ svg,img { user-select:none; -webkit-user-select:none; -webkit-touch-callout:none
 button,.game-shell { -webkit-user-select:none; -webkit-touch-callout:none; }
 [hidden] { display:none!important; }
 .icon { width:26px; height:26px; flex-shrink:0; vertical-align:middle; overflow:visible; }
-.game-shell { width:100%; max-width:480px; height:100dvh; min-height:540px; max-height:1020px; margin:auto; position:relative; overflow:hidden; background:var(--paper); box-shadow:0 0 0 1px #d6cdac3a,0 22px 90px #071c24aa; display:flex; flex-direction:column; --era-accent:#b9db8d; }
+.game-shell { width:100%; max-width:480px; height:100dvh; min-height:540px; max-height:1020px; margin:auto; position:relative; overflow:hidden; color:var(--ink); background:var(--paper); box-shadow:0 0 0 1px #d6cdac3a,0 22px 90px #071c24aa; display:flex; flex-direction:column; --era-accent:#b9db8d; }
 .battle-view { flex:1; display:flex; flex-direction:column; min-height:0; }
 .world { flex:1; min-height:200px; position:relative; isolation:isolate; overflow:hidden; background:#83b7a4; }
 .world:before { content:''; position:absolute; inset:0; background:linear-gradient(#102d459e,transparent 35%); z-index:1; pointer-events:none; }
