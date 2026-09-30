@@ -5,6 +5,7 @@ import './ui/material-language.css';
 import './ui/combat-focus.css';
 import './ui/era-glow.css';
 import './ui/readability.css';
+import './ui/skill-cues.css';
 import { Game } from './game/simulation.ts';
 import { advanceStatus } from './game/mastery.ts';
 import { isLegacyChoice, legacyEffects, prestigePreview } from './game/prestige.ts';
@@ -34,6 +35,7 @@ import { pauseReason } from './ui/pause.ts';
 import { loadAtmosphere, saveAtmosphere, ambienceAllowed, loadAudioMix, normalizeAudioMix, saveAudioMix } from './ui/audio-preferences.ts';
 import { createLifetime } from './ui/lifetime.ts';
 import { textIfChanged, htmlIfChanged } from './ui/dom-state.ts';
+import { skillCue } from './ui/skill-cues.ts';
 
 // The initial render is a non-playable default. Only ownership makes a loaded Game authoritative.
 let game=new Game(defaultProfile());
@@ -212,9 +214,11 @@ function update(force=false){
   root!.querySelectorAll<HTMLButtonElement>('[data-skill]').forEach(button=>{
     const skill=button.dataset.skill as Skill,used=s.skillsUsed.includes(skill);
     button.disabled=!game.canUseSkill(skill);button.classList.toggle('used',used);
-    const freezeCopy=`Freeze enemies for ${legacyEffects(p.legacy).freezeSeconds} seconds`;
-    button.title=skill==='freeze'?`${freezeCopy}${used?' · used this battle':''}`:used?'Used this battle':skill==='meteor'?'Strike all active enemies':'Gain up to 10 food';
-    if(skill==='freeze')button.setAttribute('aria-label',`${freezeCopy}${used?' · used this battle':''}`);
+    const cue=skillCue(p,s,skill,!button.disabled);
+    button.classList.toggle('skill-opportunity',cue.opportunity);
+    button.classList.toggle('freeze-active',cue.activeEffect);
+    button.title=cue.label;button.setAttribute('aria-label',cue.label);
+    const badge=button.querySelector('small');if(badge){badge.setAttribute('aria-hidden','true');textIfChanged(badge,cue.badge);}
   });
   const notification=$('quests').querySelector<HTMLElement>('.notification');
   if(notification)notification.hidden=!(dailyReward(p,localDay()).available||QUESTS.some(q=>p[q.stat]>=q.target&&!p.claimed.includes(q.id)));

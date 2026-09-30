@@ -88,6 +88,18 @@ jobs:
             artifacts/audio-review/task-1/
             verification-audio.log
           retention-days: 7
+      - name: Verify native skill timing cues
+        id: skill_cues
+        if: steps.tests.outcome == 'success' && steps.build.outcome == 'success'
+        continue-on-error: true
+        run: node --experimental-strip-types scripts/capture-skill-cues-review.mjs
+      - name: Publish skill timing evidence
+        if: always() && steps.skill_cues.outcome != 'skipped'
+        uses: actions/upload-artifact@v4
+        with:
+          name: skill-cues-browser-review
+          path: artifacts/browser-review/skill-cues/
+          retention-days: 7
       - name: Capture portrait browser states
         id: browser
         if: steps.tests.outcome == 'success' && steps.build.outcome == 'success'
@@ -185,5 +197,8 @@ jobs:
           path: ${{ runner.temp }}/game-workspace.tar.gz
           retention-days: 3
       - name: Require passing checks
-        if: steps.tests.outcome != 'success' || steps.build.outcome != 'success' || steps.browser.outcome != 'success' || steps.layering.outcome != 'success' || steps.save_sessions.outcome != 'success' || steps.offline_audio.outcome != 'success' || steps.mastery.outcome != 'success' || steps.audio_browser.outcome != 'success' || steps.upgrade_text.outcome != 'success'
-        run: exit 1
+        if: always()
+        env:
+          VERIFICATION_STEPS: ${{ toJSON(steps) }}
+          REQUIRED_CHECKS: tests build audio_browser upgrade_text offline_audio skill_cues browser layering save_sessions mastery
+        run: node scripts/require-verification.mjs

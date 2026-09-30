@@ -16,6 +16,7 @@ import { resultsHtml } from '../src/ui/results-screen.ts';
 import { isLegacyChoice, legacyEffects, prestigePreview } from '../src/game/prestige.ts';
 import { legacyCurrentHtml, prestigeDetailsHtml, prestigeDialogHtml } from '../src/ui/prestige-presentation.ts';
 import { evolutionScreenHtml } from '../src/ui/evolution-screen.ts';
+import { skillCue } from '../src/ui/skill-cues.ts';
 
 // Execute the app's actual functions with a clock and minimal DOM boundary; no browser/debug hooks.
 const source = readFileSync(new URL('../src/main.ts', import.meta.url), 'utf8');
@@ -51,7 +52,7 @@ function harness(motion = 'full') {
     lastUpdate: 0, lastSave: 100, lastPhase: 'ready', resultDue: 0, resultShown: '', activeTab: 'battle', root,
     performance: { now: () => now }, document: { documentElement: { dataset: { motion } } },
     $: (id: string) => { if (!elements.has(id)) elements.set(id, node()); return elements.get(id); },
-    advanceStatus, battleSelectionHtml, evolutionDialogHtml, ERAS, QUESTS, foodRate, unlockCost, dailyReward, localDay, battleGuidance, baseHealthDisplay, compactNumber, waveLabel, waveAccessibleLabel, chapterPresentation, resultsHtml,isLegacyChoice,legacyEffects,prestigePreview,prestigeDetailsHtml,prestigeDialogHtml,legacyCurrentHtml,evolutionScreenHtml,saveSessionDialogHtml,temporarySessionNotice,
+    advanceStatus, battleSelectionHtml, evolutionDialogHtml, ERAS, QUESTS, foodRate, unlockCost, dailyReward, localDay, battleGuidance, baseHealthDisplay, compactNumber, waveLabel, waveAccessibleLabel, chapterPresentation, resultsHtml,isLegacyChoice,legacyEffects,prestigePreview,prestigeDetailsHtml,prestigeDialogHtml,legacyCurrentHtml,evolutionScreenHtml,saveSessionDialogHtml,temporarySessionNotice,skillCue,
     storybookArt: () => false, money: String, coin: String, icon:()=>'',textIfChanged(target:any,value:string){target.textContent=value;},htmlIfChanged(target:any,value:string){target.innerHTML=value;},unlockAudio() {}, syncPause() {}, rebuildArmy() {}, syncMotion() {}, isolateModal(){}, toast() {},
     closeModal() { context.modal=null; }, showModal: (id: string,html:string,focusCommand?:string) => {context.modal=id;context.dialogHtml=html;context.focusCommand=focusCommand;dialogs.push(id);},
     session: {
@@ -216,13 +217,14 @@ test('native preview radio changes only its draft and next effects, never the cu
 test('ready Evolution radio dispatches real selection and preserves native nodes while refreshing current freeze and Skills',async()=>{
  const h=harness(),c=h.context,p=defaultProfile();p.legacy={rank:2,selected:'hearth'};c.game=new Game(p);c.activeTab='evolution';
  const radio={value:'stillness',checked:false},screen=c.$('secondary-screen');screen.querySelectorAll=()=>[radio];
- const freeze={dataset:{skill:'freeze'},disabled:false,title:'',classList:{toggle(){}},setAttribute(name:string,value:string){(this as any)[name]=value;}};
+ const badge={textContent:'',setAttribute(){}};
+ const freeze={dataset:{skill:'freeze'},disabled:false,title:'',classList:{toggle(){}},querySelector(){return badge;},setAttribute(name:string,value:string){(this as any)[name]=value;}};
  c.root.querySelectorAll=(selector:string)=>selector==='[data-skill]'?[freeze]:[];
  const before=structuredClone(c.game.profile);screen.innerHTML='stable radio nodes';
  await h.change('ready-legacy','stillness');assert.equal(c.game.profile.legacy.selected,'stillness');assert.equal(c.game.state.food,6);assert.equal(c.game.profile.gems,before.gems);
- assert.equal(screen.innerHTML,'stable radio nodes');assert.equal(radio.checked,true);assert.match(c.$('legacy-current').innerHTML,/Freeze: 9 seconds/);assert.equal(freeze.title,'Freeze enemies for 9 seconds');assert.equal((freeze as any)['aria-label'],'Freeze enemies for 9 seconds');
+ assert.equal(screen.innerHTML,'stable radio nodes');assert.equal(radio.checked,true);assert.match(c.$('legacy-current').innerHTML,/Freeze: 9 seconds/);assert.match(freeze.title,/^Freeze enemies for 9 seconds/);assert.equal((freeze as any)['aria-label'],freeze.title);assert.equal(badge.textContent,'0');
  c.activeTab='skills';c.api.renderScreen();assert.match(screen.innerHTML,/Freeze every enemy for 9 seconds/);
- c.game.dispatch({type:'start'});assert.equal(c.game.dispatch({type:'skill',skill:'freeze'}),true);c.api.update(true);assert.equal(freeze.title,'Freeze enemies for 9 seconds · used this battle');
+ c.game.dispatch({type:'start'});assert.equal(c.game.dispatch({type:'skill',skill:'freeze'}),true);c.api.update(true);assert.equal(freeze.title,'Freeze active: 9 battle seconds remain');assert.equal(badge.textContent,'9s');
  c.activeTab='evolution';const running=JSON.stringify(c.game.profile);await h.change('ready-legacy','watch');assert.equal(JSON.stringify(c.game.profile),running);
 });
 for(const blocked of ['ordinary','uncleared','running','terminal'])test(`actual final preview route is absent for ${blocked} state`,()=>{
