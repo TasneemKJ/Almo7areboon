@@ -501,3 +501,30 @@ test('retreat ends a running battle as an ordinary loss and keeps what was earne
   events.dispatch({ type: 'retreat' });
   assert.deepEqual(events.drainEvents().map(event => event.type), ['lose']);
 });
+
+test('a simultaneous final blow favours the player, and an idle first second changes only the clock and food', () => {
+  const unit = (id: number, side: 'player' | 'enemy', x: number): Unit => ({ id, side, kind: 0, age: 0, x, lane: 1, hp: 99, maxHp: 99, attackTimer: 0, attacking: false, hitFlash: 0 });
+  const tie = new Game();
+  tie.dispatch({ type: 'start' });
+  tie.state.units.push(unit(101, 'player', 895), unit(102, 'enemy', 105));
+  tie.state.playerHp = 1;
+  tie.state.enemyHp = 1;
+  tie.step(1 / 60);
+  assert.equal(tie.state.phase, 'won', 'the player acts first, so a same-tick exchange is a win');
+  assert.equal(tie.profile.wins, 1);
+  assert.equal(tie.state.playerHp, 1, 'the enemy blow never lands once the battle is decided');
+
+  const lone = new Game();
+  lone.dispatch({ type: 'start' });
+  lone.state.units.push(unit(103, 'enemy', 105));
+  lone.state.playerHp = 1;
+  lone.step(1 / 60);
+  assert.equal(lone.state.phase, 'lost');
+
+  const idle = new Game();
+  idle.dispatch({ type: 'start' });
+  for (let tick = 0; tick < 60; tick++) idle.step(1 / 60);
+  assert.equal(idle.state.phase, 'running');
+  assert.equal(idle.state.units.length, 0);
+  assert.ok(Math.abs(idle.state.time - 1) < 1e-6 && idle.state.food > 6 && idle.state.food < 8);
+});
