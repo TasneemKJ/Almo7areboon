@@ -52,4 +52,25 @@ export const QUESTS: { id: string; title: string; target: number; reward: number
   { id: 'first-blood', title: 'Defeat 10 enemies', target: 10, reward: 50, stat: 'kills' },
   { id: 'commander', title: 'Deploy 25 warriors', target: 25, reward: 50, stat: 'deployed' },
   { id: 'conqueror', title: 'Win 3 battles', target: 3, reward: 100, stat: 'wins' },
+  // Longer milestone ladders give returning players something to work toward
+  // after the first three; rewards stay modest next to a 100-gem single summon.
+  { id: 'veteran', title: 'Defeat 100 enemies', target: 100, reward: 100, stat: 'kills' },
+  { id: 'battalion', title: 'Deploy 150 warriors', target: 150, reward: 100, stat: 'deployed' },
+  { id: 'champion', title: 'Win 10 battles', target: 10, reward: 150, stat: 'wins' },
+  { id: 'legion', title: 'Defeat 500 enemies', target: 500, reward: 200, stat: 'kills' },
+  { id: 'general', title: 'Deploy 750 warriors', target: 750, reward: 200, stat: 'deployed' },
+  { id: 'warlord', title: 'Win 30 battles', target: 30, reward: 300, stat: 'wins' },
+  { id: 'annihilator', title: 'Defeat 2,500 enemies', target: 2500, reward: 400, stat: 'kills' },
 ];
+
+/** Whole local calendar days since 1970-01-01, so a reward resets at the player's midnight. */
+export function localDay(now: Date = new Date()): number {
+  return Math.floor((now.getTime() - now.getTimezoneOffset() * 60000) / 86_400_000);
+}
+
+/** Consecutive-day check-in: 30 gems, rising by 10 per day to 90 from day 7. */
+export function dailyReward(profile: Pick<Profile, 'dailyDay' | 'dailyStreak'>, day: number): { available: boolean; streak: number; gems: number } {
+  const available = Number.isInteger(day) && day > profile.dailyDay;
+  const streak = available && profile.dailyDay > 0 && day === profile.dailyDay + 1 ? profile.dailyStreak + 1 : available ? 1 : profile.dailyStreak;
+  return { available, streak, gems: 30 + 10 * Math.min(6, Math.max(0, streak - 1)) };
+}

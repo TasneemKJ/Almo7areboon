@@ -80,7 +80,18 @@ test('a real presentation hit and win/loss in one batch cannot emit a post-resul
   g.state.phase=phase;owner=advanceVillagePresentation(owner,g.state,0,0,[{type:'hit',target:'base',side:'enemy'},{type:phase==='won'?'win':'lose'}],false);
   assert.equal(owner.mood.alarmSerial,1,'the shared owner still records the actual fresh hit');
   player.update(c.ctx,0,ambienceAllowed({sound:true,atmosphere:true,paused:false,hidden:false,tab:'battle',modal:null,phase:g.state.phase}),owner.mood);
-  assert.equal(c.nodes.filter(n=>n.frequency).length,0,'result gate suppresses the same-batch entry before playback');player.dispose();
+  assert.equal(c.nodes.filter(n=>n.frequency).length,0,'result gate suppresses the same-batch entry before playback');
+  const finalMood=structuredClone(owner.mood),created=c.nodes.length;
+  // Cover the full result-dialog delay while the actual battle stays terminal.
+  for(let frame=1;frame<=27;frame++){
+   c.ctx.currentTime=frame*.05;g.step(.05);
+   owner=advanceVillagePresentation(owner,g.state,0,.05,g.drainEvents(),false);
+   const audible=ambienceAllowed({sound:true,atmosphere:true,paused:false,hidden:false,tab:'battle',modal:null,phase:g.state.phase});
+   player.update(c.ctx,0,audible,owner.mood);
+   assert.equal(g.state.phase,phase);assert.equal(audible,false);assert.deepEqual(owner.mood,finalMood);
+   assert.equal(g.canUseSkill('freeze'),false);assert.equal(g.deploymentStatus(0).allowed,false);
+  }
+  assert.equal(c.nodes.length,created,'the delay starts neither another bed nor an accent');player.dispose();
   assert.ok(c.nodes.every(n=>n.disconnects===1));
  }
 });
