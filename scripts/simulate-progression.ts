@@ -1,12 +1,16 @@
-// Long-run progression probe: a competent scripted player works through timelines, spending coins, gems and quests.
+// Long-run progression probe: a bounded scripted policy, not a proof of optimal play.
 // Run: node --experimental-strip-types scripts/simulate-progression.ts [targetTimeline=12] [summon=1] [maxAttempts=1200]
 import { Game } from '../src/game/simulation.ts';
+import assert from 'node:assert/strict';
 import { QUESTS } from '../src/game/data.ts';
 import type { UnitKind } from '../src/game/types.ts';
 
 const target = Number(process.argv[2] ?? 12), summon = process.argv[3] !== '0', maxAttempts = Number(process.argv[4] ?? 1200);
+assert.ok(Number.isInteger(target) && target >= 1 && target <= 1000, 'targetTimeline must be an integer from 1 to 1000');
+assert.ok(Number.isInteger(maxAttempts) && maxAttempts >= 1 && maxAttempts <= 100000, 'maxAttempts must be an integer from 1 to 100000');
 const game = new Game();
-let attempts = 0, streak = 0, maxStreak = 0;
+let attempts = 0, wins = 0, losses = 0, streak = 0, maxStreak = 0;
+let timedOut: { timeline: number; chapter: number; army: number; seconds: number } | null = null;
 const attemptsByBattle: Record<string, number> = {};
 
 while (attempts < maxAttempts && game.profile.timeline < target) {
@@ -23,8 +27,8 @@ while (attempts < maxAttempts && game.profile.timeline < target) {
   if (p.age < 5 && p.age <= p.enemyAge) game.dispatch({ type: 'evolve' });
   const key = `age${p.age}-vs${p.enemyAge}`;
   attemptsByBattle[key] = (attemptsByBattle[key] ?? 0) + 1;
+  assert.equal(game.dispatch({ type: 'start' }), true, 'every counted attempt must start a new battle');
   attempts++;
-  game.dispatch({ type: 'start' });
   for (let t = 0; game.state.phase === 'running' && t < 400; t += 0.1) {
     const mine = game.state.units.filter(u => u.side === 'player' && u.hp > 0);
     const foes = game.state.units.filter(u => u.side === 'enemy' && u.hp > 0).length;
@@ -38,8 +42,18 @@ while (attempts < maxAttempts && game.profile.timeline < target) {
     game.step(0.1);
     game.drainEvents();
   }
-  if (game.state.phase === 'won') { streak = 0; game.dispatch({ type: 'next' }); }
-  else { streak++; maxStreak = Math.max(maxStreak, streak); game.dispatch({ type: 'retry' }); }
+  if (game.state.phase === 'won') {
+    wins++; streak = 0;
+    assert.equal(game.dispatch({ type: 'next' }), true, 'a recorded win must advance successfully');
+  } else if (game.state.phase === 'lost') {
+    losses++; streak++; maxStreak = Math.max(maxStreak, streak);
+    assert.equal(game.dispatch({ type: 'retry' }), true, 'a recorded loss must retry successfully');
+  } else {
+    assert.equal(game.state.phase, 'running', 'the probe must end with a real result or explicit timeout');
+    timedOut = { timeline: p.timeline, chapter: p.enemyAge, army: p.age, seconds: game.state.time };
+    break;
+  }
 }
 const worst = Object.entries(attemptsByBattle).sort((a, b) => b[1] - a[1]).slice(0, 4).map(([k, v]) => `${k}:${v}`).join(' ');
-console.log(JSON.stringify({ reachedTimeline: game.profile.timeline, attempts, longestLosingStreak: maxStreak, cards: game.profile.cards.reduce((a, b) => a + b, 0), gemsLeft: game.profile.gems, mostAttempted: worst }));
+assert.equal(attempts, wins + losses + (timedOut ? 1 : 0));
+console.log(JSON.stringify({ stopReason: timedOut ? 'battle-timeout' : game.profile.timeline >= target ? 'target-reached' : 'attempt-limit', reachedTimeline: game.profile.timeline, attempts, completedAttempts: wins + losses, wins, losses, timedOut, longestLosingStreak: maxStreak, cards: game.profile.cards.reduce((a, b) => a + b, 0), gemsLeft: game.profile.gems, mostAttempted: worst }));
