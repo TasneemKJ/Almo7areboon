@@ -90,7 +90,7 @@ jobs:
       - name: Package reproducible verification workspace
         if: always()
         run: |
-          tar --exclude='./.git' --exclude='./dist' -czf "$RUNNER_TEMP/game-workspace.tar.gz" .
+          tar --exclude='./.git' --exclude='./dist' --exclude='./node_modules' -czf "$RUNNER_TEMP/game-workspace.tar.gz" .
       - uses: actions/upload-artifact@v4
         if: always()
         with:
