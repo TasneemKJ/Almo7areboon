@@ -63,7 +63,9 @@ export function troopPose(time:number,moving:boolean,attacking:boolean,reduced:b
   if(reduced||(!moving&&!attacking))return {frame:0,lift:0,angle:0};
   const t=Number.isFinite(time)?Math.max(0,time):0;
   if(attacking)return {frame:4+Math.floor(t*7)%2,lift:0,angle:Math.sin(t*14)*2};
-  return {frame:Math.floor(t*9)%4,lift:Math.abs(Math.sin(t*9))*1.1,angle:Math.sin(t*9)*1.1};
+  // Four poses make one relaxed stride per simulation second.
+  const stride=Math.sin(t*Math.PI*2);
+  return {frame:Math.floor(t*4)%4,lift:Math.abs(stride)*1.1,angle:stride*1.1};
 }
 export function projectilePoint(from:{x:number;y:number},to:{x:number;y:number},progress:number,arc=0) {
  const t=Number.isFinite(progress)?Math.min(1,Math.max(0,progress)):0;
