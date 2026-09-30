@@ -10,7 +10,7 @@ CHROMIUM_PATH=/path/to/chromium npm run review:overlap
 | Command | What it checks | Exit code | Why it exists |
 | --- | --- | --- | --- |
 | `npm run review:browser`, `review:layering` | Portrait screenshots, geometry and frozen battlefield layering (used by CI) | 1 on failure | Original visual acceptance |
-| `npm run review:monkey [url] [seconds]` | Starts on seven missing or damaged saves, then random taps, keys and button presses | 1 on any page error or failed start | Start-up and robustness regressions |
+| `npm run review:monkey [url] [seconds]` | Starts on seven missing or damaged saves, runs one end-to-end evolution (chapter changes, coins and unlocks reset), then random taps, keys and button presses | 1 on any page error, failed start or wrong evolution result | Start-up and robustness regressions |
 | `npm run review:overlap` | Fifteen HUD elements pairwise at six sizes (320–768px) with very large totals; Settings and Quests title contrast | 1 on overlap above 2px or an illegible title | Layout regressions; caught the cream-on-cream bug |
 | `npm run review:clip` | Every text run on each screen and dialog at 320 and 390px against `overflow: hidden` ancestors and the viewport edge | 1 on cut-off text | Truncated labels; ignores content inside scrollers |
 | `npm run review:contrast` | Text colour against the rendered pixels behind every text element (gradients and art included) | Always 0, read the list | Candidates for WCAG AA problems; partly hidden elements and containers with chips can be false positives, so confirm with a zoomed screenshot |
