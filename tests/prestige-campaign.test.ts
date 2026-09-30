@@ -97,3 +97,35 @@ test('Stillness simulation time matches equivalent frame partitions and wall pac
  const run=(chunk:number,speed:1|2)=>{const p=defaultProfile();p.age=5;p.enemyAge=1;p.legacy={rank:3,selected:'stillness'};p.speed=speed;const g=new Game(p);g.dispatch({type:'start'});for(let i=0;i<900;i+=chunk*speed)g.step(chunk/60*speed);g.dispatch({type:'skill',skill:'freeze'});for(let i=0;i<660;i+=chunk*speed)g.step(chunk/60*speed);g.profile.speed=1;return g;};
  const a=run(1,1),b=run(3,2);assert.deepEqual(a.state,b.state);assert.deepEqual(a.profile,b.profile);assert.ok(a.state.time>a.state.freezeUntil);
 });
+test('Watch multiplies the unrounded age-one gate product before the only final rounding',()=>{
+ const p=defaultProfile();p.age=1;p.coins=1000;p.legacy={rank:1,selected:'watch'};const g=new Game(p);
+ assert.equal(g.upgradeStatus('base').nextValue,457); // round(180 * 1.65 * 1.4 * 1.10) = round(457.38)
+ assert.equal(g.dispatch({type:'upgrade',stat:'base'}),true);assert.equal(g.state.playerMaxHp,457);
+ const reloaded=new Game(g.profile);assert.equal(reloaded.state.playerMaxHp,457);assert.notEqual(reloaded.state.playerMaxHp,458); // round(round(415.8) * 1.10) is wrong.
+});
+test('fresh public-action campaigns reconcile actual gem sources, rank thresholds and the second timeline',async()=>{
+ const {simulatePrestige}=await import('../scripts/simulate-prestige.ts');
+ for(const policy of ['mixed','immediate'] as const){const trace=simulatePrestige({targetTimeline:3,maxAttempts:100,policy,choice:'hearth',summon:true});assert.equal(trace.stopReason,'target-reached');assert.equal(trace.ledger.expectedGems,trace.finalProfile.gems);assert.equal(trace.ledger.dailyGems,0);assert.equal(trace.finalProfile.dailyDay,0);assert.ok(trace.transitions.length===2);assert.ok(trace.transitions.every(t=>t.rankAfter===Math.max(t.rankBefore,t.seals>=18?3:t.seals>=12?2:1)));assert.ok(trace.actions.some(a=>a.action.type==='prestige'));assert.ok(trace.attemptRows.every(a=>a.outcome==='won'||a.outcome==='lost'));assert.ok(trace.firstVictoryPurchase);assert.ok(trace.evolutionPurchases.every(p=>p.wins<=1&&p.losses<=2));}
+});
+test('actual win and mastery ledger split remains correct at the gem cap',async()=>{
+ const {simulatePrestige}=await import('../scripts/simulate-prestige.ts');const p=defaultProfile();p.age=5;p.enemyAge=5;p.foodLevel=12;p.unlocked=[true,true,true];p.gems=9999955;
+ const trace=simulatePrestige({profile:p,source:'prepared cap boundary',targetTimeline:2,maxAttempts:1,policy:'objectives',summon:false,choice:'watch'});assert.equal(trace.stopReason,'target-reached');assert.equal(trace.ledger.ordinaryGems,10);assert.equal(trace.ledger.masteryGems,35);assert.equal(trace.ledger.resetGems,0);assert.equal(trace.ledger.expectedGems,10000000);assert.equal(trace.finalProfile.gems,10000000);assert.equal(trace.ledger.spentGems,0);assert.equal(trace.finalProfile.summonCount,0);
+});
+test('a fresh deliberate low-seal policy earns rank one without daily or fabricated completion',async()=>{
+ const {simulatePrestige}=await import('../scripts/simulate-prestige.ts');const trace=simulatePrestige({targetTimeline:2,maxAttempts:100,policy:'minimal',choice:'watch',summon:true});assert.equal(trace.stopReason,'target-reached');assert.equal(trace.transitions[0].rankAfter,1);assert.ok(trace.transitions[0].seals<12);assert.equal(trace.ledger.expectedGems,trace.finalProfile.gems);assert.equal(trace.ledger.dailyGems,0);
+});
+test('prepared objective and Clear-only routes keep one initially empty ledger and reconcile actual rewards',async()=>{
+ const {preparedSealCampaign}=await import('../scripts/simulate-prestige.ts');for(const clearOnly of [false,true]){const trace=preparedSealCampaign(clearOnly);assert.ok(trace.source.includes('EMPTY current mastery'));assert.ok(trace.initialProfile.mastery.chapters.every(r=>r.earnedMask===0));assert.equal(trace.stopReason,'target-reached');assert.equal(trace.attempts,6);assert.equal(trace.transitions[0].seals,clearOnly?6:18);assert.equal(trace.finalProfile.legacy.rank,clearOnly?1:3);assert.equal(trace.finalProfile.mastery.chapters.reduce((s,r)=>s+r.earnedMask,0),0);assert.equal(trace.ledger.expectedGems,trace.finalProfile.gems);assert.equal(trace.ledger.ordinaryGems,60);assert.equal(trace.ledger.masteryGems,clearOnly?120:300);assert.equal(trace.ledger.resetGems,100);assert.equal(trace.ledger.spentGems,0);assert.equal(trace.finalProfile.wins,6);assert.equal(trace.finalProfile.summonCount,0);}
+});
+test('matched preparation comparisons expose concrete useful cases with identical starting profiles apart from legacy',async()=>{
+ const {compareLegacyPreparations}=await import('../scripts/simulate-prestige.ts');const rows=compareLegacyPreparations();assert.equal(rows.length,27);
+ for(const scenario of ['opening','pressured-gate','control']){const group=rows.filter(r=>r.scenario===scenario),baseline=group[0];for(const r of group){assert.deepEqual({...r.profile,legacy:baseline.profile.legacy},baseline.profile);assert.ok(r.source.includes('NOT earned'));assert.ok(r.outcome==='won'||r.outcome==='lost');}assert.equal(new Set(group.filter(r=>r.rank===0).map(r=>r.seconds)).size,1);}
+ const get=(scenario:string,rank:number,choice:string)=>rows.find(r=>r.scenario===scenario&&r.rank===rank&&r.choice===choice)!;
+ assert.ok(get('opening',3,'hearth').seconds<get('opening',0,'hearth').seconds);assert.equal(get('opening',3,'hearth').startingFood,12);
+ assert.ok(get('pressured-gate',3,'watch').seconds>get('pressured-gate',3,'stillness').seconds);assert.equal(get('pressured-gate',1,'watch').startingGate,457);assert.equal(get('pressured-gate',3,'watch').outcome,'lost');
+ const control=get('control',3,'stillness');assert.equal(control.outcome,'won');assert.ok(control.seconds<get('control',0,'stillness').seconds);assert.equal(control.freeze[0].until,control.freeze[0].castTime+10);assert.equal(control.freeze[0].targets,3);
+});
+test('bounded campaign reports a still-running timeout rather than inventing defeat or Retry',async()=>{
+ const {simulatePrestige}=await import('../scripts/simulate-prestige.ts');const p=defaultProfile();p.age=5;p.baseLevel=100;p.cards.fill(1000);
+ const trace=simulatePrestige({profile:p,source:'prepared maximum gate timeout boundary',targetTimeline:2,maxAttempts:1,policy:'hold-gate',summon:false});assert.equal(trace.stopReason,'battle-timeout');assert.equal(trace.attempts,1);assert.equal(trace.attemptRows.length,0);assert.ok(trace.combatTimeout);assert.equal(trace.transitions.length,0);assert.ok(!trace.actions.some(a=>a.action.type==='retry'));assert.equal(trace.ledger.expectedGems,trace.finalProfile.gems);assert.equal(trace.ledger.expectedCoins,trace.finalProfile.coins);
+});
