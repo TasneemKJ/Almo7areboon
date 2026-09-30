@@ -59,6 +59,7 @@ test('the worker precaches the page bundles and trims old ones',()=>{
 test('the page paints the game colour and a loading or no-script message before any script runs',()=>{
  const html=readFileSync(new URL('../index.html',import.meta.url),'utf8');
  assert.match(html,/html,body\{[^}]*background:#293541/);
+ assert.doesNotMatch(html.match(/html,body\{[^}]*\}/)![0],/color:(?!#293541)|font-family/,'the inline rule must not override the ink colour or font that :root provides');
  assert.match(html,/<div id="app"><p class="boot" role="status">Loading/);
  assert.match(html,/<noscript>.*needs JavaScript/);
 });

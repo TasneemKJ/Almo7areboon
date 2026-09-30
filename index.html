@@ -18,8 +18,9 @@
 <title>Almo7areboon — Through the Ages</title>
 <style>
   /* Painted before any script arrives, so slow connections see the game's colour and a message, not a white page. */
-  html,body{margin:0;background:#293541;color:#f0eed2;font-family:'Trebuchet MS',Arial,sans-serif}
-  .boot{min-height:100vh;display:grid;place-items:center;text-align:center;padding:24px;font-size:15px;letter-spacing:.4px}
+  /* Only the colour and the boot message are set here: text colour and font must keep coming from the game's own :root rules. */
+  html,body{margin:0;background:#293541}
+  .boot{min-height:100vh;display:grid;place-items:center;text-align:center;padding:24px;font-size:15px;font-weight:700;letter-spacing:.4px;color:#f0eed2;font-family:'Trebuchet MS',Arial,sans-serif}
 </style>
 </head>
 <body><div id="app"><p class="boot" role="status">Loading Almo7areboon…</p></div><noscript><style>#app{display:none}</style><p class="boot">Almo7areboon needs JavaScript to run. Please enable it and reload.</p></noscript><script type="module" src="/src/main.ts"></script></body>
