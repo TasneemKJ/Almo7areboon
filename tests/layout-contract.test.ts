@@ -47,3 +47,11 @@ test('offline support: a same-origin GET-only worker is registered in production
  assert.match(main,/import\.meta\.env\.PROD&&'serviceWorker' in navigator/);
  assert.match(main,/register\('\.\/sw\.js'\)\.catch/);
 });
+
+test('the worker precaches the page bundles and trims old ones',()=>{
+ const worker=readFileSync(new URL('../public/sw.js',import.meta.url),'utf8');
+ assert.match(worker,/async function precache/);
+ assert.match(worker,/event\.waitUntil\(precache\(\)/);
+ assert.match(worker,/KEEP_BUNDLES = \d+/);
+ assert.match(worker,/trimBundles\(cache\)/);
+});
