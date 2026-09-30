@@ -8,6 +8,7 @@ import './ui/readability.css';
 import { Game } from './game/simulation.ts';
 import { ERAS, foodRate, unlockCost, QUESTS, dailyReward, localDay } from './game/data.ts';
 import { loadProfileWithStatus, saveProfile, MAX_SAVE_CHARS } from './game/save.ts';
+import { startOverProfile } from './game/reset.ts';
 import { exportBackup, importBackup, restoreBackup } from './game/backup.ts';
 import type { Action, GameEvent, GamePort, Profile, Skill, UnitKind } from './game/types.ts';
 import { mountBattlefield } from './view/battlefield.ts';
@@ -199,7 +200,7 @@ function showSettings(){
   <p class="save-note">Quiet original music and environmental sound. Pauses in menus and when the battle is paused. Sound is the master switch.</p>
   <button class="setting-row" data-command="speed">${icon('evolution')} Battle speed <b>${game.profile.speed}×</b></button>
   <button class="setting-row" data-command="motion" aria-pressed="${game.profile.motion==='reduced'}">Motion <b>${game.profile.motion==='reduced'?'REDUCED':'SYSTEM'}</b></button>
-  <div class="backup-actions"><button class="big-button blue" data-command="export">EXPORT SAVE</button><button class="big-button secondary" data-command="import" ${persistenceBlocked?'disabled':''}>IMPORT SAVE</button><input id="import-save" type="file" accept=".json,application/json" hidden></div>
+  <div class="backup-actions"><button class="big-button blue" data-command="export">EXPORT SAVE</button><button class="big-button secondary" data-command="import" ${persistenceBlocked?'disabled':''}>IMPORT SAVE</button><button class="big-button secondary" data-command="reset" ${persistenceBlocked?'disabled':''}>START OVER</button><input id="import-save" type="file" accept=".json,application/json" hidden></div>
   <details class="help-box"><summary>How to play</summary><p>Tap Battle, collect food and deploy troops. Your army fights automatically.</p><p>Keep ranged troops behind a melee or heavy front line. Spend earned coins on food production and new troops.</p><p>Battle victories unlock opponents. Evolution upgrades your own army but resets coins, upgrades and battle unlocks.</p><small>1–3 troops · Q / W / E skills · Space pause · Escape closes menus.</small></details>
   <p class="save-note">${persistenceBlocked?'A newer save was found. It is protected from overwrite; this session is temporary.':savedWarning?'Saving is unavailable. Export a backup before closing.':'Progress saves on this browser. Export a backup to keep a separate copy.'}</p>`);
 }
@@ -254,6 +255,12 @@ lifetime.listen<MouseEvent>(root,'click',e=>{
     case 'motion':game.profile.motion=game.profile.motion==='reduced'?'system':'reduced';syncMotion();persist();showSettings();break;
     case 'export':exportSave();break;
     case 'import':$('import-save')?.click();break;
+    case 'reset':showModal('reset',`<h2 id="dialog-title">Start over?</h2><p>This deletes your progress on this browser: your age, coins, upgrades, unlocked battles, every card and all gems, quests and records.</p><p>Your sound, speed and motion choices stay. Export a save first if you might want this progress back.</p><button class="big-button blue" data-command="export">EXPORT SAVE FIRST</button><button class="big-button danger" data-command="confirm-reset">DELETE PROGRESS AND START OVER</button><button class="big-button secondary" data-command="close">KEEP MY PROGRESS</button>`);break;
+    case 'confirm-reset':{
+      const restored=restoreBackup(game,startOverProfile(game.profile));
+      if(!restored.ok){toast('The new game could not be saved. Your current progress was not deleted.');break;}
+      game=restored.game;lastPhase=game.state.phase;resultDue=0;manualPaused=false;resultShown='';savedWarning=false;rebuildArmy();syncMotion();closeModal(false);switchTab('battle');toast('Started a new game.');break;
+    }
     case 'confirm-import':{
       if(!pendingImport)break;const restored=restoreBackup(game,pendingImport);
       if(!restored.ok){toast('The save could not be written. Your current game was not replaced.');break;}
