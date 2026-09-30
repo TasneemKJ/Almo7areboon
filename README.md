@@ -24,7 +24,7 @@ npm run build
 npm run preview
 ```
 
-Serve the generated `dist/` directory on a static HTTP host. Opening `index.html` directly with a `file:` URL is not the supported route. No accounts, API keys, database or backend are required. These commands do not publish the game.
+Serve the generated `dist/` directory on a static HTTP host. Opening `index.html` directly with a `file:` URL is not the supported route. No accounts, API keys, database or backend are required. Production builds register a small service worker (`public/sw.js`) that remembers what the game has loaded, so a returning player can start offline; the first visit and any chapter art not yet seen still need a connection. These commands do not publish the game.
 
 ## Play
 

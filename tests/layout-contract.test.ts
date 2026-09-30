@@ -38,3 +38,12 @@ test('troop role captions are at least 10px',()=>{
  const css=readFileSync(new URL('../src/ui/readability.css',import.meta.url),'utf8');
  assert.match(css,/\.unit-role\s*\{\s*font-size:\s*10px/);
 });
+
+test('offline support: a same-origin GET-only worker is registered in production builds only',()=>{
+ const worker=readFileSync(new URL('../public/sw.js',import.meta.url),'utf8'),main=readFileSync(new URL('../src/main.ts',import.meta.url),'utf8');
+ assert.match(worker,/request\.method !== 'GET'/);
+ assert.match(worker,/origin !== self\.location\.origin/);
+ assert.match(worker,/request\.mode === 'navigate'/);
+ assert.match(main,/import\.meta\.env\.PROD&&'serviceWorker' in navigator/);
+ assert.match(main,/register\('\.\/sw\.js'\)\.catch/);
+});
