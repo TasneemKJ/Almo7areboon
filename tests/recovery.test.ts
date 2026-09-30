@@ -77,3 +77,29 @@ test('P30: next-wave countdown and cleared state derive from the actual battle',
  const g=new Game();assert.equal(g.waveStatus().nextIn,3);g.dispatch({type:'start'});for(let i=0;i<190;i++)g.step(1/60);
  assert.equal(g.waveStatus().spawned,1);assert.ok(g.waveStatus().nextIn!>0);assert.equal(g.waveStatus().cleared,false);
 });
+
+test('a save written mid-battle reloads ready: earnings and lifetime counts kept, the battle itself starts fresh', () => {
+  const profile = saves.defaultProfile();
+  profile.unlocked = [true, true, true];
+  const game = new Game(profile);
+  game.dispatch({ type: 'start' });
+  for (let tick = 0; tick < 60 * 16; tick++) {
+    if (tick % 90 === 0) game.dispatch({ type: 'spawn', kind: 0 });
+    game.step(1 / 60);
+  }
+  assert.equal(game.state.phase, 'running');
+  assert.ok(game.profile.coins > 0 && game.profile.kills > 0 && game.profile.deployed > 0, 'the battle earned something worth keeping');
+  const memory = new Map<string, string>();
+  const storage = { getItem: (key: string) => memory.get(key) ?? null, setItem: (key: string, value: string) => { memory.set(key, value); } };
+  assert.equal(saves.saveProfile(game.profile, storage), true);
+  const reloaded = new Game(saves.loadProfile(storage));
+  assert.equal(reloaded.state.phase, 'ready');
+  assert.equal(reloaded.state.units.length, 0);
+  assert.equal(reloaded.state.wave, 0);
+  assert.equal(reloaded.state.time, 0);
+  assert.equal(reloaded.state.food, 6);
+  assert.deepEqual(reloaded.state.skillsUsed, []);
+  assert.equal(reloaded.state.stats.deployed, 0, 'per-battle statistics start over');
+  for (const key of ['coins', 'gems', 'kills', 'deployed', 'wins', 'foodLevel', 'baseLevel'] as const) assert.equal(reloaded.profile[key], game.profile[key], key);
+  assert.equal(reloaded.profile.pendingVictory, null);
+});
