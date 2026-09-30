@@ -33,3 +33,8 @@ test('the wave and threat readout keeps the 11px floor',()=>{
  const css=readFileSync(new URL('../src/ui/readability.css',import.meta.url),'utf8');
  assert.match(css,/\.battle-meta>span\s*\{\s*font-size:\s*11px/);
 });
+
+test('troop role captions are at least 10px',()=>{
+ const css=readFileSync(new URL('../src/ui/readability.css',import.meta.url),'utf8');
+ assert.match(css,/\.unit-role\s*\{\s*font-size:\s*10px/);
+});
