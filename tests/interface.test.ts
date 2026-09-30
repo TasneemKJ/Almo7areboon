@@ -9,6 +9,7 @@ import { isEditingTarget, nextFocusIndex, createModalIsolation } from '../src/ui
 import { createArmyUpdater } from '../src/ui/army-screen.ts';
 import { baseHealthDisplay, battleGuidance, compactNumber, defeatAdvice } from '../src/ui/battle-hud.ts';
 import { unlockCost, foodUpgradeCost } from '../src/game/data.ts';
+import { resultsHtml } from '../src/ui/results-screen.ts';
 import { battleSelectionHtml, evolutionDialogHtml } from '../src/ui/progression-screen.ts';
 import { createLifetime } from '../src/ui/lifetime.ts';
 const main=()=>readFileSync(new URL('../src/main.ts',import.meta.url),'utf8');
@@ -127,4 +128,11 @@ test('defeat advice points at the most useful affordable improvement',()=>{
  p.unlocked=[true,true,true];p.coins=foodUpgradeCost(p);assert.match(defeatAdvice(p),/food production/);
  const g=new Game(p);g.state.phase='lost';
  assert.match(battleGuidance(g.profile,g.state),/^Your coins are safe\. Upgrade food production/);
+});
+
+test('the final victory spells out what the next timeline resets and keeps',()=>{
+ const p=defaultProfile();p.enemyAge=5;p.furthestBattle=5;
+ const g=new Game(p);g.state.phase='won';
+ const html=resultsHtml(g.profile,g.state);
+ assert.match(html,/harder timeline/);assert.match(html,/coins, upgrades and troop unlocks reset/);assert.match(html,/cards, gems and records stay/);
 });
