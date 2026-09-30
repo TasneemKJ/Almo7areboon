@@ -8,7 +8,9 @@ import { createSaveSession, type SaveSessionLocks } from '../src/game/save-sessi
 import { pauseReason } from '../src/ui/pause.ts';
 import { isEditingTarget, nextFocusIndex, createModalIsolation } from '../src/ui/accessibility.ts';
 import { createArmyUpdater } from '../src/ui/army-screen.ts';
-import { baseHealthDisplay, battleGuidance, compactNumber } from '../src/ui/battle-hud.ts';
+import { baseHealthDisplay, battleGuidance, compactNumber, defeatAdvice } from '../src/ui/battle-hud.ts';
+import { unlockCost, foodUpgradeCost } from '../src/game/data.ts';
+import { resultsHtml } from '../src/ui/results-screen.ts';
 import { battleSelectionHtml, evolutionDialogHtml } from '../src/ui/progression-screen.ts';
 import { createLifetime } from '../src/ui/lifetime.ts';
 const main=()=>readFileSync(new URL('../src/main.ts',import.meta.url),'utf8');
@@ -162,4 +164,33 @@ test('modal isolation inerts siblings once, spares the layer and toast, and rest
 test('compactNumber switches to exponent notation for astronomically large values',()=>{
  assert.equal(compactNumber(2.5e15),'2.5e15');
  assert.equal(compactNumber(Number.NaN),'0');
+});
+
+test('defeat advice points at the most useful affordable improvement',()=>{
+ const p=defaultProfile();
+ assert.match(defeatAdvice(p),/Deploy earlier/);
+ p.coins=unlockCost(1,p);assert.match(defeatAdvice(p),/ranged troop/);
+ p.unlocked=[true,true,false];p.coins=unlockCost(2,p);assert.match(defeatAdvice(p),/heavy troop/);
+ p.unlocked=[true,true,true];p.coins=foodUpgradeCost(p);assert.match(defeatAdvice(p),/food production/);
+ const g=new Game(p);g.state.phase='lost';
+ assert.match(battleGuidance(g.profile,g.state),/^Your coins are safe\. Upgrade food production/);
+});
+
+test('the final victory spells out what the next timeline resets and keeps',()=>{
+ const p=defaultProfile();p.enemyAge=5;p.furthestBattle=5;
+ const g=new Game(p);g.state.phase='won';
+ const html=resultsHtml(g.profile,g.state);
+ assert.match(html,/harder timeline/);assert.match(html,/coins, upgrades and troop unlocks reset/);assert.match(html,/cards, gems and records stay/);
+});
+
+test('new players are pointed at the skill buttons once, until they cast one',()=>{
+ const g=new Game();g.dispatch({type:'start'});g.dispatch({type:'spawn',kind:0});
+ g.state.food=50;g.state.time=10;
+ assert.doesNotMatch(battleGuidance(g.profile,g.state),/skill/i);
+ g.state.time=30;
+ assert.match(battleGuidance(g.profile,g.state),/Try a skill/);
+ g.state.stats.skillsCast=1;
+ assert.doesNotMatch(battleGuidance(g.profile,g.state),/Try a skill/);
+ g.state.stats.skillsCast=0;g.profile.wins=3;
+ assert.doesNotMatch(battleGuidance(g.profile,g.state),/Try a skill/);
 });

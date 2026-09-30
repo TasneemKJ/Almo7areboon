@@ -33,6 +33,8 @@ type AttackCue={x:number;y:number;lane:number;age:number;kind:Unit['kind'];side:
 type ImpactCue={x:number;y:number;age:number;kind:Unit['kind'];side:Side;life:number;max:number};
 type Flare={x:number;y:number;life:number;max:number;radius:number;color:number};
 const xAt=(x:number)=>x*.45;
+/** View-only: nudges bodies sharing a lane by a few pixels so crowded columns read as individuals, not one stacked sprite. */
+const rankStagger=(id:number)=>((id*7)%5-2)*1.1;
 const noise=(n:number)=>{const value=Math.sin(n*117.13)*43758.5453;return value-Math.floor(value);};
 const tint=(hex:string)=>parseInt(hex.slice(1),16);
 
@@ -237,7 +239,7 @@ export function mountBattlefield(element:HTMLElement,game:GamePort,onFrame:()=>v
    const ids=new Set<number>();
    for(const unit of game.state.units){
     ids.add(unit.id);let view=this.units.get(unit.id);
-    const x=xAt(unit.x),y=this.yAt(unit.lane),frozen=unit.side==='enemy'&&game.state.freezeUntil>game.state.time;
+    const x=xAt(unit.x),y=this.yAt(unit.lane)+rankStagger(unit.id),frozen=unit.side==='enemy'&&game.state.freezeUntil>game.state.time;
     if(!view){const body=this.sprite(unit.age,unit.kind,unit.side);this.armyLayer.add(body);view={body,x,y,side:unit.side,dustAt:0};this.units.set(unit.id,view);}
     const moving=Math.abs(view.x-x)>.001,perspective=lanePresentation(unit.lane,unit.kind),scale=troopScale(unit.kind,unit.lane);
     const direction=unit.side==='player'?1:-1;

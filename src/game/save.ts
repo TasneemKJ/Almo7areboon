@@ -8,7 +8,7 @@ export const MAX_SAVE_CHARS = 100_000;
 export type LoadStatus = 'loaded' | 'new' | 'recovered' | 'corrupt' | 'unsupported' | 'unavailable';
 
 export function defaultProfile(): Profile {
-  return { version: 2, timeline: 1, age: 0, enemyAge: 0, furthestBattle: 0, coins: 0, gems: 100, foodLevel: 0, baseLevel: 0, unlocked: [true, false, false], cards: CARD_DEFS.map(() => 0), summonCount: 0, summonSeed: 0x6d2b79f5, pendingVictory: null, kills: 0, wins: 0, deployed: 0, claimed: [], sound: true, speed: 1, motion: 'system' };
+  return { version: 2, timeline: 1, age: 0, enemyAge: 0, furthestBattle: 0, coins: 0, gems: 100, foodLevel: 0, baseLevel: 0, unlocked: [true, false, false], cards: CARD_DEFS.map(() => 0), summonCount: 0, summonSeed: 0x6d2b79f5, pendingVictory: null, kills: 0, wins: 0, deployed: 0, claimed: [], dailyDay: 0, dailyStreak: 0, sound: true, speed: 1, motion: 'system' };
 }
 
 function integer(value: unknown, fallback: number, min: number, max: number): number {
@@ -59,6 +59,8 @@ function validate(value: unknown): Profile {
     }
   }
   if (Array.isArray(data.claimed)) clean.claimed = QUESTS.filter(quest => (data.claimed as unknown[]).includes(quest.id)).map(quest => quest.id);
+  clean.dailyDay = integer(data.dailyDay, 0, 0, 1e6);
+  clean.dailyStreak = clean.dailyDay ? integer(data.dailyStreak, 0, 0, 1e6) : 0;
   if (typeof data.sound === 'boolean') clean.sound = data.sound;
   clean.speed = data.speed === 2 ? 2 : 1;
   clean.motion = data.motion === 'reduced' ? 'reduced' : 'system';

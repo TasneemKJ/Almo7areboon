@@ -38,7 +38,7 @@ try {
   let ready = false;
   for (let attempt = 0; attempt < 80; attempt++) {
     if (server.exitCode !== null) throw new Error(`Preview exited ${server.exitCode}: ${log}`);
-    try { ready = log.includes(origin) && (await fetch(origin, { signal: AbortSignal.timeout(2000) })).ok; } catch {}
+    try { ready = (await fetch(origin, { signal: AbortSignal.timeout(2000) })).ok; } catch {}
     if (ready) break;
     await new Promise(resolve => setTimeout(resolve, 250));
   }
