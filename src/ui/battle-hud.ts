@@ -1,7 +1,7 @@
 import { ERAS, foodRate, foodUpgradeCost, unlockCost } from '../game/data.ts';
 import { cardPackCost } from '../game/cards.ts';
 import type { WavePreview, WaveStatus } from '../game/encounters.ts';
-import type { BattleState, Profile } from '../game/types.ts';
+import type { BattleState, DeploymentStatus, Profile } from '../game/types.ts';
 import { chapterMastery } from '../game/mastery.ts';
 import { masteryAdvice } from './mastery-presentation.ts';
 import { chapterScouting } from './chapter-scouting.ts';
@@ -16,7 +16,7 @@ export function defeatAdvice(profile: Profile): string {
 }
 
 /** A single contextual instruction, not an onboarding panel over the battlefield. */
-export function battleGuidance(profile: Profile, state: BattleState, preview?: WavePreview | null): string {
+export function battleGuidance(profile: Profile, state: BattleState, preview?: WavePreview | null, melee?: Readonly<DeploymentStatus>): string {
   if (state.phase === 'ready') return profile.wins===0?'Tap Battle, then spend food on warriors. They fight automatically.':`${chapterScouting(profile.enemyAge).opening} Tap Battle to begin.`;
   if (state.phase === 'won') return 'Victory! Continue to the next battle when you are ready.';
   if (state.phase === 'lost') return `Your coins are safe. ${masteryAdvice(profile,state)}`;
@@ -27,6 +27,10 @@ export function battleGuidance(profile: Profile, state: BattleState, preview?: W
   if (wait > 0) return profile.wins<3&&!state.skillsUsed.includes('food')
     ? `Food Drop adds 10 now, once per battle; or wait ${wait}s.`
     : `More food in ${wait}s. Your warriors fight automatically.`;
+  if(profile.wins<3&&melee?.allowed){
+    const army=state.units.filter(unit=>unit.side==='player'&&unit.hp>0);
+    if(army.some(unit=>unit.kind===1)&&!army.some(unit=>unit.kind===0||unit.kind===2))return 'Ranged troops need cover. Add a melee guard.';
+  }
   if (profile.wins < 3 && state.stats.skillsCast === 0 && state.time >= 25 && (!preview || preview.nextIn > 8)) {
     const enemies = state.units.some(unit => unit.side === 'enemy' && unit.hp > 0);
     const skills = [

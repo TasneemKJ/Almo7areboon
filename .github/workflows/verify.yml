@@ -163,6 +163,19 @@ jobs:
           name: card-learning-browser-review
           path: artifacts/browser-review/card-learning/
           retention-days: 7
+      - name: Verify live formation teaching in production
+        id: formation_learning
+        if: steps.tests.outcome == 'success' && steps.build.outcome == 'success'
+        continue-on-error: true
+        timeout-minutes: 5
+        run: node --experimental-strip-types scripts/capture-formation-review.mjs
+      - name: Publish formation learning evidence
+        if: always() && steps.formation_learning.outcome != 'skipped'
+        uses: actions/upload-artifact@v4
+        with:
+          name: formation-learning-browser-review
+          path: artifacts/browser-review/formation-learning/
+          retention-days: 7
       - name: Verify native skill timing cues
         id: skill_cues
         if: steps.tests.outcome == 'success' && steps.build.outcome == 'success'
@@ -305,5 +318,5 @@ jobs:
         if: always()
         env:
           VERIFICATION_STEPS: ${{ toJSON(steps) }}
-          REQUIRED_CHECKS: tests build audio_browser upgrade_text offline_audio offline_game troop_unlock wave_help legacy_learning food_teaching card_learning skill_cues regroup browser layering save_sessions mastery
+          REQUIRED_CHECKS: tests build audio_browser upgrade_text offline_audio offline_game troop_unlock wave_help legacy_learning food_teaching card_learning formation_learning skill_cues regroup browser layering save_sessions mastery
         run: node scripts/require-verification.mjs

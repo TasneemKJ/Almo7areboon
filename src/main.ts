@@ -200,7 +200,7 @@ function update(force=false){
   textIfChanged($('wave-label'),s.phase==='running'?waveLabel(wave):s.phase==='ready'?'CHOOSE YOUR ARMY':'BATTLE COMPLETE');
   $('wave-label').setAttribute('aria-label',s.phase==='running'?`Inspect wave. ${waveAccessibleLabel(wave)}`:$('wave-label').textContent??'');
   $('wave-label').toggleAttribute('disabled',s.phase!=='running');
-  textIfChanged($('deploy-hint'),battleGuidance(p,s,wave.preview));
+  textIfChanged($('deploy-hint'),battleGuidance(p,s,wave.preview,game.deploymentStatus(0)));
   const health=baseHealthDisplay(s.playerHp,s.playerMaxHp);
   $('world').classList.toggle('base-danger',s.phase==='running'&&health.danger);
   textIfChanged($('base-status'),`Your base: ${health.label}. Enemy base: ${baseHealthDisplay(s.enemyHp,s.enemyMaxHp).label}.`);
