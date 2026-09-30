@@ -33,7 +33,7 @@ if(!root)throw new Error('The game mount element is missing.');
 const lifetime=createLifetime();
 let activeTab='battle',modal:string|null=null,manualPaused=false;
 let atmosphereEnabled=loadAtmosphere();
-let lastUpdate=0,lastSave=0,resultShown='',toastTimer=0,focusFrame=0,modalVersion=0;
+let lastUpdate=0,lastSave=0,resultShown='',lastPhase=game.state.phase,resultDue=0,toastTimer=0,focusFrame=0,modalVersion=0;
 let savedWarning=false,pendingImport:Profile|null=null;
 const persistenceBlocked=loaded.status==='unsupported';
 const money=(value:number)=>value>=10000?compactNumber(value):Math.floor(value).toLocaleString('en-US');
@@ -137,7 +137,9 @@ function update(force=false){
   });
   const notification=$('quests').querySelector<HTMLElement>('.notification');
   if(notification)notification.hidden=!(dailyReward(p,localDay()).available||QUESTS.some(q=>p[q.stat]>=q.target&&!p.claimed.includes(q.id)));
-  if((s.phase==='won'||s.phase==='lost')&&resultShown!==s.phase){resultShown=s.phase;showResult();}
+  // Let the finishing blow and base collapse play before the result dialog covers them.
+  if(s.phase!==lastPhase){if(lastPhase==='running'&&(s.phase==='won'||s.phase==='lost'))resultDue=now+(document.documentElement.dataset.motion==='reduced'?350:1300);lastPhase=s.phase;}
+  if((s.phase==='won'||s.phase==='lost')&&resultShown!==s.phase&&now>=resultDue){resultShown=s.phase;showResult();}
   if(s.phase==='ready'||s.phase==='running')resultShown='';
   if(now-lastSave>5000)persist();
 }
@@ -246,7 +248,7 @@ lifetime.listen<MouseEvent>(root,'click',e=>{
     case 'confirm-import':{
       if(!pendingImport)break;const restored=restoreBackup(game,pendingImport);
       if(!restored.ok){toast('The save could not be written. Your current game was not replaced.');break;}
-      game=restored.game;manualPaused=false;resultShown='';savedWarning=false;rebuildArmy();syncMotion();closeModal(false);switchTab('battle');toast('Save restored.');break;
+      game=restored.game;lastPhase=game.state.phase;resultDue=0;manualPaused=false;resultShown='';savedWarning=false;rebuildArmy();syncMotion();closeModal(false);switchTab('battle');toast('Save restored.');break;
     }
     case 'close':closeModal();break;
   }

@@ -20,6 +20,7 @@ export function battleGuidance(profile: Profile, state: BattleState, preview?: W
   if (state.stats.deployed === 0 && state.food >= ERAS[profile.age].units[0].cost) return 'Deploy a melee warrior. Save some food for the next wave.';
   const wait = Math.ceil((ERAS[profile.age].units[0].cost - state.food) / foodRate(profile));
   if (wait > 0) return `More food in ${wait}s. Your warriors fight automatically.`;
+  if (profile.wins < 3 && state.stats.skillsCast === 0 && state.time >= 25 && (!preview || preview.nextIn > 8)) return 'Try a skill: Freeze, Meteor or Food Drop. Each works once per battle.';
   if (preview) {
     if (preview.intent === 'volley') return 'Ranged enemies are coming. Melee guards take less damage from them.';
     if (preview.intent === 'rush' && profile.unlocked[2]) return 'A rush is coming. A heavy warrior can hit two enemies.';
