@@ -1,3 +1,4 @@
+import { isLegacyChoice, legacyEffects, prestigePreview } from './prestige.ts';
 import { advanceStatus, canRetry, createMastery, masteryAward } from './mastery.ts';
 import { encounterForAge, scheduledSpawns, wavePreview } from './encounters.ts';
 import type { Encounter, ScheduledSpawn, WaveStatus } from './encounters.ts';
@@ -59,10 +60,10 @@ export class Game implements GamePort {
     this.rewardRemainder = 0;
     this.playerLane = 0;
     this.enemyLane = 0;
-    return { stats: battleStats(), phase: 'ready', paused: false, time: 0, food: 6, playerHp, playerMaxHp: playerHp, enemyHp, enemyMaxHp: enemyHp, units: [], wave: 0, totalWaves: this.encounter.waves.length, earned: 0, freezeUntil: 0, skillsUsed: [] };
+    return { stats: battleStats(), phase: 'ready', paused: false, time: 0, food: legacyEffects(this.profile.legacy).startingFood, playerHp, playerMaxHp: playerHp, enemyHp, enemyMaxHp: enemyHp, units: [], wave: 0, totalWaves: this.encounter.waves.length, earned: 0, freezeUntil: 0, skillsUsed: [] };
   }
 
-  private baseHealth(): number { return Math.round(180 * 1.65 ** this.profile.age * (1 + this.profile.baseLevel * 0.4) * this.bonuses().base); }
+  private baseHealth(): number { return Math.round(180 * 1.65 ** this.profile.age * (1 + this.profile.baseLevel * 0.4) * this.bonuses().base * legacyEffects(this.profile.legacy).gateFactor); }
   private refreshBaseHealth(): void {
     const nextMaxHp = this.baseHealth();
     this.state.playerHp = this.state.phase === 'lost' ? 0 : Math.max(0, Math.min(nextMaxHp, this.state.playerHp + nextMaxHp - this.state.playerMaxHp));
@@ -99,25 +100,32 @@ export class Game implements GamePort {
         this.profile.pendingVictory = null;
         this.state = this.newBattle();
         return true;
-      case 'next':
-        if (!advanceStatus(this.profile,this.state).allowed) return false;
+      case 'next': {
+        const advancement = advanceStatus(this.profile,this.state);
+        if (!advancement.allowed || advancement.target !== 'battle') return false;
         this.profile.pendingVictory = null;
-        if (this.profile.enemyAge < 5) {
-          this.profile.enemyAge++;
-          this.profile.furthestBattle = Math.max(this.profile.furthestBattle, this.profile.enemyAge);
-        }
-        else {
-          this.profile.timeline++;
-          this.profile.mastery = createMastery(this.profile.timeline);
-          this.profile.enemyAge = 0;
-          this.profile.furthestBattle = 0;
-          this.profile.coins = 0;
-          this.profile.age = 0;
-          this.profile.foodLevel = 0;
-          this.profile.baseLevel = 0;
-          this.profile.unlocked = [true, false, false];
-          this.profile.gems = Math.min(1e7, this.profile.gems + 100);
-        }
+        this.profile.enemyAge++;
+        this.profile.furthestBattle = Math.max(this.profile.furthestBattle,this.profile.enemyAge);
+        this.state = this.newBattle();
+        return true;
+      }
+      case 'prestige': {
+        if (!Number.isInteger(action.expectedTimeline) || action.expectedTimeline !== this.profile.timeline) return false;
+        const preview = prestigePreview(this.profile,this.state,action.legacy);
+        if (!preview) return false;
+        Object.assign(this.profile, {
+          legacy: {rank:preview.rankAfter,selected:preview.choice},
+          timeline:preview.nextTimeline,gems:preview.gemsAfter,
+          mastery:createMastery(preview.nextTimeline),pendingVictory:null,
+          enemyAge:0,furthestBattle:0,coins:0,age:0,foodLevel:0,baseLevel:0,
+          unlocked:[true,false,false],
+        });
+        this.state = this.newBattle();
+        return true;
+      }
+      case 'select-legacy':
+        if (this.state.phase !== 'ready' || this.profile.legacy.rank === 0 || !isLegacyChoice(action.legacy)) return false;
+        this.profile.legacy = {...this.profile.legacy,selected:action.legacy};
         this.state = this.newBattle();
         return true;
       case 'select-battle':
@@ -214,7 +222,7 @@ export class Game implements GamePort {
     const level = stat === 'food' ? this.profile.foodLevel : this.profile.baseLevel;
     if (level >= 100) return { allowed: false, reason: 'max', cost: null, nextValue: null };
     const cost = stat === 'food' ? foodUpgradeCost(this.profile) : baseUpgradeCost(this.profile);
-    const nextValue = stat === 'food' ? (0.8 + (level + 1) * 0.14) * this.bonuses().food : Math.round(180 * 1.65 ** this.profile.age * (1 + (level + 1) * 0.4) * this.bonuses().base);
+    const nextValue = stat === 'food' ? (0.8 + (level + 1) * 0.14) * this.bonuses().food : Math.round(180 * 1.65 ** this.profile.age * (1 + (level + 1) * 0.4) * this.bonuses().base * legacyEffects(this.profile.legacy).gateFactor);
     return { allowed: this.profile.coins >= cost, reason: this.profile.coins >= cost ? 'available' : 'coins', cost, nextValue };
   }
 
@@ -279,7 +287,7 @@ export class Game implements GamePort {
     if (skill === 'food') this.state.food = Math.min(99, this.state.food + 10);
     if (skill === 'freeze') {
       this.state.stats.maxFreezeTargets = Math.max(this.state.stats.maxFreezeTargets,this.state.units.filter(unit=>unit.side === 'enemy' && unit.hp > 0).length);
-      this.state.freezeUntil = this.state.time + 7;
+      this.state.freezeUntil = this.state.time + legacyEffects(this.profile.legacy).freezeSeconds;
     }
     if (skill === 'meteor') {
       const damage = 36 * 1.65 ** this.profile.age * this.bonuses().damage;

@@ -267,7 +267,7 @@ test('invalid candidate never changes the baseline or either stored copy', async
   session.dispose(); await flush();
 });
 
-test('schema-3 settled ledger and receipt persist together through guarded import, conflict and temporary play', async () => {
+test('schema-4 settled ledger and receipt persist together through guarded import, conflict and temporary play', async () => {
   const { restoreBackupWithSave, exportBackup, importBackup } = await import('../src/game/backup.ts');
   const storage = new MemoryStorage(), locks = new ExclusiveLocks(), session = create({storage,locks});
   await session.acquire();
@@ -282,7 +282,7 @@ test('schema-3 settled ledger and receipt persist together through guarded impor
     }
     assert.equal(g.state.phase,'won'); assert.equal(g.profile.pendingVictory?.settlement,'mastery-v1'); assert.ok(g.profile.mastery.chapters[0].earnedMask & 1);
     assert.equal(session.save(g.profile).ok,true);
-    const persisted=JSON.parse(storage.getItem(SAVE_KEY)!); assert.equal(persisted.version,3);assert.deepEqual(persisted.mastery,g.profile.mastery);assert.deepEqual(persisted.pendingVictory,g.profile.pendingVictory);
+    const persisted=JSON.parse(storage.getItem(SAVE_KEY)!); assert.equal(persisted.version,4);assert.deepEqual(persisted.legacy,g.profile.legacy);assert.deepEqual(persisted.mastery,g.profile.mastery);assert.deepEqual(persisted.pendingVictory,g.profile.pendingVictory);
     const parsed=importBackup(exportBackup(g.profile)); assert.equal(parsed.ok,true);
     if(!parsed.ok)throw Error('Backup round trip failed');
     const imported=restoreBackupWithSave(new Game(),parsed.profile,p=>session.save(p).ok);assert.equal(imported.ok,true);assert.deepEqual(imported.game.profile,g.profile);
@@ -290,4 +290,16 @@ test('schema-3 settled ledger and receipt persist together through guarded impor
     const rejected=restoreBackupWithSave(imported.game,parsed.profile,p=>session.save(p).ok);assert.equal(rejected.ok,false);assert.equal(rejected.game,imported.game);assert.equal(session.status,'conflict');assert.deepEqual(storage.bytes(),bytes);
     const temporary=create({storage,locks:null});await temporary.acquire();assert.equal(temporary.playTemporarily(),true);assert.equal(temporary.save(g.profile).ok,false);assert.deepEqual(storage.bytes(),bytes);temporary.dispose();
   } finally {session.dispose();await flush();}
+});
+
+test('guarded prestige stores legacy timeline wallet and empty records together; foreign bytes block stale confirmation',async()=>{
+ const storage=new MemoryStorage(),locks=new ExclusiveLocks(),session=create({storage,locks});await session.acquire();
+ try {
+ const p=defaultProfile();p.enemyAge=5;p.furthestBattle=5;p.pendingVictory={settlement:'legacy',timeline:1,battle:5,earned:123,seconds:40,playerHp:100};const g=new Game(p);
+ assert.equal(session.save(g.profile).ok,true);assert.equal(session.check(),true);assert.equal(g.dispatch({type:'prestige',expectedTimeline:1,legacy:'watch'}),true);assert.equal(session.save(g.profile).ok,true);
+ const persisted=JSON.parse(storage.getItem(SAVE_KEY)!);assert.deepEqual([persisted.timeline,persisted.gems,persisted.legacy.rank,persisted.legacy.selected],[2,200,1,'watch']);assert.deepEqual(persisted.mastery,g.profile.mastery);assert.equal(persisted.pendingVictory,null);
+ const {exportBackup,importBackup,restoreBackupWithSave}=await import('../src/game/backup.ts');const parsed=importBackup(exportBackup(g.profile));assert.equal(parsed.ok,true);if(!parsed.ok)throw Error('Invalid backup');const restored=restoreBackupWithSave(new Game(),parsed.profile,p=>session.save(p).ok);assert.equal(restored.ok,true);assert.deepEqual(restored.game.profile,g.profile);
+ const stale=new Game(p);const memory=JSON.stringify(stale.profile);storage.setItem(SAVE_KEY,JSON.stringify({...persisted,gems:201}));const bytes=storage.bytes();if(session.check())stale.dispatch({type:'prestige',expectedTimeline:1,legacy:'hearth'});assert.equal(JSON.stringify(stale.profile),memory);assert.equal(session.status,'conflict');assert.deepEqual(storage.bytes(),bytes);
+ const temp=create({storage,locks:null});await temp.acquire();assert.equal(temp.playTemporarily(),true);assert.equal(temp.check(),true);assert.equal(stale.dispatch({type:'prestige',expectedTimeline:1,legacy:'hearth'}),true);assert.equal(temp.save(stale.profile).ok,false);assert.deepEqual(storage.bytes(),bytes);temp.dispose();
+ }finally{session.dispose();await flush();}
 });

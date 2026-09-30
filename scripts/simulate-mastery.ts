@@ -74,7 +74,7 @@ export function simulateMastery(policy: MasteryPolicy, claimDaily=false) {
       if(evolution&&!evolution.purchase)prepare();
       collect();
       const before={timeline:game.profile.timeline,chapter:game.profile.enemyAge,...wallets()};
-      if(!act({type:'next'}))throw Error('Settled win could not advance');
+      if(!act(game.profile.enemyAge===5?{type:'prestige',expectedTimeline:game.profile.timeline,legacy:'hearth'}:{type:'next'}))throw Error('Settled win could not advance');
       transitions.push({kind:'next',before,after:{timeline:game.profile.timeline,chapter:game.profile.enemyAge,...wallets()}});
     } else {
       if(evolution&&!evolution.purchase)prepare();
