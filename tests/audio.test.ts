@@ -19,3 +19,23 @@ test('P32: audio is lazy when muted and rejected browser audio operations stay o
   await new Promise(resolve=>setImmediate(resolve));
  }finally{audio.disposeAudio();if(previous)Object.defineProperty(globalThis,'AudioContext',previous);else delete (globalThis as Record<string,unknown>).AudioContext;}
 });
+
+test('every game event has its own cue, so a defeated unit does not sound like a spawn',()=>{
+ audio.disposeAudio();
+ const starts:Record<string,number>={};let current='';
+ const previous=Object.getOwnPropertyDescriptor(globalThis,'AudioContext');
+ class RunningAudio {
+  state='running';currentTime=0;destination={};
+  resume(){return Promise.resolve();}suspend(){return Promise.resolve();}close(){return Promise.resolve();}
+  createGain(){return {gain:{setValueAtTime(){},exponentialRampToValueAtTime(){}},connect(){},disconnect(){}};}
+  createOscillator(){return {type:'',frequency:{setValueAtTime(value:number){starts[current]??=value;},exponentialRampToValueAtTime(){}},connect(){},disconnect(){},start(){(this as {onended:(()=>void)|null}).onended?.();},stop(){},onended:null as (()=>void)|null};}
+ }
+ Object.defineProperty(globalThis,'AudioContext',{configurable:true,value:RunningAudio});
+ try{
+  audio.unlockAudio(true);
+  for(const kind of ['spawn','hit','death','coin','upgrade','win','lose','skill','evolve']){current=kind;audio.sound(kind,true);}
+  const fromSpawn=Object.entries(starts).filter(([,value])=>value===starts.spawn).map(([kind])=>kind);
+  assert.deepEqual(fromSpawn,['spawn'],'no other event may reuse the spawn cue');
+  assert.equal(Object.keys(starts).length,9);
+ }finally{audio.disposeAudio();if(previous)Object.defineProperty(globalThis,'AudioContext',previous);else delete (globalThis as Record<string,unknown>).AudioContext;}
+});

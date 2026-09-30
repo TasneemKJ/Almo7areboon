@@ -10,7 +10,7 @@ export function updateSoundscape(age:number,audible:boolean,mood:SoundscapeMood=
   intent={age,audible,mood};soundscape.update(context,age,permitted&&audible,mood);
 }
 const lastTone=new Map<string,number>();
-const tones:Record<string,[number,number,number]>={spawn:[430,300,.08],hit:[130,55,.04],coin:[890,1150,.07],upgrade:[530,850,.18],win:[520,1040,.4],lose:[240,90,.5],skill:[700,120,.35],evolve:[400,1400,.55]};
+const tones:Record<string,[number,number,number]>={spawn:[430,300,.08],hit:[130,55,.04],coin:[890,1150,.07],upgrade:[530,850,.18],win:[520,1040,.4],lose:[240,90,.5],skill:[700,120,.35],evolve:[400,1400,.55],death:[260,70,.14]};
 
 /** Audio stays optional: no context before an enabled user gesture. */
 export function unlockAudio(enabled=true):void {
