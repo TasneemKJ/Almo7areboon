@@ -29,7 +29,7 @@ No gameplay constants changed in this correction. Both commands completed with t
 
 The probe now models three things a player can do that the earlier policy could not: replay the previous chapter after three losses in a row (`stepDowns`, because evolution keeps the chapter frontier), retreat from a battle still running after 240 simulation seconds (`retreats`, the new Settings action; the earlier `battle-timeout` cases were fights that had stalled with neither base able to fall), and collect chapter mastery, whose per-timeline seals pay gems.
 
-Runs on main `3c0d6d9` plus these two policy changes (heuristic play, not optimal play):
+Runs on main `f9b00e8` plus these two policy changes (heuristic play, not optimal play):
 
 | Command arguments | Stop reason | Started attempts | Wins / losses | Step-downs / retreats | Longest loss streak | Cards | Gems left |
 | --- | --- | ---: | ---: | ---: | ---: | ---: | ---: |
