@@ -16,6 +16,44 @@ function visit(node: ts.Node) {
 visit(ast);
 assert.ok(callback, 'unannounced-write scenario must exist');
 
+const blockedFunction = ast.statements.find(node => ts.isFunctionDeclaration(node) && node.name?.text === 'blocked');
+assert.ok(blockedFunction, 'recovery contrast helper must exist');
+function contrastPage(foreground: string, background = 'rgb(255, 255, 255)') {
+  const title = 'Game open in another tab';
+  const dialog = { isConnected: true };
+  const current = { isConnected: true, textContent: title, closest: () => dialog, getClientRects: () => [{}] };
+  const stale = { ...current, isConnected: false };
+  let polls = 0;
+  const globals = {
+    getComputedStyle: (node: { isConnected: boolean }) => ({ color: node.isConnected ? foreground : '', backgroundColor: node.isConnected ? background : '' }),
+    document: { querySelector: () => ++polls === 1 ? null : current },
+  };
+  const page = {
+    getByRole: () => ({ waitFor: async () => {}, evaluate: async (fn: Function) => runInNewContext(`(${fn.toString()})(node)`, { ...globals, node: stale }) }),
+    async waitForFunction(fn: Function, arg: unknown) {
+      for (let attempt = 0; attempt < 3; attempt++) {
+        const result = runInNewContext(`(${fn.toString()})(arg)`, { ...globals, arg });
+        if (result) return { jsonValue: async () => structuredClone(result), dispose: async () => {} };
+      }
+      throw new Error('Current recovery heading never became measurable');
+    },
+  };
+  return { page, polls: () => polls };
+}
+test('recovery contrast measures the current dialog after a detached locator snapshot', async () => {
+  const harness = contrastPage('rgb(0, 0, 0)');
+  await runInNewContext(`(${blockedFunction.getText(ast)})(page)`, { page: harness.page, assert });
+  assert.ok(harness.polls() >= 2, 'wait through a missing current heading instead of accepting a stale one');
+});
+test('current recovery heading below 4.5 contrast still fails', async () => {
+  const harness = contrastPage('rgb(240, 240, 240)');
+  await assert.rejects(runInNewContext(`(${blockedFunction.getText(ast)})(page)`, { page: harness.page, assert }), /must be readable on its paper dialog/);
+});
+test('invalid computed recovery colors fail with an explicit measurement diagnostic', async () => {
+  const harness = contrastPage('');
+  await assert.rejects(runInNewContext(`(${blockedFunction.getText(ast)})(page)`, { page: harness.page, assert }), /Invalid recovery contrast measurement/);
+});
+
 for (const trigger of ['preference', 'focus']) test(`${trigger} fault reaches its guard before an intervening autosave`, async () => {
   const primary = 'save', backup = 'backup', profile = { gems: 100, speed: 1 };
   const storage = new Map([[primary, JSON.stringify(profile)], [backup, JSON.stringify(profile)]]);
