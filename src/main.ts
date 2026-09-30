@@ -27,6 +27,7 @@ import { playCombatEvents, playSummonAudio, stopCombatAudio, unlockAudio, suspen
 import { createArmyUpdater, troopControlLabel, troopUnlockMessage } from './ui/army-screen.ts';
 import { cardsScreenHtml, summonedCardsHtml } from './ui/cards-screen.ts';
 import { resultsHtml } from './ui/results-screen.ts';
+import { earlierChapter } from './ui/regroup-learning.ts';
 import { legacyCurrentHtml, prestigeDetailsHtml, prestigeDialogHtml } from './ui/prestige-presentation.ts';
 import { battleGuidance, baseHealthDisplay, compactNumber, waveLabel, waveAccessibleLabel } from './ui/battle-hud.ts';
 import { waveInspectionHtml } from './ui/wave-inspection.ts';
@@ -416,6 +417,14 @@ lifetime.listen<MouseEvent>(root,'click',e=>{
       }break;
     }
     case 'return-chapters':returnToChapters();break;
+    case 'regroup-chapters':{
+      const suggested=earlierChapter(game.profile);
+      if(modal!=='result'||game.state.phase!=='lost'||suggested===null)break;
+      if(!action({type:'retry'})||!playable()||(modal as string|null)==='session')break;
+      evolutionFromResult=false;manualPaused=false;closeModal(false);switchTab('battle');
+      showModal('battles',battleSelectionHtml(game.profile,game.state,true),`choose-battle-${suggested}`);
+      break;
+    }
     case 'next':{
       const advancement=advanceStatus(game.profile,game.state);
       if(advancement.allowed&&advancement.target==='timeline'){openPrestige();break;}

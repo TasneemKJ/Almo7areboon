@@ -13,6 +13,7 @@ import { ERAS, QUESTS, foodRate, unlockCost, dailyReward, localDay } from '../sr
 import { battleGuidance, baseHealthDisplay, compactNumber, waveLabel, waveAccessibleLabel } from '../src/ui/battle-hud.ts';
 import { chapterPresentation, unitPresentationName } from '../src/ui/chapter-presentation.ts';
 import { resultsHtml } from '../src/ui/results-screen.ts';
+import { earlierChapter } from '../src/ui/regroup-learning.ts';
 import { isLegacyChoice, legacyEffects, prestigePreview } from '../src/game/prestige.ts';
 import { legacyCurrentHtml, prestigeDetailsHtml, prestigeDialogHtml } from '../src/ui/prestige-presentation.ts';
 import { evolutionScreenHtml } from '../src/ui/evolution-screen.ts';
@@ -55,7 +56,7 @@ function harness(motion = 'full') {
     performance: { now: () => now }, document: { documentElement: { dataset: { motion } } },
     $: (id: string) => { if (!elements.has(id)) elements.set(id, node()); return elements.get(id); },
     advanceStatus, battleSelectionHtml, evolutionDialogHtml, ERAS, QUESTS, foodRate, unlockCost, dailyReward, localDay, battleGuidance, baseHealthDisplay, compactNumber, waveLabel, waveAccessibleLabel, chapterPresentation, unitPresentationName, resultsHtml,isLegacyChoice,legacyEffects,prestigePreview,prestigeDetailsHtml,prestigeDialogHtml,legacyCurrentHtml,evolutionScreenHtml,saveSessionDialogHtml,temporarySessionNotice,skillCue,troopUnlockMessage,waveInspectionHtml,
-    storybookArt: () => false, money: String, coin: String, icon:()=>'',textIfChanged(target:any,value:string){target.textContent=value;},htmlIfChanged(target:any,value:string){target.innerHTML=value;},unlockAudio() {}, syncPause() {}, rebuildArmy() {}, syncMotion() {}, isolateModal(){}, toast() {},
+    earlierChapter,storybookArt: () => false, money: String, coin: String, icon:()=>'',textIfChanged(target:any,value:string){target.textContent=value;},htmlIfChanged(target:any,value:string){target.innerHTML=value;},unlockAudio() {}, syncPause() {}, rebuildArmy() {}, syncMotion() {}, isolateModal(){}, toast() {},
     closeModal() { context.modal=null; }, showModal: (id: string,html:string,focusCommand?:string) => {context.modal=id;context.dialogHtml=html;context.focusCommand=focusCommand;dialogs.push(id);},
     session: {
       status: 'active', check: () => {if(foreign){context.session.status='conflict';context.sessionPresentation('conflict');return false;}return true;},
@@ -67,6 +68,22 @@ function harness(motion = 'full') {
   runInNewContext(`${code}\nthis.api = { update, action, acquireSession, dismissModal, returnToChapters, showResult, renderScreen }; this.update = update;`, context);
   return { context, dialogs, click:(command:string,detail=0)=>context.handleClick({target:new BoundaryButton({command}),detail,preventDefault(){}}), clickData:(dataset:Record<string,string>,detail=0)=>context.handleClick({target:new BoundaryButton(dataset),detail,preventDefault(){}}), change:(name:string,value:string)=>context.handleChange({target:new BoundaryInput(name,value)}),clock: (value: number) => { now = value; }, foreign: () => { foreign = true; } };
 }
+test('loss recovery opens chapter choice without selecting, buying or starting and ignores duplicate invocation',()=>{
+ const h=harness(),c=h.context;Object.assign(c.game.profile,{age:4,enemyAge:5,furthestBattle:5,coins:0,gems:0});
+ c.game.dispatch({type:'start'});c.game.dispatch({type:'retreat'});c.modal='result';c.manualPaused=true;
+ const before=JSON.stringify(c.game.profile);h.click('regroup-chapters');
+ assert.equal(c.game.state.phase,'ready');assert.equal(c.modal,'battles');assert.equal(c.manualPaused,false);
+ assert.equal(c.focusCommand,'choose-battle-4');assert.match(c.dialogHtml,/SUGGESTED REPLAY/);
+ assert.equal(JSON.stringify(c.game.profile),before);h.click('regroup-chapters');assert.equal(JSON.stringify(c.game.profile),before);
+ h.clickData({battle:'4'});assert.equal(c.game.profile.enemyAge,4);assert.equal(c.game.state.phase,'ready');assert.equal(c.game.profile.coins,0);
+});
+test('recovery route rejects wrong phase and yields to ownership loss before or during retry persistence',()=>{
+ for(const phase of ['ready','running','won'] as const){const h=harness(),c=h.context;Object.assign(c.game.profile,{enemyAge:2,furthestBattle:2});c.game.state.phase=phase;c.modal='result';const before=JSON.stringify([c.game.profile,c.game.state]);h.click('regroup-chapters');assert.equal(JSON.stringify([c.game.profile,c.game.state]),before);assert.equal(c.modal,'result');}
+ for(const duringSave of [false,true]){const h=harness(),c=h.context;Object.assign(c.game.profile,{enemyAge:2,furthestBattle:2});c.game.dispatch({type:'start'});c.game.dispatch({type:'retreat'});c.modal='result';const before=JSON.stringify(c.game.profile);
+  if(duringSave)c.session.save=()=>{c.session.status='conflict';c.sessionPresentation('conflict');return {ok:false};};else h.foreign();
+  h.click('regroup-chapters');assert.equal(c.modal,'session');assert.equal(JSON.stringify(c.game.profile),before);
+ }
+});
 test('wave inspection delegates the existing modal route without spending, saving or clearing manual pause',()=>{
  for(const manual of [false,true]){const h=harness(),c=h.context;h.click('start');c.manualPaused=manual;let writes=0;c.session.save=()=>{writes++;return {ok:true};};const before=JSON.stringify(c.game.profile);h.click('wave-help');assert.equal(c.modal,'wave-help');assert.match(c.dialogHtml,/Wave 1 of 5: 1 melee/);assert.equal(c.manualPaused,manual);c.api.dismissModal();assert.equal(c.modal,null);assert.equal(c.manualPaused,manual);assert.equal(JSON.stringify(c.game.profile),before);assert.equal(writes,0);}
 });
