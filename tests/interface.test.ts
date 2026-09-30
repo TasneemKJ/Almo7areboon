@@ -3,7 +3,8 @@ import assert from 'node:assert/strict';
 import { readFileSync } from 'node:fs';
 import { Game } from '../src/game/simulation.ts';
 import { defaultProfile, SAVE_KEY, BACKUP_KEY } from '../src/game/save.ts';
-import { exportBackup, importBackup, restoreBackup } from '../src/game/backup.ts';
+import { exportBackup, importBackup, restoreBackup, restoreBackupWithSave } from '../src/game/backup.ts';
+import { createSaveSession, type SaveSessionLocks } from '../src/game/save-session.ts';
 import { pauseReason } from '../src/ui/pause.ts';
 import { isEditingTarget, nextFocusIndex } from '../src/ui/accessibility.ts';
 import { createArmyUpdater } from '../src/ui/army-screen.ts';
@@ -92,4 +93,49 @@ test('P35: unchanged HUD values do not rewrite DOM nodes',async()=>{
 });
 test('P38: secondary screens isolate the battlefield and restore a meaningful focus target',()=>{
  assert.match(main(),/battle-view'\)\.inert/);assert.match(main(),/secondary-title/);assert.match(main(),/focusBefore\?\.isConnected/);
+});
+
+function importStorage() {
+ const values=new Map<string,string>();
+ return {values,getItem:(key:string)=>values.get(key)??null,setItem:(key:string,value:string)=>{values.set(key,value);}};
+}
+function importLocks(): SaveSessionLocks {
+ let held=false;
+ return {request(name,options,callback) {
+  assert.deepEqual(options,{mode:'exclusive',ifAvailable:true});
+  const lock=held?null:{name};if(lock)held=true;
+  return Promise.resolve().then(()=>callback(lock)).finally(()=>{if(lock)held=false;});
+ }};
+}
+test('guarded import commits replacement and later saves use its refreshed baseline',async()=>{
+ const restore=restoreBackupWithSave,storage=importStorage(),session=createSaveSession({storage,locks:importLocks()});
+ const loaded=await session.acquire();assert.ok(loaded.profile);const current=new Game(loaded.profile),candidate=defaultProfile();candidate.coins=432;candidate.cards[3]=2;
+ try {
+  const result=restore(current,candidate,profile=>session.save(profile).ok);
+  assert.equal(result.ok,true);assert.notEqual(result.game,current);assert.equal(result.game.profile.coins,432);
+  assert.equal(JSON.parse(storage.getItem(SAVE_KEY)!).coins,432);assert.equal(session.check(),true);
+  result.game.profile.coins=543;assert.deepEqual(session.save(result.game.profile),{ok:true,reason:null});
+  assert.equal(JSON.parse(storage.getItem(SAVE_KEY)!).coins,543);assert.equal(JSON.parse(storage.getItem(BACKUP_KEY)!).coins,432);assert.equal(session.check(),true);
+ } finally {session.dispose();}
+});
+test('guarded import preserves the original Game when the writer rejects or throws',()=>{
+ const restore=restoreBackupWithSave,current=new Game(),candidate=defaultProfile();candidate.coins=777;
+ const before=JSON.stringify(current.profile);
+ for(const commit of [()=>false,()=>{throw Error('writer failed');}]){
+  const result=restore(current,candidate,commit);assert.equal(result.ok,false);assert.equal(result.game,current);assert.equal(JSON.stringify(current.profile),before);
+ }
+});
+for(const failure of ['conflict','unsupported','quota'] as const)test(`guarded ${failure} import leaves current game and both stored bytes unchanged`,async()=>{
+ const restore=restoreBackupWithSave,storage=importStorage(),old=defaultProfile();old.coins=88;
+ storage.setItem(SAVE_KEY,JSON.stringify(old));storage.setItem(BACKUP_KEY,JSON.stringify(old));
+ const session=createSaveSession({storage:{getItem:storage.getItem,setItem:(key,value)=>{if(failure==='quota')throw Error('quota');storage.setItem(key,value);}},locks:importLocks()});
+ if(failure==='unsupported')storage.setItem(BACKUP_KEY,JSON.stringify({...old,version:99}));
+ const loaded=await session.acquire();assert.ok(loaded.profile);const current=new Game(loaded.profile),candidate=defaultProfile();candidate.coins=999;
+ if(failure==='conflict')storage.setItem(SAVE_KEY,JSON.stringify({...old,coins:89}));
+ const before=[storage.getItem(SAVE_KEY),storage.getItem(BACKUP_KEY)],inMemory=JSON.stringify(current.profile);
+ try {
+  const result=restore(current,candidate,profile=>session.save(profile).ok);
+  assert.equal(result.ok,false);assert.equal(result.game,current);assert.equal(JSON.stringify(current.profile),inMemory);
+  assert.deepEqual([storage.getItem(SAVE_KEY),storage.getItem(BACKUP_KEY)],before);
+ } finally {session.dispose();}
 });
