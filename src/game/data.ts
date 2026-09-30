@@ -27,7 +27,7 @@ export const ERAS: Era[] = [
   { name: 'Spartan Age', year: '1,000–300 BC', color: '#d18f60', ground: '#d5cb94', units: troops(2), evolveCost: 170000 },
   { name: 'Renaissance', year: '1500–1800', color: '#91a4c5', ground: '#a5c99c', units: troops(3), evolveCost: 1300000 },
   { name: 'Modern Age', year: '1990–2025', color: '#ad9c86', ground: '#b6bea0', units: troops(4), evolveCost: 13000000 },
-  { name: 'Space Age', year: '2100–2500', color: '#72a59e', ground: '#a3c9a6', units: troops(5), evolveCost: 3200 },
+  { name: 'Space Age', year: '2100–2500', color: '#72a59e', ground: '#a3c9a6', units: troops(5), evolveCost: Infinity }, // Final age: nothing to evolve into, so it is never purchasable.
 ];
 
 /** Provisional web-game pacing: prices and coin rewards grow together by era. */
