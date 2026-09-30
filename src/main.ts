@@ -24,7 +24,7 @@ import { chapterPresentation } from './ui/chapter-presentation.ts';
 import { evolutionScreenHtml } from './ui/evolution-screen.ts';
 import { icon } from './view/icons.ts';
 import { playCombatEvents, playSummonAudio, stopCombatAudio, unlockAudio, suspendAudio, disposeAudio, updateSoundscape, updateAudioMix } from './view/audio.ts';
-import { createArmyUpdater, TROOP_SPECIALTIES, troopUnlockMessage } from './ui/army-screen.ts';
+import { createArmyUpdater, troopControlLabel, troopUnlockMessage } from './ui/army-screen.ts';
 import { cardsScreenHtml, summonedCardsHtml } from './ui/cards-screen.ts';
 import { resultsHtml } from './ui/results-screen.ts';
 import { legacyCurrentHtml, prestigeDetailsHtml, prestigeDialogHtml } from './ui/prestige-presentation.ts';
@@ -209,8 +209,8 @@ function update(force=false){
     const kind=Number(button.dataset.unit) as UnitKind,locked=!p.unlocked[kind],status=game.deploymentStatus(kind);
     button.disabled=locked?p.coins<unlockCost(kind,p):!status.allowed;
     button.classList.toggle('affordable',!button.disabled);
-    const hint=status.reason==='food'?`Ready in ${Math.ceil(status.waitSeconds)} seconds`:status.reason==='blocked'?'Deployment area full':status.reason==='capacity'?'Army limit reached':status.reason==='paused'?'Resume battle to deploy':status.reason==='ready'?'Start battle to deploy':'Tap to deploy';
-    button.title=`${locked?`Unlock for ${unlockCost(kind,p).toLocaleString('en-US')} coins`:hint}. ${TROOP_SPECIALTIES[kind].effect}`;
+    const label=troopControlLabel(p,kind,status);
+    button.title=label;if(button.getAttribute('aria-label')!==label)button.setAttribute('aria-label',label);
     (button.querySelector('.unit-fill') as HTMLElement).style.transform=`scaleX(${Math.max(0,Math.min(1,s.food/ERAS[p.age].units[kind].cost))})`;
   });
   root!.querySelectorAll<HTMLButtonElement>('[data-skill]').forEach(button=>{
