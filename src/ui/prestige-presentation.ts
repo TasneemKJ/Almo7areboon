@@ -1,4 +1,4 @@
-import { legacyEffects } from '../game/prestige.ts';
+import { currentSealCount, legacyEffects } from '../game/prestige.ts';
 import type { BattleState, LegacyChoice, LegacyEffects, LegacyRank, PrestigePreview, Profile } from '../game/types.ts';
 
 const names:Record<LegacyChoice,string>={hearth:'Hearth',watch:'Watch',stillness:'Stillness'};
@@ -31,8 +31,14 @@ export function prestigeDialogHtml(profile:Profile,preview:PrestigePreview):stri
 }
 export function legacyPreparationHtml(profile:Profile,state:BattleState):string {
   const earned=profile.legacy.rank>0,ready=state.phase==='ready'&&earned;
-  return `<section class="legacy-preparation" aria-labelledby="legacy-title"><h3 id="legacy-title">Lasting legacy</h3><div id="legacy-current">${legacyCurrentHtml(profile)}</div>${ready?radios('ready',profile.legacy.rank,profile.legacy.selected):''}<p class="legacy-note">${ready?'One legacy is active. You can change your choice before battle.':earned?'Your current legacy stays active. Return to a ready battle to change your choice.':'Your first legacy is earned when you begin the next timeline.'}</p></section>`;
+  return `<section class="legacy-preparation" aria-labelledby="legacy-title"><h3 id="legacy-title">Lasting legacy</h3><div id="legacy-current">${legacyCurrentHtml(profile)}</div>${ready?radios('ready',profile.legacy.rank,profile.legacy.selected):''}<p class="legacy-note">${ready?'One legacy is active. You can change your choice before battle.':earned?'Your current legacy stays active. Return to a ready battle to change your choice.':profile.timeline>=1000?'No further timeline resets at the timeline limit.':'Your first legacy is earned when you begin the next timeline.'}</p>${legacyLearningHtml(profile)}</section>`;
+}
+/** Optional preparation teaching reads existing progress; it grants no rank or reset. */
+export function legacyLearningHtml(profile:Profile):string {
+  const next=profile.timeline>=1000?'Timeline limit reached: no further reset or rank upgrade through a reset.'
+    :'Clear the final chapter, then review and confirm a new timeline. Rank 1 is earned on your first reset; extra seals are optional.';
+  return `<details class="chapter-scouting legacy-learning"><summary>How legacies grow</summary><p>This timeline: ${currentSealCount(profile)} / 18 seals. Your earned legacy: Rank ${profile.legacy.rank}.</p><p>${next}</p><p>Rank 2 needs 12 seals; Rank 3 needs 18 seals in one timeline, counted when you confirm a reset.</p><p>Your earned rank never goes down. Seals from different timelines are not added together.</p><p>One legacy is active at a time: Hearth adds starting food, Watch strengthens your gate, or Stillness extends Freeze. Earned legacies can be changed before a ready battle in this section.</p><p>Cards, gems and your earned rank stay. Coins, age upgrades, troop unlocks and this timeline's seals reset; your army returns to the first age.</p></details>`;
 }
 export function legacyCurrentHtml(profile:Profile):string {
-  return `<p>${profile.legacy.rank>0?`Current legacy: ${names[profile.legacy.selected]} · Rank ${profile.legacy.rank}`:'No earned legacy yet. Complete a timeline to carry one forward.'}<small>${effectsText(legacyEffects(profile.legacy))}</small></p>`;
+  return `<p>${profile.legacy.rank>0?`Current legacy: ${names[profile.legacy.selected]} · Rank ${profile.legacy.rank}`:profile.timeline>=1000?'No earned legacy yet. No further resets at the timeline limit.':'No earned legacy yet. Complete a timeline to carry one forward.'}<small>${effectsText(legacyEffects(profile.legacy))}</small></p>`;
 }
