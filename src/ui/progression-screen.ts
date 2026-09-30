@@ -5,11 +5,12 @@ import { icon } from '../view/icons.ts';
 import { advanceStatus } from '../game/mastery.ts';
 import { masteryMarksHtml } from './mastery-presentation.ts';
 import { timelineResetText } from './results-screen.ts';
+import { chapterScoutingHtml, battleTeachingHtml } from './chapter-scouting.ts';
 
 export function battleSelectionHtml(profile: Profile, state: BattleState): string {
   const advance=advanceStatus(profile,state);
   const footer=state.phase==='ready'&&advance.allowed?`<footer class="chapter-continuation">${advance.target==='timeline'?`<p>${timelineResetText}</p>`:''}<button class="big-button green" data-command="next">${advance.target==='timeline'?'Next Timeline':`Continue to ${chapterPresentation(advance.nextBattle!).title}`} ${icon('arrow')}</button></footer>`:'';
-  return `<span class="eyebrow">TIMELINE ${profile.timeline}</span><h2 id="dialog-title">Choose a battle</h2><p>${state.phase === 'ready' ? 'Replay unlocked opponents for coins. Later opponents pay far more, so replay the highest one you can beat. Your army and upgrades stay with you.' : 'Finish this battle before choosing another opponent.'}</p><div class="battle-options">${ERAS.map((_, index) => {
+  return `<span class="eyebrow">TIMELINE ${profile.timeline}</span><h2 id="dialog-title">Choose a battle</h2><p>${state.phase === 'ready' ? 'Replay unlocked opponents for coins. Later opponents pay far more, so replay the highest one you can beat. Your army and upgrades stay with you.' : 'Finish this battle before choosing another opponent.'}</p>${chapterScoutingHtml(profile.enemyAge)}${battleTeachingHtml()}<div class="battle-options">${ERAS.map((_, index) => {
     const locked = index > profile.furthestBattle, current = index === profile.enemyAge;
     return `<button class="battle-option" data-battle="${index}" aria-current="${current}" ${locked || state.phase !== 'ready' ? 'disabled' : ''}><img class="battle-preview" alt="" loading="lazy" src="${chapterLandscape(index)}"/><strong>${index + 1}</strong><span>${chapterPresentation(index).title}<small>${locked ? 'LOCKED' : `${current ? 'CURRENT BATTLE' : 'AVAILABLE TO REPLAY'} · COINS ×${eraEconomyScale(index).toLocaleString('en-US')}`}</small>${masteryMarksHtml(profile,index)}</span>${icon(locked ? 'lock' : current ? 'flag' : 'arrow')}</button>`;
   }).join('')}</div>${footer}`;

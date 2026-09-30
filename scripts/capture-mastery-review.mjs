@@ -8,6 +8,8 @@ import { Game } from '../src/game/simulation.ts';
 import { defaultProfile, decodeSave, SAVE_KEY, BACKUP_KEY } from '../src/game/save.ts';
 import { createMastery } from '../src/game/mastery.ts';
 import { reviewPrestige } from './capture-prestige-review.mjs';
+import { reviewScouting } from './capture-scouting-review.mjs';
+import { villageVoice } from '../src/ui/chapter-scouting.ts';
 import { ERAS } from '../src/game/data.ts';
 
 const output = 'artifacts/browser-review/mastery', origin = 'http://127.0.0.1:4176';
@@ -102,6 +104,10 @@ async function ready(page) {
 async function result(page, won = true) {
   await page.locator('.result-dialog').waitFor({ timeout: 150000 });
   await page.getByRole('heading', { name: won ? 'VICTORY!' : 'REGROUP', exact: true }).waitFor();
+  if(await page.locator('#app').getAttribute('data-save-session')==='active') {
+    const profile=await saved(page);
+    assert.equal(await page.locator('.village-voice').innerText(),villageVoice(profile.enemyAge,won?'won':'lost'));
+  }
   assert.equal(await page.locator('.result-dialog [data-command="close"]').count(), 0, 'results have explicit routes, no generic dismissal');
   if (won && await page.locator('#app').getAttribute('data-save-session') === 'active') {
     const profile = await saved(page), receipt = profile.pendingVictory;
@@ -443,6 +449,7 @@ try {
   for (const viewport of [{ width: 320, height: 568 }, { width: 390, height: 844 }]) await scenario(`fresh-win-paused-input-${viewport.width}`, viewport, async context => {
     const fresh = defaultProfile(); fresh.sound = false; fresh.motion = 'reduced';
     const source = await setup(context, fresh), page = await open(context); await active(page); await ready(page);
+    assert.match(await page.locator('#deploy-hint').innerText(),/Tap Battle.*spend food.*fight automatically/,'fresh play teaches the deploy loop');
     await page.locator('[data-command="settings"]').click();
     await command(page, 'speed').click(); assert.equal((await saved(source)).speed, 2);
     await command(page, 'close').first().click(); await ready(page);
@@ -473,6 +480,8 @@ try {
   assert.deepEqual(diagnostics.assetFailures, [], 'storybook requests succeed');
   assert.equal(diagnostics.cases.length, 37, 'all specified browser scenarios ran');
   await reviewPrestige({scenario,seeds,setup,open,active,ready,result,saved,bytes,command,inspect,isolation,exported,memoryProfile,startAndLose});
+  await reviewScouting({scenario,seeds,setup,open,active,ready,result,saved,bytes,command,inspect});
+  assert.equal(diagnostics.cases.length,53,'37 mastery, 14 prestige and 2 scouting scenarios ran');
   assert.deepEqual(diagnostics.pageErrors, [], 'prestige raises no application errors');
   assert.ok(diagnostics.cases.every(item => item.status === 'passed'), JSON.stringify(diagnostics.cases.filter(item => item.status !== 'passed'), null, 2));
   diagnostics.status = 'passed'; console.log(`Mastery browser review passed: ${diagnostics.cases.length} cases`);
