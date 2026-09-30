@@ -4,6 +4,211 @@ import {spawn} from 'node:child_process';
 import {mkdirSync} from 'node:fs';
 import assert from 'node:assert/strict';
 
+
+// Public save counters and visible food are the production observation seam.
+async function tacticalSession(browser, errors, assetFailures, overrides={}, touch=false) {
+ const context=await browser.newContext({viewport:{width:390,height:844},deviceScaleFactor:2,hasTouch:touch});
+ await context.addInitScript(seed=>{
+  localStorage.setItem('almo7areboon.save.v1',JSON.stringify(seed));
+  document.addEventListener('visual-fallback',()=>{document.body.dataset.reviewFallback='true';});
+ },{version:2,timeline:1,age:0,enemyAge:0,coins:0,cards:[],unlocked:[true,true,true],sound:false,deployed:0,...overrides});
+ const page=await context.newPage();
+ page.on('pageerror',error=>errors.push(error.message));
+ page.on('response',response=>{if(response.url().includes('/art/storybook/')&&!response.ok())assetFailures.push(`${response.status()} ${response.url()}`);});
+ await page.goto('http://127.0.0.1:4173/',{waitUntil:'networkidle'});
+ await page.waitForFunction(()=>!document.querySelector('.world-loader'),{timeout:15000});
+ return {context,page};
+}
+async function publicCounters(page) {
+ return page.evaluate(()=>({
+  deployed:JSON.parse(localStorage.getItem('almo7areboon.save.v1')).deployed,
+  coins:JSON.parse(localStorage.getItem('almo7areboon.save.v1')).coins,
+  unlocked:JSON.parse(localStorage.getItem('almo7areboon.save.v1')).unlocked,
+  food:Number(document.querySelector('#food-count').textContent),
+ }));
+}
+async function assertTacticalLayout(page) {
+ const geometry=await page.evaluate(()=>{
+  const rect=node=>{const b=node.getBoundingClientRect();return {left:b.left,right:b.right,top:b.top,bottom:b.bottom,width:b.width,height:b.height};};
+  const words=[];
+  for(const element of document.querySelectorAll('.upgrade-label>div,.unit-role')){
+   const walker=document.createTreeWalker(element,NodeFilter.SHOW_TEXT);
+   for(let node=walker.nextNode();node;node=walker.nextNode()){
+    if(!node.parentElement.getClientRects().length)continue;
+    for(const match of node.textContent.matchAll(/[A-Za-z]+/g)){
+     const range=document.createRange();range.setStart(node,match.index);range.setEnd(node,match.index+match[0].length);
+     words.push({text:match[0],fragments:range.getClientRects().length,rect:rect({getBoundingClientRect:()=>range.getBoundingClientRect()}),container:rect(element)});
+    }
+   }
+  }
+  return {overflow:document.documentElement.scrollWidth>innerWidth,world:rect(document.querySelector('.world')),wave:rect(document.querySelector('#wave-label')),buttons:[...document.querySelectorAll('.unit-card')].map(rect),controls:[...document.querySelectorAll('[data-skill],#pause,#speed')].map(rect),words,roles:[...document.querySelectorAll('.unit-role')].map(n=>n.textContent)};
+ });
+ assert.equal(geometry.overflow,false,'narrow tactical UI cannot overflow');
+ assert.ok(geometry.world.height>=200,'the battlefield retains visible space');
+ assert.deepEqual(geometry.roles,['Melee · Guard','Ranged · Pierce','Heavy · Sweep']);
+ for(const button of geometry.buttons)assert.ok(button.width>=44&&button.height>=44,'troop hit targets remain at least 44px');
+ for(const word of geometry.words){
+  assert.equal(word.fragments,1,`${word.text} must remain a whole word`);
+  assert.ok(word.rect.left>=word.container.left-1&&word.rect.right<=word.container.right+1,`${word.text} stays inside its label`);
+ }
+ const wave=geometry.wave,world=geometry.world;
+ assert.ok(wave.left>=world.left&&wave.right<=world.right&&wave.top>=world.top&&wave.bottom<=world.bottom,'wave chip stays in the world');
+ for(const control of geometry.controls)assert.ok(wave.right<=control.left||wave.left>=control.right||wave.bottom<=control.top||wave.top>=control.bottom,'wave chip clears skills and pause');
+ assert.equal(await page.locator('#wave-label').getAttribute('role'),'img','expanded wave name is exposed accessibly');
+ assert.equal(await page.locator('#wave-label').getAttribute('aria-live'),null,'countdown is not a live region');
+ assert.match(await page.locator('#wave-label').getAttribute('aria-label'),/wave|Waves|enemies/i);
+ assert.equal(await page.locator('body').getAttribute('data-review-fallback'),null,'production art loads');
+}
+async function verifyTacticalInputs(browser,errors,assetFailures) {
+ for(const method of ['click','touch','keyboard'])for(const kind of [0,1,2]){
+  const {context,page}=await tacticalSession(browser,errors,assetFailures,{},method==='touch');
+  try{
+   await page.getByRole('button',{name:/^BATTLE/}).click();
+   await page.keyboard.press('e');
+   const before=await publicCounters(page);
+   const troop=page.locator(`[data-unit="${kind}"]`);
+   if(method==='keyboard')await page.keyboard.press(String(kind+1));
+   else if(method==='touch')await troop.tap();
+   else await troop.click();
+   await page.getByRole('button',{name:'Pause battle',exact:true}).click();
+   const after=await publicCounters(page);
+   assert.equal(after.deployed,before.deployed+1,`${method} ${kind+1} deploys exactly once`);
+   assert.ok(Math.abs((before.food-after.food)-[3,5,7][kind])<=1,`${method} ${kind+1} spends only its cost`);
+   assert.deepEqual(after.unlocked,[true,true,true]);
+  }finally{await context.close();}
+ }
+ // Ready, unaffordable locked and paused controls cannot deploy or spend.
+ const locked=await tacticalSession(browser,errors,assetFailures,{unlocked:[true,false,false]},true);
+ try{
+  let before=await publicCounters(locked.page);
+  await locked.page.keyboard.press('1');
+  assert.deepEqual(await publicCounters(locked.page),before,'ready keyboard deployment is ignored');
+  await locked.page.getByRole('button',{name:/^BATTLE/}).click();
+  await locked.page.getByRole('button',{name:'Pause battle',exact:true}).click();
+  before=await publicCounters(locked.page);
+  for(const kind of [0,1,2]){
+   const rect=await locked.page.locator(`[data-unit="${kind}"]`).boundingBox();
+   await locked.page.touchscreen.tap(rect.x+rect.width/2,rect.y+rect.height/2);
+   await locked.page.keyboard.press(String(kind+1));
+  }
+  assert.deepEqual(await publicCounters(locked.page),before,'locked/paused touch and keyboard never spend');
+  await locked.page.getByRole('button',{name:'Resume battle',exact:true}).click();
+  before=await publicCounters(locked.page);
+  await locked.page.keyboard.press('2');await locked.page.keyboard.press('3');
+  const after=await publicCounters(locked.page);
+  assert.equal(after.deployed,before.deployed);assert.equal(after.coins,before.coins);assert.deepEqual(after.unlocked,[true,false,false]);
+ }finally{await locked.context.close();}
+ const isolated=await tacticalSession(browser,errors,assetFailures);
+ const page=isolated.page;
+ try{
+  await page.getByRole('button',{name:/^BATTLE/}).click();
+  const unavailable=await publicCounters(page);
+  assert.equal(await page.locator('[data-unit="2"]').isDisabled(),true,'heavy starts unaffordable');
+  await page.keyboard.press('3');
+  const disabledBox=await page.locator('[data-unit="2"]').boundingBox();
+  await page.mouse.click(disabledBox.x+disabledBox.width/2,disabledBox.y+disabledBox.height/2);
+  assert.equal((await publicCounters(page)).deployed,unavailable.deployed,'unaffordable keyboard and pointer never deploy');
+  assert.equal((await publicCounters(page)).food,unavailable.food,'unaffordable actions never spend food');
+  await page.keyboard.press('e');
+  const before=await publicCounters(page);
+  await page.keyboard.down('1');
+  // Wait until a second deployment could succeed, so body spacing cannot hide a repeat bug.
+  await page.waitForFunction(()=>!document.querySelector('[data-unit="0"]').disabled,{timeout:5000});
+  await page.keyboard.down('1');await page.keyboard.up('1');
+  assert.equal((await publicCounters(page)).deployed,before.deployed+1,'native repeated keydown never double deploys');
+  await page.getByRole('button',{name:'Pause battle',exact:true}).click();
+  const paused=await publicCounters(page);
+  await page.keyboard.press('1');assert.deepEqual(await publicCounters(page),paused,'manual pause isolates shortcuts');
+  await page.getByRole('button',{name:'Resume battle',exact:true}).click();
+  // This test document element exercises actual editable focus; no shipped hook.
+  await page.evaluate(()=>{const input=document.createElement('input');input.id='review-editor';input.style.cssText='position:fixed;top:0;z-index:100';document.body.append(input);input.focus();});
+  const editing=await publicCounters(page);
+  await page.keyboard.press('1');await page.keyboard.press('2');await page.keyboard.press('3');await page.keyboard.press('q');
+  assert.equal((await publicCounters(page)).deployed,editing.deployed,'editable focus isolates troop shortcuts');
+  assert.equal(await page.locator('[data-skill="freeze"]').isDisabled(),false,'editable focus isolates skills');
+  await page.locator('#review-editor').evaluate(node=>node.remove());
+  await page.getByRole('button',{name:'Cards',exact:true}).click();
+  const menu=await publicCounters(page);
+  await page.keyboard.press('1');await page.keyboard.press('q');assert.deepEqual(await publicCounters(page),menu,'secondary screen isolates game controls');
+  await page.getByRole('button',{name:'Battle',exact:true}).click();
+  await page.locator('[data-command="settings"]').click();
+  const modal=await publicCounters(page);
+  await page.keyboard.press('1');await page.keyboard.press('q');assert.deepEqual(await publicCounters(page),modal,'settings modal isolates game controls');
+  await page.keyboard.press('Escape');
+  await page.keyboard.press('q');assert.equal(await page.locator('[data-skill="freeze"]').isDisabled(),true,'Q still casts freeze');
+  await page.waitForFunction(()=>!document.querySelector('[data-skill="meteor"]').disabled,{timeout:8000});
+  await page.keyboard.press('w');assert.equal(await page.locator('[data-skill="meteor"]').isDisabled(),true,'W still casts meteor');
+  assert.equal(await page.locator('[data-skill="food"]').isDisabled(),true,'E still casts food once');
+  const spent=await publicCounters(page);
+  await page.keyboard.press('e');assert.equal((await publicCounters(page)).deployed,spent.deployed,'used skill never deploys');
+ }finally{await isolated.context.close();}
+}
+async function captureTacticalWaves(browser,errors,assetFailures,output) {
+ const {context,page}=await tacticalSession(browser,errors,assetFailures,{speed:2});
+ try{
+  await page.getByRole('button',{name:/^BATTLE/}).click();
+  assert.equal(await page.locator('#deploy-hint').textContent(),'Deploy a melee warrior. Save some food for the next wave.');
+  for(const [prefix,pattern] of [['33-first-fires-opening',/^RUSH/],['34-incoming-volley',/^VOLLEY/],['35-incoming-bulwark',/^BULWARK/]]){
+   await page.waitForFunction(source=>new RegExp(source).test(document.querySelector('#wave-label').textContent),pattern.source,{timeout:25000});
+   for(const [width,height] of [[320,640],[390,844]]){
+    await page.setViewportSize({width,height});await assertTacticalLayout(page);
+    await page.screenshot({path:`${output}/${prefix}-${width}.png`});
+   }
+  }
+ }finally{await context.close();}
+}
+async function captureTraitFixtures(browser,errors,assetFailures,output) {
+ const fixtureServer=spawn(process.execPath,['node_modules/vite/bin/vite.js','--host','127.0.0.1','--port','4175','--strictPort'],{stdio:'pipe'});
+ try{
+  let ready=false;
+  for(let attempt=0;attempt<60;attempt++){
+   if(fixtureServer.exitCode!==null)throw new Error('Trait fixture server exited');
+   try{ready=(await fetch('http://127.0.0.1:4175/tests/fixtures/layering.html')).ok;}catch{}
+   if(ready)break;await new Promise(resolve=>setTimeout(resolve,250));
+  }
+  assert.ok(ready,'trait fixture server starts');
+  // Isolating each trait prevents the other two accents from masking a missing draw.
+  for(const trait of ['guard','pierce','sweep']){
+   const context=await browser.newContext({viewport:{width:390,height:844},deviceScaleFactor:2});
+   const page=await context.newPage();page.on('pageerror',error=>errors.push(error.message));
+   page.on('response',response=>{if(response.url().includes('/art/storybook/')&&!response.ok())assetFailures.push(`${response.status()} ${response.url()}`);});
+   try{
+    await page.goto(`http://127.0.0.1:4175/tests/fixtures/layering.html?age=3&health=100&lane=1&effects=none&traits=${trait}&width=390`,{waitUntil:'networkidle'});
+    await page.waitForSelector('body[data-ready="true"]',{timeout:15000});
+    const diagnostic=await page.evaluate(()=>window.layeringReview.inspect());
+    assert.deepEqual(diagnostic.traits.map(c=>c.trait),[trait]);
+    assert.ok(diagnostic.groundEffects[1].commandCount>8,`${trait} draws actual target-lane graphics`);
+    assert.equal(diagnostic.sourceCues,trait==='sweep'?0:1);assert.equal(diagnostic.projectiles,trait==='sweep'?0:1);
+    assert.equal(await page.locator('body').getAttribute('data-fallback'),null);
+    await page.evaluate(()=>window.layeringReview.resumeEffects());
+    await page.waitForFunction(()=>window.layeringReview.inspect().traits.length===0,{timeout:2000});
+   }finally{await context.close();}
+  }
+  for(const [width,height] of [[320,640],[390,844]])for(const motion of ['system','reduced']){
+   const context=await browser.newContext({viewport:{width,height},deviceScaleFactor:2,reducedMotion:motion==='reduced'?'reduce':'no-preference'});
+   const page=await context.newPage();page.on('pageerror',error=>errors.push(error.message));
+   page.on('response',response=>{if(response.url().includes('/art/storybook/')&&!response.ok())assetFailures.push(`${response.status()} ${response.url()}`);});
+   try{
+    await page.goto(`http://127.0.0.1:4175/tests/fixtures/layering.html?age=3&health=100&lane=1&effects=none&traits=all&motion=${motion}&width=${width}`,{waitUntil:'networkidle'});
+    await page.waitForSelector('body[data-ready="true"]',{timeout:15000});
+    const diagnostic=await page.evaluate(()=>window.layeringReview.inspect());
+    assert.deepEqual(diagnostic.traits.map(c=>c.trait),['guard','pierce','sweep'],'all resolved accents reach real renderer');
+    assert.equal(diagnostic.sourceCues,2,'secondary sweep never invents a second source attack');
+    assert.equal(diagnostic.projectiles,motion==='reduced'?0:2,'sweep never creates a projectile; reduced motion creates none');
+    assert.equal(diagnostic.reduced,motion==='reduced');assert.equal(diagnostic.state.time,0);
+    assert.ok(diagnostic.groundEffects[1].commandCount>8,'trait accents actually paint their target lane');
+    const first=diagnostic.traits.map(({x,y})=>({x,y}));
+    await page.waitForTimeout(80);
+    assert.deepEqual((await page.evaluate(()=>window.layeringReview.inspect())).traits.map(({x,y})=>({x,y})),first,'paused/static accents do not travel');
+    assert.equal(await page.locator('body').getAttribute('data-fallback'),null);
+    await page.screenshot({path:`${output}/36-trait-feedback-${motion}-${width}.png`});
+    await page.evaluate(()=>window.layeringReview.resetEffects());
+    await page.waitForFunction(()=>window.layeringReview.inspect().traits.length===0&&window.layeringReview.inspect().projectiles===0,{timeout:2000});
+   }finally{await context.close();}
+  }
+ }finally{fixtureServer.kill('SIGTERM');}
+}
+
 const output='artifacts/browser-review';
 mkdirSync(output,{recursive:true});
 const server=spawn(process.execPath,['node_modules/vite/bin/vite.js','preview','--host','127.0.0.1','--port','4173'],{stdio:'pipe'});
@@ -338,9 +543,12 @@ try {
  await future.screenshot({path:`${courtyardsOutput}/32-courtyards-later-battle-390.png`});
  assert.equal(await future.evaluate(()=>window.__visualFallback),undefined);
  await courtyards.close();
+ await verifyTacticalInputs(browser,errors,assetFailures);
+ await captureTacticalWaves(browser,errors,assetFailures,output);
+ await captureTraitFixtures(browser,errors,assetFailures,output);
  assert.deepEqual(errors,[],`browser errors: ${errors.join('; ')}`);
  assert.deepEqual(assetFailures,[],'all storybook asset requests succeeded');
- console.log(JSON.stringify({density,screenshots:32,narrowControls:layout.length,errors,assetFailures},null,2));
+ console.log(JSON.stringify({density,screenshots:42,tacticalInputSessions:11,narrowControls:layout.length,errors,assetFailures},null,2));
 } finally {
  await browser?.close();
  server.kill('SIGTERM');

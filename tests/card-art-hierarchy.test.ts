@@ -65,3 +65,21 @@ test('rarity styling remains structural and motion-free',()=>{
  assert.doesNotMatch(source,/collection-card[^}]*animation\s*:/s);
  assert.doesNotMatch(source,/collection-card[^}]*position\s*:\s*fixed/s);
 });
+
+test('a summon reveal lists the rarest cards first and flags first-time cards',()=>{
+ const p=defaultProfile();p.cards[0]=1;
+ const before=[...p.cards];
+ p.cards[0]++;p.cards[9]++;p.cards[28]++;p.cards[16]++;
+ const html=summonedCardsHtml(before,p);
+ const order=[...html.matchAll(/data-rarity="(\w+)"/g)].map(m=>m[1]);
+ assert.deepEqual(order,['legendary','rare','common','common']);
+ assert.equal((html.match(/· NEW/g)??[]).length,3,'three cards were new; the duplicate is not');
+});
+
+test('an owned card shows the multiplier it contributes on its own',()=>{
+ const p=defaultProfile();p.cards[0]=1;p.cards[28]=3;
+ const html=cardsScreenHtml(p);
+ assert.match(html,/LEVEL 1 · ×1\.03 health/);
+ assert.match(html,/LEVEL 2 · ×[\d.]+ damage/);
+ assert.match(html,/NOT DISCOVERED/);
+});

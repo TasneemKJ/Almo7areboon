@@ -1,3 +1,6 @@
+import { encounterForAge, scheduledSpawns, wavePreview } from './encounters.ts';
+import type { Encounter, ScheduledSpawn, WaveStatus } from './encounters.ts';
+import { resolveRoleHit, sweepTarget } from './role-traits.ts';
 import { battleStats } from './statistics.ts';
 import { cardPackCost, drawCard, nextCardRandom } from './cards.ts';
 import { ERAS, QUESTS, dailyReward, eraEconomyScale, baseUpgradeCost, cardBonus, foodRate, foodUpgradeCost, unlockCost } from './data.ts';
@@ -5,18 +8,14 @@ import { defaultProfile, loadProfile } from './save.ts';
 import type { Action, BattleState, DeploymentStatus, GameEvent, GamePort, Profile, Side, Skill, Unit, UnitKind } from './types.ts';
 
 const FIXED_STEP = 1 / 60;
-const WAVES: { time: number; kinds: UnitKind[] }[] = [
-  { time: 3, kinds: [0] },
-  { time: 12, kinds: [0, 0] },
-  { time: 22, kinds: [0, 1] },
-  { time: 33, kinds: [0, 0, 1] },
-  { time: 44, kinds: [0, 2] },
-];
 
 export class Game implements GamePort {
   profile: Profile;
   state: BattleState;
   private events: GameEvent[] = [];
+  private encounter: Encounter = encounterForAge(0);
+  private schedule: readonly ScheduledSpawn[] = [];
+  private nextSpawn = 0;
   private nextId = 1;
   private playerLane = 0;
   private enemyLane = 0;
@@ -38,11 +37,15 @@ export class Game implements GamePort {
       this.state.earned = victory.earned;
       this.state.time = victory.seconds;
       this.state.wave = this.state.totalWaves;
+      this.nextSpawn = this.schedule.length;
     }
   }
 
   private newBattle(): BattleState {
     this.events = [];
+    this.encounter = encounterForAge(this.profile.enemyAge);
+    this.schedule = scheduledSpawns(this.encounter);
+    this.nextSpawn = 0;
     this.nextId = 1;
     const playerHp = this.baseHealth();
     const enemyHp = Math.round(160 * 1.65 ** this.profile.enemyAge * this.timelinePower());
@@ -51,7 +54,7 @@ export class Game implements GamePort {
     this.rewardRemainder = 0;
     this.playerLane = 0;
     this.enemyLane = 0;
-    return { stats: battleStats(), phase: 'ready', paused: false, time: 0, food: 6, playerHp, playerMaxHp: playerHp, enemyHp, enemyMaxHp: enemyHp, units: [], wave: 0, totalWaves: WAVES.length, earned: 0, freezeUntil: 0, skillsUsed: [] };
+    return { stats: battleStats(), phase: 'ready', paused: false, time: 0, food: 6, playerHp, playerMaxHp: playerHp, enemyHp, enemyMaxHp: enemyHp, units: [], wave: 0, totalWaves: this.encounter.waves.length, earned: 0, freezeUntil: 0, skillsUsed: [] };
   }
 
   private baseHealth(): number { return Math.round(180 * 1.65 ** this.profile.age * (1 + this.profile.baseLevel * 0.4) * this.bonuses().base); }
@@ -210,10 +213,11 @@ export class Game implements GamePort {
     return { allowed: this.profile.coins >= cost, reason: this.profile.coins >= cost ? 'available' : 'coins', cost, nextValue };
   }
 
-  waveStatus() {
-    const next = WAVES[this.state.wave];
+  waveStatus(): WaveStatus {
+    const preview = wavePreview(this.encounter, this.state.time, this.state.wave);
     const enemiesRemaining = this.state.units.filter(unit => unit.side === 'enemy' && unit.hp > 0).length;
-    return { spawned: this.state.wave, total: WAVES.length, nextIn: next ? Math.max(0, next.time - this.state.time) : null, enemiesRemaining, cleared: !next && enemiesRemaining === 0 };
+    const pendingEnemies = this.state.phase === 'won' || this.state.phase === 'lost' ? 0 : this.schedule.slice(this.nextSpawn).filter(spawn => spawn.waveIndex < this.state.wave).length;
+    return { spawned: this.state.wave, total: this.encounter.waves.length, nextIn: preview?.nextIn ?? null, enemiesRemaining, pendingEnemies, cleared: !preview && this.nextSpawn === this.schedule.length && enemiesRemaining === 0, preview };
   }
 
   deploymentStatus(kind: UnitKind): DeploymentStatus {
@@ -294,10 +298,11 @@ export class Game implements GamePort {
     this.state.food = Math.min(99, this.state.food + (0.8 + this.profile.foodLevel * 0.14) * this.bonuses().food * dt);
     this.state.units = this.state.units.filter(u => u.hp > 0);
     if (this.checkEnd()) return;
-    const wave = WAVES[this.state.wave];
-    if (wave && this.state.time >= wave.time) {
-      for (const kind of wave.kinds) this.spawn('enemy', kind);
-      this.state.wave++;
+    while (this.state.wave < this.encounter.waves.length && this.state.time + 1e-9 >= this.encounter.waves[this.state.wave].time) this.state.wave++;
+    while (this.nextSpawn < this.schedule.length && this.state.time + 1e-9 >= this.schedule[this.nextSpawn].time) {
+      this.spawn('enemy', this.schedule[this.nextSpawn].kind);
+      // Rejected arrivals are finite attempts, never deferred until capacity frees.
+      this.nextSpawn++;
     }
 
     // Front bodies move first so the spacing check sees their new positions.
@@ -322,8 +327,22 @@ export class Game implements GamePort {
           unit.attackTimer = def.interval;
           const power = unit.side === 'player' ? this.bonuses().damage : this.timelinePower() * 0.94;
           const damage = def.damage * power;
-          const actual = targetInRange ? this.hurt(target, damage) : this.hurtBase(unit.side, damage);
-          this.events.push({ type: 'hit', x: targetInRange ? target.x : baseX, lane: targetInRange ? target.lane : unit.lane, side: unit.side, amount: actual, source: { id: unit.id, x: unit.x, lane: unit.lane, side: unit.side, age: unit.age, kind: unit.kind }, target: targetInRange ? 'unit' : 'base' });
+          const source = { id: unit.id, x: unit.x, lane: unit.lane, side: unit.side, age: unit.age, kind: unit.kind };
+          const hit = (targetUnit: Unit, secondary = false) => {
+            const resolved = resolveRoleHit(unit.kind, targetUnit.kind, damage, secondary);
+            const actual = this.hurt(targetUnit, resolved.damage);
+            this.events.push({ type: 'hit', x: targetUnit.x, lane: targetUnit.lane, side: unit.side, amount: actual, source, target: 'unit', ...(resolved.trait ? { trait: resolved.trait } : {}) });
+          };
+          if (targetInRange) {
+            hit(target);
+            if (unit.kind === 2) {
+              const secondary = sweepTarget(unit, target, this.state.units);
+              if (secondary) hit(secondary, true);
+            }
+          } else {
+            const actual = this.hurtBase(unit.side, damage);
+            this.events.push({ type: 'hit', x: baseX, lane: unit.lane, side: unit.side, amount: actual, source, target: 'base' });
+          }
         }
       } else {
         let nextX = unit.x + def.speed * direction * dt;
@@ -398,6 +417,7 @@ export class Game implements GamePort {
     if (this.state.enemyHp <= 0) {
       this.state.enemyHp = 0;
       this.state.phase = 'won';
+      this.nextSpawn = this.schedule.length;
       this.profile.wins++;
       this.reward(120 * (1 + this.profile.enemyAge), 910);
       this.profile.gems = Math.min(1e7, this.profile.gems + 10);

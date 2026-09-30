@@ -21,9 +21,13 @@ const lane = numberParam('lane', 0, [0, 1, 2]);
 const health = numberParam('health', 25, [25, 70, 100]);
 const effectMode = query.get('effects') ?? 'both';
 if (!['none', 'attack', 'dust', 'both'].includes(effectMode)) throw new Error('Invalid fixture effects');
+const traitMode=query.get('traits')??'none';
+if(!['none','guard','pierce','sweep','all'].includes(traitMode))throw new Error('Invalid fixture traits');
+const reduced=query.get('motion')==='reduced';
+const width=numberParam('width',450,[320,390,450]);
+if(width!==450){document.querySelector<HTMLElement>('main')!.style.width=`${width}px`;document.querySelector<HTMLElement>('#battlefield')!.style.width=`${width}px`;}
 const includeTroops = query.get('troops') !== '0';
 const village = query.get('village') === '1';
-const width = numberParam('width', 450, [320,390,450]);
 const crop = numberParam('crop',430,[220,430]);
 const moodName = query.get('mood') ?? 'quiet';
 if(!['quiet','alarmed','recovering'].includes(moodName))throw new Error('Invalid village mood');
@@ -40,7 +44,7 @@ if(village){
 const description = `Chapters ${age + 1}/${enemyAge + 1} · ${health}% base health · lane ${lane} · ${effectMode} effects`;
 document.querySelector('#description')!.textContent = description;
 
-const game = new Game({ ...defaultProfile(), age, enemyAge, motion: 'system' });
+const game = new Game({ ...defaultProfile(), age, enemyAge, motion: reduced?'reduced':'system' });
 Object.assign(game.state, {
   phase: 'running', paused: true, time: 0,
   playerHp: game.state.playerMaxHp * health / 100,
@@ -63,8 +67,9 @@ for (const unit of units) {
     side: unit.side, amount: 0,
   });
 }
+for(const [index,trait] of (['guard','pierce','sweep'] as const).entries())if(traitMode===trait||traitMode==='all')pending.push({type:'hit',target:'unit',amount:4,x:300+index*200,lane,side:'player',trait,source:{id:10+index,kind:trait==='sweep'?2:1,age:3,side:'player',x:250,lane:0}});
 const port: GamePort = {
-  profile: game.profile, state: game.state,
+  profile: game.profile, get state(){return game.state;},
   dispatch: () => false, step: () => {},
   // Allow the initial ResizeObserver/layout pass to finish before emitting.
   drainEvents: () => { if (frames < 3) return []; const events = pending; pending = []; return events; },
@@ -96,6 +101,10 @@ type RendererDiagnostics = Phaser.Scene & {
   clouds?:Phaser.GameObjects.Container;
   mist?:Phaser.GameObjects.Container;
   villageViewport?:VillageViewport;
+  impactCues?: {trait?:string;x:number;y:number;lane?:number;life:number}[];
+  attackCues?: unknown[];
+  bolts?: unknown[];
+  reduce?: boolean;
 };
 // Decode the actual Graphics path stream emitted by the production renderer.
 // These Phaser command IDs are stable in the pinned 3.90 Graphics API. Unknown
@@ -143,6 +152,8 @@ function inspect() {
     ready: frames >= 6, age:game.profile.age, enemyAge:game.profile.enemyAge, lane, health, effectMode, includeTroops,
     images, groundEffects: actual.groundFx?.map(graphics) ?? [],
     baseDamage: graphics(actual.baseDamage),
+    traits:actual.impactCues?.filter(cue=>cue.trait).map(cue=>({...cue}))??[],
+    sourceCues:actual.attackCues?.length??0,projectiles:actual.bolts?.length??0,reduced:actual.reduce,
     state: { time: game.state.time, paused: game.state.paused, unitCount: game.state.units.length },
     canvas: { width: scene.game.canvas.width, height: scene.game.canvas.height },
     village:village?{mood:{...villageMood},plate:VILLAGE_PLATES[game.profile.age],viewport:actual.villageViewport,
@@ -170,6 +181,6 @@ const renderer = mountBattlefield(battlefield, port, () => {
 async function setClock(time:number){villageMood={...villageMood,time};await new Promise<void>(resolve=>requestAnimationFrame(()=>requestAnimationFrame(()=>resolve())));return inspect();}
 async function crossing(x:number){for(const unit of game.state.units)unit.x=x;await new Promise<void>(resolve=>requestAnimationFrame(()=>requestAnimationFrame(()=>resolve())));return inspect();}
 async function chapter(age:number){if(!Number.isInteger(age)||age<0||age>5)throw Error('Invalid chapter');game.profile.age=age;game.profile.enemyAge=age;for(const unit of game.state.units)unit.age=age;await new Promise<void>(resolve=>requestAnimationFrame(()=>requestAnimationFrame(()=>resolve())));return inspect();}
-declare global { interface Window { layeringReview: { inspect: typeof inspect;setClock:typeof setClock;crossing:typeof crossing;chapter:typeof chapter;destroy(): void }; } }
-window.layeringReview = { inspect,setClock,crossing,chapter,destroy: () => renderer.destroy() };
+declare global { interface Window { layeringReview: { inspect: typeof inspect;setClock:typeof setClock;crossing:typeof crossing;chapter:typeof chapter; resumeEffects():void;resetEffects():void;destroy():void }; } }
+window.layeringReview = { inspect,setClock,crossing,chapter,resumeEffects:()=>{game.state.paused=false;},resetEffects:()=>{game.state={...game.state,units:[]};},destroy:()=>renderer.destroy() };
 window.addEventListener('pagehide', () => renderer.destroy(), { once: true });
