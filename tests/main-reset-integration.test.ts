@@ -42,7 +42,7 @@ async function harness(mode = 'active') {
   };
   const context: any = {
     Element: ElementBoundary, root: { dataset: {} }, game: new Game(old), sessionReady: true, pagePresent: true,
-    pendingImport: null, hasPlayed: true, savedWarning: false, manualPaused: true, lastPhase: 'won', resultDue: 99, resultShown: 'old', modal: 'settings', atmosphereEnabled: false, evolutionFromResult: false, modalPointerSequence: false,
+    pendingImport: null, hasPlayed: true, savedWarning: false, manualPaused: true, lastPhase: 'won', resultDue: 99, resultShown: 'old', modal: 'settings', atmosphereEnabled: false, audioMix: { effects: 100, atmosphere: 100 }, evolutionFromResult: false, modalPointerSequence: false,
     lifetime: { disposed: false, listen: (_root: unknown, _event: string, handler: Function) => { context.click = handler; } },
     $: node, textIfChanged() {}, syncPause() {}, isolateModal() {}, icon: () => '', unlockAudio() {},
     saveSessionDialogHtml, temporarySessionNotice, restoreBackup, restoreBackupWithSave, startOverProfile,
