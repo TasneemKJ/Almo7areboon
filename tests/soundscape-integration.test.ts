@@ -64,7 +64,25 @@ test('settings and existing pause lifecycle are wired to the ambience gate (sour
 });
 test('a gesture attempts to resume an interrupted context instead of silently abandoning it',()=>{
  audio.disposeAudio();const previous=Object.getOwnPropertyDescriptor(globalThis,'AudioContext');let resumes=0;
- class Context{state='interrupted';currentTime=0;destination={};resume(){resumes++;return Promise.resolve();}close(){return Promise.resolve();}}
+ class Context{state='interrupted';currentTime=0;destination={};createGain(){return {gain:{setValueAtTime(){}},connect(){},disconnect(){}};}resume(){resumes++;return Promise.resolve();}close(){return Promise.resolve();}}
  Object.defineProperty(globalThis,'AudioContext',{configurable:true,value:Context});
  try{audio.unlockAudio(true);assert.equal(resumes,1);}finally{audio.disposeAudio();if(previous)Object.defineProperty(globalThis,'AudioContext',previous);else delete (globalThis as Record<string,unknown>).AudioContext;}
+});
+
+test('actual main loads the separate stored mix before any gesture and applies it to the first native-boundary buses',async()=>{
+ const {runInNewContext}=await import('node:vm'),{default:ts}=await import('typescript');
+ const {loadAudioMix,DEFAULT_AUDIO_MIX,AUDIO_MIX_KEY}=await import('../src/ui/audio-preferences.ts');
+ const {recordedContext,installContext}=await import('./helpers/audio-context.ts');
+ const source=readFileSync(new URL('../src/main.ts',import.meta.url),'utf8'),ast=ts.createSourceFile('main.ts',source,ts.ScriptTarget.Latest,true,ts.ScriptKind.TS);
+ const declaration=ast.statements.find(node=>ts.isVariableStatement(node)&&node.declarationList.declarations.some(declaration=>declaration.name.getText(ast)==='audioMix'));
+ const application=ast.statements.find(node=>ts.isExpressionStatement(node)&&ts.isCallExpression(node.expression)&&node.expression.expression.getText(ast)==='updateAudioMix');
+ assert.ok(declaration&&application,'main must load and apply its audio mix snapshot before gestures');
+ const values=new Map([['almo7areboon.save.v1','protected save bytes'],['almo7areboon.save.v1.backup','protected backup bytes'],[AUDIO_MIX_KEY,'{"version":1,"effects":50,"atmosphere":25}']]);
+ const storedBefore=[...values],c=recordedContext();let created=0;const restore=installContext(c,()=>{created++;return c.ctx;});audio.disposeAudio();
+ try{
+  const context={loadAudioMix:()=>loadAudioMix({getItem:(key:string)=>values.get(key)??null}),updateAudioMix:audio.updateAudioMix};
+  runInNewContext(ts.transpile([declaration,application].map(node=>node.getText(ast)).join('\n'),{target:ts.ScriptTarget.ES2022}),context);
+  assert.equal(created,0);assert.equal(c.gains.length,0);assert.equal(c.sources.length,0);assert.deepEqual([...values],storedBefore);
+  audio.unlockAudio();assert.equal(created,1);assert.deepEqual(c.gains.map(g=>g.gain.events[0][1]),[.5,.25]);
+ }finally{audio.disposeAudio();audio.updateAudioMix(DEFAULT_AUDIO_MIX);restore();}
 });

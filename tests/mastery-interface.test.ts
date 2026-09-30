@@ -56,7 +56,7 @@ test('ready picker has separate selected-Clear continuation footer and keeps eve
  g.dispatch({type:'start'});assert.doesNotMatch(battleSelectionHtml(g.profile,g.state),/data-command="next"/);
 });
 test('final continuation explains fresh seals and terminal cap offers return without Next Timeline',()=>{
- const g=victory(5);const html=resultsHtml(g.profile,g.state);assert.match(html,/Next Timeline/);assert.match(html,/seals and their rewards start afresh/);assert.match(html,/100 gems/);
+ const g=victory(5);const html=resultsHtml(g.profile,g.state);assert.match(html,/Next Timeline/);assert.match(html,/seals and their rewards start afresh/);assert.match(html,/Preview the next timeline/);assert.doesNotMatch(html,/You earn 100 gems/);
  g.dispatch({type:'retry'});assert.match(battleSelectionHtml(g.profile,g.state),/seals and their rewards start afresh/);
  g.profile.timeline=1000;g.profile.mastery.timeline=1000;g.state.phase='won';const terminal=resultsHtml(g.profile,g.state);
  assert.match(terminal,/Return to chapters/);assert.doesNotMatch(terminal,/data-command="next"|Next Timeline/);
@@ -89,7 +89,7 @@ test('explicit result return routes and terminal exit remain guarded while recov
  const main=readFileSync(new URL('../src/main.ts',import.meta.url),'utf8');
  assert.match(main,/function dismissModal\(/);assert.match(main,/evolutionFromResult/);
  assert.match(main,/case 'return-chapters':returnToChapters\(\)/);
- assert.match(main,/function showResult\(\)\{[\s\S]*?if\(!guardAction\(\)\|\|modal==='session'\)return;/);
+ assert.match(main,/function showResult\(focusCommand\?:string\)\{[\s\S]*?if\(!guardAction\(\)\|\|modal==='session'\)return;/);
  assert.match(main,/case 'confirm-evolve':[\s\S]*?showResult\(\)/);
  assert.match(main,/e\.key==='Escape'[\s\S]*?dismissModal\(\)/);
 });

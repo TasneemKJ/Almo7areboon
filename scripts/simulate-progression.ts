@@ -46,7 +46,7 @@ while (attempts < maxAttempts && game.profile.timeline < target) {
   }
   if (game.state.phase === 'won') {
     wins++; streak = 0;
-    assert.equal(game.dispatch({ type: 'next' }), true, 'a recorded win must advance successfully');
+    assert.equal(game.dispatch(p.enemyAge===5?{type:'prestige',expectedTimeline:p.timeline,legacy:'hearth'}:{type:'next'}), true, 'a recorded win must advance successfully');
   } else if (game.state.phase === 'lost') {
     losses++; streak++; maxStreak = Math.max(maxStreak, streak);
     assert.equal(game.dispatch({ type: 'retry' }), true, 'a recorded loss must retry successfully');

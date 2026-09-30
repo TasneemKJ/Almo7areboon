@@ -219,7 +219,8 @@ function unit(id: number, side: 'player' | 'enemy', x: number, hp = 26, kind: 0 
   game.state.enemyHp = 1;
   game.state.units = [{ ...unit(90, 'player', 900), age: 5 }];
   advance(game, 0.1);
-  assert.equal(game.dispatch({ type: 'next' }), true);
+  assert.equal(game.dispatch({ type: 'next' }), false);
+  assert.equal(game.dispatch({ type: 'prestige', expectedTimeline: game.profile.timeline, legacy: 'hearth' }), true);
   assert.equal(game.profile.timeline, 2);
   assert.equal(game.profile.age, 0);
   assert.equal(game.profile.enemyAge, 0);

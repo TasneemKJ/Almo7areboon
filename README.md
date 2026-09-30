@@ -42,7 +42,7 @@ Settings include sound, 1x/2x speed, reduced motion, JSON save export and confir
 
 ## Saves
 
-The storage key remains `almo7areboon.save.v1` for compatibility, but its profile schema is version 2. Six-card prototype saves migrate to the 30-card collection. A separate validated backup can recover a corrupt primary save. Unknown future save versions are protected from overwrite.
+The storage key remains `almo7areboon.save.v1` for compatibility, but its profile schema is version 4. Six-card prototype saves migrate to the 30-card collection. A separate validated backup can recover a corrupt primary save. Unknown future save versions are protected from overwrite.
 
 Only one tab can actively save on HTTPS or localhost using Web Locks. A second tab pauses behind **Game open in another tab**. Close the saving tab, then select **CONTINUE HERE** to load its latest saved progress. Merely hiding the saving tab keeps its ownership. If another client changes either save copy, the current tab pauses and offers **LOAD SAVED PROGRESS**; **EXPORT THIS SESSION** rescues its current in-memory progress before reloading.
 

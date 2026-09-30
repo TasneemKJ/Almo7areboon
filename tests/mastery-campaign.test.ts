@@ -42,7 +42,7 @@ for(const chapter of [0,5]) for(const reload of [false,true]) test(`real cleared
  let g=fight(prepared(chapter));const receipt=structuredClone(g.profile.pendingVictory);assert.equal(g.profile.furthestBattle,5);assert.equal(g.dispatch({type:'retry'}),true);
  fight(g,false);assert.equal(g.state.phase,'lost');const wins=g.profile.wins,coins=g.profile.coins,gems=g.profile.gems,ledger=structuredClone(g.profile.mastery);
  if(reload) { g=new Game(g.profile);assert.equal(g.state.phase,'ready'); }
- assert.equal(g.dispatch({type:'next'}),true);assert.equal(g.profile.wins,wins);
+ assert.equal(g.dispatch(chapter===5?{type:'prestige',expectedTimeline:g.profile.timeline,legacy:'hearth'}:{type:'next'}),true);assert.equal(g.profile.wins,wins);
  if(chapter===5) {assert.equal(g.profile.timeline,2);assert.equal(g.profile.gems,gems+100);assert.equal(g.profile.mastery.chapters.every(r=>r.earnedMask===0),true);assert.equal(g.dispatch({type:'next'}),false);}
  else {assert.equal(g.profile.enemyAge,1);assert.equal(g.profile.furthestBattle,5);assert.equal(g.profile.coins,coins);assert.equal(g.profile.gems,gems);assert.deepEqual(g.profile.mastery,ledger);}
  assert.ok(receipt);
@@ -55,7 +55,7 @@ test('evolution preserves selected opponent, frontier and won receipt; replay ne
 test('legacy Continue-first survives evolution and reload, with final cap return exception',()=>{
  for(const chapter of [0,5]) {
  const raw={...defaultProfile(),version:2,enemyAge:chapter,furthestBattle:5,coins:ERAS[0].evolveCost,pendingVictory:{timeline:1,battle:chapter,earned:123,seconds:40,playerHp:100}};
- let g=new Game(loadProfile({getItem:()=>JSON.stringify(raw)}));assert.equal(g.dispatch({type:'retry'}),false);assert.equal(g.dispatch({type:'evolve'}),true);g=new Game(g.profile);assert.equal(g.state.phase,'won');assert.equal(g.dispatch({type:'retry'}),false);assert.equal(g.dispatch({type:'next'}),true);
+ let g=new Game(loadProfile({getItem:()=>JSON.stringify(raw)}));assert.equal(g.dispatch({type:'retry'}),false);assert.equal(g.dispatch({type:'evolve'}),true);g=new Game(g.profile);assert.equal(g.state.phase,'won');assert.equal(g.dispatch({type:'retry'}),false);assert.equal(g.dispatch(chapter===5?{type:'prestige',expectedTimeline:g.profile.timeline,legacy:'hearth'}:{type:'next'}),true);
  const terminal=new Game(loadProfile({getItem:()=>JSON.stringify({...raw,timeline:1000,pendingVictory:{...raw.pendingVictory,timeline:1000}})}));assert.equal(terminal.dispatch({type:'next'}),chapter!==5);if(chapter===5)assert.equal(terminal.dispatch({type:'retry'}),true);
  }
 });

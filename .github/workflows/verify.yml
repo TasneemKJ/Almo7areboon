@@ -34,6 +34,35 @@ jobs:
       - name: Install browser for visual verification
         if: steps.tests.outcome == 'success' && steps.build.outcome == 'success'
         run: npx playwright install --with-deps chromium
+      - name: Verify native production audio controls and ownership
+        id: audio_browser
+        if: steps.tests.outcome == 'success' && steps.build.outcome == 'success'
+        continue-on-error: true
+        run: |
+          set -o pipefail
+          node scripts/review-audio.mjs --browser --output artifacts/audio-review/browser 2>&1 | tee verification-audio-browser.log
+      - name: Publish immediate audio controls diagnostics
+        if: always() && steps.audio_browser.outcome != 'skipped'
+        uses: actions/upload-artifact@v4
+        with:
+          name: audio-controls-browser-review
+          path: |
+            artifacts/audio-review/browser/
+            verification-audio-browser.log
+          retention-days: 7
+      - name: Verify enlarged upgrade text in production
+        id: upgrade_text
+        if: steps.tests.outcome == 'success' && steps.build.outcome == 'success'
+        continue-on-error: true
+        run: npm run review:upgrade-text
+      - name: Publish upgrade-text screenshots and diagnostics
+        if: always() && steps.upgrade_text.outcome != 'skipped'
+        uses: actions/upload-artifact@v4
+        with:
+          name: upgrade-text-browser-review
+          path: artifacts/browser-review/upgrade-text/
+
+          retention-days: 7
       - name: Verify production offline audio waveforms
         id: offline_audio
         if: steps.tests.outcome == 'success' && steps.build.outcome == 'success'
@@ -138,5 +167,5 @@ jobs:
           path: ${{ runner.temp }}/game-workspace.tar.gz
           retention-days: 3
       - name: Require passing checks
-        if: steps.tests.outcome != 'success' || steps.build.outcome != 'success' || steps.browser.outcome != 'success' || steps.layering.outcome != 'success' || steps.save_sessions.outcome != 'success' || steps.offline_audio.outcome != 'success' || steps.mastery.outcome != 'success'
+        if: steps.tests.outcome != 'success' || steps.build.outcome != 'success' || steps.browser.outcome != 'success' || steps.layering.outcome != 'success' || steps.save_sessions.outcome != 'success' || steps.offline_audio.outcome != 'success' || steps.mastery.outcome != 'success' || steps.audio_browser.outcome != 'success' || steps.upgrade_text.outcome != 'success'
         run: exit 1

@@ -29,7 +29,7 @@ test('cleared battles can be replayed without relocking the furthest available b
 test('a new timeline clears its coin economy and retains permanent currency',()=>{
   const p=defaultProfile();p.age=5;p.enemyAge=5;p.furthestBattle=5;p.coins=1000;
   const g=new Game(p);forceWon(g);const gems=g.profile.gems;
-  assert.equal(g.dispatch({type:'next'}),true);
+  assert.equal(g.dispatch({type:'prestige',expectedTimeline:g.profile.timeline,legacy:'hearth'}),true);
   assert.equal(g.profile.timeline,2);assert.equal(g.profile.coins,0);assert.equal(g.profile.furthestBattle,0);
   assert.ok(g.profile.gems>=gems);
 });

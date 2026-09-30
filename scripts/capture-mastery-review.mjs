@@ -216,7 +216,13 @@ async function startAndLose(page) {
   await result(page, false);
 }
 async function assertContinue(page, source, chapter, before) {
-  const next = command(page, 'next'); await next.click({ clickCount: 2 }); await ready(page);
+  const next = command(page, 'next'); await next.click({ clickCount: 2 });
+  if (chapter === 5) {
+    await page.locator('[data-command="confirm-prestige"]').waitFor({state:'visible'});
+    assert.deepEqual(await saved(source), before, 'preview does not mutate the settled save');
+    await page.locator('[data-command="confirm-prestige"]').click({clickCount:2});
+  }
+  await ready(page);
   assert.equal(await page.locator('[data-tab="battle"]').getAttribute('aria-current'), 'page', 'double continuation retains Battle navigation');
   assert.equal(await page.locator('#secondary-screen').isHidden(), true, 'double continuation cannot click through into a secondary screen');
   const after = await saved(source);

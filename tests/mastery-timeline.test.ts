@@ -36,7 +36,7 @@ test('seals pay once per timeline: reload and replay add nothing, a new timeline
   for (let chapter = 1; chapter <= 5; chapter++) { game.dispatch({ type: 'next' }); win(game); }
   assert.equal(game.profile.enemyAge, 5);
   const before = game.profile.gems;
-  assert.equal(game.dispatch({ type: 'next' }), true);
+  assert.equal(game.dispatch({ type: 'prestige', expectedTimeline: game.profile.timeline, legacy: 'hearth' }), true);
   assert.equal(game.profile.timeline, 2);
   assert.ok(game.profile.mastery.chapters.every(record => record.earnedMask === 0), 'a new timeline clears every seal');
   assert.equal(game.profile.gems - before, 100, 'the timeline bonus is paid once on advancing');
