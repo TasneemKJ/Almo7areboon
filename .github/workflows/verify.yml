@@ -100,6 +100,18 @@ jobs:
           name: skill-cues-browser-review
           path: artifacts/browser-review/skill-cues/
           retention-days: 7
+      - name: Verify regroup learning in production
+        id: regroup
+        if: steps.tests.outcome == 'success' && steps.build.outcome == 'success'
+        continue-on-error: true
+        run: node --experimental-strip-types scripts/capture-regroup-review.mjs
+      - name: Publish regroup teaching evidence
+        if: always() && steps.regroup.outcome != 'skipped'
+        uses: actions/upload-artifact@v4
+        with:
+          name: regroup-browser-review
+          path: artifacts/browser-review/regroup/
+          retention-days: 7
       - name: Capture portrait browser states
         id: browser
         if: steps.tests.outcome == 'success' && steps.build.outcome == 'success'
@@ -200,5 +212,5 @@ jobs:
         if: always()
         env:
           VERIFICATION_STEPS: ${{ toJSON(steps) }}
-          REQUIRED_CHECKS: tests build audio_browser upgrade_text offline_audio skill_cues browser layering save_sessions mastery
+          REQUIRED_CHECKS: tests build audio_browser upgrade_text offline_audio skill_cues regroup browser layering save_sessions mastery
         run: node scripts/require-verification.mjs
