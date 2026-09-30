@@ -210,5 +210,5 @@ test('compactNumber promotes values that round up to 1000 instead of showing 100
  assert.equal(compactNumber(999_999_999_999),'1t');
  assert.equal(compactNumber(999_999_999_999_999),'1e15');
  assert.equal(compactNumber(1_500),'1.5k');assert.equal(compactNumber(2_000_000),'2m');assert.equal(compactNumber(12_345),'12.3k');
- assert.equal(compactNumber(999),'999');assert.equal(compactNumber(0),'0');
+ assert.equal(compactNumber(999),'999');assert.equal(compactNumber(0),'0');assert.equal(compactNumber(999.4),'1k','a fraction that rounds up to 1000 reads 1k');
 });

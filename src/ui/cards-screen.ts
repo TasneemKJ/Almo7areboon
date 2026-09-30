@@ -11,7 +11,11 @@ function cardEffect(index: number, copies: number): number {
   return cardBonuses(owned)[CARD_DEFS[index].stat];
 }
 
-export function multiplier(value: number): string { return value < 1000 ? value.toFixed(2) : compactNumber(value); }
+export function multiplier(value: number): string {
+  const fixed = Number.isFinite(value) ? value.toFixed(2) : '0.00';
+  // 999.999 rounds to 1000.00: hand it to the compact formatter so it reads 1k.
+  return Number(fixed) < 1000 ? fixed : compactNumber(value);
+}
 
 export function cardsScreenHtml(profile: Profile): string {
   const bonus = cardBonus(profile), summon = summonLevel(profile.summonCount);
