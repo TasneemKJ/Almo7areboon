@@ -91,13 +91,15 @@ const session=createSaveSession({
 });
 function playable(){return sessionReady&&pagePresent&&!lifetime.disposed&&(session.status==='active'||session.status==='temporary');}
 function guardAction(){return playable()&&session.check();}
+let retriedSession=false;
 function sessionPresentation(status:SaveSessionStatus){
   root!.dataset.saveSession=status;
   const notice=$('session-notice');
   notice.hidden=status!=='starting'&&status!=='temporary';
   textIfChanged(notice,status==='temporary'?temporarySessionNotice:'Opening your saved game…');
   if(status!=='active'&&status!=='temporary')sessionReady=false;
-  const html=saveSessionDialogHtml(status);
+  if(status==='active'||status==='temporary')retriedSession=false;
+  const html=saveSessionDialogHtml(status,retriedSession);
   if(html){pendingImport=null;evolutionFromResult=false;showModal('session',html);}
   else if(status==='starting'){
     // An immediate acquisition has no transient modal focus loop.
@@ -320,7 +322,7 @@ lifetime.listen<MouseEvent>(root,'click',e=>{
   }
   const command=button.dataset.command;
   if(command==='export'){exportSave();return;}
-  if(command==='session-continue'){void acquireSession();return;}
+  if(command==='session-continue'){retriedSession=true;void acquireSession();return;}
   if(command==='session-temporary'){
     if(pagePresent&&session.playTemporarily()){
       sessionReady=true;hasPlayed=true;closeModal(false);rebuildArmy();syncMotion();switchTab('battle');

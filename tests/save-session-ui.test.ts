@@ -32,3 +32,12 @@ test('ordinary and temporary states do not produce a blocking recovery dialog', 
   for (const status of ['starting', 'active', 'temporary', 'suspended', 'disposed'] as const) assert.equal(saveSessionDialogHtml(status), '');
   assert.equal(temporarySessionNotice, 'Temporary play — progress is not saved.');
 });
+
+test('a retry that hits the same problem is acknowledged instead of silently repeating the dialog', () => {
+  assert.doesNotMatch(saveSessionDialogHtml('blocked'), /session-retry/);
+  assert.match(saveSessionDialogHtml('blocked', true), /Still open in another tab\. Close that tab, then try again\./);
+  assert.match(saveSessionDialogHtml('unavailable', true), /Saving is still unavailable in this browser\./);
+  assert.doesNotMatch(saveSessionDialogHtml('conflict', true), /session-retry/, 'a conflict is resolved by reloading, not by waiting');
+  assert.doesNotMatch(saveSessionDialogHtml('unsupported', true), /session-retry/);
+  assert.equal(saveSessionDialogHtml('active', true), '');
+});
