@@ -22,4 +22,4 @@ CHROMIUM_PATH=/path/to/chromium npm run review:overlap
 - After a stylesheet or markup change, run `review:overlap`, `review:clip` and skim `review:contrast`.
 - After touching saves, start-up or input handling, run `review:monkey`.
 - A probe that reports nothing is only useful if it can fail: each of the exit-code probes was checked against a deliberately induced defect (a pause button moved onto the currency pill, oversized unit names, a global light text colour).
-- None of the browser probes run in CI yet because they need a running preview and add several minutes; wiring them in after `npm run build` is a reasonable next step.
+- The optional `review:monkey`, `review:overlap`, `review:clip` and `review:contrast` probes do not run in CI yet. CI requires the portrait (`review:browser`), layering (`review:layering`) and save-session (`review:save-sessions`) gates after tests and the production build.

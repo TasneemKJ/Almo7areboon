@@ -44,6 +44,18 @@ jobs:
         if: steps.tests.outcome == 'success' && steps.build.outcome == 'success'
         continue-on-error: true
         run: npm run review:layering
+      - name: Verify exclusive save sessions and recovery
+        id: save_sessions
+        if: steps.tests.outcome == 'success' && steps.build.outcome == 'success'
+        continue-on-error: true
+        run: npm run review:save-sessions
+      - name: Publish save-session screenshots and diagnostics
+        if: always() && steps.save_sessions.outcome != 'skipped'
+        uses: actions/upload-artifact@v4
+        with:
+          name: save-session-browser-review
+          path: artifacts/save-session-review/
+          retention-days: 7
       - name: Publish layering screenshots and diagnostics
         if: always() && steps.layering.outcome != 'skipped'
         uses: actions/upload-artifact@v4
@@ -98,5 +110,5 @@ jobs:
           path: ${{ runner.temp }}/game-workspace.tar.gz
           retention-days: 3
       - name: Require passing checks
-        if: steps.tests.outcome != 'success' || steps.build.outcome != 'success' || steps.browser.outcome != 'success' || steps.layering.outcome != 'success'
+        if: steps.tests.outcome != 'success' || steps.build.outcome != 'success' || steps.browser.outcome != 'success' || steps.layering.outcome != 'success' || steps.save_sessions.outcome != 'success'
         run: exit 1

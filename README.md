@@ -44,7 +44,13 @@ Settings include sound, 1x/2x speed, reduced motion, JSON save export and confir
 
 The storage key remains `almo7areboon.save.v1` for compatibility, but its profile schema is version 2. Six-card prototype saves migrate to the 30-card collection. A separate validated backup can recover a corrupt primary save. Unknown future save versions are protected from overwrite.
 
-An unfinished battle reloads ready while preserving already earned coins. An unacknowledged victory reloads its result without awarding rewards again. Import validates first, asks before replacement and changes the active game only after storage succeeds. Export provides a separate backup; clearing browser site data otherwise removes local progress.
+Only one tab can actively save on HTTPS or localhost using Web Locks. A second tab pauses behind **Game open in another tab**. Close the saving tab, then select **CONTINUE HERE** to load its latest saved progress. Merely hiding the saving tab keeps its ownership. If another client changes either save copy, the current tab pauses and offers **LOAD SAVED PROGRESS**; **EXPORT THIS SESSION** rescues its current in-memory progress before reloading.
+
+If this browser cannot safely acquire ownership, or a future-version save is present, **PLAY WITHOUT SAVING** explicitly starts temporary play. Its persistent notice stays visible; progress and profile preferences do not change either stored save, and import is disabled. Temporary play never automatically becomes a saving session. Export before closing to retain that session.
+
+An unfinished battle reloads ready while preserving already earned coins. An unacknowledged victory reloads its result without awarding rewards again. Import validates first, asks before replacement and changes the active game only after storage succeeds. Export provides a separate backup. Older already-open builds and console scripts may ignore Web Locks; baseline checks detect their changes but are not an atomic transaction against an uncooperative writer. Close older tabs and reload after a conflict. Browser storage eviction, clearing site data, and termination before a save can still lose progress.
+
+`npm run review:save-sessions` checks the built app with same-context Chromium tabs on port 4175, real buttons, takeover, recovery/export, import, confirmed Start over, and controlled pagehide/pageshow events. CI requires it alongside the portrait and layering gates; diagnostics and 320px recovery screenshots are collected. Controlled lifecycle events do not prove actual BFCache eligibility, and this gate does not establish WebKit or physical-device acceptance.
 
 ## Source boundaries
 

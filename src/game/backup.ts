@@ -35,6 +35,14 @@ export function importBackup(text: string): BackupImport {
 }
 
 export function restoreBackup(current: Game, candidate: Profile, storage?: Parameters<typeof saveProfile>[1]): { ok: boolean; game: Game } {
-  const replacement = new Game(candidate);
-  return saveProfile(replacement.profile, storage) ? { ok: true, game: replacement } : { ok: false, game: current };
+  return restoreBackupWithSave(current, candidate, profile => saveProfile(profile, storage));
+}
+
+/** Replace the playable game only after the caller's guarded writer commits. */
+export function restoreBackupWithSave(current: Game, candidate: Profile, commit: (profile: Profile) => boolean): { ok: boolean; game: Game } {
+  try {
+    const replacement = new Game(candidate);
+    if (commit(replacement.profile)) return { ok: true, game: replacement };
+  } catch { /* A rejected writer cannot replace the current in-memory game. */ }
+  return { ok: false, game: current };
 }

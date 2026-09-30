@@ -38,3 +38,10 @@
 .result-landscape:after { content:''; position:absolute; inset:0; background:linear-gradient(0deg,var(--paper),transparent 85%); }
 @media(max-width:360px) { .era-copy h3 { font-size:14px; } .battle-preview { width:46px; } }
 @media(max-height:700px) { .result-landscape { height:115px; } }
+/* Recovery uses the established paper/enamel dialog; all controls remain reachable at 320px. */
+.session-dialog h2 { font-size:25px; line-height:1.15; overflow-wrap:anywhere; }
+.session-actions { display:grid; gap:10px; margin-top:20px; }
+.session-actions .big-button { width:100%; min-height:48px; white-space:normal; font-size:12px; }
+/* This small flow row reserves its own space instead of covering battle or navigation controls. */
+.session-notice { flex-shrink:0; height:28px; margin:0; padding:5px 8px; position:relative; z-index:4; color:var(--ink); background:var(--paper); border-top:1px solid var(--paper-edge); text-align:center; font-size:11px; line-height:17px; font-weight:600; }
+[data-save-session=temporary] .secondary-screen { bottom:calc(93px + env(safe-area-inset-bottom,0px)); }
