@@ -41,7 +41,7 @@ async function harness(mode = 'active') {
     return nodes.get(id);
   };
   const context: any = {
-    Element: ElementBoundary, root: { dataset: {} }, game: new Game(old), sessionReady: true, pagePresent: true,
+    Element: ElementBoundary, root: { dataset: {} }, game: new Game(old), sessionReady: true, retriedSession: false, pagePresent: true,
     pendingImport: null, hasPlayed: true, savedWarning: false, manualPaused: true, lastPhase: 'won', resultDue: 99, resultShown: 'old', modal: 'settings', atmosphereEnabled: false, evolutionFromResult: false, modalPointerSequence: false,
     lifetime: { disposed: false, listen: (_root: unknown, _event: string, handler: Function) => { context.click = handler; } },
     $: node, textIfChanged() {}, syncPause() {}, isolateModal() {}, icon: () => '', unlockAudio() {},

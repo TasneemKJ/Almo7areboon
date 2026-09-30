@@ -196,6 +196,7 @@ button,.game-shell { -webkit-user-select:none; -webkit-touch-callout:none; }
 .dialog { width:100%; max-width:385px; max-height:100%; overflow:auto; overscroll-behavior:contain; background:var(--paper); border:1px solid #ead7a3; border-radius:20px; box-shadow:0 8px 0 #102c3b66,0 24px 70px #081c2b88,inset 0 3px #fff9e4; padding:27px 22px; position:relative; text-align:center; animation:appear .18s ease-out; }
 .dialog>.eyebrow { display:block; margin-top:6px; font-size:9px; color:#4f6559; }
 .dialog h2 { margin:9px 0 12px; font-size:29px; letter-spacing:-.8px; }
+.dialog>p.session-retry { color:#8f2f29; font-weight:700; }
 .dialog>p { font-size:12px; line-height:1.6; color:var(--muted); font-weight:500; }
 .close-button { position:absolute; top:6px; right:6px; width:var(--touch); height:var(--touch); border:0; border-radius:12px; background:transparent; display:grid; place-items:center; }
 .close-button .icon { width:21px; height:21px; }
