@@ -1,5 +1,5 @@
 import { ERAS, unlockCost } from '../game/data.ts';
-import type { Profile, UnitKind } from '../game/types.ts';
+import type { DeploymentStatus, Phase, Profile, UnitKind } from '../game/types.ts';
 import { unitPresentationName } from './chapter-presentation.ts';
 import { icon } from '../view/icons.ts';
 export const TROOP_SPECIALTIES = [
@@ -7,6 +7,19 @@ export const TROOP_SPECIALTIES = [
   {name:'Pierce',effect:'Deals extra damage to heavy enemies.'},
   {name:'Sweep',effect:'Hits a second nearby enemy.'},
 ] as const;
+
+/** Post-purchase guidance uses authoritative deployment status, without buying or spawning. */
+export function troopUnlockMessage(profile: Readonly<Profile>, phase: Phase, kind: UnitKind, status: Readonly<DeploymentStatus>): string {
+  const cost = ERAS[profile.age].units[kind].cost;
+  const next = phase === 'ready' ? `Start Battle, then deploy: ${cost} food.`
+    : phase !== 'running' ? `Prepare another battle, then deploy: ${cost} food.`
+    : status.reason === 'paused' ? `Resume Battle, then deploy: ${cost} food.`
+    : status.reason === 'food' ? `Needs ${cost} food; wait ${Math.ceil(status.waitSeconds)}s.`
+    : status.reason === 'blocked' ? `Deployment area full; wait for space. Costs ${cost} food.`
+    : status.reason === 'capacity' ? `Army full; wait for a place. Costs ${cost} food.`
+    : `Tap it again to deploy: ${cost} food.`;
+  return `${unitPresentationName(profile.age, kind)} unlocked! ${TROOP_SPECIALTIES[kind].effect} ${next}`;
+}
 type MarkupTarget = Pick<HTMLElement, 'innerHTML'>;
 
 export function createArmyUpdater(targets: { units: MarkupTarget; skills: MarkupTarget; stages: MarkupTarget }, portrait: (age: number, kind: UnitKind) => string, formatCost = (cost: number) => cost.toLocaleString('en-US')) {

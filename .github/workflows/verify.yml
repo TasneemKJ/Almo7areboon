@@ -100,6 +100,18 @@ jobs:
           name: offline-game-browser-review
           path: artifacts/browser-review/offline-game/
           retention-days: 7
+      - name: Verify troop unlock teaching in production
+        id: troop_unlock
+        if: steps.tests.outcome == 'success' && steps.build.outcome == 'success'
+        continue-on-error: true
+        run: node --experimental-strip-types scripts/capture-troop-unlock-review.mjs
+      - name: Publish troop unlock teaching evidence
+        if: always() && steps.troop_unlock.outcome != 'skipped'
+        uses: actions/upload-artifact@v4
+        with:
+          name: troop-unlock-browser-review
+          path: artifacts/browser-review/troop-unlock/
+          retention-days: 7
       - name: Verify native skill timing cues
         id: skill_cues
         if: steps.tests.outcome == 'success' && steps.build.outcome == 'success'
@@ -233,5 +245,5 @@ jobs:
         if: always()
         env:
           VERIFICATION_STEPS: ${{ toJSON(steps) }}
-          REQUIRED_CHECKS: tests build audio_browser upgrade_text offline_audio offline_game skill_cues regroup browser layering save_sessions mastery
+          REQUIRED_CHECKS: tests build audio_browser upgrade_text offline_audio offline_game troop_unlock skill_cues regroup browser layering save_sessions mastery
         run: node scripts/require-verification.mjs
