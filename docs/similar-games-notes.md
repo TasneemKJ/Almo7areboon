@@ -18,3 +18,9 @@ Research checked 2026-09-30 (Asia/Amman). Mechanics below come from publisher de
 4. Add village activity measured against the actual paintings, and a restrained soundscape response. Respect sound settings, reduced motion, and mobile bounds.
 
 These references do not justify adding daily gates, currencies, sprawling collections, or purchasing pressure. Evaluate actual battle duration, first-purchase timing, optional replay goals, visual readability, and save integrity in this game. Longer-term retention remains unmeasured without player observations.
+
+## Self-teaching and personality follow-up
+
+Rechecked official sources on 2026-09-30: [PONOS Battle Cats](https://www.ponos.jp/en/games/thebattlecats/), [Kingdom: New Lands](https://kingdomthegame.com/kingdom-new-lands-2/), and [Supergiant Hades FAQ](https://www.supergiantgames.com/blog/hades-faq/). PONOS emphasizes tap deployment and a simple base-destruction loop. Kingdom describes discovery and understanding how pieces form a strategy. Supergiant describes varied runs, permanent progression and story/character discovery.
+
+Design inference: teach start → food → deployment immediately, make deeper help optional and repeatable, and expose actual target/timing feedback on existing controls. Let result dialogue give the villages a recognizable voice. Future village response variety should follow real events and permanent progress, without inventing rewards or turning tutorial dismissal into a progression gate. These are design hypotheses; neither descriptions nor implementation demonstrate retention uplift.

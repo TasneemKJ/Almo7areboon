@@ -3,9 +3,36 @@ import assert from 'node:assert/strict';
 import { readFileSync } from 'node:fs';
 import { runInNewContext } from 'node:vm';
 import ts from 'typescript';
+import { Game } from '../src/game/simulation.ts';
+import { defaultProfile } from '../src/game/save.ts';
+import { battleGuidance } from '../src/ui/battle-hud.ts';
+import { saveProfile } from '../src/game/save.ts';
 
 const source=readFileSync(new URL('../scripts/capture-mastery-review.mjs',import.meta.url),'utf8');
 const ast=ts.createSourceFile('capture-mastery-review.mjs',source,ts.ScriptTarget.Latest,true,ts.ScriptKind.JS);
+test('scouting baseline waits for Retry backup rotation before comparing disclosure bytes',async()=>{
+ const scouting=readFileSync(new URL('../scripts/capture-scouting-review.mjs',import.meta.url),'utf8');
+ const syntax=ts.createSourceFile('scouting.mjs',scouting,ts.ScriptTarget.Latest,true,ts.ScriptKind.JS);
+ const helper=syntax.statements.find(node=>ts.isFunctionDeclaration(node)&&node.name?.text==='settleScoutingBaseline');
+ assert.ok(helper,'scouting must condition its baseline on settled primary and backup');
+ const primary='primary',backup='backup',profile=defaultProfile(),encoded=JSON.stringify(profile);
+ const storage=new Map([[primary,encoded],[backup,JSON.stringify({...profile,pendingVictory:{earned:10}})]]);
+ let observations=0;
+ const page={async waitForFunction(fn:Function,keys:unknown,options:{timeout:number}){
+  assert.equal(options.timeout,10000);
+  const check=()=>runInNewContext(`(${fn.toString()})(keys)`,{keys,localStorage:{getItem:(key:string)=>storage.get(key)??null}});
+  assert.equal(check(),false,'old receipt in backup must not become the baseline');observations++;
+  const adapter={getItem:(key:string)=>storage.get(key)??null,setItem:(key:string,value:string)=>storage.set(key,value)};
+  // The production periodic save rotates the already-current primary into backup.
+  const {SAVE_KEY,BACKUP_KEY}=await import('../src/game/save.ts');
+  storage.set(SAVE_KEY,encoded);storage.set(BACKUP_KEY,storage.get(backup)!);
+  assert.equal(saveProfile(profile,adapter),true);
+  storage.set(primary,storage.get(SAVE_KEY)!);storage.set(backup,storage.get(BACKUP_KEY)!);
+  assert.equal(check(),true);observations++;
+ }};
+ await runInNewContext(`(${helper.getText(syntax)})(page,keys)`,{page,keys:{primary,backup}});
+ assert.equal(observations,2);
+});
 let foreignCallback='';
 function visit(node:ts.Node){
  if(ts.isCallExpression(node)&&node.expression.getText(ast)==='scenario'&&node.arguments[0]?.getText(ast).startsWith('`foreign-during-evolution-'))foreignCallback=node.arguments[2].getText(ast);
@@ -71,7 +98,10 @@ test('fresh ready flow changes speed through visible Settings before native Batt
  function find(node:ts.Node){if(ts.isCallExpression(node)&&node.expression.getText(ast)==='scenario'&&node.arguments[0]?.getText(ast).startsWith('`fresh-win-paused-input-'))callback=node.arguments[2].getText(ast);ts.forEachChild(node,find);}
  find(ast);assert.ok(callback);
  let settings=false,speed=1;const reachedBattle=Error('reached the native Battle activation');
- const page={locator(selector:string){return{async click(){
+ const firstBattle=new Game(defaultProfile());
+ const page={locator(selector:string){return{async innerText(){
+  assert.equal(selector,'#deploy-hint');return battleGuidance(firstBattle.profile,firstBattle.state);
+ },async click(){
   if(selector==='[data-command="settings"]'){settings=true;return;}
   if(selector==='[data-command="speed"]')throw Error('the ready battlefield speed control is hidden');
   if(selector==='[data-command="start"]'){assert.equal(settings,false);assert.equal(speed,2);throw reachedBattle;}

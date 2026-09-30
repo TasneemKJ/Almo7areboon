@@ -4,6 +4,7 @@ import type { WavePreview, WaveStatus } from '../game/encounters.ts';
 import type { BattleState, Profile } from '../game/types.ts';
 import { chapterMastery } from '../game/mastery.ts';
 import { masteryAdvice } from './mastery-presentation.ts';
+import { chapterScouting } from './chapter-scouting.ts';
 
 /** What most improves the next attempt, judged from what the player can afford right now. */
 export function defeatAdvice(profile: Profile): string {
@@ -16,7 +17,7 @@ export function defeatAdvice(profile: Profile): string {
 
 /** A single contextual instruction, not an onboarding panel over the battlefield. */
 export function battleGuidance(profile: Profile, state: BattleState, preview?: WavePreview | null): string {
-  if (state.phase === 'ready') return 'Tap Battle, then spend food to deploy warriors.';
+  if (state.phase === 'ready') return profile.wins===0?'Tap Battle, then spend food on warriors. They fight automatically.':`${chapterScouting(profile.enemyAge).opening} Tap Battle to begin.`;
   if (state.phase === 'won') return 'Victory! Continue to the next battle when you are ready.';
   if (state.phase === 'lost') return `Your coins are safe. ${masteryAdvice(profile,state)}`;
   if (state.paused) return 'Battle paused. Resume to deploy your army.';
