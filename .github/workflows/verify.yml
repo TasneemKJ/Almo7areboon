@@ -112,6 +112,15 @@ jobs:
           name: regroup-browser-review
           path: artifacts/browser-review/regroup/
           retention-days: 7
+      - name: Publish focused village reaction evidence
+        if: always() && steps.regroup.outcome != 'skipped'
+        uses: actions/upload-artifact@v4
+        with:
+          name: village-reactions-browser-review
+          path: |
+            artifacts/browser-review/regroup/diagnostics.json
+            artifacts/browser-review/regroup/village*.png
+          retention-days: 7
       - name: Capture portrait browser states
         id: browser
         if: steps.tests.outcome == 'success' && steps.build.outcome == 'success'

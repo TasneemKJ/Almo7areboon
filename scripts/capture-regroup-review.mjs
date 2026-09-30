@@ -51,11 +51,40 @@ async function session(viewport,kind){
  }catch(error){diagnostics.cases.push({name,status:'failed',error:error.stack});await page?.screenshot({path:`${output}/regroup-failure-${name}.png`}).catch(()=>{});throw error;}
  finally{await context.close();}
 }
+async function villageSession(viewport,moment){
+ const name=`${moment}-${viewport.width}`,context=await browser.newContext({viewport,reducedMotion:'reduce'});
+ context.setDefaultTimeout(30000);let page;
+ try{
+  const profile=defaultProfile();Object.assign(profile,{age:5,enemyAge:0,furthestBattle:5,foodLevel:12,unlocked:[true,true,true],sound:false,motion:'reduced'});
+  const source=await context.newPage();await source.route(`${origin}/__setup`,route=>route.fulfill({contentType:'text/html',body:'<!doctype html><title>Save setup</title>'}));await source.goto(`${origin}/__setup`);
+  const keys={primary:SAVE_KEY,backup:BACKUP_KEY};
+  await source.evaluate(({profile,primary,backup})=>{localStorage.setItem(primary,JSON.stringify(profile));localStorage.setItem(backup,JSON.stringify(profile));},{profile,...keys});
+  page=await context.newPage();page.on('pageerror',error=>diagnostics.pageErrors.push(error.message));page.on('response',r=>{if(r.url().includes('/art/')&&!r.ok())diagnostics.assetFailures.push(`${r.status()} ${r.url()}`);});
+  await page.goto(origin,{waitUntil:'networkidle'});await page.waitForFunction(()=>document.querySelector('#app')?.dataset.saveSession==='active');await page.locator('[data-command="start"]').click();
+  if(moment==='company')for(const role of [0,1,2])await page.locator(`[data-unit="${role}"]`).click();
+  else{
+   await page.waitForFunction(()=>Number(document.querySelector('[data-skill="freeze"] small')?.textContent)>=3);
+   await page.locator(`[data-skill="${moment}"]`).click();
+  }
+  await page.locator('[data-command="settings"]').click();await page.locator('[data-command="retreat"]').click();await page.getByRole('heading',{name:'REGROUP',exact:true}).waitFor();
+  const voice=page.locator('.village-voice');assert.equal(await voice.getAttribute('data-village-moment'),moment);
+  assert.match(await voice.innerText(),/hearth-keeper/);assert.match(await voice.innerText(),moment==='freeze'?/Freeze/:moment==='meteor'?/Meteor/:/Three troop roles/);
+  await source.waitForFunction(({primary,backup})=>{const p=localStorage.getItem(primary);return p!==null&&p===localStorage.getItem(backup);},keys,{timeout:10000});
+  const bytes=()=>source.evaluate(({primary,backup})=>[localStorage.getItem(primary),localStorage.getItem(backup)],keys),before=await bytes();
+  await voice.scrollIntoViewIfNeeded();const bounds=await voice.evaluate(node=>{const r=node.getBoundingClientRect();return {left:r.left,right:r.right,top:r.top,bottom:r.bottom,width:innerWidth,height:innerHeight};});
+  assert.ok(bounds.left>=0&&bounds.right<=bounds.width&&bounds.top>=0&&bounds.bottom<=bounds.height,JSON.stringify(bounds));
+  await page.screenshot({path:`${output}/village-${name}.png`});assert.deepEqual(await bytes(),before,'viewing a reaction neither spends nor writes progress');
+  diagnostics.cases.push({name:`village-${name}`,status:'passed',moment,bounds,voice:await voice.innerText(),actualRetreat:true,unchangedViewBytes:true});
+ }catch(error){diagnostics.cases.push({name:`village-${name}`,status:'failed',error:error.stack});await page?.screenshot({path:`${output}/village-failure-${name}.png`}).catch(()=>{});throw error;}
+ finally{await context.close();}
+}
 try{
  assert.ok(existsSync('dist/index.html'));server=spawn(process.execPath,['node_modules/vite/bin/vite.js','preview','--host','127.0.0.1','--port','4179','--strictPort'],{stdio:'pipe'});server.stdout.on('data',c=>serverLog+=c);server.stderr.on('data',c=>serverLog+=c);
  let ready=false;for(let i=0;i<80;i++){if(server.exitCode!==null)throw Error(serverLog);try{ready=(await fetch(origin,{signal:AbortSignal.timeout(2000)})).ok;}catch{}if(ready)break;await new Promise(resolve=>setTimeout(resolve,250));}assert.ok(ready,'production preview starts');
  browser=await chromium.launch({headless:true,timeout:30000});diagnostics.browser=browser.version();
  await session({width:320,height:568},'fresh');await session({width:390,height:844},'earlier');await session({width:320,height:568},'terminal');
- assert.deepEqual(diagnostics.pageErrors,[]);assert.deepEqual(diagnostics.assetFailures,[]);diagnostics.status='passed';console.log('Regroup native review passed: 3 scenarios');
+ for(const viewport of [{width:320,height:568},{width:390,height:844}])for(const moment of ['freeze','meteor','company'])await villageSession(viewport,moment);
+ assert.equal(diagnostics.cases.length,9);assert.ok(diagnostics.cases.every(c=>c.status==='passed'));
+ assert.deepEqual(diagnostics.pageErrors,[]);assert.deepEqual(diagnostics.assetFailures,[]);diagnostics.status='passed';console.log('Regroup and village native review passed: 9 scenarios');
 }catch(error){diagnostics.error=error.stack;process.exitCode=1;console.error(error);}
 finally{diagnostics.serverLog=serverLog;writeFileSync(`${output}/diagnostics.json`,JSON.stringify(diagnostics,null,2));try{await browser?.close();}finally{server?.kill('SIGTERM');}}

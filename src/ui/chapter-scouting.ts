@@ -1,5 +1,6 @@
 import { encounterForAge, type WaveIntent } from '../game/encounters.ts';
-import type { Phase } from '../game/types.ts';
+import type { Phase, BattleStats } from '../game/types.ts';
+import { battleStats } from '../game/statistics.ts';
 import { chapterPresentation } from './chapter-presentation.ts';
 
 export interface ChapterScouting {
@@ -49,9 +50,29 @@ const voices:readonly (readonly [string,string])[]=[
  ['The hill watch says: “Tea first. Heroics after the kettle.”','The hill watch says: “The kettle is patient. So are we.”'],
  ['From the courtyard: “Strange stars. Familiar courage.”','From the courtyard: “The stars can wait. Begin again when you are ready.”'],
 ];
+export type VillageMoment='ordinary'|'freeze'|'meteor'|'company';
+/** Sanitized attempt evidence only; no random chatter or persistent completion. */
+export function villageMoment(stats?:Readonly<BattleStats>):VillageMoment {
+ const attempt=battleStats(stats);
+ if(attempt.maxFreezeTargets>=3)return 'freeze';
+ if(attempt.meteorKills>=3)return 'meteor';
+ if(attempt.deployedByKind.every(count=>count>=1))return 'company';
+ return 'ordinary';
+}
+const reactions:readonly (readonly [string,string,string])[]=[
+ ['Even the soup went quiet for that Freeze. Briefly.','A Meteor! I said warm the supper, not the sky.','Three troop roles. At last, someone brought a plan with the spoons.'],
+ ['That Freeze gave the olives a moment to think. They declined.','The Meteor startled the olives. A rare achievement.','A whole company! The olives insist they supervised.'],
+ ['A group held still. Could you try that on the tide?','A Meteor at the quay. The fish have opinions.','Three roles on watch. Even the gulls waited their turn.'],
+ ['A gathering frozen still. The lanterns kept their warm manners.','A Meteor! I cannot put that much light in a lantern.','Three roles working together. A well-trimmed wick of an army.'],
+ ['That Freeze bought a quiet moment. Tea almost happened.','A Meteor! The kettle feels rather ordinary now.','A proper company. We will need the larger kettle.'],
+ ['A group paused under strange stars. A familiar clever trick.','A Meteor among strange stars. We noticed that one.','Three roles in the courtyard. Familiar teamwork, strange hats.'],
+];
 /** Authored fictional dialogue only; no resident simulation or economic effect. */
-export function villageVoice(chapter:number,phase:Phase):string {
+export function villageVoice(chapter:number,phase:Phase,stats?:Readonly<BattleStats>):string {
  if(phase!=='won'&&phase!=='lost')return '';
  const index=Number.isInteger(chapter)&&chapter>=0&&chapter<voices.length?chapter:0;
- return voices[index][phase==='won'?0:1];
+ const ordinary=voices[index][phase==='won'?0:1],moment=villageMoment(stats);
+ if(moment==='ordinary')return ordinary;
+ const line=reactions[index][moment==='freeze'?0:moment==='meteor'?1:2];
+ return `${ordinary.split('“')[0]}“${line}”`;
 }

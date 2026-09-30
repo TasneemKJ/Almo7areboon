@@ -9,7 +9,7 @@ import { defaultProfile, decodeSave, SAVE_KEY, BACKUP_KEY } from '../src/game/sa
 import { createMastery } from '../src/game/mastery.ts';
 import { reviewPrestige } from './capture-prestige-review.mjs';
 import { reviewScouting } from './capture-scouting-review.mjs';
-import { villageVoice } from '../src/ui/chapter-scouting.ts';
+import { villageVoice, villageMoment } from '../src/ui/chapter-scouting.ts';
 import { ERAS } from '../src/game/data.ts';
 
 const output = 'artifacts/browser-review/mastery', origin = 'http://127.0.0.1:4176';
@@ -106,7 +106,15 @@ async function result(page, won = true) {
   await page.getByRole('heading', { name: won ? 'VICTORY!' : 'REGROUP', exact: true }).waitFor();
   if(await page.locator('#app').getAttribute('data-save-session')==='active') {
     const profile=await saved(page);
-    assert.equal(await page.locator('.village-voice').innerText(),villageVoice(profile.enemyAge,won?'won':'lost'));
+    const receipt=profile.pendingVictory,voice=page.locator('.village-voice');
+    if(won){
+      const stats=receipt?.settlement==='mastery-v1'?receipt.stats:undefined;
+      assert.equal(await voice.innerText(),villageVoice(profile.enemyAge,'won',stats));
+      assert.equal(await voice.getAttribute('data-village-moment'),villageMoment(stats));
+    }else{
+      assert.ok((await voice.innerText()).startsWith(villageVoice(profile.enemyAge,'lost').split('“')[0]),'loss keeps the actual opponent speaker');
+      assert.ok(['ordinary','freeze','meteor','company'].includes(await voice.getAttribute('data-village-moment')));
+    }
   }
   assert.equal(await page.locator('.result-dialog [data-command="close"]').count(), 0, 'results have explicit routes, no generic dismissal');
   if (won && await page.locator('#app').getAttribute('data-save-session') === 'active') {
