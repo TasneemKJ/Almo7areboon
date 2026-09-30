@@ -5,7 +5,7 @@ import './ui/material-language.css';
 import './ui/combat-focus.css';
 import './ui/era-glow.css';
 import { Game } from './game/simulation.ts';
-import { ERAS, foodRate, unlockCost, QUESTS } from './game/data.ts';
+import { ERAS, foodRate, unlockCost, QUESTS, dailyReward, localDay } from './game/data.ts';
 import { loadProfileWithStatus, saveProfile, MAX_SAVE_CHARS } from './game/save.ts';
 import { exportBackup, importBackup, restoreBackup } from './game/backup.ts';
 import type { Action, GameEvent, GamePort, Profile, Skill, UnitKind } from './game/types.ts';
@@ -135,7 +135,7 @@ function update(force=false){
     button.title=used?'Used this battle':skill==='meteor'?'Strike all active enemies':skill==='freeze'?'Freeze enemies for 7 seconds':'Gain up to 10 food';
   });
   const notification=$('quests').querySelector<HTMLElement>('.notification');
-  if(notification)notification.hidden=!QUESTS.some(q=>p[q.stat]>=q.target&&!p.claimed.includes(q.id));
+  if(notification)notification.hidden=!(dailyReward(p,localDay()).available||QUESTS.some(q=>p[q.stat]>=q.target&&!p.claimed.includes(q.id)));
   if((s.phase==='won'||s.phase==='lost')&&resultShown!==s.phase){resultShown=s.phase;showResult();}
   if(s.phase==='ready'||s.phase==='running')resultShown='';
   if(now-lastSave>5000)persist();
@@ -191,9 +191,15 @@ function showSettings(){
   <details class="help-box"><summary>How to play</summary><p>Tap Battle, collect food and deploy troops. Your army fights automatically.</p><p>Keep ranged troops behind a melee or heavy front line. Spend earned coins on food production and new troops.</p><p>Battle victories unlock opponents. Evolution upgrades your own army but resets coins, upgrades and battle unlocks.</p><small>1–3 troops · Q / W / E skills · Space pause · Escape closes menus.</small></details>
   <p class="save-note">${persistenceBlocked?'A newer save was found. It is protected from overwrite; this session is temporary.':savedWarning?'Saving is unavailable. Export a backup before closing.':'Progress saves on this browser. Export a backup to keep a separate copy.'}</p>`);
 }
+function dailyRow(p:Profile){
+  const day=localDay(),reward=dailyReward(p,day);
+  const label=reward.available?`Daily reward · day ${reward.streak}`:`Daily reward claimed · day ${p.dailyStreak}`;
+  const hint=reward.available?'Come back every day to raise the reward.':'Return tomorrow to keep your streak going.';
+  return `<div class="quest-row"><div><h3>${label}</h3><small>${hint}</small></div><button class="buy-button" data-daily="${day}" aria-label="${reward.available?`Claim ${reward.gems} gems`:'Claimed today'}" ${reward.available?'':'disabled'}>${reward.available?icon('gem')+reward.gems:'✓'}</button></div>`;
+}
 function showQuests(){
   const p=game.profile;
-  showModal('quests',`<span class="eyebrow">EARN YOUR GLORY</span><h2 id="dialog-title">Quests</h2><p>Complete milestones to earn gems for cards.</p><div class="quest-list">${QUESTS.map(q=>{const count=p[q.stat],done=count>=q.target,claimed=p.claimed.includes(q.id);return `<div class="quest-row"><div><h3>${q.title}</h3><div class="quest-meter"><i style="width:${Math.min(100,count/q.target*100)}%"></i></div><small>${Math.min(count,q.target)} / ${q.target}</small></div><button class="buy-button" data-claim="${q.id}" aria-label="${claimed?'Claimed':`Claim ${q.reward} gems for ${q.title}`}" ${!done||claimed?'disabled':''}>${claimed?'✓':icon('gem')+q.reward}</button></div>`;}).join('')}</div>`);
+  showModal('quests',`<span class="eyebrow">EARN YOUR GLORY</span><h2 id="dialog-title">Quests</h2><p>Complete milestones to earn gems for cards.</p><div class="quest-list">${dailyRow(p)}${QUESTS.map(q=>{const count=p[q.stat],done=count>=q.target,claimed=p.claimed.includes(q.id);return `<div class="quest-row"><div><h3>${q.title}</h3><div class="quest-meter"><i style="width:${Math.min(100,count/q.target*100)}%"></i></div><small>${Math.min(count,q.target)} / ${q.target}</small></div><button class="buy-button" data-claim="${q.id}" aria-label="${claimed?'Claimed':`Claim ${q.reward} gems for ${q.title}`}" ${!done||claimed?'disabled':''}>${claimed?'✓':icon('gem')+q.reward}</button></div>`;}).join('')}</div>`);
 }
 function exportSave(){
   try{
@@ -211,6 +217,7 @@ lifetime.listen<MouseEvent>(root,'click',e=>{
   if(button.dataset.tab){switchTab(button.dataset.tab);return;}
   if(button.dataset.unit!==undefined){const kind=Number(button.dataset.unit) as UnitKind;if(!game.profile.unlocked[kind]){if(action({type:'unlock',kind}))toast(`${unitPresentationName(game.profile.age,kind)} unlocked!`);}else action({type:'spawn',kind});return;}
   if(button.dataset.skill){action({type:'skill',skill:button.dataset.skill as Skill});return;}
+  if(button.dataset.daily){if(action({type:'daily',day:Number(button.dataset.daily)}))showQuests();return;}
   if(button.dataset.claim){if(action({type:'claim',id:button.dataset.claim}))showQuests();return;}
   if(button.dataset.battle!==undefined){if(action({type:'select-battle',battle:Number(button.dataset.battle)}))closeModal();return;}
   if(button.dataset.pack!==undefined){
