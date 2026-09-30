@@ -62,27 +62,35 @@ async function session(viewport,forced=false){
 async function teaching(){
  const context=await browser.newContext({viewport:{width:320,height:568},reducedMotion:'reduce'});
  context.setDefaultTimeout(45000);
+ let page;
  try{
   const source=await context.newPage();await source.route(`${origin}/__setup`,route=>route.fulfill({contentType:'text/html',body:'<!doctype html><title>Save setup</title>'}));await source.goto(`${origin}/__setup`);
-  const profile=defaultProfile();Object.assign(profile,{wins:1,sound:false,motion:'reduced',speed:1});
+  // Prepared UI fixture: three food upgrades widen the real quiet interval across native click timing.
+  // The unchanged default-army quiet-gap regression remains in skill-teaching.test.ts.
+  const profile=defaultProfile();Object.assign(profile,{wins:1,foodLevel:3,sound:false,motion:'reduced',speed:1});
   await source.evaluate(({profile,primary,backup})=>{localStorage.setItem(primary,JSON.stringify(profile));localStorage.setItem(backup,JSON.stringify(profile));},{profile,primary:SAVE_KEY,backup:BACKUP_KEY});
-  const page=await context.newPage();page.on('pageerror',error=>diagnostics.pageErrors.push(error.message));page.on('response',r=>{if(r.url().includes('/art/')&&!r.ok())diagnostics.assetFailures.push(`${r.status()} ${r.url()}`);});
+  page=await context.newPage();page.on('pageerror',error=>diagnostics.pageErrors.push(error.message));page.on('response',r=>{if(r.url().includes('/art/')&&!r.ok())diagnostics.assetFailures.push(`${r.status()} ${r.url()}`);});
   await page.goto(origin,{waitUntil:'networkidle'});await page.waitForFunction(()=>document.querySelector('#app')?.dataset.saveSession==='active');
   await page.locator('[data-command="start"]').click();
   for(let i=0;i<3;i++)await page.locator('[data-unit="0"]').click();
+  const freeze=page.locator('[data-skill="freeze"]'),meteor=page.locator('[data-skill="meteor"]');
+  await page.waitForFunction(()=>/Try a skill:.*Freeze.*Meteor/.test(document.querySelector('#deploy-hint')?.textContent??'')&&Number(document.querySelector('[data-skill="freeze"] small')?.textContent)>0);
+  await page.locator('[data-command="pause"]').click();
+  assert.ok(Number(await freeze.locator('small').innerText())>0);await capture(page,'teaching-live-targets-320');
+  await page.locator('[data-command="pause"]').click();
   await page.waitForFunction(()=>/^Try a skill: Food Drop\./.test(document.querySelector('#deploy-hint')?.textContent??'')&&document.querySelector('[data-skill="freeze"] small')?.textContent==='0');
   const emptyHint=await page.locator('#deploy-hint').innerText();
   await page.screenshot({path:`${output}/teaching-empty-hint-320.png`});
   await page.locator('[data-command="pause"]').click();
-  const freeze=page.locator('[data-skill="freeze"]'),meteor=page.locator('[data-skill="meteor"]');
   assert.equal(await freeze.locator('small').innerText(),'0');assert.equal(await meteor.isDisabled(),true);
   await capture(page,'teaching-empty-gap-320');
   await page.locator('[data-command="pause"]').click();
-  await page.waitForFunction(()=>/Try a skill:.*Freeze.*Meteor/.test(document.querySelector('#deploy-hint')?.textContent??'')&&Number(document.querySelector('[data-skill="freeze"] small')?.textContent)>0);
-  await page.locator('[data-command="pause"]').click();
-  assert.ok(Number(await freeze.locator('small').innerText())>0);await capture(page,'teaching-live-targets-320');
-  diagnostics.cases.push({name:'target-aware-teaching-320',status:'passed',emptyHint,emptyGap:true,liveTargets:true});
- }catch(error){diagnostics.cases.push({name:'target-aware-teaching-320',status:'failed',error:error.stack});throw error;}
+  diagnostics.cases.push({name:'target-aware-teaching-320',status:'passed',fixture:{wins:1,foodLevel:3},emptyHint,emptyGap:true,liveTargets:true});
+ }catch(error){
+  const lastUi=await page?.evaluate(()=>({phase:document.querySelector('#world')?.dataset.phase,hint:document.querySelector('#deploy-hint')?.textContent,wave:document.querySelector('#wave-label')?.textContent,freeze:document.querySelector('[data-skill="freeze"] small')?.textContent})).catch(()=>null);
+  diagnostics.cases.push({name:'target-aware-teaching-320',status:'failed',error:error.stack,lastUi});
+  await page?.screenshot({path:`${output}/teaching-failure-320.png`}).catch(()=>{});throw error;
+ }
  finally{await context.close();}
 }
 try{
