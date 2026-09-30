@@ -8,6 +8,21 @@ export const TROOP_SPECIALTIES = [
   {name:'Sweep',effect:'Hits a second nearby enemy.'},
 ] as const;
 
+/** Shared native name/title: disabled controls explain the current choice. */
+export function troopControlLabel(profile:Readonly<Profile>,kind:UnitKind,status:Readonly<DeploymentStatus>):string {
+  const name=unitPresentationName(profile.age,kind),locked=!profile.unlocked[kind];
+  const cost=locked?unlockCost(kind,profile):ERAS[profile.age].units[kind].cost;
+  const missing=Math.max(0,cost-profile.coins);
+  const hint=locked?missing>0?`Needs ${missing.toLocaleString('en-US')} more ${missing===1?'coin':'coins'}`:'Tap to unlock'
+    :status.reason==='available'?'Tap to deploy'
+    :status.reason==='food'?`Ready in ${Math.ceil(status.waitSeconds)} seconds`
+    :status.reason==='blocked'?'Deployment area full'
+    :status.reason==='capacity'?'Army limit reached'
+    :status.reason==='paused'?'Resume battle to deploy'
+    :status.reason==='ready'?'Start battle to deploy':'Deployment unavailable';
+  return `${locked?'Unlock':'Deploy'} ${name}, ${cost.toLocaleString('en-US')} ${locked?'coins':'food'}. ${hint}. ${TROOP_SPECIALTIES[kind].effect}`;
+}
+
 /** Post-purchase guidance uses authoritative deployment status, without buying or spawning. */
 export function troopUnlockMessage(profile: Readonly<Profile>, phase: Phase, kind: UnitKind, status: Readonly<DeploymentStatus>): string {
   const cost = ERAS[profile.age].units[kind].cost;

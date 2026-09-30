@@ -176,6 +176,19 @@ jobs:
           name: formation-learning-browser-review
           path: artifacts/browser-review/formation-learning/
           retention-days: 7
+      - name: Verify accessible troop timing in production
+        id: troop_status
+        if: steps.tests.outcome == 'success' && steps.build.outcome == 'success'
+        continue-on-error: true
+        timeout-minutes: 5
+        run: node --experimental-strip-types scripts/capture-troop-status-review.mjs
+      - name: Publish troop status evidence
+        if: always() && steps.troop_status.outcome != 'skipped'
+        uses: actions/upload-artifact@v4
+        with:
+          name: troop-status-browser-review
+          path: artifacts/browser-review/troop-status/
+          retention-days: 7
       - name: Verify native skill timing cues
         id: skill_cues
         if: steps.tests.outcome == 'success' && steps.build.outcome == 'success'
@@ -318,5 +331,5 @@ jobs:
         if: always()
         env:
           VERIFICATION_STEPS: ${{ toJSON(steps) }}
-          REQUIRED_CHECKS: tests build audio_browser upgrade_text offline_audio offline_game troop_unlock wave_help legacy_learning food_teaching card_learning formation_learning skill_cues regroup browser layering save_sessions mastery
+          REQUIRED_CHECKS: tests build audio_browser upgrade_text offline_audio offline_game troop_unlock wave_help legacy_learning food_teaching card_learning formation_learning troop_status skill_cues regroup browser layering save_sessions mastery
         run: node scripts/require-verification.mjs
