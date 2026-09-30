@@ -296,6 +296,7 @@ const renderer=mountBattlefield($('battlefield'),port,()=>update(),events,{isVis
 lifetime.add(()=>renderer.destroy());lifetime.add(disposeAudio);
 lifetime.add(()=>{window.clearTimeout(toastTimer);window.cancelAnimationFrame(focusFrame);isolateModal(false);});
 if(import.meta.hot)import.meta.hot.dispose(()=>{persist();lifetime.dispose();});
+if(import.meta.env.PROD&&'serviceWorker' in navigator)window.addEventListener('load',()=>{navigator.serviceWorker.register('./sw.js').catch(()=>{/* Offline play is optional. */});},{once:true});
 if(loaded.status==='recovered')toast('Recovered your progress from the backup save.');
 else if(persistenceBlocked)toast('A newer save is protected. This session will not overwrite it.');
 else if(loaded.status==='corrupt')toast('The stored save could not be recovered. A new game has started.');
