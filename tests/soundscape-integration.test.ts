@@ -64,7 +64,7 @@ test('settings and existing pause lifecycle are wired to the ambience gate (sour
 });
 test('a gesture attempts to resume an interrupted context instead of silently abandoning it',()=>{
  audio.disposeAudio();const previous=Object.getOwnPropertyDescriptor(globalThis,'AudioContext');let resumes=0;
- class Context{state='interrupted';currentTime=0;destination={};resume(){resumes++;return Promise.resolve();}close(){return Promise.resolve();}}
+ class Context{state='interrupted';currentTime=0;destination={};createGain(){return {gain:{setValueAtTime(){}},connect(){},disconnect(){}};}resume(){resumes++;return Promise.resolve();}close(){return Promise.resolve();}}
  Object.defineProperty(globalThis,'AudioContext',{configurable:true,value:Context});
  try{audio.unlockAudio(true);assert.equal(resumes,1);}finally{audio.disposeAudio();if(previous)Object.defineProperty(globalThis,'AudioContext',previous);else delete (globalThis as Record<string,unknown>).AudioContext;}
 });

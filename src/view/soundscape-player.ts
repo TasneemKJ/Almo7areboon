@@ -11,6 +11,7 @@ interface Voice {owner:AudioContext;source:AudioBufferSourceNode;gain:GainNode;f
 /** One live voice, at most one 60ms retiring fade, and only the current scene buffer. */
 export class SoundscapePlayer {
  private owner?:AudioContext;
+ private output?:AudioNode;
  private cached?:{age:number;buffer:AudioBuffer};
  private active?:Voice;
  private retiring?:Voice;
@@ -28,8 +29,9 @@ export class SoundscapePlayer {
  constructor(synthesize:(age:number)=>SoundscapePCM|Promise<SoundscapePCM>=synthesizeSoundscape,budget?:AccentBudget){this.synthesize=synthesize;this.budget=budget;}
  retry():void {this.failedAge=undefined;}
  cancelPending():void {this.request++;this.pendingAge=undefined;this.clearAccents();}
- update(context:AudioContext|undefined,input:number,audible:boolean,mood:SoundscapeMood=calm):void {
-  if(this.owner!==context){this.dispose();this.owner=context;}
+ update(context:AudioContext|undefined,input:number,audible:boolean,mood:SoundscapeMood=calm,output?:AudioNode):void {
+  const destination=output??context?.destination;
+  if(this.owner!==context||this.output!==destination){this.dispose();this.owner=context;this.output=destination;}
   const age=soundscapeAge(input),mix=normalized(mood);this.wanted={age,audible,mood:mix};
   if(!context||context.state!=='running'||!audible){this.clearAccents();this.serial=mix.alarmSerial;this.audible=false;this.retire(context?.state==='running');return;}
   const continuing=this.audible&&this.active?.age===age;
@@ -63,7 +65,7 @@ export class SoundscapePlayer {
    source=context.createBufferSource();gain=context.createGain();
    source.buffer=this.cached.buffer;source.loop=true;
    if(typeof context.createBiquadFilter==='function'){filter=context.createBiquadFilter();filter.type='lowpass';filter.Q.setValueAtTime(.7,context.currentTime);source.connect(filter);filter.connect(gain);}else source.connect(gain);
-   gain.connect(context.destination);
+   gain.connect(this.output??context.destination);
    const now=context.currentTime,mix=this.wanted.mood.alarmMix,volume=.35-.13*mix,cutoff=5000-3300*mix;
    const voice:Voice={owner:context,source,gain,filter,mix,volume:{from:0,to:volume,at:now,end:now+.6},cutoff:{from:cutoff,to:cutoff,at:now,end:now},age,stopped:false,closed:false};source.onended=()=>this.release(voice);
    gain.gain.setValueAtTime(0,now);gain.gain.linearRampToValueAtTime(volume,now+.6);filter?.frequency.setValueAtTime(cutoff,now);
@@ -123,7 +125,7 @@ export class SoundscapePlayer {
    source=context.createOscillator();gain=context.createGain();source.type=pulse?'sine':'triangle';
    source.frequency.setValueAtTime(pulse?55:180,now);source.frequency.exponentialRampToValueAtTime(pulse?50:80,now+duration);
    gain.gain.setValueAtTime(pulse?.012:.015,now);gain.gain.exponentialRampToValueAtTime(.0001,now+duration);
-   source.connect(gain);gain.connect(context.destination);accent={owner:context,source,gain,end:now+duration,closed:false};
+   source.connect(gain);gain.connect(this.output??context.destination);accent={owner:context,source,gain,end:now+duration,closed:false};
    const owned=accent;source.onended=()=>this.releaseAccent(owned);this.accents.add(accent);source.start(now);source.stop(now+duration);
   }catch{
    if(accent)this.releaseAccent(accent);else{try{source?.disconnect();gain?.disconnect();}catch{/* Optional audio. */}this.budget?.release();}
@@ -141,6 +143,6 @@ export class SoundscapePlayer {
  dispose():void {
   this.cancelPending();this.wanted={age:0,audible:false,mood:calm};this.audible=false;this.serial=0;this.lastKnock=-Infinity;this.lastPulse=0;
   if(this.active)this.release(this.active);if(this.retiring)this.release(this.retiring);
-  this.owner=undefined;this.cached=undefined;this.failedAge=undefined;
+  this.owner=undefined;this.output=undefined;this.cached=undefined;this.failedAge=undefined;
  }
 }

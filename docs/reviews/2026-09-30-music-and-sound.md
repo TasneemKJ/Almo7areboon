@@ -84,3 +84,24 @@ This establishes integrated source/Node/build evidence. Native browser gates, re
 No local Chromium launch was attempted: the coordinator already established SIGTRAP before page creation. Consequently no actual waveform peak/RMS values or WAV artifacts are claimed from this workspace. The native command above must pass in actual CI, yielding seventeen isolated WAVs plus the crowded WAV and measured JSON. An unavailable local native runner is not a waived or passed gate.
 
 Listening not performed; combat distinction and masking unverified. Auditory acceptance not established. Numeric/node tests do not establish perceived loudness, timbral appeal, repetition fatigue or device behavior. Headphone and phone-speaker listening remains outstanding.
+
+## Task 2 source checkpoint: score, preferences and buses
+
+Checkpoint starts at `7af715391a9e280593447ffe1cc8b1157874900d`; root owns its commit and review. The previous Task 1 native gate subsequently passed in CI run `36658477032`: seventeen isolated production cues plus crowded reference, no page errors. This supersedes the historical outstanding native-offline statement above for Task 1 only. Device listening remains unperformed.
+
+Before changing composition, the extended exporter captured the old generator at that exact checkpoint. `node --experimental-strip-types scripts/export-soundscape-review.mjs artifacts/audio-review/before` exited 0. Six chapter metrics contain source and preview-mix peak/RMS, 20 ms seam-adjacent differences including wrap, complete static mix values and exact 3,072,000-byte payloads. Twelve WAVs contain the 24-second loops and 72-second production-sample concatenations. The exporter-only diff and log are retained in the task workspace.
+
+`CHAPTER_SCORES` now contains the six approved original phrase schedules with unchanged roots, seeds and non-water gains. Each preserves the relative opening contour 0/3/2, bounded note counts and an exposed rest of at least four seconds. The existing deterministic generator consumes each note's position/register/decay while retaining its noise, stereo offsets, delays, endpoint taper and production PCM contract. No mood-driven regeneration or additional worker/cache was added.
+
+Audio preferences use the separate exact JSON `{version:1,effects,atmosphere}` in `almo7areboon.audio.mix.v1`. Fields normalize independently to finite clamped five-point percentages, defaulting to 100. Storage property/read/write errors remain optional. Two persistent gain buses initialize to latest intent only after an enabled gesture; effects and village beds/accents route to their respective buses. Retargeting holds the interpolated current gain and ramps over 50 ms. Mood gain/filter targets and shared transient budgets remain unchanged. Zero effects rejects new cue allocations; atmosphere zero silences its bus while preserving normal lifecycle ownership. The optional player output preserves old callers and releases sources on context/output replacement. UI controls and native browser acceptance are not implemented in this checkpoint.
+
+Fresh evidence:
+
+- Measurement test: absent module RED → GREEN 1/1; independent float energy, mix and seam computation.
+- Authored score tests: absent score export RED → GREEN 6/6 with PCM bounds and all prior deterministic/rate checks.
+- Preference/bus tests: absent public level behavior RED → GREEN 23/23 with village budget/mood regressions.
+- Full suite: `npm test` exit 0, **498 passed**, zero failures/skips. The earlier single failure was an interrupted-context double missing the newly required native gain constructor; adding that constructor retained its resume assertion. Focused audio/preferences/village/integration rerun after TypeScript narrowing correction: **29 passed**.
+- `npm run build` exit 0; `node --experimental-strip-types scripts/verify-soundscape-worker.mjs` exit 0, “Built worker matches source PCM for 6 chapters.” Existing chunk warning remains.
+- `node --experimental-strip-types scripts/export-soundscape-review.mjs artifacts/audio-review/after --baseline artifacts/audio-review/before/metrics.json` exit 0. All six source and preview-mix RMS changes are negative (−1.663 to −0.203 dB); no >3 dB rise flag. Source peaks range .05019–.07261 and maximum seam-adjacent differences .00001799–.00008550. These are numerical observations, not auditory judgments.
+
+Remaining Task 2 work: stable guarded settings controls; pending-generation/output replacement/failure race coverage; native production-page UI and lifecycle runner; native offline bus-integrated rerun and required CI/browser gates after root integrates parent fixes. Local Chromium remains unavailable; no launch or workaround attempted. Auditory acceptance not established: three consecutive loops for all six chapters on headphones and phone speaker, and live quiet→alarm→recovery combat in First Fires, Harbor and Courtyards, remain unverified.
