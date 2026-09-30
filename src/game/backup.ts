@@ -14,7 +14,8 @@ export function exportBackup(profile: Profile, createdAt = new Date()): string {
 export function importBackup(text: string): BackupImport {
   if (typeof text !== 'string' || text.length > MAX_SAVE_CHARS) return { ok: false, error: 'Backup is too large. Choose an Almo7areboon JSON backup under 100 KB.' };
   try {
-    const input: unknown = JSON.parse(text);
+    // Editors on Windows can save JSON with a byte-order mark, which JSON.parse rejects.
+    const input: unknown = JSON.parse(text.replace(/^\uFEFF/, ''));
     if (!input || typeof input !== 'object' || Array.isArray(input)) return { ok: false, error: 'This file does not contain a game save.' };
     const envelope = input as Record<string, unknown>;
     let candidate: unknown = envelope;

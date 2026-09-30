@@ -86,7 +86,7 @@ function persist():boolean{
 function syncPause(){
   game.state.paused=pauseReason({phase:game.state.phase,manual:manualPaused,tab:activeTab,modal,hidden:document.hidden})!==null;
   syncVillagePresentation();
-  updateSoundscape(game.profile.age,ambienceAllowed({sound:game.profile.sound,atmosphere:atmosphereEnabled,paused:game.state.paused,phase:game.state.phase,tab:activeTab,modal,hidden:document.hidden}));
+  updateSoundscape(game.profile.age,ambienceAllowed({sound:game.profile.sound,atmosphere:atmosphereEnabled,paused:game.state.paused,phase:game.state.phase,tab:activeTab,modal,hidden:document.hidden}),villagePresentation!.mood);
 }
 function syncVillagePresentation(dt=0,batch:readonly GameEvent[]=[]){
   villagePresentation=advanceVillagePresentation(villagePresentation,game.state,game.profile.age,dt,batch,document.hidden||activeTab!=='battle'||modal!==null);

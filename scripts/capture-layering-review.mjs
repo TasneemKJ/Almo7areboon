@@ -14,6 +14,50 @@ server.stderr.on('data', chunk => { serverLog += chunk; });
 let browser;
 const reports = [];
 const failures = [];
+function assertVillage(diagnostic, fixture) {
+  const v=diagnostic.village;assert.ok(v,'actual village diagnostics required');
+  assert.deepEqual(v.light,{width:64,height:64});assert.equal(v.softLight,false);
+  assert.equal(v.decodedBytes,41_989_912,'actual decoded source dimensions stay within the 42 MB budget');
+  assert.equal(v.textures.filter(key=>key==='village-light').length,1);
+  assert.deepEqual(v.pools,{lights:4,stars:0,clouds:0,mist:0});
+  assert.ok(v.skyIndex<v.ambience.paintIndex&&v.ambience.paintIndex<v.shadows.paintIndex&&v.shadows.paintIndex<v.halos.paintIndex,'village ink below combat shadows/halos');
+  const visibleLamps=v.lamps.filter(lamp=>lamp.visible);assert.equal(visibleLamps.length,v.plate.lamps.length);
+  const {placement,visibleSource,hudSourceBounds}=v.viewport,s=placement.scale*v.viewport.cssWorldScale;
+  const inverse=([x,y])=>[(x-placement.x)/placement.scale,(y-placement.y)/placement.scale];
+  const inside=([x,y],[l,t,r,b],pad=1e-5)=>x>=l-pad&&x<=r+pad&&y>=t-pad&&y<=b+pad;
+  const inPane=(point,pane)=>pane.every((a,i)=>{const b=pane[(i+1)%pane.length];return (b.x-a.x)*(point[1]-a.y)-(b.y-a.y)*(point[0]-a.x)>=-1e-5;});
+  for(const [index,lamp] of visibleLamps.entries()) {
+    const [x,y,rx,ry]=v.plate.lamps[index];
+    assert.ok(Math.abs(lamp.x-(placement.x+x*placement.scale))<1e-5&&Math.abs(lamp.y-(placement.y+y*placement.scale))<1e-5,'real lamp remains on painted anchor');
+    assert.ok(Math.abs(lamp.width-2*rx*placement.scale)<1e-5&&Math.abs(lamp.height-2*ry*placement.scale)<1e-5);
+    assert.equal(lamp.tint,diagnostic.age===5&&index>=2?0x8edfc9:0xffd08a);
+    assert.ok(lamp.paintIndex>v.ambience.paintIndex&&lamp.paintIndex<v.shadows.paintIndex);
+  }
+  const bird=[];const occupied=new Set();
+  for(const polygon of v.paths.fills) {
+    const points=polygon.points.map(inverse);
+    const window=v.plate.windows.find(room=>points.every(point=>inside(point,room.bounds)));
+    if(window) {
+      assert.ok(window.panes.some(pane=>points.every(point=>inPane(point,pane))),'actual complete polygon clips inside one framing-safe pane');
+      occupied.add(window.id);
+    } else {
+      assert.ok(points.every(point=>inside(point,v.plate.sky)&&inside(point,visibleSource)),'actual bird stays in roof-free visible sky');bird.push(...points);
+    }
+  }
+  assert.ok(occupied.size<=2);assert.ok(v.paths.strokes.length<=3);
+  if(v.mood.time===2||v.mood.time===5)assert.ok(occupied.size>0,'actual quiet occupants or alarm pane darkness must be drawn');
+  assert.equal(v.paths.strokes.length,diagnostic.age===2?3:0,'only Harbor draws its three registered reflections');
+  for(const stroke of v.paths.strokes)assert.ok(diagnostic.age===2&&stroke.points.map(inverse).every(point=>inside(point,[480,473,591,526])),'actual water remains in open harbor rectangle');
+  if(bird.length) {
+    assert.ok(fixture.reduced!==true&&fixture.crop!==220&&fixture.mood==='quiet','motion/crop/alarm gate suppresses inadmissible flight');
+    const xs=bird.map(p=>p[0]),ys=bird.map(p=>p[1]),bounds=[Math.min(...xs),Math.min(...ys),Math.max(...xs),Math.max(...ys)];
+    assert.ok((bounds[2]-bounds[0])*s>=8,'actual rendered full bird is readable');
+    for(const hud of hudSourceBounds){const pad=4/s;assert.ok(bounds[2]<=hud[0]-pad+1e-5||bounds[0]>=hud[2]+pad-1e-5||bounds[3]<=hud[1]-pad+1e-5||bounds[1]>=hud[3]+pad-1e-5,'actual bird clears padded HUD');}
+  }
+  if(fixture.mood==='quiet'&&!fixture.reduced&&v.viewport.skyPath&&[10+diagnostic.age*.7,13+diagnostic.age*.7].includes(v.mood.time))assert.ok(bird.length>0,'scheduled flight must actually paint when its measured path is safe');
+  if(fixture.reduced||fixture.mood==='alarmed'||fixture.crop===220)assert.equal(bird.length,0);
+  for(const troop of diagnostic.images.filter(image=>image.texture.startsWith('army-')))assert.ok(troop.paintIndex>v.ambience.paintIndex&&visibleLamps.every(lamp=>troop.paintIndex>lamp.paintIndex),'actual crossing troops remain in front of village life');
+}
 try {
   let ready = false;
   for (let attempt = 0; attempt < 80; attempt++) {
@@ -36,15 +80,24 @@ try {
   for (const age of [0, 1, 3, 4, 5]) cases.push({ age, health: 25, lane: 0, effects: 'none', troops: 0 });
   for (const effects of ['attack', 'dust']) cases.push({ age: 3, health: 25, lane: 0, effects });
 
+  // Keep all 39 original layering cases, then exercise the actual village draw
+  // path at mobile widths. These snapshots never advance combat simulation.
+  for(const age of [0,1,2,3,4,5])for(const mood of ['quiet','alarmed','recovering'])cases.push({village:1,age,mood,width:390,health:70,lane:1,effects:'none'});
+  for(const age of [0,1,2,4])for(const mood of ['quiet','alarmed','recovering'])cases.push({village:1,age,mood,width:320,health:70,lane:1,effects:'none'});
+  for(const age of [0,1,2,3,4,5])for(const mood of ['quiet','alarmed','recovering'])cases.push({village:1,age,mood,width:390,reduced:true,health:70,lane:1,effects:'none'});
+  for(const age of [0,1,2,4])cases.push({village:1,age,mood:'quiet',width:320,crop:220,health:70,lane:1,effects:'none'});
+
   for (const fixture of cases) {
     const query = new URLSearchParams(Object.entries(fixture).map(([key, value]) => [key, String(value)]));
-    const name = `age-${fixture.age}-enemy-${fixture.enemyAge ?? fixture.age}-hp-${fixture.health}-lane-${fixture.lane}-${fixture.effects}${fixture.troops === 0 ? '-bases' : ''}`;
+    const name = `age-${fixture.age}-enemy-${fixture.enemyAge ?? fixture.age}-hp-${fixture.health}-lane-${fixture.lane}-${fixture.effects}${fixture.troops === 0 ? '-bases' : ''}${fixture.village?`-village-${fixture.mood}-${fixture.width}${fixture.reduced?'-reduced':''}${fixture.crop?'-short':''}`:''}`;
     const page = await context.newPage();
     const errors = [], assetFailures = [];
     page.on('pageerror', error => errors.push(error.message));
     page.on('response', response => { if (response.url().includes('/art/storybook/') && !response.ok()) assetFailures.push(`${response.status()} ${response.url()}`); });
     let diagnostic;
     try {
+      if(fixture.village)await page.setViewportSize({width:fixture.width,height:Math.max(400,(fixture.crop??430)+110)});
+      await page.emulateMedia({reducedMotion:fixture.reduced?'reduce':'no-preference'});
       await page.goto(`${origin}/tests/fixtures/layering.html?${query}`, { waitUntil: 'networkidle' });
       await page.waitForSelector('body[data-ready="true"]', { timeout: 30000 });
       await page.screenshot({ path: `${output}/${name}.png` });
@@ -52,7 +105,7 @@ try {
       assert.deepEqual(errors, [], 'renderer must not raise page errors');
       assert.deepEqual(assetFailures, [], 'all painted assets must load');
       assert.equal(await page.locator('body').getAttribute('data-fallback'), null, 'fixture must use loaded art');
-      assert.deepEqual(diagnostic.canvas, { width: 900, height: 860 }, 'renderer maintains 2x density');
+      assert.deepEqual(diagnostic.canvas, { width: (fixture.width??450)*2, height: fixture.village?Math.round((fixture.crop??430)*fixture.width/450)*2:860 }, 'renderer maintains 2x density');
       assert.equal(diagnostic.state.time, 0, 'fixture cannot advance gameplay');
       const bases = diagnostic.images.filter(image => image.texture.startsWith('base-')).sort((a, b) => a.x - b.x);
       assert.equal(bases.length, 2, 'both base images render');
@@ -73,6 +126,26 @@ try {
         const effects = diagnostic.groundEffects[fixture.lane];
         assert.ok(effects?.commandCount > 8, 'source attack/dust events must paint a ground effect');
         for (const base of bases) assert.equal(effects.paintIndex > base.paintIndex, fixture.lane > 0, 'source attacks and foot dust follow their lane behind/in front of buildings');
+      }
+      if(fixture.village) {
+        assertVillage(diagnostic,fixture);
+        const second=await page.evaluate(()=>window.layeringReview.setClock(5));assertVillage(second,fixture);
+        await page.screenshot({path:`${output}/${name}-time-5.png`});
+        assert.equal(second.village.objects,diagnostic.village.objects,'no frame creates scene objects');
+        if(fixture.reduced){assert.deepEqual(second.village.paths,diagnostic.village.paths);assert.deepEqual(second.village.lamps,diagnostic.village.lamps,'reduced atmosphere remains still');}
+        if(fixture.mood==='quiet'&&!fixture.reduced) {
+          const flightTime=10+fixture.age*.7;
+          for(const time of [flightTime,flightTime+3]){const flight=await page.evaluate(time=>window.layeringReview.setClock(time),time);assertVillage(flight,fixture);await page.screenshot({path:`${output}/${name}-flight-${time.toFixed(1)}.png`});}
+          const crossing=await page.evaluate(()=>window.layeringReview.crossing(500));assertVillage(crossing,fixture);await page.screenshot({path:`${output}/${name}-combat-crossing.png`});
+        }
+        if(fixture.width===390&&fixture.mood==='quiet'&&!fixture.reduced){
+          const baseline=await page.evaluate(()=>window.layeringReview.inspect());const samples=[];
+          for(let time=0;time<=180;time+=3){const frame=await page.evaluate(time=>window.layeringReview.setClock(time),time);assertVillage(frame,fixture);assert.equal(frame.village.objects,baseline.village.objects);assert.deepEqual(frame.village.textures,baseline.village.textures);samples.push({time,objects:frame.village.objects,commands:frame.village.ambience.commandCount,lamps:frame.village.lamps.filter(lamp=>lamp.visible).length});}
+          diagnostic.village.runtimeSamples=samples;
+          // Actual same-scene chapter swaps must reuse its four lights/texture.
+          for(let age=0;age<6;age++){const frame=await page.evaluate(age=>window.layeringReview.chapter(age),age);assertVillage(frame,{...fixture,age});assert.equal(frame.village.objects,baseline.village.objects);assert.deepEqual(frame.village.textures,baseline.village.textures);}
+        }
+        diagnostic.village.timePair=second.village;
       }
       reports.push({ name, status: 'passed', diagnostic });
     } catch (error) {
