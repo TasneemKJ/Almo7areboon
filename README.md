@@ -60,6 +60,8 @@ An unfinished battle reloads ready while preserving already earned coins. An una
 - `src/main.ts`: input, screen navigation and lifecycle integration.
 - `tests/`: simulation, progression, persistence, components, audio failures and explicit source/CSS contracts.
 
+`npm run review:monkey` (against a running preview) starts the game on seven damaged or missing saves and then feeds it random taps and keys, failing on any uncaught page error; set `CHROMIUM_PATH` to reuse an installed Chromium.
+
 GitHub Actions runs tests and the production build with read-only repository permissions. The `almo7areboon-web-build` artifact is published only when both checks succeed; this is a downloadable artifact, not a deployment.
 
 ## Fidelity and limits
@@ -67,3 +69,5 @@ GitHub Actions runs tests and the production build with read-only repository per
 Food-to-troop combat, melee/ranged/heavy choices, six eras with 18 appearances, evolution, upgrades, cards and skills are recreated. Original hidden tuning is not available: era rewards, later-age balance and some card curves remain provisional. Heroes, runes, dungeons, events, full timeline content, ads, purchases and backend services are not included. Phaser's vendor bundle still produces a size warning; low-end device performance is unmeasured.
 
 Reference: [We Are Warriors! on Google Play](https://play.google.com/store/apps/details?id=com.vjsjlqvlmp.wearewarriors&hl=en_GB).
+
+Known accessibility limits: every font size is fixed in pixels, so the game does not follow a browser or system text-size setting. A trial that converted all 119 sizes to `rem` kept the layout intact at the default size but, at 125% and above, squeezed the upgrade row labels out of their fixed-height row, so that change was not shipped; it needs the HUD rows to become flexible first. Rotating the device resizes the battlefield correctly, but landscape shows a 480px column that scrolls vertically; the installed app is locked to portrait. Reduced motion and forced-colours modes are honoured.
