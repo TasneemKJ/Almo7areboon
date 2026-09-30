@@ -154,6 +154,19 @@ test('conflict discovered by guarded persistence after evolution retains recover
  c.session.save=()=>{c.session.status='conflict';c.sessionReady=false;c.modal='session';h.dialogs.push('session');return {ok:false};};
  h.click('confirm-evolve');assert.equal(c.modal,'session');assert.deepEqual(h.dialogs,['evolve','session']);assert.equal(c.game.profile.age,1);
 });
+test('actual evolution with real SaveSession quota preserves warning and old bytes, then permits recovered-save feedback',async()=>{
+ const h=harness(),c=h.context,p=defaultProfile();p.coins=ERAS[0].evolveCost;c.game=new Game(p);
+ const values=new Map([[SAVE_KEY,JSON.stringify(p)],[BACKUP_KEY,JSON.stringify(p)]]);let failWrites=false;const messages:string[]=[];c.toast=(s:string)=>messages.push(s);
+ const session=createSaveSession({storage:{getItem:key=>values.get(key)??null,setItem:(key,value)=>{if(failWrites&&key===SAVE_KEY)throw Error('quota');values.set(key,value);}},locks:{request:async(name,_options,callback)=>callback({name})},onStatus:c.sessionPresentation});c.session=session;
+ try{
+  await session.acquire();c.sessionReady=true;const old=[values.get(SAVE_KEY),values.get(BACKUP_KEY)];h.click('evolve');failWrites=true;h.click('confirm-evolve');
+  assert.equal(c.game.profile.age,1);assert.equal(c.game.profile.coins,0);assert.deepEqual([values.get(SAVE_KEY),values.get(BACKUP_KEY)],old);assert.equal(c.savedWarning,true);
+  assert.deepEqual(messages,['Progress could not be saved. Export a backup from Settings before closing this tab.']);
+  failWrites=false;assert.equal(c.persist(),true);assert.equal(c.savedWarning,false);assert.equal(JSON.parse(values.get(SAVE_KEY)!).age,1);assert.equal(values.get(BACKUP_KEY),old[0],'first successful retry retains the previous valid profile as backup');
+  assert.equal(c.persist(),true);assert.equal(values.get(SAVE_KEY),values.get(BACKUP_KEY),'subsequent unchanged save advances the backup to the recovered profile');
+  c.game.profile.coins=ERAS[1].evolveCost;c.game.profile.enemyAge=1;c.game.profile.furthestBattle=1;h.click('evolve');h.click('confirm-evolve');assert.equal(c.game.profile.age,2);assert.match(messages.at(-1)!,/^Entering Harbor Watch\./);
+ }finally{session.dispose();}
+});
 for(const legacy of [false,true])for(const escape of [false,true])test(`actual terminal ${legacy?'legacy':'settled'} ${escape?'Escape':'Return'} dispatches ready then picker without payout`,()=>{
  const h=settledHarness(5,1000,legacy),c=h.context,before=structuredClone(c.game.profile);
  if(escape)c.api.dismissModal();else h.click('return-chapters');
