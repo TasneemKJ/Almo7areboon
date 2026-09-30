@@ -252,10 +252,15 @@ function showModal(id:string,html:string){
 }
 function closeModal(refresh=true){
   if(!playable()||!session.check())return;
+  // Loading a saved game also ends with a close; with no dialog open there is no focus to give back, and moving it to the
+  // Battle tab button would make Space press that button instead of starting the battle.
+  const restoreFocus=modal!==null;
   modal=null;modalVersion++;pendingImport=null;window.cancelAnimationFrame(focusFrame);
   $('modal-layer').hidden=true;$('modal-layer').innerHTML='';isolateModal(false);syncPause();
-  if(focusBefore?.isConnected&&!focusBefore.hasAttribute('disabled'))focusBefore.focus();
-  else root!.querySelector<HTMLElement>(`[data-tab="${activeTab}"]`)?.focus();
+  if(restoreFocus){
+    if(focusBefore?.isConnected&&!focusBefore.hasAttribute('disabled'))focusBefore.focus();
+    else root!.querySelector<HTMLElement>(`[data-tab="${activeTab}"]`)?.focus();
+  }
   if(refresh)update(true);
 }
 function showResult(){

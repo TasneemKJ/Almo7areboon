@@ -67,6 +67,28 @@ for (const [name, raw] of Object.entries(saves)) {
   await flow.close();
 }
 
+// Keyboard-only start: nothing may hold focus after loading, so Space starts the battle and a second Space pauses it.
+{
+  const keys = await browser.newPage({viewport: {width: 390, height: 844}});
+  const keyErrors = [];
+  keys.on('pageerror', error => keyErrors.push(error.message));
+  await keys.addInitScript(([key]) => localStorage.removeItem(key), [SAVE]);
+  await keys.goto(url);
+  await keys.waitForSelector('#age-title', {timeout: 10000});
+  await keys.waitForTimeout(1200);
+  const focusOnButton = await keys.evaluate(() => document.activeElement instanceof HTMLButtonElement);
+  await keys.keyboard.press('Space');
+  await keys.waitForTimeout(500);
+  const started = (await keys.getAttribute('#world', 'data-phase')) === 'running';
+  await keys.keyboard.press('Space');
+  await keys.waitForTimeout(300);
+  const paused = (await keys.getAttribute('#pause', 'aria-pressed')) === 'true';
+  const good = !focusOnButton && started && paused && keyErrors.length === 0;
+  console.log(`${good ? 'ok  ' : 'FAIL'} keyboard start: focusOnButton=${focusOnButton} started=${started} pausedBySecondSpace=${paused}${keyErrors.length ? ` errors=${keyErrors.join(' | ')}` : ''}`);
+  if (!good) failures.push('keyboard start');
+  await keys.close();
+}
+
 // Backup round trip and a save that stops working mid-session: the warning appears, the session keeps running, and an
 // exported backup restores the exact progress in a fresh browser profile.
 {
