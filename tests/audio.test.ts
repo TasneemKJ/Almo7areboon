@@ -33,10 +33,11 @@ test('every game event has its own cue, so a defeated unit does not sound like a
  Object.defineProperty(globalThis,'AudioContext',{configurable:true,value:RunningAudio});
  try{
   audio.unlockAudio(true);
-  for(const kind of ['spawn','hit','death','coin','upgrade','win','lose','skill','evolve','skill-freeze','skill-meteor','skill-food']){current=kind;audio.sound(kind,true);}
+  for(const kind of ['spawn','hit','death','coin','upgrade','win','lose','skill','evolve','skill-freeze','skill-meteor','skill-food','summon']){current=kind;audio.sound(kind,true);}
   const fromSpawn=Object.entries(starts).filter(([,value])=>value===starts.spawn).map(([kind])=>kind);
   assert.deepEqual(fromSpawn,['spawn'],'no other event may reuse the spawn cue');
-  assert.equal(Object.keys(starts).length,12);
+  assert.equal(Object.keys(starts).length,13);
+  assert.notEqual(starts.summon,starts.upgrade,'a summon does not reuse the plain upgrade cue');
   assert.equal(new Set(['skill-freeze','skill-meteor','skill-food'].map(kind=>starts[kind])).size,3,'each skill has a distinct cue');
  }finally{audio.disposeAudio();if(previous)Object.defineProperty(globalThis,'AudioContext',previous);else delete (globalThis as Record<string,unknown>).AudioContext;}
 });
@@ -48,4 +49,10 @@ test('a skill event is cued by the skill that was cast',()=>{
  assert.equal(audio.cueFor({type:'skill'}),'skill');
  assert.equal(audio.cueFor({type:'skill',skill:'nonsense'}),'skill');
  assert.equal(audio.cueFor({type:'hit'}),'hit');
+});
+
+test('a card summon is cued differently from a plain upgrade',()=>{
+ assert.equal(audio.cueFor({type:'upgrade',cardIndices:[3,9]}),'summon');
+ assert.equal(audio.cueFor({type:'upgrade',cardIndices:[]}),'upgrade');
+ assert.equal(audio.cueFor({type:'upgrade'}),'upgrade');
 });
