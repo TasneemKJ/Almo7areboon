@@ -62,3 +62,11 @@ test('the page paints the game colour and a loading or no-script message before 
  assert.match(html,/<div id="app"><p class="boot" role="status">Loading/);
  assert.match(html,/<noscript>.*needs JavaScript/);
 });
+
+test('install and sharing metadata: manifest identity, maskable icon and link preview tags',()=>{
+ const manifest=JSON.parse(readFileSync(new URL('../public/manifest.webmanifest',import.meta.url),'utf8')),html=readFileSync(new URL('../index.html',import.meta.url),'utf8');
+ for(const key of ['id','scope','lang','description','categories'])assert.ok(manifest[key],key);
+ assert.ok(manifest.icons.some((icon:{purpose:string;sizes:string})=>icon.purpose==='maskable'&&icon.sizes==='512x512'));
+ for(const icon of manifest.icons)assert.equal(existsSync(new URL(`../public/${icon.src.replace('./','')}`,import.meta.url)),true,icon.src);
+ for(const tag of ['og:title','og:description','og:type','twitter:card','apple-mobile-web-app-title'])assert.ok(html.includes(tag),tag);
+});
