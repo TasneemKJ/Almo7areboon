@@ -124,6 +124,8 @@ test('defeat advice points at the most useful affordable improvement',()=>{
  const p=defaultProfile();
  assert.match(defeatAdvice(p),/Deploy earlier/);
  p.coins=unlockCost(1,p);assert.match(defeatAdvice(p),/ranged troop/);
+ p.coins=unlockCost(2,p);assert.match(defeatAdvice(p),/heavy troop/,'heavy is recommended first once affordable');
+ p.unlocked=[true,false,true];p.coins=unlockCost(1,p);assert.match(defeatAdvice(p),/ranged troop/);
  p.unlocked=[true,true,false];p.coins=unlockCost(2,p);assert.match(defeatAdvice(p),/heavy troop/);
  p.unlocked=[true,true,true];p.coins=foodUpgradeCost(p);assert.match(defeatAdvice(p),/food production/);
  const g=new Game(p);g.state.phase='lost';
