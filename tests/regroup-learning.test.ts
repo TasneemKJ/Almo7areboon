@@ -5,8 +5,27 @@ import { defaultProfile } from '../src/game/save.ts';
 import { ERAS, foodUpgradeCost, unlockCost } from '../src/game/data.ts';
 import { resultsHtml } from '../src/ui/results-screen.ts';
 import { regroupLearningHtml } from '../src/ui/regroup-learning.ts';
+import { battleSelectionHtml } from '../src/ui/progression-screen.ts';
 
 function loss(){const g=new Game();assert.equal(g.dispatch({type:'start'}),true);assert.equal(g.dispatch({type:'retreat'}),true);return g;}
+test('defeat offers a voluntary earlier-chapter route only when an earlier opponent is unlocked',()=>{
+ const g=loss();assert.doesNotMatch(resultsHtml(g.profile,g.state),/data-command="regroup-chapters"/);
+ Object.assign(g.profile,{age:4,enemyAge:5,furthestBattle:5});const before=JSON.stringify([g.profile,g.state]);
+ assert.match(resultsHtml(g.profile,g.state),/data-command="regroup-chapters"[^>]*>Choose an earlier chapter/);
+ assert.equal(JSON.stringify([g.profile,g.state]),before);
+ g.state.phase='won';assert.doesNotMatch(resultsHtml(g.profile,g.state),/data-command="regroup-chapters"/);
+});
+test('recovery picker suggests a reachable earlier opponent without selecting it or promising a win',()=>{
+ for(const [age,enemyAge,furthestBattle,suggested] of [[4,5,5,4],[1,4,4,1],[5,2,2,1],[0,1,1,0]]){
+  const p=defaultProfile();Object.assign(p,{age,enemyAge,furthestBattle});const g=new Game(p),before=JSON.stringify(g.profile);
+  const html=battleSelectionHtml(g.profile,g.state,true);
+  const row=html.match(new RegExp(`<button[^>]*data-battle="${suggested}"[^>]*>[\\s\\S]*?<\\/button>`))?.[0]??'';
+  assert.match(row,/SUGGESTED REPLAY/);assert.doesNotMatch(row,/disabled/);
+  assert.match(html,/wins are not guaranteed/i);assert.equal(JSON.stringify(g.profile),before);
+  assert.doesNotMatch(battleSelectionHtml(g.profile,g.state),/SUGGESTED REPLAY/);
+  g.dispatch({type:'start'});assert.doesNotMatch(battleSelectionHtml(g.profile,g.state,true),/SUGGESTED REPLAY/);
+ }
+});
 test('real loss adds optional preparation teaching without writing progress or buying anything',()=>{
  const g=loss(),before=JSON.stringify([g.profile,g.state]);
  const html=resultsHtml(g.profile,g.state);

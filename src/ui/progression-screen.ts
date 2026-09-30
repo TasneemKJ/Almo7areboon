@@ -6,13 +6,16 @@ import { advanceStatus } from '../game/mastery.ts';
 import { masteryMarksHtml } from './mastery-presentation.ts';
 import { timelineResetText } from './results-screen.ts';
 import { chapterScoutingHtml, battleTeachingHtml } from './chapter-scouting.ts';
+import { earlierChapter } from './regroup-learning.ts';
 
-export function battleSelectionHtml(profile: Profile, state: BattleState): string {
+export function battleSelectionHtml(profile: Profile, state: BattleState, recovery=false): string {
   const advance=advanceStatus(profile,state);
+  const suggested=recovery&&state.phase==='ready'?earlierChapter(profile):null;
+  const guidance=suggested===null?'':`<p id="replay-guidance">Try ${chapterPresentation(suggested).title}: an earlier unlocked opponent no later than your army. Wins are not guaranteed; try a lower chapter if needed. Choosing buys nothing. Start Battle when you are ready.</p>`;
   const footer=state.phase==='ready'&&advance.allowed?`<footer class="chapter-continuation">${advance.target==='timeline'?`<p>${timelineResetText}</p>`:''}<button class="big-button green" data-command="next">${advance.target==='timeline'?'Next Timeline':`Continue to ${chapterPresentation(advance.nextBattle!).title}`} ${icon('arrow')}</button></footer>`:'';
-  return `<span class="eyebrow">TIMELINE ${profile.timeline}</span><h2 id="dialog-title">Choose a battle</h2><p>${state.phase === 'ready' ? 'Replay unlocked opponents for coins. Later opponents pay far more, so replay the highest one you can beat. Your army and upgrades stay with you.' : 'Finish this battle before choosing another opponent.'}</p>${chapterScoutingHtml(profile.enemyAge)}${battleTeachingHtml()}<div class="battle-options">${ERAS.map((_, index) => {
+  return `<span class="eyebrow">TIMELINE ${profile.timeline}</span><h2 id="dialog-title">Choose a battle</h2><p>${state.phase === 'ready' ? 'Replay unlocked opponents for coins. Later opponents pay far more, so replay the highest one you can beat. Your army and upgrades stay with you.' : 'Finish this battle before choosing another opponent.'}</p>${guidance}${chapterScoutingHtml(profile.enemyAge)}${battleTeachingHtml()}<div class="battle-options">${ERAS.map((_, index) => {
     const locked = index > profile.furthestBattle, current = index === profile.enemyAge;
-    return `<button class="battle-option" data-battle="${index}" aria-current="${current}" ${locked || state.phase !== 'ready' ? 'disabled' : ''}><img class="battle-preview" alt="" loading="lazy" src="${chapterLandscape(index)}"/><strong>${index + 1}</strong><span>${chapterPresentation(index).title}<small>${locked ? 'LOCKED' : `${current ? 'CURRENT BATTLE' : 'AVAILABLE TO REPLAY'} · COINS ×${eraEconomyScale(index).toLocaleString('en-US')}`}</small>${masteryMarksHtml(profile,index)}</span>${icon(locked ? 'lock' : current ? 'flag' : 'arrow')}</button>`;
+    return `<button class="battle-option" data-battle="${index}" data-command="choose-battle-${index}" aria-current="${current}" ${index===suggested?'aria-describedby="replay-guidance"':''} ${locked || state.phase !== 'ready' ? 'disabled' : ''}><img class="battle-preview" alt="" loading="lazy" src="${chapterLandscape(index)}"/><strong>${index + 1}</strong><span>${chapterPresentation(index).title}<small>${locked ? 'LOCKED' : `${current ? 'CURRENT BATTLE' : index===suggested?'SUGGESTED REPLAY':'AVAILABLE TO REPLAY'} · COINS ×${eraEconomyScale(index).toLocaleString('en-US')}`}</small>${masteryMarksHtml(profile,index)}</span>${icon(locked ? 'lock' : current ? 'flag' : 'arrow')}</button>`;
   }).join('')}</div>${footer}`;
 }
 
