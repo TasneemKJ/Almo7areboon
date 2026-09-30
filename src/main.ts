@@ -406,7 +406,7 @@ lifetime.listen<MouseEvent>(root,'click',e=>{
       if(ok){
         evolutionFromResult=false;
         if(returnToResult)showResult();else{closeModal(false);switchTab('battle');}
-        toast(`Entering ${chapterPresentation(game.profile.age).title}.`);
+        if(!savedWarning)toast(`Entering ${chapterPresentation(game.profile.age).title}.`);
       }else{
         const html=evolutionDialogHtml(game.profile,game.state);
         if(html)showModal('evolve',html);else dismissModal();

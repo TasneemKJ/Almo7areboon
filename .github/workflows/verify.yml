@@ -160,6 +160,15 @@ jobs:
         if: steps.tests.outcome == 'success' && steps.build.outcome == 'success'
         continue-on-error: true
         run: npm run review:save-sessions
+      - name: Publish focused evolution-save evidence
+        if: always() && steps.save_sessions.outcome != 'skipped'
+        uses: actions/upload-artifact@v4
+        with:
+          name: evolution-save-warning-browser-review
+          path: |
+            artifacts/save-session-review/diagnostics.json
+            artifacts/save-session-review/evolution*.png
+          retention-days: 7
       - name: Verify mastery progression and guarded result routes
         id: mastery
         if: steps.tests.outcome == 'success' && steps.build.outcome == 'success'

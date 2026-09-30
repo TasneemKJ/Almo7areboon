@@ -57,7 +57,7 @@ async function blocked(page, title = 'Game open in another tab') {
 async function exported(page) { const download = page.waitForEvent('download'); await page.locator('[data-command="export"]').click(); const result = await download; return JSON.parse(readFileSync(await result.path(), 'utf8')).profile; }
 async function summon(page) { await page.getByRole('button', { name: 'Cards', exact: true }).click(); await page.getByRole('button', { name: 'Summon 1 card for 100 gems', exact: true }).click(); await page.getByRole('heading', { name: '1 card summoned', exact: true }).waitFor(); }
 async function scenario(name, callback, options = {}) {
-  const context = await browser.newContext({ viewport: { width: 320, height: 640 }, reducedMotion: 'reduce', acceptDownloads: true });
+  const context = await browser.newContext({ viewport: options.viewport ?? { width: 320, height: 640 }, reducedMotion: 'reduce', acceptDownloads: true });
   context.setDefaultTimeout(12000);
   try { if (options.noLocks) await context.addInitScript(() => Object.defineProperty(navigator, 'locks', { value: undefined })); await callback(context); diagnostics.cases.push({ name, status: 'passed' }); }
   catch (error) { diagnostics.cases.push({ name, status: 'failed', error: error.stack }); for (const [index, page] of context.pages().entries()) await page.screenshot({ path: `${output}/${name}-failure-${index}.png` }).catch(() => {}); }
@@ -206,8 +206,31 @@ try {
     assert.equal((await exported(a)).gems, 0);
     await a.close(); assert.deepEqual(await bytes(source), initial);
   });
+  for (const viewport of [{ width: 320, height: 568 }, { width: 390, height: 844 }]) for (const quota of [false, true]) {
+    await scenario(`evolution-${quota ? 'quota' : 'saved'}-${viewport.width}`, async context => {
+      const source = await setup(context, fixture({ coins: 2500 })), a = await open(context); await active(a);
+      await a.getByRole('button', { name: 'Evolution', exact: true }).click();
+      await a.locator('[data-command="evolve"]').click();
+      await a.locator('[data-command="confirm-evolve"]').waitFor();
+      // Settled baseline before a real primary-write failure; no invented victory.
+      await source.waitForFunction(({ primary, backup }) => { const p = localStorage.getItem(primary); return p && p === localStorage.getItem(backup); }, { primary, backup });
+      const old = await bytes(source);
+      if (quota) await a.evaluate(key => { const original = Storage.prototype.setItem; Storage.prototype.setItem = function(name, value) { if (name === key) throw new DOMException('Quota exceeded', 'QuotaExceededError'); return original.call(this, name, value); }; }, primary);
+      await a.locator('[data-command="confirm-evolve"]').click();
+      await a.waitForFunction(() => document.querySelector('#age-title')?.textContent === 'Olive Terraces');
+      const expected = quota ? 'Progress could not be saved. Export a backup from Settings before closing this tab.' : 'Entering Olive Terraces.';
+      await a.waitForFunction(expected => { const node = document.querySelector('#toast'); return node?.textContent === expected && Number(getComputedStyle(node).opacity) >= .95; }, expected);
+      const bounds = await a.locator('#toast').evaluate(node => { const r = node.getBoundingClientRect(); return { left: r.left, right: r.right, top: r.top, bottom: r.bottom, width: innerWidth, height: innerHeight, overflow: node.scrollWidth > node.clientWidth + 1 }; });
+      assert.ok(bounds.left >= 0 && bounds.right <= bounds.width && bounds.top >= 0 && bounds.bottom <= bounds.height && !bounds.overflow, JSON.stringify(bounds));
+      await a.screenshot({ path: `${output}/evolution-${quota ? 'quota' : 'saved'}-${viewport.width}.png` });
+      if (quota) assert.deepEqual(await bytes(source), old, 'quota failure preserves both stored profiles');
+      else { const saved = JSON.parse((await bytes(source))[0]); assert.equal(saved.age, 1); assert.equal(saved.coins, 0); }
+      await a.locator('[data-command="settings"]').click(); const memory = await exported(a); assert.equal(memory.age, 1); assert.equal(memory.coins, 0);
+      if (quota) assert.deepEqual(await bytes(source), old, 'export does not turn quota failure into a save');
+    }, { viewport });
+  }
   assert.deepEqual(diagnostics.pageErrors, [], 'no application page errors');
-  assert.ok(diagnostics.cases.length === 12 && diagnostics.cases.every(result => result.status === 'passed'), JSON.stringify(diagnostics.cases.filter(result => result.status !== 'passed'), null, 2));
+  assert.ok(diagnostics.cases.length === 16 && diagnostics.cases.every(result => result.status === 'passed'), JSON.stringify(diagnostics.cases.filter(result => result.status !== 'passed'), null, 2));
   diagnostics.status = 'passed'; console.log(`Save-session review passed: ${diagnostics.cases.length} cases`);
 } catch (error) { diagnostics.error = error.stack; process.exitCode = 1; console.error(error); }
 finally { diagnostics.serverLog = log; writeFileSync(`${output}/diagnostics.json`, JSON.stringify(diagnostics, null, 2)); try { await browser?.close(); } finally { server.kill(); } }
