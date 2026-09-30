@@ -12,7 +12,8 @@
     "review:layering": "node scripts/capture-layering-review.mjs",
     "review:monkey": "node scripts/monkey-test.mjs",
     "review:overlap": "node scripts/hud-overlap-check.mjs",
-    "review:contrast": "node scripts/contrast-audit.mjs"
+    "review:contrast": "node scripts/contrast-audit.mjs",
+    "review:clip": "node scripts/text-clip-check.mjs"
   },
   "dependencies": {
     "phaser": "^3.90.0"
