@@ -79,6 +79,14 @@ export class Game implements GamePort {
         if (this.state.phase !== 'ready') return false;
         this.state.phase = 'running';
         return true;
+      case 'retreat':
+        // Some fights stall (long-range defenders against a weak army), and only a reload could end them. Retreating is an ordinary
+        // loss: coins already earned are kept, no seals or rewards are added, and nothing is written to the pending-victory receipt.
+        if (this.state.phase !== 'running') return false;
+        this.state.phase = 'lost';
+        this.state.paused = false;
+        this.events.push({ type: 'lose' });
+        return true;
       case 'pause':
         if (this.state.phase !== 'running') return false;
         this.state.paused = !this.state.paused;

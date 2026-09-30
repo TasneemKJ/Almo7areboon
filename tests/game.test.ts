@@ -479,3 +479,25 @@ test('a quest below its target cannot be claimed and pays nothing', () => {
   assert.equal(game.dispatch({ type: 'claim', id: 'veteran' }), true);
   assert.equal(game.profile.gems, 200);
 });
+
+test('retreat ends a running battle as an ordinary loss and keeps what was earned', () => {
+  const game = new Game();
+  assert.equal(game.dispatch({ type: 'retreat' }), false, 'nothing to retreat from before the battle starts');
+  game.dispatch({ type: 'start' });
+  game.dispatch({ type: 'spawn', kind: 0 });
+  game.state.food = 0;
+  game.profile.coins = 321;
+  const gems = game.profile.gems;
+  assert.equal(game.dispatch({ type: 'retreat' }), true);
+  assert.equal(game.state.phase, 'lost');
+  assert.deepEqual([game.profile.coins, game.profile.gems, game.profile.wins], [321, gems, 0], 'no rewards, coins kept');
+  assert.equal(game.profile.pendingVictory, null);
+  assert.equal(game.dispatch({ type: 'retreat' }), false, 'a finished battle cannot be retreated from again');
+  assert.equal(game.dispatch({ type: 'retry' }), true);
+  assert.equal(game.state.phase, 'ready');
+  const events = new Game();
+  events.dispatch({ type: 'start' });
+  events.drainEvents();
+  events.dispatch({ type: 'retreat' });
+  assert.deepEqual(events.drainEvents().map(event => event.type), ['lose']);
+});

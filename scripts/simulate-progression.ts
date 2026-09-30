@@ -9,7 +9,7 @@ const target = Number(process.argv[2] ?? 12), summon = process.argv[3] !== '0', 
 assert.ok(Number.isInteger(target) && target >= 1 && target <= 1000, 'targetTimeline must be an integer from 1 to 1000');
 assert.ok(Number.isInteger(maxAttempts) && maxAttempts >= 1 && maxAttempts <= 100000, 'maxAttempts must be an integer from 1 to 100000');
 const game = new Game();
-let attempts = 0, wins = 0, losses = 0, streak = 0, maxStreak = 0;
+let attempts = 0, wins = 0, losses = 0, streak = 0, maxStreak = 0, stepDowns = 0, retreats = 0;
 let timedOut: { timeline: number; chapter: number; army: number; seconds: number } | null = null;
 const attemptsByBattle: Record<string, number> = {};
 
@@ -30,6 +30,8 @@ while (attempts < maxAttempts && game.profile.timeline < target) {
   assert.equal(game.dispatch({ type: 'start' }), true, 'every counted attempt must start a new battle');
   attempts++;
   for (let t = 0; game.state.phase === 'running' && t < 400; t += 0.1) {
+    // A stalled fight (nothing can reach the other side) is ended the way a player would: by retreating.
+    if (t >= 240) { game.dispatch({ type: 'retreat' }); retreats++; break; }
     const mine = game.state.units.filter(u => u.side === 'player' && u.hp > 0);
     const foes = game.state.units.filter(u => u.side === 'enemy' && u.hp > 0).length;
     const front = mine.filter(u => u.kind !== 1).length, back = mine.length - front;
@@ -48,6 +50,8 @@ while (attempts < maxAttempts && game.profile.timeline < target) {
   } else if (game.state.phase === 'lost') {
     losses++; streak++; maxStreak = Math.max(maxStreak, streak);
     assert.equal(game.dispatch({ type: 'retry' }), true, 'a recorded loss must retry successfully');
+    // Evolution keeps the chapter frontier, so a stuck player replays the previous chapter for coins and gems, then walks back up.
+    if (streak >= 3 && game.profile.enemyAge > 0 && game.dispatch({ type: 'select-battle', battle: game.profile.enemyAge - 1 })) { stepDowns++; streak = 0; }
   } else {
     assert.equal(game.state.phase, 'running', 'the probe must end with a real result or explicit timeout');
     timedOut = { timeline: p.timeline, chapter: p.enemyAge, army: p.age, seconds: game.state.time };
@@ -56,4 +60,4 @@ while (attempts < maxAttempts && game.profile.timeline < target) {
 }
 const worst = Object.entries(attemptsByBattle).sort((a, b) => b[1] - a[1]).slice(0, 4).map(([k, v]) => `${k}:${v}`).join(' ');
 assert.equal(attempts, wins + losses + (timedOut ? 1 : 0));
-console.log(JSON.stringify({ stopReason: timedOut ? 'battle-timeout' : game.profile.timeline >= target ? 'target-reached' : 'attempt-limit', reachedTimeline: game.profile.timeline, attempts, completedAttempts: wins + losses, wins, losses, timedOut, longestLosingStreak: maxStreak, cards: game.profile.cards.reduce((a, b) => a + b, 0), gemsLeft: game.profile.gems, mostAttempted: worst }));
+console.log(JSON.stringify({ stepDowns, retreats, stopReason: timedOut ? 'battle-timeout' : game.profile.timeline >= target ? 'target-reached' : 'attempt-limit', reachedTimeline: game.profile.timeline, attempts, completedAttempts: wins + losses, wins, losses, timedOut, longestLosingStreak: maxStreak, cards: game.profile.cards.reduce((a, b) => a + b, 0), gemsLeft: game.profile.gems, mostAttempted: worst }));
