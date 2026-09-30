@@ -5,6 +5,7 @@
 import assert from 'node:assert/strict';
 import { existsSync, mkdirSync, writeFileSync } from 'node:fs';
 import { spawn, spawnSync } from 'node:child_process';
+import { stripVTControlCharacters } from 'node:util';
 import { chromium } from 'playwright';
 import { defaultProfile, decodeSave, SAVE_KEY, BACKUP_KEY } from '../src/game/save.ts';
 
@@ -45,7 +46,7 @@ try {
   for (let attempt = 0; attempt < 80; attempt++) {
     if (serverError) throw serverError;
     if (server.exitCode !== null) throw new Error(`Preview exited ${server.exitCode}: ${serverLog}`);
-    try { started = (await fetch(origin, { signal: AbortSignal.timeout(2000) })).ok && serverLog.includes(origin); } catch {}
+    try { started = (await fetch(origin, { signal: AbortSignal.timeout(2000) })).ok && stripVTControlCharacters(serverLog).includes(origin); } catch {}
     if (started) break;
     await new Promise(resolve => setTimeout(resolve, 250));
   }
