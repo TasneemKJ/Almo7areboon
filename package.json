@@ -10,7 +10,8 @@
     "test": "node --experimental-strip-types --test tests/*.test.ts",
     "review:browser": "node scripts/capture-browser-review.mjs",
     "review:layering": "node scripts/capture-layering-review.mjs",
-    "review:save-sessions": "node scripts/verify-save-sessions.mjs"
+    "review:save-sessions": "node scripts/verify-save-sessions.mjs",
+    "review:mastery": "node --experimental-strip-types scripts/capture-mastery-review.mjs"
   },
   "dependencies": {
     "phaser": "^3.90.0"

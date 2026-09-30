@@ -10,8 +10,9 @@ import { evolutionScreenHtml } from '../src/ui/evolution-screen.ts';
 import { battleGuidance } from '../src/ui/battle-hud.ts';
 
 const presentation=()=>import('../src/ui/mastery-presentation.ts');
-function victory(chapter=0) {
+function victory(chapter=0,capped=false) {
  const p=defaultProfile();p.age=5;p.enemyAge=chapter;p.furthestBattle=5;p.foodLevel=12;p.unlocked=[true,true,true];
+ if(capped){p.coins=1e9-3;p.gems=1e7-12;}
  const g=new Game(p);assert.equal(g.dispatch({type:'start'}),true);
  let cycle=0;
  for(let tick=0;tick<36000&&g.state.phase==='running';tick+=6){
@@ -91,4 +92,24 @@ test('explicit result return routes and terminal exit remain guarded while recov
  assert.match(main,/function showResult\(\)\{[\s\S]*?if\(!guardAction\(\)\|\|modal==='session'\)return;/);
  assert.match(main,/case 'confirm-evolve':[\s\S]*?showResult\(\)/);
  assert.match(main,/e\.key==='Escape'[\s\S]*?dismissModal\(\)/);
+});
+
+test('real capped victory labels only credited mastery and keeps paid seals without a deferred claim',()=>{
+ const g=victory(0,true);const receipt=g.profile.pendingVictory!;assert.equal(receipt.settlement,'mastery-v1');if(receipt.settlement!=='mastery-v1')return;
+ assert.equal(receipt.masteryCoins,0);assert.equal(receipt.masteryGems,2);assert.equal(g.state.earned,3);
+ const before=JSON.stringify(g.profile),html=resultsHtml(g.profile,g.state);
+ assert.match(html,/Normal combat: 3 coins/);assert.match(html,/Mastery credited: 0 coins · 2 gems/);assert.match(html,/0 coins · 0 gems remaining/);
+ assert.equal(JSON.stringify(g.profile),before);assert.doesNotMatch(html,/data-command="claim"/);
+});
+test('all third-objective presentation measures use sanitized actual counters and their comparison',async()=>{
+ const {masteryAttemptText}=await presentation();const g=new Game();g.state.phase='lost';g.state.time=81;
+ g.state.stats.deployedByKind=[1,0,2];g.state.stats.skillsCast=2;g.state.stats.maxFreezeTargets=2;g.state.stats.meteorKills=2;g.state.stats.deployed=19;
+ for(const [chapter,expected]of [[0,/1:21.*at most 1:15/],[1,/2 of 3 roles/],[2,/2 skills used.*at most 1/],[3,/2 frozen together.*3 enemies/],[4,/2 meteor defeats.*3 enemies/],[5,/19 deployments.*at most 18/]]as const){g.profile.enemyAge=chapter;assert.match(masteryAttemptText(g.profile,g.state),expected);}
+});
+test('a real first loss at the final timeline cap never claims that the campaign is complete',()=>{
+ const p=defaultProfile();p.age=5;p.enemyAge=5;p.furthestBattle=5;p.timeline=1000;p.mastery.timeline=1000;
+ const g=new Game(p);assert.equal(g.dispatch({type:'start'}),true);
+ for(let tick=0;tick<36000&&g.state.phase==='running';tick++)g.step(1/60);
+ assert.equal(g.state.phase,'lost');assert.equal(g.profile.mastery.chapters[5].earnedMask,0);
+ const html=resultsHtml(g.profile,g.state);assert.match(html,/REGROUP/);assert.match(html,/The final timeline/);assert.doesNotMatch(html,/All 1,000 timelines complete/);assert.match(html,/Return to chapters/);assert.doesNotMatch(html,/data-command="next"/);
 });

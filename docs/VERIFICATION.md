@@ -1,6 +1,22 @@
 # Verification — 2026-09-29
 
-## Fresh local evidence
+## Chapter mastery browser gate — 2026-09-30
+
+`npm run review:mastery` runs `node --experimental-strip-types scripts/capture-mastery-review.mjs` against the built app. The required CI gate uses the existing Playwright Chromium installation and preserves the simulation, build, portrait, layering, and save-session gates. Screenshots and machine-readable seed/action, saved-ledger, modal-layout, runtime-error and verdict evidence are uploaded as `mastery-browser-review` from `artifacts/browser-review/mastery/diagnostics.json` and its sibling PNGs.
+
+Seed victories use the public `Game.dispatch` and fixed-step simulation before browser startup. Historical purchased rosters and holdings are identified as fixtures; no live browser Game is modified and no combat outcome is forced. Legacy fixtures migrate real receipts as schema 2. Browser checks drive real controls and keys at 320×568 and 390×844: evolution return/cancel/close/Escape and confirmation, insufficient funds, rematch losses and ready reload continuation for ordinary/final chapters, older replay, legacy Continue-first, and new/legacy terminal Return to chapters/Escape. Shared-context checks cover stale tabs, foreign saves during result-origin evolution, authoritative receipt reacquisition and explicit temporary advancement with unchanged save keys. The 37 bounded scenarios additionally cover fresh live victories at both sizes, actual clear-only remaining-seal results, refreshed evolution cost/affordability, paused controls, double activation, focus isolation, reduced motion, action visibility, overflow and art/runtime errors.
+
+Local Chromium crashes before a page can open in the current execution environment. No browser replacement or workaround is used. `node --check scripts/capture-mastery-review.mjs` and `git diff --check` passed locally on 2026-09-30. A syntax pass does not establish that the 37 browser scenarios pass. Each scenario has a 210-second budget, natural battle results have a 150-second wait, and the combined workflow has a 30-minute budget. The first complete runtime verdict must come from the required CI gate. Pending CI and uncaptured screenshots remain unverified; later results should be recorded against their exact revision.
+
+## Chapter mastery local evidence — 2026-09-30
+
+On baseline `92f0a03` plus the Task 2 followup, `NODE_OPTIONS='--test-reporter=tap' npm test` passed **442 tests / 0 failures**, with no skips or cancellations; `npm run build`, `node --check scripts/capture-mastery-review.mjs`, and `git diff --check` each exited 0. The build retains the existing Phaser chunk-size warning.
+
+UI RED tests first failed on absent mastery helpers, reward breakdown, rematch/footer routes and guarded result-return wiring; the focused presentation/compatibility suite then passed. Additional tests execute the actual extracted main click/dismiss functions over real-action settled and legacy receipts: cancel/return, evolution confirmation/rejected affordability, refreshed cost, both save-check and save-persistence recovery priority, and terminal Return/Escape. A review regression demonstrated a real first loss at timeline 1000 falsely claiming completion; it now retains Regroup with neutral final-timeline copy unless the selected chapter is won or previously cleared. The focused mastery/main suite passes 27 tests. Pure browser seed helpers were also executed independently: chapter-1 funded victory was 53.30 seconds/mask 7, intentionally missed optional chapter-0 victory 98.72 seconds/mask 1, and terminal historical-roster victory 22.68 seconds/mask 3. These establish lawful seeds, not rendered browser outcomes.
+
+`review:mastery`, `review:browser`, and `review:save-sessions` were not rerun locally because the established Chromium launch crashes before page creation. The new gate is required in CI; runtime, screenshots and layout acceptance remain pending that verdict. No runtime pass is inferred from the syntax, unit or build results above.
+
+## Earlier local evidence
 
 - `npm test`: **82 tests passed, 0 failed**, exit 0.
 - `npm run build`: TypeScript validation and Vite production build passed, exit 0.

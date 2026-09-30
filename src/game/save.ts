@@ -1,6 +1,6 @@
 import { createMastery, normalizeMastery, masteryReward } from './mastery.ts';
 import { battleStats } from './statistics.ts';
-import { CARD_DEFS, QUESTS } from './data.ts';
+import { CARD_DEFS, MAX_DAILY_DAY, QUESTS } from './data.ts';
 import type { Profile } from './types.ts';
 
 export const SAVE_KEY = 'almo7areboon.save.v1';
@@ -74,7 +74,7 @@ function validate(value: unknown): Profile {
     }
   }
   if (Array.isArray(data.claimed)) clean.claimed = QUESTS.filter(quest => (data.claimed as unknown[]).includes(quest.id)).map(quest => quest.id);
-  clean.dailyDay = integer(data.dailyDay, 0, 0, 1e6);
+  clean.dailyDay = integer(data.dailyDay, 0, 0, MAX_DAILY_DAY);
   clean.dailyStreak = clean.dailyDay ? integer(data.dailyStreak, 0, 0, 1e6) : 0;
   if (typeof data.sound === 'boolean') clean.sound = data.sound;
   clean.speed = data.speed === 2 ? 2 : 1;
