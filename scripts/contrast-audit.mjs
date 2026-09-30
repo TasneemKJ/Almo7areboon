@@ -17,15 +17,22 @@ async function audit(label){
   const items=await p.evaluate(()=>{document.querySelectorAll('[data-audit-id]').forEach(e=>e.removeAttribute('data-audit-id'));const out=[];let n=0;document.querySelectorAll('body *').forEach(e=>{
     if(e.closest('[inert]')&&!e.closest('#modal-layer'))return;if(e.closest('[hidden]'))return;if(e.tagName==='CANVAS'||e.closest('svg'))return;
     if(e.disabled||e.closest(':disabled'))return;
+    // Text in a closed <details> is not shown, so there is nothing to measure.
+    const closed=e.closest('details:not([open])');if(closed&&!e.closest('summary'))return;
     const t=[...e.childNodes].filter(x=>x.nodeType===3&&x.textContent.trim()).map(x=>x.textContent.trim()).join(' ');if(!t)return;
     const r=e.getBoundingClientRect();if(r.width<4||r.height<4||r.bottom<0||r.top>innerHeight||r.right<0||r.left>innerWidth)return;
+    // Anything reaching under the bottom bar is only partly visible, so its sample would include the bar.
+    const nav=document.querySelector('.bottom-nav');if(nav&&!e.closest('.bottom-nav')&&!e.closest('#modal-layer')&&r.bottom>nav.getBoundingClientRect().top+1)return;
+    // Dialogs scroll: text cut by the dialog's own edge is only partly visible too.
+    const dlg=e.closest('.dialog');if(dlg){const dr=dlg.getBoundingClientRect();if(r.bottom>dr.bottom-4||r.top<dr.top+4)return;}
     const cs=getComputedStyle(e);if(cs.visibility==='hidden'||+cs.opacity===0)return;
     e.dataset.auditId=String(n);out.push({id:n,text:t.slice(0,24),cls:(e.className&&e.className.baseVal===undefined?e.className:e.tagName),color:cs.color,size:parseFloat(cs.fontSize),weight:+cs.fontWeight,x:Math.max(0,r.left),y:Math.max(0,r.top),w:Math.min(r.width,innerWidth-Math.max(0,r.left)),h:Math.min(r.height,innerHeight-Math.max(0,r.top))});n++;});return out;});
   const bad=[];
   for(const it of items){
-    await p.evaluate(id=>{const e=document.querySelector(`[data-audit-id="${id}"]`);e.dataset.prevStyle=e.getAttribute('style')||'';e.style.setProperty('color','transparent','important');e.style.setProperty('text-shadow','none','important');e.style.setProperty('-webkit-text-stroke','0','important');},it.id);
+    // Hide this element's text and any nested text, icons and images so only the surface behind it is sampled.
+    await p.evaluate(id=>{const style=document.createElement('style');style.id='audit-hide';style.textContent=`[data-audit-id="${id}"],[data-audit-id="${id}"] *{color:transparent!important;text-shadow:none!important;-webkit-text-stroke:0!important}[data-audit-id="${id}"] svg,[data-audit-id="${id}"] img{visibility:hidden!important}`;document.head.append(style);},it.id);
     const png=await p.screenshot({clip:{x:it.x,y:it.y,width:Math.max(1,it.w),height:Math.max(1,it.h)}});
-    await p.evaluate(id=>{const e=document.querySelector(`[data-audit-id="${id}"]`);e.setAttribute('style',e.dataset.prevStyle);},it.id);
+    await p.evaluate(()=>document.getElementById('audit-hide')?.remove());
     const ratio=await p.evaluate(async([b64,color])=>{const img=new Image();img.src='data:image/png;base64,'+b64;await img.decode();const c=document.createElement('canvas');c.width=img.width;c.height=img.height;const g=c.getContext('2d');g.drawImage(img,0,0);const d=g.getImageData(0,0,c.width,c.height).data;
       const lum=(r,g,b)=>[r,g,b].map(v=>{v/=255;return v<=.03928?v/12.92:Math.pow((v+.055)/1.055,2.4)}).reduce((s,v,i)=>s+v*[.2126,.7152,.0722][i],0);
       const m=color.match(/[\d.]+/g).map(Number);const fl=lum(m[0],m[1],m[2]);
