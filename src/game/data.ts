@@ -68,9 +68,12 @@ export function localDay(now: Date = new Date()): number {
   return Math.floor((now.getTime() - now.getTimezoneOffset() * 60000) / 86_400_000);
 }
 
+// Accepted claims must retain the same day when saved and reloaded.
+export const MAX_DAILY_DAY = 1_000_000;
+
 /** Consecutive-day check-in: 30 gems, rising by 10 per day to 90 from day 7. */
 export function dailyReward(profile: Pick<Profile, 'dailyDay' | 'dailyStreak'>, day: number): { available: boolean; streak: number; gems: number } {
-  const available = Number.isInteger(day) && day > profile.dailyDay;
+  const available = Number.isInteger(day) && day <= MAX_DAILY_DAY && day > profile.dailyDay;
   const streak = available && profile.dailyDay > 0 && day === profile.dailyDay + 1 ? profile.dailyStreak + 1 : available ? 1 : profile.dailyStreak;
   return { available, streak, gems: 30 + 10 * Math.min(6, Math.max(0, streak - 1)) };
 }
