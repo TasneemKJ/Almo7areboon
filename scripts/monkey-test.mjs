@@ -83,8 +83,16 @@ for (const [name, raw] of Object.entries(saves)) {
   await keys.keyboard.press('Space');
   await keys.waitForTimeout(300);
   const paused = (await keys.getAttribute('#pause', 'aria-pressed')) === 'true';
-  const good = !focusOnButton && started && paused && keyErrors.length === 0;
-  console.log(`${good ? 'ok  ' : 'FAIL'} keyboard start: focusOnButton=${focusOnButton} started=${started} pausedBySecondSpace=${paused}${keyErrors.length ? ` errors=${keyErrors.join(' | ')}` : ''}`);
+  await keys.keyboard.press('Space');
+  await keys.waitForTimeout(300);
+  // Skill keys: Q casts Freeze and E casts Food Drop, each once per battle.
+  await keys.keyboard.press('q');
+  await keys.keyboard.press('e');
+  await keys.waitForTimeout(300);
+  const usedSkills = await keys.evaluate(() => [...document.querySelectorAll('.skill-circle')].filter(button => button.classList.contains('used')).map(button => button.dataset.skill).sort().join(','));
+  const skillKeys = usedSkills === 'food,freeze';
+  const good = !focusOnButton && started && paused && skillKeys && keyErrors.length === 0;
+  console.log(`${good ? 'ok  ' : 'FAIL'} keyboard start: focusOnButton=${focusOnButton} started=${started} pausedBySecondSpace=${paused} skillKeysUsed=${usedSkills || 'none'}${keyErrors.length ? ` errors=${keyErrors.join(' | ')}` : ''}`);
   if (!good) failures.push('keyboard start');
   await keys.close();
 }
