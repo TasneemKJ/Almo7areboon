@@ -28,11 +28,16 @@ for (const [name, raw] of Object.entries(saves)) {
   }, [SAVE, raw]);
   await page.goto(url);
   const title = await page.waitForSelector('#age-title', {timeout: 10000}).then(el => el.textContent()).catch(() => null);
+  // A save from a newer game version is protected: the game shows a recovery dialog instead of starting, and must
+  // leave the stored value untouched even after the player chooses temporary play.
+  const protectedDialog = await page.locator('button', {hasText: 'PLAY WITHOUT SAVING'}).first().isVisible().catch(() => false);
+  if (protectedDialog) await page.locator('button', {hasText: 'PLAY WITHOUT SAVING'}).first().click();
   await page.click('[data-command=start]').catch(() => {});
   await page.waitForTimeout(500);
   const phase = await page.getAttribute('#world', 'data-phase').catch(() => null);
-  const ok = Boolean(title) && phase === 'running' && errors.length === 0;
-  console.log(`${ok ? 'ok  ' : 'FAIL'} ${name.padEnd(15)} title=${title} phase=${phase}${errors.length ? ` errors=${errors.join(' | ')}` : ''}`);
+  const untouched = !protectedDialog || (await page.evaluate(key => localStorage.getItem(key), SAVE)) === raw;
+  const ok = Boolean(title) && phase === 'running' && errors.length === 0 && untouched && protectedDialog === (name === 'future version');
+  console.log(`${ok ? 'ok  ' : 'FAIL'} ${name.padEnd(15)} title=${title} phase=${phase}${protectedDialog ? ' (protected save, stored value ' + (untouched ? 'untouched' : 'CHANGED') + ')' : ''}${errors.length ? ` errors=${errors.join(' | ')}` : ''}`);
   if (!ok) failures.push(name);
   await page.close();
 }
