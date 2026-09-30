@@ -29,7 +29,7 @@ import { battleGuidance, baseHealthDisplay, compactNumber, waveLabel, waveAccess
 import { battleSelectionHtml, evolutionDialogHtml } from './ui/progression-screen.ts';
 import { createModalIsolation, modalFocusables, nextFocusIndex, isEditingTarget } from './ui/accessibility.ts';
 import { pauseReason } from './ui/pause.ts';
-import { loadAtmosphere, saveAtmosphere, ambienceAllowed, loadAudioMix } from './ui/audio-preferences.ts';
+import { loadAtmosphere, saveAtmosphere, ambienceAllowed, loadAudioMix, normalizeAudioMix, saveAudioMix } from './ui/audio-preferences.ts';
 import { createLifetime } from './ui/lifetime.ts';
 import { textIfChanged, htmlIfChanged } from './ui/dom-state.ts';
 
@@ -387,6 +387,19 @@ lifetime.listen<MouseEvent>(root,'click',e=>{
     }
     case 'close':dismissModal();break;
   }
+});
+lifetime.listen<Event>(root,'input',e=>{
+  const input=e.target;
+  if(!(input instanceof HTMLInputElement)||input.type!=='range'||(input.id!=='effects-volume'&&input.id!=='atmosphere-volume')||modal!=='settings'||!$('modal-layer').contains(input))return;
+  // A same-document foreign save has no storage notification here. Check the
+  // session before changing intent, writing preferences or retargeting buses.
+  if(!guardAction()||modal!=='settings'||!$('modal-layer').contains(input))return;
+  const family=input.id==='effects-volume'?'effects':'atmosphere';
+  audioMix=normalizeAudioMix({...audioMix,[family]:input.valueAsNumber});
+  saveAudioMix(audioMix);updateAudioMix(audioMix);
+  const percentage=`${audioMix[family]}%`;
+  input.value=String(audioMix[family]);input.setAttribute('aria-valuetext',percentage);
+  textIfChanged($(`${input.id}-value`),percentage);
 });
 lifetime.listen<Event>(root,'change',async e=>{
   const input=e.target;if(!(input instanceof HTMLInputElement)||input.id!=='import-save')return;
