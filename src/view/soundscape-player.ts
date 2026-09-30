@@ -73,14 +73,14 @@ export class SoundscapePlayer {
   }catch{
    if(source)source.onended=null;
    try{source?.stop();}catch{/* A source may not have started. */}
-   try{source?.disconnect();gain?.disconnect();filter?.disconnect();}catch{/* Optional audio. */}
+   for(const node of [source,gain,filter])try{node?.disconnect();}catch{/* Try every allocated node. */}
    this.failedAge=age;
   }
  }
  private release(voice:Voice):void {
   if(voice.closed)return;voice.closed=true;voice.source.onended=null;
   if(!voice.stopped){voice.stopped=true;try{voice.source.stop();}catch{/* Already ended. */}}
-  try{voice.source.disconnect();voice.gain.disconnect();voice.filter?.disconnect();}catch{/* Already disconnected. */}
+  for(const node of [voice.source,voice.gain,voice.filter])try{node?.disconnect();}catch{/* Try every owned node. */}
   if(this.active===voice)this.active=undefined;
   if(this.retiring===voice)this.retiring=undefined;
  }
@@ -128,13 +128,13 @@ export class SoundscapePlayer {
    source.connect(gain);gain.connect(this.output??context.destination);accent={owner:context,source,gain,end:now+duration,closed:false};
    const owned=accent;source.onended=()=>this.releaseAccent(owned);this.accents.add(accent);source.start(now);source.stop(now+duration);
   }catch{
-   if(accent)this.releaseAccent(accent);else{try{source?.disconnect();gain?.disconnect();}catch{/* Optional audio. */}this.budget?.release();}
+   if(accent)this.releaseAccent(accent);else{for(const node of [source,gain])try{node?.disconnect();}catch{/* Try every partial node. */}this.budget?.release();}
   }
  }
  private releaseAccent(accent:Accent):void {
   if(accent.closed)return;accent.closed=true;accent.source.onended=null;
   try{accent.source.stop();}catch{/* Already stopped. */}
-  try{accent.source.disconnect();accent.gain.disconnect();}catch{/* Optional audio. */}
+  for(const node of [accent.source,accent.gain])try{node.disconnect();}catch{/* Try both owned nodes. */}
   this.accents.delete(accent);this.budget?.release();
  }
  private clearAccents():void {for(const accent of this.accents)this.releaseAccent(accent);}
