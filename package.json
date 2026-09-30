@@ -6,6 +6,7 @@
   "scripts": {
     "review:save-sessions": "node scripts/verify-save-sessions.mjs",
     "review:mastery": "node --experimental-strip-types scripts/capture-mastery-review.mjs",
+    "review:upgrade-text": "node --experimental-strip-types scripts/capture-upgrade-text-review.mjs",
     "dev": "vite --host 0.0.0.0",
     "build": "tsc --noEmit && vite build",
     "preview": "vite preview --host 0.0.0.0",

@@ -42,7 +42,7 @@ Settings include sound, 1x/2x speed, reduced motion, JSON save export and confir
 
 ## Saves
 
-The storage key remains `almo7areboon.save.v1` for compatibility, but its profile schema is version 2. Six-card prototype saves migrate to the 30-card collection. A separate validated backup can recover a corrupt primary save. Unknown future save versions are protected from overwrite.
+The storage key remains `almo7areboon.save.v1` for compatibility, but its profile schema is version 4. Six-card prototype saves migrate to the 30-card collection. A separate validated backup can recover a corrupt primary save. Unknown future save versions are protected from overwrite.
 
 Only one tab can actively save on HTTPS or localhost using Web Locks. A second tab pauses behind **Game open in another tab**. Close the saving tab, then select **CONTINUE HERE** to load its latest saved progress. Merely hiding the saving tab keeps its ownership. If another client changes either save copy, the current tab pauses and offers **LOAD SAVED PROGRESS**; **EXPORT THIS SESSION** rescues its current in-memory progress before reloading.
 
@@ -70,4 +70,4 @@ Food-to-troop combat, melee/ranged/heavy choices, six eras with 18 appearances, 
 
 Reference: [We Are Warriors! on Google Play](https://play.google.com/store/apps/details?id=com.vjsjlqvlmp.wearewarriors&hl=en_GB).
 
-Known accessibility limits: every font size is fixed in pixels, so the game does not follow a browser or system text-size setting. A trial that converted all 119 sizes to `rem` kept the layout intact at the default size but, at 125% and above, squeezed the upgrade row labels out of their fixed-height row, so that change was not shipped; it needs the HUD rows to become flexible first. Rotating the device resizes the battlefield correctly, but landscape shows a 480px column that scrolls vertically; the installed app is locked to portrait. Reduced motion and forced-colours modes are honoured.
+Known accessibility limits: upgrade labels and prices use relative font sizes with intrinsic wrapping; the focused browser harness covers 100/125/150/200% root-size emulation. Native persistent default-font preference remains unverified, and other game text still uses fixed pixel sizes. Rotating the device resizes the battlefield correctly, but landscape shows a 480px column that scrolls vertically; the installed app is locked to portrait. Reduced motion and forced-colours modes are honoured.

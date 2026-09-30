@@ -7,6 +7,7 @@ import './ui/era-glow.css';
 import './ui/readability.css';
 import { Game } from './game/simulation.ts';
 import { advanceStatus } from './game/mastery.ts';
+import { isLegacyChoice, legacyEffects, prestigePreview } from './game/prestige.ts';
 import { ERAS, foodRate, unlockCost, QUESTS, dailyReward, localDay } from './game/data.ts';
 import { defaultProfile, MAX_SAVE_CHARS, SAVE_KEY, BACKUP_KEY } from './game/save.ts';
 import { createSaveSession } from './game/save-session.ts';
@@ -14,22 +15,23 @@ import type { SaveSessionStatus } from './game/save-session.ts';
 import { saveSessionDialogHtml, temporarySessionNotice } from './ui/save-session-screen.ts';
 import { startOverProfile } from './game/reset.ts';
 import { exportBackup, importBackup, restoreBackupWithSave } from './game/backup.ts';
-import type { Action, GameEvent, GamePort, Profile, Skill, UnitKind } from './game/types.ts';
+import type { Action, GameEvent, GamePort, LegacyChoice, Profile, Skill, UnitKind } from './game/types.ts';
 import { mountBattlefield } from './view/battlefield.ts';
 import {advanceVillagePresentation,type VillagePresentation} from './view/village-mood.ts';
 import { unitPortrait } from './view/unit-illustrations.ts';
 import { chapterPresentation, unitPresentationName } from './ui/chapter-presentation.ts';
 import { evolutionScreenHtml } from './ui/evolution-screen.ts';
 import { icon } from './view/icons.ts';
-import { playCombatEvents, playSummonAudio, stopCombatAudio, unlockAudio, suspendAudio, disposeAudio, updateSoundscape } from './view/audio.ts';
+import { playCombatEvents, playSummonAudio, stopCombatAudio, unlockAudio, suspendAudio, disposeAudio, updateSoundscape, updateAudioMix } from './view/audio.ts';
 import { createArmyUpdater, TROOP_SPECIALTIES } from './ui/army-screen.ts';
 import { cardsScreenHtml, summonedCardsHtml } from './ui/cards-screen.ts';
 import { resultsHtml } from './ui/results-screen.ts';
+import { legacyCurrentHtml, prestigeDetailsHtml, prestigeDialogHtml } from './ui/prestige-presentation.ts';
 import { battleGuidance, baseHealthDisplay, compactNumber, waveLabel, waveAccessibleLabel } from './ui/battle-hud.ts';
 import { battleSelectionHtml, evolutionDialogHtml } from './ui/progression-screen.ts';
 import { createModalIsolation, modalFocusables, nextFocusIndex, isEditingTarget } from './ui/accessibility.ts';
 import { pauseReason } from './ui/pause.ts';
-import { loadAtmosphere, saveAtmosphere, ambienceAllowed } from './ui/audio-preferences.ts';
+import { loadAtmosphere, saveAtmosphere, ambienceAllowed, loadAudioMix, normalizeAudioMix, saveAudioMix } from './ui/audio-preferences.ts';
 import { createLifetime } from './ui/lifetime.ts';
 import { textIfChanged, htmlIfChanged } from './ui/dom-state.ts';
 
@@ -41,10 +43,13 @@ const lifetime=createLifetime();
 let activeTab='battle',modal:string|null=null,manualPaused=false;
 let villagePresentation:VillagePresentation|null=null;
 let atmosphereEnabled=loadAtmosphere();
+let audioMix=loadAudioMix();
+updateAudioMix(audioMix);
 let lastUpdate=0,lastSave=0,resultShown='',lastPhase=game.state.phase,resultDue=0,toastTimer=0,focusFrame=0,modalVersion=0;
 let savedWarning=false,pendingImport:Profile|null=null;
 // Transient modal context only; the saved receipt remains the outcome authority.
 let evolutionFromResult=false;
+let prestigeOrigin:'result'|'battles'|null=null,prestigeDraft:LegacyChoice|null=null,prestigeExpectedTimeline:number|null=null;
 // A native multi-click that starts in a modal must not hit controls it reveals.
 let modalPointerSequence=false;
 let sessionReady=false,pagePresent=true,resumeOwnership=false,acquisitionVersion=0,hasPlayed=false;
@@ -97,7 +102,7 @@ function sessionPresentation(status:SaveSessionStatus){
   const notice=$('session-notice');
   notice.hidden=status!=='starting'&&status!=='temporary';
   textIfChanged(notice,status==='temporary'?temporarySessionNotice:'Opening your saved game…');
-  if(status!=='active'&&status!=='temporary')sessionReady=false;
+  if(status!=='active'&&status!=='temporary'){sessionReady=false;clearPrestigeContext();}
   if(status==='active'||status==='temporary')retriedSession=false;
   const html=saveSessionDialogHtml(status,retriedSession);
   if(html){pendingImport=null;evolutionFromResult=false;showModal('session',html);}
@@ -116,7 +121,7 @@ async function acquireSession(){
     if(lifetime.disposed||version!==acquisitionVersion||!pagePresent)return;
     if(loaded.status==='active'&&loaded.profile){
       game=new Game(loaded.profile);lastPhase=game.state.phase;resultDue=0;hasPlayed=true;sessionReady=true;
-      manualPaused=false;resultShown='';savedWarning=false;pendingImport=null;evolutionFromResult=false;
+      manualPaused=false;resultShown='';savedWarning=false;pendingImport=null;evolutionFromResult=false;clearPrestigeContext();
       closeModal(false);rebuildArmy();syncMotion();switchTab('battle');
       if(loaded.loadStatus==='recovered')toast('Recovered your progress from the backup save.');
       else if(loaded.loadStatus==='corrupt')toast('The stored save could not be recovered. A new game has started.');
@@ -160,7 +165,7 @@ function action(a:Action):boolean{
   if(!guardAction())return false;
   unlockAudio(game.profile.sound);const ok=game.dispatch(a);
   if(ok){
-    persist();syncPause();rebuildArmy();update(true);if(activeTab!=='battle')renderScreen();
+    persist();syncPause();rebuildArmy();update(true);if(activeTab!=='battle')renderScreen(a.type==='select-legacy');
     if(a.type==='summon')playSummonAudio(game.profile.sound&&playable()&&!document.hidden&&!manualPaused&&activeTab==='cards'&&modal===null);
   }
   return ok;
@@ -207,7 +212,9 @@ function update(force=false){
   root!.querySelectorAll<HTMLButtonElement>('[data-skill]').forEach(button=>{
     const skill=button.dataset.skill as Skill,used=s.skillsUsed.includes(skill);
     button.disabled=!game.canUseSkill(skill);button.classList.toggle('used',used);
-    button.title=used?'Used this battle':skill==='meteor'?'Strike all active enemies':skill==='freeze'?'Freeze enemies for 7 seconds':'Gain up to 10 food';
+    const freezeCopy=`Freeze enemies for ${legacyEffects(p.legacy).freezeSeconds} seconds`;
+    button.title=skill==='freeze'?`${freezeCopy}${used?' · used this battle':''}`:used?'Used this battle':skill==='meteor'?'Strike all active enemies':'Gain up to 10 food';
+    if(skill==='freeze')button.setAttribute('aria-label',`${freezeCopy}${used?' · used this battle':''}`);
   });
   const notification=$('quests').querySelector<HTMLElement>('.notification');
   if(notification)notification.hidden=!(dailyReward(p,localDay()).available||QUESTS.some(q=>p[q.stat]>=q.target&&!p.claimed.includes(q.id)));
@@ -226,28 +233,34 @@ function switchTab(tab:string){
   syncPause();renderScreen();update(true);
   if(tab!=='battle')$('secondary-title')?.focus();
 }
-function renderScreen(){
+function renderScreen(legacyOnly=false){
   const p=game.profile;let html='';
   if(activeTab==='evolution'){
+    if(legacyOnly&&$('legacy-current')){
+      htmlIfChanged($('legacy-current'),legacyCurrentHtml(p));
+      $('secondary-screen').querySelectorAll<HTMLInputElement>('input[name="ready-legacy"]').forEach(input=>{input.checked=input.value===p.legacy.selected;});
+      return;
+    }
     html=evolutionScreenHtml(p,game.state);
   }else if(activeTab==='cards'){
     html=cardsScreenHtml(p);
   }else if(activeTab==='skills'){
-    html=`<div class="screen-heading"><span class="eyebrow">TURN THE TIDE</span><h2 id="secondary-title" tabindex="-1">Battle skills</h2><p>The right move can change everything.</p></div><div class="skill-list">${[{id:'freeze',name:'Freeze',tag:'CONTROL',copy:'Freeze every enemy for 7 seconds. Give your army time to strike.',color:'#73bbdb'},{id:'meteor',name:'Meteor',tag:'DAMAGE',copy:'Hit every enemy on the battlefield. Best saved for a big wave.',color:'#de805d'},{id:'food',name:'Food Drop',tag:'SUPPORT',copy:'Gain 10 food instantly. Deploy reinforcements when you need them.',color:'#97bc6a'}].map(s=>`<article class="skill-detail"><div class="skill-art" style="background:${s.color}">${icon(s.id)}</div><div><small>${s.tag}</small><h3>${s.name}</h3><p>${s.copy}</p><span class="skill-rule">ONCE PER BATTLE</span></div></article>`).join('')}</div><div class="skill-note">${icon('battle')}<p>Use the three skill buttons above your army during a battle. Each skill refreshes when a new battle begins.</p></div><button class="big-button green" data-tab="battle">BACK TO BATTLE ${icon('arrow')}</button>`;
+    html=`<div class="screen-heading"><span class="eyebrow">TURN THE TIDE</span><h2 id="secondary-title" tabindex="-1">Battle skills</h2><p>The right move can change everything.</p></div><div class="skill-list">${[{id:'freeze',name:'Freeze',tag:'CONTROL',copy:`Freeze every enemy for ${legacyEffects(p.legacy).freezeSeconds} seconds. Give your army time to strike.`,color:'#73bbdb'},{id:'meteor',name:'Meteor',tag:'DAMAGE',copy:'Hit every enemy on the battlefield. Best saved for a big wave.',color:'#de805d'},{id:'food',name:'Food Drop',tag:'SUPPORT',copy:'Gain 10 food instantly. Deploy reinforcements when you need them.',color:'#97bc6a'}].map(s=>`<article class="skill-detail"><div class="skill-art" style="background:${s.color}">${icon(s.id)}</div><div><small>${s.tag}</small><h3>${s.name}</h3><p>${s.copy}</p><span class="skill-rule">ONCE PER BATTLE</span></div></article>`).join('')}</div><div class="skill-note">${icon('battle')}<p>Use the three skill buttons above your army during a battle. Each skill refreshes when a new battle begins.</p></div><button class="big-button green" data-tab="battle">BACK TO BATTLE ${icon('arrow')}</button>`;
   }
   if(activeTab!=='battle')htmlIfChanged($('secondary-screen'),html);
 }
-function showModal(id:string,html:string){
+function showModal(id:string,html:string,focusCommand?:string){
   if(id!=='session'&&!playable())return;
   const replacing=modal!==null,command=(document.activeElement as HTMLElement|null)?.dataset.command;
   if(!replacing)focusBefore=document.activeElement as HTMLElement;
   modal=id;modalVersion++;const version=modalVersion,layer=$('modal-layer');
-  layer.hidden=false;layer.innerHTML=`<section class="dialog ${id==='result'?'result-dialog':id==='session'?'session-dialog':''}" role="dialog" tabindex="-1" aria-modal="true" aria-labelledby="dialog-title">${id!=='result'&&id!=='session'?`<button class="close-button" data-command="close" aria-label="Close">${icon('close')}</button>`:''}${html}</section>`;
+  layer.hidden=false;layer.innerHTML=`<section class="dialog ${id==='result'?'result-dialog':id==='session'?'session-dialog':id==='prestige'?'prestige-dialog':''}" role="dialog" tabindex="-1" aria-modal="true" aria-labelledby="dialog-title">${id!=='result'&&id!=='session'?`<button class="close-button" data-command="close" aria-label="Close">${icon('close')}</button>`:''}${html}</section>`;
   isolateModal(true);syncPause();window.cancelAnimationFrame(focusFrame);
   focusFrame=requestAnimationFrame(()=>{
     if(lifetime.disposed||layer.hidden||version!==modalVersion)return;
     const previous=replacing&&command?Array.from(layer.querySelectorAll<HTMLElement>('[data-command]')).find(element=>element.dataset.command===command):null;
-    (previous??modalFocusables(layer)[0]??layer.querySelector<HTMLElement>('.dialog'))?.focus();
+    const requested=focusCommand?Array.from(layer.querySelectorAll<HTMLElement>('[data-command]')).find(element=>element.dataset.command===focusCommand):null;
+    (requested??previous??modalFocusables(layer)[0]??layer.querySelector<HTMLElement>('.dialog'))?.focus();
   });
 }
 function closeModal(refresh=true){
@@ -263,12 +276,36 @@ function closeModal(refresh=true){
   }
   if(refresh)update(true);
 }
-function showResult(){
+function showResult(focusCommand?:string){
   if(!guardAction()||modal==='session')return;
   if(game.state.phase!=='won'&&game.state.phase!=='lost')return;
   persist();
   // A failed ownership check/save may synchronously replace this modal with recovery.
-  if(playable()&&modal!=='session')showModal('result',resultsHtml(game.profile,game.state));
+  if(playable()&&modal!=='session')showModal('result',resultsHtml(game.profile,game.state),focusCommand);
+}
+function clearPrestigeContext(){prestigeOrigin=null;prestigeDraft=null;prestigeExpectedTimeline=null;}
+function openPrestige(){
+  if(!guardAction()||(modal!=='result'&&modal!=='battles'))return;
+  const preview=prestigePreview(game.profile,game.state,game.profile.legacy.selected);
+  if(!preview)return;
+  prestigeOrigin=modal;prestigeDraft=preview.choice;prestigeExpectedTimeline=preview.expectedTimeline;
+  showModal('prestige',prestigeDialogHtml(game.profile,preview));
+}
+function refreshPrestige(){
+  if(!guardAction()||modal!=='prestige'||!prestigeOrigin||!isLegacyChoice(prestigeDraft))return;
+  const preview=prestigePreview(game.profile,game.state,prestigeDraft);
+  if(preview&&preview.expectedTimeline===prestigeExpectedTimeline){
+    htmlIfChanged($('prestige-preview-values'),prestigeDetailsHtml(game.profile,preview));
+  }else{
+    showModal('prestige','<h2 id="dialog-title">This preview is no longer current</h2><p>Keep exploring, then open the next timeline preview again before you begin.</p><button class="big-button secondary" data-command="close">Keep exploring this timeline</button>');
+  }
+}
+function returnFromPrestige(){
+  if(!guardAction()||modal!=='prestige')return;
+  const origin=prestigeOrigin;clearPrestigeContext();
+  if(origin==='result')showResult('next');
+  else if(origin==='battles')showModal('battles',battleSelectionHtml(game.profile,game.state),'next');
+  else closeModal();
 }
 function returnToChapters(){
   if(advanceStatus(game.profile,game.state).reason!=='complete'||!action({type:'retry'}))return;
@@ -278,6 +315,7 @@ function returnToChapters(){
 }
 function dismissModal(){
   if(modal==='session')return;
+  if(modal==='prestige'){returnFromPrestige();return;}
   if(modal==='result'){
     if(advanceStatus(game.profile,game.state).reason==='complete')returnToChapters();
     return;
@@ -288,8 +326,10 @@ function dismissModal(){
 function showSettings(){
   showModal('settings',`<span class="eyebrow">ALMO7AREBOON</span><h2 id="dialog-title">Settings</h2>
   <button class="setting-row" data-command="sound" aria-pressed="${game.profile.sound}">${icon('sound')} Sound <b>${game.profile.sound?'ON':'OFF'}</b></button>
-  <button class="setting-row" data-command="atmosphere" aria-pressed="${atmosphereEnabled}" aria-label="Atmospheric music and ambience">Atmosphere <b>${atmosphereEnabled?'ON':'OFF'}</b></button>
-  <p class="save-note">Quiet original music and environmental sound. Pauses in menus and when the battle is paused. Sound is the master switch.</p>
+  <button class="setting-row" data-command="atmosphere" aria-pressed="${atmosphereEnabled}" aria-label="Music and environmental sound">Atmosphere <b>${atmosphereEnabled?'ON':'OFF'}</b></button>
+  <p class="save-note">Music and environmental sound. Pauses in menus and when the battle is paused. Sound is the master switch.</p>
+  <div class="audio-volume"><div class="audio-volume-label"><label for="effects-volume">Effects volume</label><output id="effects-volume-value" for="effects-volume">${audioMix.effects}%</output></div><input id="effects-volume" type="range" min="0" max="100" step="5" value="${audioMix.effects}" aria-valuetext="${audioMix.effects}%"></div>
+  <div class="audio-volume"><div class="audio-volume-label"><label for="atmosphere-volume">Atmosphere volume</label><output id="atmosphere-volume-value" for="atmosphere-volume">${audioMix.atmosphere}%</output></div><input id="atmosphere-volume" type="range" min="0" max="100" step="5" value="${audioMix.atmosphere}" aria-valuetext="${audioMix.atmosphere}%"></div>
   <button class="setting-row" data-command="speed">${icon('evolution')} Battle speed <b>${game.profile.speed}×</b></button>
   <button class="setting-row" data-command="motion" aria-pressed="${game.profile.motion==='reduced'}">Motion <b>${game.profile.motion==='reduced'?'REDUCED':'SYSTEM'}</b></button>
   ${game.state.phase==='running'?'<button class="big-button secondary retreat-button" data-command="retreat">RETREAT FROM THIS BATTLE</button><p class="save-note">Retreating counts as a loss. Coins you already earned are kept.</p>':''}
@@ -332,7 +372,7 @@ lifetime.listen<MouseEvent>(root,'click',e=>{
   if(command==='session-continue'){retriedSession=true;void acquireSession();return;}
   if(command==='session-temporary'){
     if(pagePresent&&session.playTemporarily()){
-      sessionReady=true;hasPlayed=true;closeModal(false);rebuildArmy();syncMotion();switchTab('battle');
+      sessionReady=true;hasPlayed=true;clearPrestigeContext();closeModal(false);rebuildArmy();syncMotion();switchTab('battle');
     }return;
   }
   // Also protects direct preference mutations and synthetic clicks on isolated controls.
@@ -369,7 +409,21 @@ lifetime.listen<MouseEvent>(root,'click',e=>{
       }break;
     }
     case 'return-chapters':returnToChapters();break;
-    case 'next':case 'retry':if(action({type:button.dataset.command})&&playable()&&modal!=='session'){evolutionFromResult=false;closeModal(false);manualPaused=false;switchTab('battle');}break;
+    case 'next':{
+      const advancement=advanceStatus(game.profile,game.state);
+      if(advancement.allowed&&advancement.target==='timeline'){openPrestige();break;}
+      if(action({type:'next'})&&playable()&&modal!=='session'){evolutionFromResult=false;closeModal(false);manualPaused=false;switchTab('battle');}break;
+    }
+    case 'retry':if(action({type:'retry'})&&playable()&&modal!=='session'){evolutionFromResult=false;closeModal(false);manualPaused=false;switchTab('battle');}break;
+    case 'confirm-prestige':{
+      if(modal!=='prestige'||!prestigeOrigin||prestigeExpectedTimeline===null||!isLegacyChoice(prestigeDraft))break;
+      const ok=action({type:'prestige',expectedTimeline:prestigeExpectedTimeline,legacy:prestigeDraft});
+      // The guarded writer can synchronously replace the narrowed prestige modal.
+      if(!playable()||(modal as string|null)==='session')break;
+      if(ok){clearPrestigeContext();evolutionFromResult=false;manualPaused=false;closeModal(false);switchTab('battle');}
+      else refreshPrestige();
+      break;
+    }
     case 'pause':if(game.state.phase==='running'){manualPaused=!manualPaused;syncPause();update(true);}break;
     case 'speed':game.profile.speed=game.profile.speed===1?2:1;persist();update(true);if(modal==='settings'&&playable())showSettings();break;
     case 'settings':showSettings();break;
@@ -383,18 +437,44 @@ lifetime.listen<MouseEvent>(root,'click',e=>{
       if(session.status!=='active')break;
       const restored=restoreBackupWithSave(game,startOverProfile(game.profile),profile=>session.save(profile).ok);
       if(!restored.ok){toast('The new game could not be saved. Your current progress was not deleted.');break;}
-      game=restored.game;lastPhase=game.state.phase;resultDue=0;manualPaused=false;resultShown='';savedWarning=false;rebuildArmy();syncMotion();closeModal(false);switchTab('battle');toast('Started a new game.');break;
+      game=restored.game;lastPhase=game.state.phase;resultDue=0;manualPaused=false;resultShown='';savedWarning=false;clearPrestigeContext();rebuildArmy();syncMotion();closeModal(false);switchTab('battle');toast('Started a new game.');break;
     }
     case 'confirm-import':{
       if(!pendingImport||session.status!=='active')break;const restored=restoreBackupWithSave(game,pendingImport,profile=>session.save(profile).ok);
       if(!restored.ok){toast('The save could not be written. Your current game was not replaced.');break;}
-      game=restored.game;lastPhase=game.state.phase;resultDue=0;manualPaused=false;resultShown='';savedWarning=false;rebuildArmy();syncMotion();closeModal(false);switchTab('battle');toast('Save restored.');break;
+      game=restored.game;lastPhase=game.state.phase;resultDue=0;manualPaused=false;resultShown='';savedWarning=false;clearPrestigeContext();rebuildArmy();syncMotion();closeModal(false);switchTab('battle');toast('Save restored.');break;
     }
     case 'close':dismissModal();break;
   }
 });
+lifetime.listen<Event>(root,'input',e=>{
+  const input=e.target;
+  if(!(input instanceof HTMLInputElement)||input.type!=='range'||(input.id!=='effects-volume'&&input.id!=='atmosphere-volume')||modal!=='settings'||!$('modal-layer').contains(input))return;
+  // A same-document foreign save has no storage notification here. Check the
+  // session before changing intent, writing preferences or retargeting buses.
+  if(!guardAction()||modal!=='settings'||!$('modal-layer').contains(input))return;
+  const family=input.id==='effects-volume'?'effects':'atmosphere';
+  audioMix=normalizeAudioMix({...audioMix,[family]:input.valueAsNumber});
+  saveAudioMix(audioMix);updateAudioMix(audioMix);
+  const percentage=`${audioMix[family]}%`;
+  input.value=String(audioMix[family]);input.setAttribute('aria-valuetext',percentage);
+  textIfChanged($(`${input.id}-value`),percentage);
+});
 lifetime.listen<Event>(root,'change',async e=>{
-  const input=e.target;if(!(input instanceof HTMLInputElement)||input.id!=='import-save')return;
+  const input=e.target;if(!(input instanceof HTMLInputElement))return;
+  if(input.type==='radio'&&isLegacyChoice(input.value)&&input.checked){
+    if(input.name==='prestige-legacy'){
+      if(modal!=='prestige'||!input.closest('#modal-layer')||!guardAction())return;
+      prestigeDraft=input.value;refreshPrestige();return;
+    }
+    if(input.name==='ready-legacy'){
+      if(modal||activeTab!=='evolution'||!input.closest('#secondary-screen')||game.state.phase!=='ready'||game.profile.legacy.rank===0||!guardAction())return;
+      action({type:'select-legacy',legacy:input.value});
+      if(playable()&&modal!=='session')renderScreen(true);
+      return;
+    }
+  }
+  if(input.id!=='import-save')return;
   if(session.status!=='active'||!guardAction())return;
   const file=input.files?.[0],version=modalVersion;if(!file)return;
   if(file.size>MAX_SAVE_CHARS){toast('Choose a save file smaller than 100 KB.');input.value='';return;}
@@ -434,7 +514,7 @@ lifetime.listen(document,'visibilitychange',()=>{
 function suspendSession(){
   // Save while still active, then deactivate synchronously before releasing the lock.
   persist();resumeOwnership=resumeOwnership||session.status==='active'||session.status==='starting';
-  pagePresent=false;acquisitionVersion++;acquiring=null;sessionReady=false;
+  pagePresent=false;acquisitionVersion++;acquiring=null;sessionReady=false;clearPrestigeContext();
   if(resumeOwnership)session.release();
   syncPause();suspendAudio();
 }

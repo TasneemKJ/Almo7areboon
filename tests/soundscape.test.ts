@@ -29,3 +29,10 @@ test('invalid scene and rate input use bounded safe defaults without huge alloca
  for(const rate of [NaN,Infinity,-1,0]){const a=m.synthesizeSoundscape(0,rate);assert.equal(a.sampleRate,16000);assert.deepEqual(a.left,baseline.left);}
  const huge=m.synthesizeSoundscape(0,1e12);assert.equal(huge.sampleRate,22050);assert.ok((huge.left.byteLength+huge.right.byteLength)<4_300_000);
 });
+
+test('authored production PCM stays finite stereo with the exact 3,072,000-byte payload',async()=>{
+ const m=await model();for(let age=0;age<6;age++){
+  const pcm=m.synthesizeSoundscape(age);assert.equal(pcm.sampleRate,16000);assert.equal(pcm.duration,24);assert.equal(pcm.left.length,384000);assert.equal(pcm.right.length,384000);assert.equal(pcm.left.byteLength+pcm.right.byteLength,3_072_000);
+  for(const channel of [pcm.left,pcm.right]){assert.equal(channel[0],0);assert.equal(channel.at(-1),0);for(const sample of channel){assert.ok(Number.isFinite(sample));assert.ok(Math.abs(sample)<=.27);}}
+ }
+});

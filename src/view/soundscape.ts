@@ -1,21 +1,14 @@
+import {CHAPTER_SCORES} from './chapter-score.ts';
 /** Original fictional score: plucked strings, breath-like tones and environmental noise.
  * No sampled performances, borrowed melody, or claim of historical instrumentation. */
 export interface SoundscapePCM {sampleRate:number;duration:number;left:Float32Array;right:Float32Array}
 export const SOUNDSCAPE_SECONDS=24;
 export const soundscapeAge=(age:number)=>Number.isInteger(age)&&age>=0&&age<6?age:0;
-const chapters=[
- {root:146.83,air:.012,water:0,pluck:.073,breath:.011,seed:319},
- {root:130.81,air:.011,water:.009,pluck:.069,breath:.014,seed:887},
- {root:146.83,air:.019,water:.019,pluck:.055,breath:.010,seed:1319},
- {root:130.81,air:.007,water:.012,pluck:.085,breath:.016,seed:2039},
- {root:110,air:.016,water:0,pluck:.059,breath:.009,seed:3251},
- {root:146.83,air:.009,water:.006,pluck:.061,breath:.023,seed:4441},
-] as const;
 const TAU=Math.PI*2;
 
 /** Allocation is capped at 2 × 24 × 22050 floats (4,233,600 bytes). */
 export function synthesizeSoundscape(input:number,requestedRate=16000):SoundscapePCM {
- const age=soundscapeAge(input),scene=chapters[age];
+ const age=soundscapeAge(input),scene=CHAPTER_SCORES[age];
  const sampleRate=Number.isFinite(requestedRate)&&requestedRate>0?Math.max(8000,Math.min(22050,Math.round(requestedRate))):16000;
  const length=SOUNDSCAPE_SECONDS*sampleRate,left=new Float32Array(length),right=new Float32Array(length);
  const channels=[left,right];
@@ -33,13 +26,12 @@ export function synthesizeSoundscape(input:number,requestedRate=16000):Soundscap
    output[i]=drone+scene.air*(low*4+slow*8)*gust+scene.water*low*3*tide;
    if(age===0){const ember=Math.max(0,white-.995);output[i]+=ember*2.5;}
   }
-  const semitones=[0,3,2,7,5,2],times=[1.15,4.3,8.65,12.9,17.2,20.7];
-  for(let note=0;note<times.length;note++){
-   const frequency=scene.root*2**((semitones[(note+age%2)%6]+(note===4?12:0))/12);
-   const start=Math.floor((times[note]+channel*.0015)*sampleRate),span=Math.floor(2.9*sampleRate);
+  for(let note=0;note<scene.plucks.length;note++){
+   const position=scene.plucks[note],frequency=scene.root*2**(position.semitones/12);
+   const start=Math.floor((position.at+channel*.0015)*sampleRate),span=Math.floor(2.9*sampleRate);
    const pan=channel===(note%2)?1:.72;
    for(let j=0;j<span&&start+j<length;j++){
-    const u=j/sampleRate,envelope=(1-Math.exp(-u*105))*Math.exp(-u*(age===5?1.7:2.4));
+    const u=j/sampleRate,envelope=(1-Math.exp(-u*105))*Math.exp(-u*position.decay);
     const phase=TAU*frequency*u;
     const tone=Math.sin(phase)+.32*Math.sin(phase*2)*Math.exp(-u*3)+.11*Math.sin(phase*3)*Math.exp(-u*5);
     const sample=scene.pluck*.64*pan*envelope*tone;
@@ -48,9 +40,9 @@ export function synthesizeSoundscape(input:number,requestedRate=16000):Soundscap
    }
   }
   // A sparse breath-like answering note, intentionally not a recorded ney.
-  for(const startTime of [6.4,15]){
-   const start=Math.floor(startTime*sampleRate),span=sampleRate*3;
-   const f=scene.root*(startTime<10?2:1.5);
+  for(const position of scene.answers){
+   const start=Math.floor(position.at*sampleRate),span=Math.floor(sampleRate*position.decay);
+   const f=scene.root*2**(position.semitones/12);
    for(let j=0;j<span&&start+j<length;j++){
     const u=j/sampleRate,env=Math.sin(Math.PI*j/span)**2;
     output[start+j]+=scene.breath*env*(Math.sin(TAU*f*u+.02*Math.sin(TAU*4.1*u))+.12*Math.sin(TAU*2*f*u+channel*.3));

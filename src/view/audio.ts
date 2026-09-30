@@ -1,6 +1,33 @@
 import {SoundscapePlayer,type SoundscapeMood} from './soundscape-player.ts';
 import {createSoundscapeSynthesis} from './soundscape-worker-client.ts';
+import {normalizeAudioMix,DEFAULT_AUDIO_MIX,type AudioMix} from '../ui/audio-preferences.ts';
 let context:AudioContext|undefined;
+interface Bus {node:GainNode;from:number;to:number;at:number;end:number}
+let mix:AudioMix={...DEFAULT_AUDIO_MIX},buses:{effects:Bus;atmosphere:Bus}|undefined;
+const busValue=(bus:Bus,now:number)=>bus.from+(bus.to-bus.from)*Math.max(0,Math.min(1,(now-bus.at)/Math.max(.0001,bus.end-bus.at)));
+/** Desired percentages never create, resume or retry an audio graph. */
+export function updateAudioMix(value:AudioMix):void {
+ mix=normalizeAudioMix(value);if(!context||!buses)return;
+ const now=context.currentTime;
+ for(const family of ['effects','atmosphere'] as const){
+  const bus=buses[family],to=mix[family]/100;if(bus.to===to)continue;
+  const from=busValue(bus,now);
+  try{bus.node.gain.cancelScheduledValues(now);bus.node.gain.setValueAtTime(from,now);bus.node.gain.linearRampToValueAtTime(to,now+.05);Object.assign(bus,{from,to,at:now,end:now+.05});}catch{/* Optional audio. */}
+ }
+}
+function clearBuses():void {
+ const owned=buses;buses=undefined;if(!owned)return;
+ for(const bus of [owned.effects,owned.atmosphere])try{bus.node.disconnect();}catch{/* Optional audio. */}
+}
+function createContext():void {
+ let owner:AudioContext|undefined;const nodes:GainNode[]=[];
+ try{
+  owner=new AudioContext();const now=owner.currentTime;
+  const create=(level:number):Bus=>{const node=owner!.createGain();nodes.push(node);node.gain.setValueAtTime(level,now);node.connect(owner!.destination);return {node,from:level,to:level,at:now,end:now};};
+  const effects=create(mix.effects/100),atmosphere=create(mix.atmosphere/100);
+  context=owner;buses={effects,atmosphere};
+ }catch(error){for(const node of nodes)try{node.disconnect();}catch{/* Try all partially constructed nodes. */}try{void owner?.close().catch(()=>{});}catch{/* Optional audio. */}throw error;}
+}
 import {selectCombatCues,type CombatCue,type CombatCueId,type CueCooldown} from './combat-cues.ts';
 import type {GameEvent} from '../game/types.ts';
 interface Effect {voice?:CueVoice;id:CombatCueId;critical:boolean;closed:boolean}
@@ -12,32 +39,33 @@ const soundscape=new SoundscapePlayer(age=>synthesis.generate(age),{acquire:()=>
 let intent:{age:number;audible:boolean;mood:SoundscapeMood}={age:0,audible:false,mood:{alarmMix:0,alarmSerial:0}},permitted=false,resumeVersion=0;
 /** Desired state can change before a gesture; it never creates an AudioContext. */
 export function updateSoundscape(age:number,audible:boolean,mood:SoundscapeMood={alarmMix:0,alarmSerial:0}):void {
-  intent={age,audible,mood};soundscape.update(context,age,permitted&&audible,mood);
+  intent={age,audible,mood};soundscape.update(context,age,permitted&&audible,mood,buses?.atmosphere.node);
 }
 /** Audio stays optional: no context before an enabled user gesture. */
 export function unlockAudio(enabled=true):void {
   if(!enabled)return;
   try{
-    if(!context||context.state==='closed'){stopCombatAudio();soundscape.dispose();context=new AudioContext();transients=freshTransients();}
+    if(!context||context.state==='closed'){stopCombatAudio();soundscape.dispose();clearBuses();context=undefined;createContext();transients=freshTransients();}
+    const owner=context;if(!owner)return;
     permitted=true;soundscape.retry();
-    const owner=context,version=++resumeVersion;
+    const version=++resumeVersion;
     if(owner.state!=='running')void owner.resume().then(()=>{
       if(context!==owner)return;
       // A later mute/hidden transition owns the context, even if resume resolved late.
-      if(!permitted){soundscape.update(owner,intent.age,false,intent.mood);void owner.suspend().catch(()=>{});return;}
-      if(version===resumeVersion)soundscape.update(owner,intent.age,intent.audible,intent.mood);
+      if(!permitted){soundscape.update(owner,intent.age,false,intent.mood,buses?.atmosphere.node);void owner.suspend().catch(()=>{});return;}
+      if(version===resumeVersion)soundscape.update(owner,intent.age,intent.audible,intent.mood,buses?.atmosphere.node);
     }).catch(()=>{});
-    else soundscape.update(owner,intent.age,intent.audible,intent.mood);
+    else soundscape.update(owner,intent.age,intent.audible,intent.mood,buses?.atmosphere.node);
   }catch{/* Unsupported or disallowed browser audio must not break gameplay. */}
 }
 export function suspendAudio():void {
   stopCombatAudio();permitted=false;resumeVersion++;soundscape.cancelPending();synthesis.dispose();
-  soundscape.update(context,intent.age,false,intent.mood);
+  soundscape.update(context,intent.age,false,intent.mood,buses?.atmosphere.node);
   try{if(context&&context.state!=='closed')void context.suspend().catch(()=>{});}catch{/* Optional audio. */}
 }
 export function disposeAudio():void {
   stopCombatAudio();const previous=context;context=undefined;
-  permitted=false;resumeVersion++;intent={age:0,audible:false,mood:{alarmMix:0,alarmSerial:0}};soundscape.dispose();transients=freshTransients();synthesis.dispose();
+  permitted=false;resumeVersion++;intent={age:0,audible:false,mood:{alarmMix:0,alarmSerial:0}};soundscape.dispose();clearBuses();transients=freshTransients();synthesis.dispose();
   try{if(previous&&previous.state!=='closed')void previous.close().catch(()=>{});}catch{/* Optional audio. */}
 }
 
@@ -89,7 +117,7 @@ export function renderCombatCue(context:BaseAudioContext,output:AudioNode,id:Com
 }
 const intervals:Readonly<Record<CueCooldown,number>>={deployment:.120,'unit-hit':.090,'base-hit':.180,coin:.250,death:.250};
 function playSelectedCues(cues:readonly CombatCue[],enabled:boolean):void {
- if(!enabled||!permitted||!context||context.state!=='running')return;
+ if(!enabled||!permitted||!context||context.state!=='running'||!buses||mix.effects===0)return;
  const owner=transients,audioContext=context,now=audioContext.currentTime;
  for(const cue of cues){
   if(cue.cooldown&&now-(owner.last.get(cue.cooldown)??-Infinity)+1e-9<intervals[cue.cooldown])continue;
@@ -99,7 +127,7 @@ function playSelectedCues(cues:readonly CombatCue[],enabled:boolean):void {
   const release=()=>{
    if(effect.closed)return;effect.closed=true;owner.effects.delete(effect);owner.total--;if(!cue.critical)owner.ordinary--;
   };
-  effect.voice=renderCombatCue(audioContext,audioContext.destination,cue.id,now,release);
+  effect.voice=renderCombatCue(audioContext,buses.effects.node,cue.id,now,release);
   if(effect.voice&&!effect.closed&&cue.cooldown)owner.last.set(cue.cooldown,now);
  }
 }

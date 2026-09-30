@@ -217,6 +217,11 @@ button,.game-shell { -webkit-user-select:none; -webkit-touch-callout:none; }
 .battle-statistics dd { font-size:18px; margin:4px 0 0; overflow-wrap:anywhere; }
 .setting-row { width:100%; min-height:var(--touch); display:flex; align-items:center; gap:10px; padding:10px; border:1px solid #b9c6ae; border-radius:11px; background:#e6e9d3; font-size:13px; margin:9px 0; }
 .setting-row b { margin-left:auto; padding:6px 8px; background:#3b6b70; color:#ffedc4; border-radius:6px; font-size:10px; }
+.audio-volume { margin:12px 0; text-align:left; color:var(--ink); }
+.audio-volume-label { display:flex; justify-content:space-between; align-items:center; gap:10px; font-size:13px; }
+.audio-volume output { font-variant-numeric:tabular-nums; }
+.audio-volume input { display:block; width:100%; min-width:0; min-height:var(--touch); margin:0; accent-color:#326d90; cursor:pointer; }
+.audio-volume input:focus-visible { outline:3px solid #edb755; outline-offset:-3px; border-radius:5px; }
 .backup-actions { display:grid; grid-template-columns:repeat(2,minmax(0,1fr)); gap:9px; margin:17px 0; }
 .backup-actions button { font-size:11px; padding:9px 4px; }
 .help-box { text-align:left; }

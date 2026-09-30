@@ -128,3 +128,29 @@ test('summon bypasses batch playback only through its direct bounded entry and h
   for(let i=0;i<8;i++)audio.playSummonAudio(true);assert.equal(h.live(),6,'summon uses ordinary slots, never reserved critical capacity');
  }finally{h.close();}
 });
+
+test('mix changes before enabled gesture allocate nothing and latest mix initializes exactly two buses',()=>{
+ const api=audio as any;assert.equal(typeof api.updateAudioMix,'function','two-family mix owner required');audio.disposeAudio();
+ const c=recordedContext();let created=0;const restore=installContext(c,()=>{created++;return c.ctx;});
+ try{
+  api.updateAudioMix({effects:0,atmosphere:25});api.updateAudioMix({effects:100,atmosphere:0});audio.unlockAudio(false);assert.equal(created,0);assert.equal(c.gains.length,0);assert.equal(c.sources.length,0);
+  api.updateAudioMix({effects:50,atmosphere:25});audio.unlockAudio();assert.equal(created,1);assert.equal(c.gains.length,2);
+  assert.deepEqual(c.gains.map(g=>g.gain.events[0]),[['set',.5,1],['set',.25,1]]);assert.ok(c.gains.every(g=>g.connections[0]===c.ctx.destination));
+  audio.playCombatEvents([hit],true);assert.equal(c.gains[2].connections[0],c.gains[0]);
+  audio.disposeAudio();audio.disposeAudio();assert.ok(c.gains.every(g=>g.disconnects===1));
+ }finally{audio.disposeAudio();api.updateAudioMix({effects:100,atmosphere:100});restore();}
+});
+test('independent mix ramps preserve village targets, use interpolated values and zero effects drops allocations',async()=>{
+ const api=audio as any;assert.equal(typeof api.updateAudioMix,'function');api.updateAudioMix({effects:100,atmosphere:100});const h=harness();
+ try{
+  audio.updateSoundscape(0,true,{alarmMix:0,alarmSerial:0});await tick();const bed=h.gains[2];assert.equal(bed.connections[0],h.gains[1]);assert.ok(bed.gain.events.some((e:any[])=>e[0]==='linear'&&e[1]===.35));
+  const gains=h.gains.length,sources=h.sources.length;api.updateAudioMix({effects:0,atmosphere:100});audio.playCombatEvents([skill],true);assert.equal(h.gains.length,gains);assert.equal(h.sources.length,sources);
+  assert.deepEqual(h.gains[0].gain.events.slice(-2),[['set',1,1],['linear',0,1.05]]);
+  h.ctx.currentTime=1.025;api.updateAudioMix({effects:100,atmosphere:0});const events=h.gains[0].gain.events;
+  assert.ok(Math.abs(events.at(-2)[1]-.5)<1e-9);assert.ok(events.at(-1)[2]-events.at(-2)[2]>=.050-1e-9);
+  assert.equal(h.gains[1].gain.events.at(-1)[1],0);audio.playCombatEvents([skill],true);assert.equal(h.oscillators.length,1);assert.equal(h.gains.at(-1).connections[0],h.gains[0]);
+  h.ctx.currentTime=3;audio.updateSoundscape(0,true,{alarmMix:1,alarmSerial:1});assert.equal(h.sources.length,sources);assert.ok(bed.gain.events.some((e:any[])=>e[0]==='linear'&&Math.abs(e[1]-.22)<1e-12));
+  assert.equal(h.gains.at(-1).connections[0],h.gains[1],'village accent uses atmosphere bus');
+  const count=h.gains.length;audio.suspendAudio();api.updateAudioMix({effects:0,atmosphere:0});api.updateAudioMix({effects:100,atmosphere:100});assert.equal(h.gains.length,count);assert.equal(h.live(),0);
+ }finally{h.close();api.updateAudioMix({effects:100,atmosphere:100});}
+});

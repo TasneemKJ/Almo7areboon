@@ -29,7 +29,7 @@ test('P09: permanent food and base bonuses affect the actual battle',()=>{
 });
 test('P10: six-card legacy saves migrate by stat without losing copies',()=>{
  const raw={...defaultProfile(),version:1,cards:[1,2,3,4,5,6]};const p=loadProfile({getItem:()=>JSON.stringify(raw)});
- assert.equal(p.version,3);assert.equal(p.cards.length,30);assert.equal(p.cards[18],1);assert.equal(p.cards[0],2);assert.equal(p.cards[8],3);assert.equal(p.cards[3],4);assert.equal(p.cards[17],5);assert.equal(p.cards[1],6);
+ assert.equal(p.version,4);assert.equal(p.cards.length,30);assert.equal(p.cards[18],1);assert.equal(p.cards[0],2);assert.equal(p.cards[8],3);assert.equal(p.cards[3],4);assert.equal(p.cards[17],5);assert.equal(p.cards[1],6);
 });
 test('P11: a saved victory restores its result without granting the rewards twice',()=>{
  const g=new Game();won(g);const before=JSON.stringify(g.profile);const h=new Game(g.profile);
