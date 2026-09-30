@@ -96,7 +96,7 @@ async function open(context) {
 }
 async function active(page) { await page.waitForFunction(() => document.querySelector('#app')?.dataset.saveSession === 'active'); }
 async function ready(page) {
-  await page.waitForFunction(() => document.querySelector('#world')?.dataset.phase === 'ready' && document.querySelector('#modal-layer')?.hidden);
+  await page.waitForFunction(() => document.querySelector('#world')?.dataset.phase === 'ready' && document.querySelector('#modal-layer')?.hidden && document.querySelector('#secondary-screen')?.hidden && document.querySelector('#battle-view')?.inert === false && document.querySelector('[data-tab="battle"]')?.getAttribute('aria-current') === 'page');
 }
 async function result(page, won = true) {
   await page.locator('.result-dialog').waitFor({ timeout: 150000 });
@@ -217,6 +217,8 @@ async function startAndLose(page) {
 }
 async function assertContinue(page, source, chapter, before) {
   const next = command(page, 'next'); await next.click({ clickCount: 2 }); await ready(page);
+  assert.equal(await page.locator('[data-tab="battle"]').getAttribute('aria-current'), 'page', 'double continuation retains Battle navigation');
+  assert.equal(await page.locator('#secondary-screen').isHidden(), true, 'double continuation cannot click through into a secondary screen');
   const after = await saved(source);
   assert.equal(after.wins, before.wins, 'continuation creates no extra win'); assert.equal(after.pendingVictory, null);
   if (chapter === 5) {
@@ -433,7 +435,10 @@ try {
   for (const viewport of [{ width: 320, height: 568 }, { width: 390, height: 844 }]) await scenario(`fresh-win-paused-input-${viewport.width}`, viewport, async context => {
     const fresh = defaultProfile(); fresh.sound = false; fresh.motion = 'reduced';
     const source = await setup(context, fresh), page = await open(context); await active(page); await ready(page);
-    await page.locator('[data-command="speed"]').click(); await page.locator('[data-command="start"]').click();
+    await page.locator('[data-command="settings"]').click();
+    await command(page, 'speed').click(); assert.equal((await saved(source)).speed, 2);
+    await command(page, 'close').first().click(); await ready(page);
+    await page.locator('[data-command="start"]').click();
     await page.locator('[data-command="pause"]').click();
     const before = ledger(await saved(source)), food = await page.locator('#food-count').textContent();
     for (const key of ['1', '2', '3', 'q', 'w', 'e']) await page.keyboard.press(key);
