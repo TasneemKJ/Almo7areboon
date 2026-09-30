@@ -41,6 +41,7 @@ const money=(value:number)=>value>=10000?compactNumber(value):Math.floor(value).
 const coin=(value:number)=>`${icon('coin')}<span>${money(value)}</span>`;
 root.innerHTML = `
 <main class="game-shell" aria-label="Almo7areboon">
+  <header class="resources"><div class="currency">${icon('coin')}<span id="coins">0</span></div><button class="currency gems" data-command="quests" aria-label="Gems and quests">${icon('gem')}<span id="gems">100</span></button><div class="game-wordmark">ALMO7AREBOON</div></header>
   <div id="battle-view" class="battle-view">
     <section id="world" class="world" aria-label="Battlefield">
       <div id="battlefield"></div>
@@ -58,7 +59,6 @@ root.innerHTML = `
     </section>
     <section class="upgrades" aria-label="Army upgrades"><div class="upgrade-row"><div class="upgrade-label">${icon('food')}<div>Food Production<small id="food-level"></small></div></div><button id="food-upgrade" class="buy-button" data-command="upgrade-food"></button></div><div class="upgrade-row"><div class="upgrade-label">${icon('heart')}<div>Base Health<small id="base-level"></small></div></div><button id="base-upgrade" class="buy-button" data-command="upgrade-base"></button></div></section>
   </div>
-  <header class="resources"><div class="currency">${icon('coin')}<span id="coins">0</span></div><button class="currency gems" data-command="quests" aria-label="Gems and quests">${icon('gem')}<span id="gems">100</span></button><div class="game-wordmark">ALMO7AREBOON</div></header>
   <section id="secondary-screen" class="secondary-screen" aria-labelledby="secondary-title" hidden></section>
   <nav class="bottom-nav" aria-label="Game screens">${[['battle','Battle'],['evolution','Evolution'],['cards','Cards'],['skills','Skills']].map(([id,label])=>`<button data-tab="${id}" class="nav-item ${id==='battle'?'active':''}" aria-label="${label}" aria-current="${id==='battle'?'page':'false'}">${icon(id)}<span>${label}</span></button>`).join('')}</nav>
   <div id="toast" class="toast" role="status" aria-live="polite"></div>
