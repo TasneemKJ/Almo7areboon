@@ -25,8 +25,11 @@ export function cardsScreenHtml(profile: Profile): string {
   }).join('')}</div>`;
 }
 
+const RARITY_RANK={common:0,rare:1,epic:2,legendary:3} as const;
+
+/** Best pulls first, so the rare card is never hidden below the scroll; first-time cards are marked NEW. */
 export function summonedCardsHtml(before: readonly number[], profile: Profile): string {
-  const changed=CARD_DEFS.map((card,index)=>({card,index,gained:profile.cards[index]-(before[index]??0)})).filter(item=>item.gained>0);
+  const changed=CARD_DEFS.map((card,index)=>({card,index,gained:profile.cards[index]-(before[index]??0)})).filter(item=>item.gained>0).sort((a,b)=>RARITY_RANK[b.card.rarity]-RARITY_RANK[a.card.rarity]||b.gained-a.gained||a.index-b.index);
   const total=changed.reduce((sum,item)=>sum+item.gained,0);
-  return `<span class="eyebrow">PERMANENT POWER</span><h2 id="dialog-title">${total} ${total===1?'card':'cards'} summoned</h2><p>Already added to your collection.</p><div class="summon-results">${changed.map(({card,index,gained})=>`<article data-rarity="${card.rarity}"><span style="background:${card.color}"><img alt="" src="${cardIllustration(index)}"/></span><div><strong>${card.name}</strong><small>${card.rarity.toUpperCase()} · LEVEL ${cardProgress(profile.cards[index]).level}</small></div><b>+${gained}</b></article>`).join('')}</div><button class="big-button blue" data-command="close">BACK TO COLLECTION</button>`;
+  return `<span class="eyebrow">PERMANENT POWER</span><h2 id="dialog-title">${total} ${total===1?'card':'cards'} summoned</h2><p>Already added to your collection.</p><div class="summon-results">${changed.map(({card,index,gained})=>`<article data-rarity="${card.rarity}"><span style="background:${card.color}"><img alt="" src="${cardIllustration(index)}"/></span><div><strong>${card.name}</strong><small>${card.rarity.toUpperCase()} · LEVEL ${cardProgress(profile.cards[index]).level}${(before[index]??0)===0?' · NEW':''}</small></div><b>+${gained}</b></article>`).join('')}</div><button class="big-button blue" data-command="close">BACK TO COLLECTION</button>`;
 }
