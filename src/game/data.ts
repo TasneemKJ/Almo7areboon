@@ -52,4 +52,13 @@ export const QUESTS: { id: string; title: string; target: number; reward: number
   { id: 'first-blood', title: 'Defeat 10 enemies', target: 10, reward: 50, stat: 'kills' },
   { id: 'commander', title: 'Deploy 25 warriors', target: 25, reward: 50, stat: 'deployed' },
   { id: 'conqueror', title: 'Win 3 battles', target: 3, reward: 100, stat: 'wins' },
+  // Longer milestone ladders give returning players something to work toward
+  // after the first three; rewards stay modest next to a 100-gem single summon.
+  { id: 'veteran', title: 'Defeat 100 enemies', target: 100, reward: 100, stat: 'kills' },
+  { id: 'battalion', title: 'Deploy 150 warriors', target: 150, reward: 100, stat: 'deployed' },
+  { id: 'champion', title: 'Win 10 battles', target: 10, reward: 150, stat: 'wins' },
+  { id: 'legion', title: 'Defeat 500 enemies', target: 500, reward: 200, stat: 'kills' },
+  { id: 'general', title: 'Deploy 750 warriors', target: 750, reward: 200, stat: 'deployed' },
+  { id: 'warlord', title: 'Win 30 battles', target: 30, reward: 300, stat: 'wins' },
+  { id: 'annihilator', title: 'Defeat 2,500 enemies', target: 2500, reward: 400, stat: 'kills' },
 ];

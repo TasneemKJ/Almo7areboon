@@ -1,7 +1,7 @@
 import test from 'node:test';
 import assert from 'node:assert/strict';
 import { Game } from '../src/game/simulation.ts';
-import { ERAS, cardBonus, foodRate, foodUpgradeCost, baseUpgradeCost } from '../src/game/data.ts';
+import { ERAS, QUESTS, cardBonus, foodRate, foodUpgradeCost, baseUpgradeCost } from '../src/game/data.ts';
 import { defaultProfile, loadProfile, saveProfile, SAVE_KEY } from '../src/game/save.ts';
 import type { Unit } from '../src/game/types.ts';
 
@@ -300,4 +300,21 @@ function unit(id: number, side: 'player' | 'enemy', x: number, hp = 26, kind: 0 
   game.dispatch({ type: 'start' });
   advance(game, 1);
   assert.ok(Number.isFinite(game.state.playerHp));
+});
+
+test('milestone quests have unique ids, rising targets per stat and claimable rewards', () => {
+  const ids = QUESTS.map(q => q.id);
+  assert.equal(new Set(ids).size, ids.length);
+  for (const stat of ['kills', 'wins', 'deployed'] as const) {
+    const targets = QUESTS.filter(q => q.stat === stat).map(q => q.target);
+    assert.ok(targets.length >= 3, `${stat} needs a ladder of milestones`);
+    assert.deepEqual(targets, [...targets].sort((a, b) => a - b));
+  }
+  assert.ok(QUESTS.every(q => Number.isInteger(q.reward) && q.reward > 0));
+  const game = new Game();
+  game.profile.kills = 100;
+  assert.equal(game.dispatch({ type: 'claim', id: 'veteran' }), true);
+  assert.equal(game.profile.gems, 200);
+  assert.equal(game.dispatch({ type: 'claim', id: 'legion' }), false);
+  assert.deepEqual(new Game(game.profile).profile.claimed, ['veteran']);
 });
