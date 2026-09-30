@@ -64,6 +64,31 @@ for (const width of [320, 390]) {
   for (const command of ['settings', 'quests']) { await page.click(`[data-command=${command}]`); await page.waitForTimeout(600); await scan(page, `${command} dialog`, width); await page.keyboard.press('Escape'); await page.waitForTimeout(250); }
   await page.click('[data-command=settings]'); await page.waitForTimeout(400); await page.click('[data-command=reset]'); await page.waitForTimeout(600); await scan(page, 'start over dialog', width);
   await page.close();
+
+  // Save protection: a save from a newer game version opens a recovery dialog.
+  const guarded = await browser.newPage({viewport: {width, height: width === 320 ? 568 : 844}});
+  await guarded.addInitScript(() => localStorage.setItem('almo7areboon.save.v1', JSON.stringify({version: 9})));
+  await guarded.goto(url);
+  await guarded.waitForSelector('.dialog');
+  await guarded.waitForTimeout(600);
+  await scan(guarded, 'save protection dialog', width);
+  await guarded.close();
+
+  // Victory: the result dialog with its mastery seals. A strong save wins the first battle quickly at double speed.
+  const winner = await browser.newPage({viewport: {width, height: width === 320 ? 568 : 844}});
+  await winner.addInitScript(value => { if (!localStorage.getItem('almo7areboon.save.v1')) localStorage.setItem('almo7areboon.save.v1', value); }, JSON.stringify({...save, age: 0, enemyAge: 0, furthestBattle: 0, foodLevel: 25, baseLevel: 12, unlocked: [true, true, true], speed: 2, claimed: [], coins: 0}));
+  await winner.goto(url);
+  await winner.waitForSelector('#age-title');
+  await winner.click('[data-command=start]');
+  const deadline = Date.now() + 120000;
+  while (await winner.getAttribute('#world', 'data-phase') === 'running' && Date.now() < deadline) {
+    for (const key of ['1', '2', '3']) await winner.keyboard.press(key);
+    await winner.waitForTimeout(120);
+  }
+  await winner.waitForSelector('.result-dialog', {timeout: 15000}).catch(() => {});
+  await winner.waitForTimeout(600);
+  await scan(winner, 'result dialog', width);
+  await winner.close();
 }
 await browser.close();
 process.exit(failed ? 1 : 0);
