@@ -112,6 +112,18 @@ jobs:
           name: troop-unlock-browser-review
           path: artifacts/browser-review/troop-unlock/
           retention-days: 7
+      - name: Verify optional wave inspection in production
+        id: wave_help
+        if: steps.tests.outcome == 'success' && steps.build.outcome == 'success'
+        continue-on-error: true
+        run: node --experimental-strip-types scripts/capture-wave-inspection-review.mjs
+      - name: Publish wave inspection evidence
+        if: always() && steps.wave_help.outcome != 'skipped'
+        uses: actions/upload-artifact@v4
+        with:
+          name: wave-inspection-browser-review
+          path: artifacts/browser-review/wave-inspection/
+          retention-days: 7
       - name: Verify native skill timing cues
         id: skill_cues
         if: steps.tests.outcome == 'success' && steps.build.outcome == 'success'
@@ -254,5 +266,5 @@ jobs:
         if: always()
         env:
           VERIFICATION_STEPS: ${{ toJSON(steps) }}
-          REQUIRED_CHECKS: tests build audio_browser upgrade_text offline_audio offline_game troop_unlock skill_cues regroup browser layering save_sessions mastery
+          REQUIRED_CHECKS: tests build audio_browser upgrade_text offline_audio offline_game troop_unlock wave_help skill_cues regroup browser layering save_sessions mastery
         run: node scripts/require-verification.mjs

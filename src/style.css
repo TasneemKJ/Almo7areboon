@@ -57,7 +57,9 @@ button,.game-shell { -webkit-user-select:none; -webkit-touch-callout:none; }
 .stage-progress span.current { color:#274553; background:#ffe1a0; border-color:#fff2c6; box-shadow:0 0 0 3px #ffe8a02e; font-weight:900; }
 .stage-progress span.complete { color:#fffad8; background:#68968a; }
 .battle-meta { position:absolute; z-index:2; bottom:10px; left:12px; right:12px; display:flex; justify-content:flex-end; pointer-events:none; }
-.battle-meta>span { position:absolute; left:0; bottom:55px; border-radius:6px; padding:5px 7px; background:#163943d1; color:#f0eed2; font-size:9px; letter-spacing:.5px; font-variant-numeric:tabular-nums; }
+.battle-meta>.wave-inspect { position:absolute; left:0; bottom:55px; min-height:var(--touch); max-width:100%; border:1px solid #aec6aa; border-radius:10px; padding:6px 28px 6px 8px; background:#163943ee; color:#f0eed2; font-size:11px; letter-spacing:.3px; font-variant-numeric:tabular-nums; white-space:nowrap; overflow:hidden; text-overflow:ellipsis; pointer-events:auto; }
+.wave-inspect:not(:disabled)::after { content:'?'; position:absolute; right:8px; top:50%; transform:translateY(-50%); color:#ffe1a0; font-weight:900; }
+.wave-inspect:disabled { opacity:1; }
 .battle-toggles { display:flex; gap:7px; pointer-events:auto; }
 .battle-toggles button { width:var(--touch); height:var(--touch); border:1px solid #aec6aa; border-radius:12px; color:#ecf1d7; background:#224c58ee; font-size:16px; box-shadow:0 3px 0 #163541; }
 .ready { position:absolute; bottom:13px; left:0; right:0; z-index:2; display:flex; flex-direction:column; align-items:center; pointer-events:none; }
