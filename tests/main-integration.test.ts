@@ -18,6 +18,7 @@ import { legacyCurrentHtml, prestigeDetailsHtml, prestigeDialogHtml } from '../s
 import { evolutionScreenHtml } from '../src/ui/evolution-screen.ts';
 import { skillCue } from '../src/ui/skill-cues.ts';
 import { troopUnlockMessage } from '../src/ui/army-screen.ts';
+import { waveInspectionHtml } from '../src/ui/wave-inspection.ts';
 
 // Execute the app's actual functions with a clock and minimal DOM boundary; no browser/debug hooks.
 const source = readFileSync(new URL('../src/main.ts', import.meta.url), 'utf8');
@@ -53,7 +54,7 @@ function harness(motion = 'full') {
     lastUpdate: 0, lastSave: 100, lastPhase: 'ready', resultDue: 0, resultShown: '', activeTab: 'battle', root,
     performance: { now: () => now }, document: { documentElement: { dataset: { motion } } },
     $: (id: string) => { if (!elements.has(id)) elements.set(id, node()); return elements.get(id); },
-    advanceStatus, battleSelectionHtml, evolutionDialogHtml, ERAS, QUESTS, foodRate, unlockCost, dailyReward, localDay, battleGuidance, baseHealthDisplay, compactNumber, waveLabel, waveAccessibleLabel, chapterPresentation, unitPresentationName, resultsHtml,isLegacyChoice,legacyEffects,prestigePreview,prestigeDetailsHtml,prestigeDialogHtml,legacyCurrentHtml,evolutionScreenHtml,saveSessionDialogHtml,temporarySessionNotice,skillCue,troopUnlockMessage,
+    advanceStatus, battleSelectionHtml, evolutionDialogHtml, ERAS, QUESTS, foodRate, unlockCost, dailyReward, localDay, battleGuidance, baseHealthDisplay, compactNumber, waveLabel, waveAccessibleLabel, chapterPresentation, unitPresentationName, resultsHtml,isLegacyChoice,legacyEffects,prestigePreview,prestigeDetailsHtml,prestigeDialogHtml,legacyCurrentHtml,evolutionScreenHtml,saveSessionDialogHtml,temporarySessionNotice,skillCue,troopUnlockMessage,waveInspectionHtml,
     storybookArt: () => false, money: String, coin: String, icon:()=>'',textIfChanged(target:any,value:string){target.textContent=value;},htmlIfChanged(target:any,value:string){target.innerHTML=value;},unlockAudio() {}, syncPause() {}, rebuildArmy() {}, syncMotion() {}, isolateModal(){}, toast() {},
     closeModal() { context.modal=null; }, showModal: (id: string,html:string,focusCommand?:string) => {context.modal=id;context.dialogHtml=html;context.focusCommand=focusCommand;dialogs.push(id);},
     session: {
@@ -66,6 +67,14 @@ function harness(motion = 'full') {
   runInNewContext(`${code}\nthis.api = { update, action, acquireSession, dismissModal, returnToChapters, showResult, renderScreen }; this.update = update;`, context);
   return { context, dialogs, click:(command:string,detail=0)=>context.handleClick({target:new BoundaryButton({command}),detail,preventDefault(){}}), clickData:(dataset:Record<string,string>,detail=0)=>context.handleClick({target:new BoundaryButton(dataset),detail,preventDefault(){}}), change:(name:string,value:string)=>context.handleChange({target:new BoundaryInput(name,value)}),clock: (value: number) => { now = value; }, foreign: () => { foreign = true; } };
 }
+test('wave inspection delegates the existing modal route without spending, saving or clearing manual pause',()=>{
+ for(const manual of [false,true]){const h=harness(),c=h.context;h.click('start');c.manualPaused=manual;let writes=0;c.session.save=()=>{writes++;return {ok:true};};const before=JSON.stringify(c.game.profile);h.click('wave-help');assert.equal(c.modal,'wave-help');assert.match(c.dialogHtml,/Wave 1 of 5: 1 melee/);assert.equal(c.manualPaused,manual);c.api.dismissModal();assert.equal(c.modal,null);assert.equal(c.manualPaused,manual);assert.equal(JSON.stringify(c.game.profile),before);assert.equal(writes,0);}
+});
+test('wave inspection is absent outside running play and yields to foreign-session recovery',()=>{
+ const ready=harness();ready.click('wave-help');assert.equal(ready.context.modal,null);
+ const lost=harness();lost.click('start');lost.context.game.dispatch({type:'retreat'});lost.click('wave-help');assert.equal(lost.context.modal,null);
+ const foreign=harness();foreign.click('start');const before=JSON.stringify(foreign.context.game.profile);foreign.foreign();foreign.click('wave-help');assert.equal(foreign.context.modal,'session');assert.equal(JSON.stringify(foreign.context.game.profile),before);
+});
 test('accepted troop unlock teaches starting Battle without deploying or consuming food',()=>{
  const h=harness(),c=h.context,messages:any[]=[];c.toast=(...args:any[])=>messages.push(args);c.game.profile.coins=150;
  const food=c.game.state.food;h.clickData({unit:'1'});
