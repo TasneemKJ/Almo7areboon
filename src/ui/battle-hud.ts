@@ -18,6 +18,7 @@ export function battleGuidance(profile: Profile, state: BattleState): string {
   if (state.playerHp / state.playerMaxHp <= 0.3) return 'Your base is in danger. Deploy reinforcements or use a skill.';
   if (state.stats.deployed === 0 && state.food >= ERAS[profile.age].units[0].cost) return 'Tap a troop to deploy your first warrior.';
   if (state.wave === state.totalWaves && !state.units.some(unit => unit.side === 'enemy' && unit.hp > 0)) return 'Enemy army cleared. Keep deploying to destroy their base.';
+  if (profile.wins < 3 && state.stats.skillsCast === 0 && state.time >= 25) return 'Try a skill: Freeze, Meteor or Food Drop. Each works once per battle.';
   const wait = Math.ceil((ERAS[profile.age].units[0].cost - state.food) / foodRate(profile));
   if (wait > 0) return `More food in ${wait}s. Your warriors fight automatically.`;
   if (!profile.unlocked[1] && profile.coins >= unlockCost(1, profile)) return 'Ranged troops are affordable. Unlock them behind your front line.';

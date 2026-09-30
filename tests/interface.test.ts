@@ -136,3 +136,15 @@ test('the final victory spells out what the next timeline resets and keeps',()=>
  const html=resultsHtml(g.profile,g.state);
  assert.match(html,/harder timeline/);assert.match(html,/coins, upgrades and troop unlocks reset/);assert.match(html,/cards, gems and records stay/);
 });
+
+test('new players are pointed at the skill buttons once, until they cast one',()=>{
+ const g=new Game();g.dispatch({type:'start'});g.dispatch({type:'spawn',kind:0});
+ g.state.food=50;g.state.time=10;
+ assert.doesNotMatch(battleGuidance(g.profile,g.state),/skill/i);
+ g.state.time=30;
+ assert.match(battleGuidance(g.profile,g.state),/Try a skill/);
+ g.state.stats.skillsCast=1;
+ assert.doesNotMatch(battleGuidance(g.profile,g.state),/Try a skill/);
+ g.state.stats.skillsCast=0;g.profile.wins=3;
+ assert.doesNotMatch(battleGuidance(g.profile,g.state),/Try a skill/);
+});
