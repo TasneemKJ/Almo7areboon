@@ -98,7 +98,9 @@ test('HUD, unlock notifications and import previews share the presentation bound
  const main=readFileSync(new URL('../src/main.ts',import.meta.url),'utf8');
  assert.match(main,/chapterPresentation\(p.age\)\.title/);
  assert.match(main,/chapterPresentation\(pendingImport.age\)\.title/);
- assert.match(main,/unitPresentationName\(game.profile.age,kind\)/);
+ assert.match(main,/troopUnlockMessage\(game.profile,game.state.phase,kind,game.deploymentStatus\(kind\)\)/);
+ const army=readFileSync(new URL('../src/ui/army-screen.ts',import.meta.url),'utf8');
+ assert.match(army,/unitPresentationName\(profile.age, kind\)/);
  assert.doesNotMatch(main,/ERAS\[(?:p|game.profile|pendingImport)\.age\]\.name/);
 });
 

@@ -11,12 +11,13 @@ import { advanceStatus } from '../src/game/mastery.ts';
 import { battleSelectionHtml, evolutionDialogHtml } from '../src/ui/progression-screen.ts';
 import { ERAS, QUESTS, foodRate, unlockCost, dailyReward, localDay } from '../src/game/data.ts';
 import { battleGuidance, baseHealthDisplay, compactNumber, waveLabel, waveAccessibleLabel } from '../src/ui/battle-hud.ts';
-import { chapterPresentation } from '../src/ui/chapter-presentation.ts';
+import { chapterPresentation, unitPresentationName } from '../src/ui/chapter-presentation.ts';
 import { resultsHtml } from '../src/ui/results-screen.ts';
 import { isLegacyChoice, legacyEffects, prestigePreview } from '../src/game/prestige.ts';
 import { legacyCurrentHtml, prestigeDetailsHtml, prestigeDialogHtml } from '../src/ui/prestige-presentation.ts';
 import { evolutionScreenHtml } from '../src/ui/evolution-screen.ts';
 import { skillCue } from '../src/ui/skill-cues.ts';
+import { troopUnlockMessage } from '../src/ui/army-screen.ts';
 
 // Execute the app's actual functions with a clock and minimal DOM boundary; no browser/debug hooks.
 const source = readFileSync(new URL('../src/main.ts', import.meta.url), 'utf8');
@@ -52,7 +53,7 @@ function harness(motion = 'full') {
     lastUpdate: 0, lastSave: 100, lastPhase: 'ready', resultDue: 0, resultShown: '', activeTab: 'battle', root,
     performance: { now: () => now }, document: { documentElement: { dataset: { motion } } },
     $: (id: string) => { if (!elements.has(id)) elements.set(id, node()); return elements.get(id); },
-    advanceStatus, battleSelectionHtml, evolutionDialogHtml, ERAS, QUESTS, foodRate, unlockCost, dailyReward, localDay, battleGuidance, baseHealthDisplay, compactNumber, waveLabel, waveAccessibleLabel, chapterPresentation, resultsHtml,isLegacyChoice,legacyEffects,prestigePreview,prestigeDetailsHtml,prestigeDialogHtml,legacyCurrentHtml,evolutionScreenHtml,saveSessionDialogHtml,temporarySessionNotice,skillCue,
+    advanceStatus, battleSelectionHtml, evolutionDialogHtml, ERAS, QUESTS, foodRate, unlockCost, dailyReward, localDay, battleGuidance, baseHealthDisplay, compactNumber, waveLabel, waveAccessibleLabel, chapterPresentation, unitPresentationName, resultsHtml,isLegacyChoice,legacyEffects,prestigePreview,prestigeDetailsHtml,prestigeDialogHtml,legacyCurrentHtml,evolutionScreenHtml,saveSessionDialogHtml,temporarySessionNotice,skillCue,troopUnlockMessage,
     storybookArt: () => false, money: String, coin: String, icon:()=>'',textIfChanged(target:any,value:string){target.textContent=value;},htmlIfChanged(target:any,value:string){target.innerHTML=value;},unlockAudio() {}, syncPause() {}, rebuildArmy() {}, syncMotion() {}, isolateModal(){}, toast() {},
     closeModal() { context.modal=null; }, showModal: (id: string,html:string,focusCommand?:string) => {context.modal=id;context.dialogHtml=html;context.focusCommand=focusCommand;dialogs.push(id);},
     session: {
@@ -65,6 +66,19 @@ function harness(motion = 'full') {
   runInNewContext(`${code}\nthis.api = { update, action, acquireSession, dismissModal, returnToChapters, showResult, renderScreen }; this.update = update;`, context);
   return { context, dialogs, click:(command:string,detail=0)=>context.handleClick({target:new BoundaryButton({command}),detail,preventDefault(){}}), clickData:(dataset:Record<string,string>,detail=0)=>context.handleClick({target:new BoundaryButton(dataset),detail,preventDefault(){}}), change:(name:string,value:string)=>context.handleChange({target:new BoundaryInput(name,value)}),clock: (value: number) => { now = value; }, foreign: () => { foreign = true; } };
 }
+test('accepted troop unlock teaches starting Battle without deploying or consuming food',()=>{
+ const h=harness(),c=h.context,messages:any[]=[];c.toast=(...args:any[])=>messages.push(args);c.game.profile.coins=150;
+ const food=c.game.state.food;h.clickData({unit:'1'});
+ assert.equal(c.game.profile.coins,0);assert.equal(c.game.profile.unlocked[1],true);assert.equal(c.game.state.stats.deployed,0);assert.equal(c.game.state.food,food);
+ assert.match(messages[0][0],/Thrower unlocked!.*extra damage to heavy enemies.*Start Battle.*5 food/);assert.equal(messages[0][1],7000);
+ h.click('start');h.clickData({unit:'1'});assert.equal(c.game.state.stats.deployed,1);assert.equal(c.game.state.food,food-ERAS[0].units[1].cost);assert.equal(messages.length,1,'deployment does not repeat unlock teaching');
+});
+test('rejected or foreign unlock has no success teaching and save failure remains visible',()=>{
+ for(const foreign of [false,true]){const h=harness(),c=h.context,messages:string[]=[];c.toast=(s:string)=>messages.push(s);if(foreign){c.game.profile.coins=150;h.foreign();}const before=JSON.stringify(c.game.profile);h.clickData({unit:'1'});assert.deepEqual(messages,[]);assert.equal(JSON.stringify(c.game.profile),before);}
+ const h=harness(),c=h.context,messages:string[]=[];c.game.profile.coins=150;c.toast=(s:string)=>messages.push(s);c.session.save=()=>({ok:false,reason:'write-failed'});h.clickData({unit:'1'});
+ assert.equal(c.game.profile.unlocked[1],true);assert.equal(messages.length,1);assert.match(messages[0],/Progress could not be saved/);
+ const lost=harness(),lostMessages:string[]=[];lost.context.game.profile.coins=150;lost.context.toast=(s:string)=>lostMessages.push(s);lost.context.session.save=()=>{lost.context.session.status='conflict';lost.context.sessionPresentation('conflict');return {ok:false};};lost.clickData({unit:'1'});assert.deepEqual(lostMessages,[]);assert.equal(lost.context.modal,'session');
+});
 for (const [motion, delay] of [['full', 1300], ['reduced', 350]] as const) test(`${motion} result delay yields to save recovery before opening`, () => {
   const h = harness(motion), c = h.context;
   c.game.dispatch({ type: 'start' }); c.api.update(true);

@@ -20,11 +20,11 @@ import type { Action, GameEvent, GamePort, LegacyChoice, Profile, Skill, UnitKin
 import { mountBattlefield } from './view/battlefield.ts';
 import {advanceVillagePresentation,type VillagePresentation} from './view/village-mood.ts';
 import { unitPortrait } from './view/unit-illustrations.ts';
-import { chapterPresentation, unitPresentationName } from './ui/chapter-presentation.ts';
+import { chapterPresentation } from './ui/chapter-presentation.ts';
 import { evolutionScreenHtml } from './ui/evolution-screen.ts';
 import { icon } from './view/icons.ts';
 import { playCombatEvents, playSummonAudio, stopCombatAudio, unlockAudio, suspendAudio, disposeAudio, updateSoundscape, updateAudioMix } from './view/audio.ts';
-import { createArmyUpdater, TROOP_SPECIALTIES } from './ui/army-screen.ts';
+import { createArmyUpdater, TROOP_SPECIALTIES, troopUnlockMessage } from './ui/army-screen.ts';
 import { cardsScreenHtml, summonedCardsHtml } from './ui/cards-screen.ts';
 import { resultsHtml } from './ui/results-screen.ts';
 import { legacyCurrentHtml, prestigeDetailsHtml, prestigeDialogHtml } from './ui/prestige-presentation.ts';
@@ -136,9 +136,9 @@ async function acquireSession(){
 }
 
 function rebuildArmy(){updateArmy(game.profile);}
-function toast(message:string){
+function toast(message:string,duration=4200){
   textIfChanged($('toast'),message);$('toast').classList.add('visible');
-  window.clearTimeout(toastTimer);toastTimer=window.setTimeout(()=>$('toast').classList.remove('visible'),4200);
+  window.clearTimeout(toastTimer);toastTimer=window.setTimeout(()=>$('toast').classList.remove('visible'),duration);
 }
 function persist():boolean{
   if(!playable()||session.status==='temporary')return false;
@@ -384,7 +384,7 @@ lifetime.listen<MouseEvent>(root,'click',e=>{
   if(modal&&!button.closest('#modal-layer'))return;
   unlockAudio(game.profile.sound);
   if(button.dataset.tab){switchTab(button.dataset.tab);return;}
-  if(button.dataset.unit!==undefined){const kind=Number(button.dataset.unit) as UnitKind;if(!game.profile.unlocked[kind]){if(action({type:'unlock',kind}))toast(`${unitPresentationName(game.profile.age,kind)} unlocked!`);}else action({type:'spawn',kind});return;}
+  if(button.dataset.unit!==undefined){const kind=Number(button.dataset.unit) as UnitKind;if(!game.profile.unlocked[kind]){if(action({type:'unlock',kind})&&playable()&&!savedWarning)toast(troopUnlockMessage(game.profile,game.state.phase,kind,game.deploymentStatus(kind)),7000);}else action({type:'spawn',kind});return;}
   if(button.dataset.skill){action({type:'skill',skill:button.dataset.skill as Skill});return;}
   if(button.dataset.daily){if(action({type:'daily',day:Number(button.dataset.daily)}))showQuests();return;}
   if(button.dataset.claim){if(action({type:'claim',id:button.dataset.claim}))showQuests();return;}
