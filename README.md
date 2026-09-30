@@ -54,6 +54,8 @@ An unfinished battle reloads ready while preserving already earned coins. An una
 - `src/main.ts`: input, screen navigation and lifecycle integration.
 - `tests/`: simulation, progression, persistence, components, audio failures and explicit source/CSS contracts.
 
+`npm run review:monkey` (against a running preview) starts the game on seven damaged or missing saves and then feeds it random taps and keys, failing on any uncaught page error; set `CHROMIUM_PATH` to reuse an installed Chromium.
+
 GitHub Actions runs tests and the production build with read-only repository permissions. The `almo7areboon-web-build` artifact is published only when both checks succeed; this is a downloadable artifact, not a deployment.
 
 ## Fidelity and limits
