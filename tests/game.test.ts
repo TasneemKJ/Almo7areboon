@@ -450,3 +450,33 @@ test('local day follows the player\'s timezone offset', () => {
   const noon = new Date('2026-09-30T12:00:00Z');
   assert.equal(localDay(noon) - Math.floor(noon.getTime() / 86_400_000) <= 1, true);
 });
+
+test('quest rewards are claimable once each, total 1,650 gems, and survive evolution, timelines and reloads', () => {
+  const game = new Game();
+  Object.assign(game.profile, { kills: 5000, wins: 50, deployed: 5000, gems: 0 });
+  for (const quest of QUESTS) assert.equal(game.dispatch({ type: 'claim', id: quest.id }), true, quest.id);
+  assert.equal(game.profile.gems, QUESTS.reduce((sum, quest) => sum + quest.reward, 0));
+  assert.equal(game.profile.gems, 1650);
+  for (const quest of QUESTS) assert.equal(game.dispatch({ type: 'claim', id: quest.id }), false, `${quest.id} twice`);
+  assert.equal(game.dispatch({ type: 'claim', id: 'no-such-quest' }), false);
+
+  // Evolution and a new timeline reset the economy but never the claimed list or the lifetime counters.
+  game.profile.coins = 1e6; game.profile.enemyAge = 1; game.profile.furthestBattle = 1;
+  assert.equal(game.dispatch({ type: 'evolve' }), true);
+  assert.equal(game.profile.claimed.length, QUESTS.length);
+  assert.equal(game.profile.kills, 5000);
+  const reloaded = new Game(game.profile);
+  assert.equal(reloaded.profile.claimed.length, QUESTS.length);
+  assert.equal(reloaded.dispatch({ type: 'claim', id: 'first-blood' }), false);
+  assert.equal(reloaded.profile.gems, 1650, 'a reload cannot pay a claimed quest again');
+});
+
+test('a quest below its target cannot be claimed and pays nothing', () => {
+  const game = new Game();
+  game.profile.kills = 99;
+  assert.equal(game.dispatch({ type: 'claim', id: 'veteran' }), false);
+  assert.equal(game.profile.gems, 100);
+  game.profile.kills = 100;
+  assert.equal(game.dispatch({ type: 'claim', id: 'veteran' }), true);
+  assert.equal(game.profile.gems, 200);
+});

@@ -27,19 +27,31 @@ async function active(page) { await page.waitForFunction(() => document.querySel
 async function blocked(page, title = 'Game open in another tab') {
   const heading = page.getByRole('heading', { name: title, exact: true });
   await heading.waitFor();
-  const contrast = await heading.evaluate(node => {
+  // Session presentation can replace the modal after the role locator resolves.
+  // Reacquire both current elements and their styles in one synchronous task.
+  const measurement = await page.waitForFunction(title => {
+    const node = document.querySelector('#modal-layer .session-dialog #dialog-title');
+    if (!node?.isConnected || node.textContent.trim() !== title || !node.getClientRects().length) return false;
+    const dialog = node.closest('.dialog');
+    if (!dialog?.isConnected) return false;
     const luminance = color => {
-      const channels = color.match(/[\d.]+/g).slice(0, 3).map(Number).map(value => {
+      const rgb = color.match(/^rgba?\(([^)]+)\)$/)?.[1].split(/[,\s]+/).map(Number);
+      if (!rgb || (rgb.length !== 3 && !(rgb.length === 4 && rgb[3] === 1)) || rgb.slice(0, 3).some(value => !Number.isFinite(value) || value < 0 || value > 255)) return null;
+      const channels = rgb.slice(0, 3).map(value => {
         const channel = value / 255;
         return channel <= .04045 ? channel / 12.92 : ((channel + .055) / 1.055) ** 2.4;
       });
       return channels[0] * .2126 + channels[1] * .7152 + channels[2] * .0722;
     };
     const foreground = getComputedStyle(node).color;
-    const background = getComputedStyle(node.closest('.dialog')).backgroundColor;
+    const background = getComputedStyle(dialog).backgroundColor;
     const a = luminance(foreground), b = luminance(background);
+    if (a === null || b === null) return { error: 'Expected opaque computed RGB colors', foreground, background };
     return { foreground, background, ratio: (Math.max(a, b) + .05) / (Math.min(a, b) + .05) };
-  });
+  }, title);
+  let contrast;
+  try { contrast = await measurement.jsonValue(); } finally { await measurement.dispose(); }
+  assert.ok(!contrast.error, `Invalid recovery contrast measurement for ${title}: ${JSON.stringify(contrast)}`);
   assert.ok(contrast.ratio >= 4.5, `${title} must be readable on its paper dialog: ${JSON.stringify(contrast)}`);
 }
 async function exported(page) { const download = page.waitForEvent('download'); await page.locator('[data-command="export"]').click(); const result = await download; return JSON.parse(readFileSync(await result.path(), 'utf8')).profile; }
@@ -147,6 +159,28 @@ try {
     await a.locator('[data-command="confirm-import"]').click(); await a.getByText('The save could not be written. Your current game was not replaced.', { exact: true }).waitFor();
     assert.deepEqual(await bytes(source), old); await a.locator('[data-command="close"]').last().click(); await a.locator('[data-command="settings"]').click(); assert.equal((await exported(a)).gems, 450);
   });
+  await scenario('guarded-start-over', async context => {
+    const profile = fixture({ timeline: 3, age: 2, enemyAge: 2, furthestBattle: 2, coins: 9000, gems: 777, speed: 2, dailyDay: 20000, dailyStreak: 5, kills: 90, cards: Array(30).fill(4) });
+    const source = await setup(context, profile), a = await open(context); await active(a);
+    await a.locator('[data-command="settings"]').click(); await a.locator('[data-command="reset"]').click();
+    await a.getByRole('heading', { name: 'Start over?', exact: true }).waitFor();
+    const before = await bytes(source); assert.equal((await exported(a)).gems, 777);
+    await a.getByRole('button', { name: 'KEEP MY PROGRESS', exact: true }).click(); assert.deepEqual(await bytes(source), before);
+    await a.locator('[data-command="settings"]').click(); await a.locator('[data-command="reset"]').click();
+    await a.locator('[data-command="confirm-reset"]').click(); await active(a);
+    assert.equal(await a.locator('#coins').textContent(), '0'); assert.equal(await a.locator('#gems').textContent(), '100');
+    const fresh = JSON.parse((await bytes(source))[0]);
+    assert.deepEqual([fresh.timeline, fresh.age, fresh.coins, fresh.gems, fresh.kills, fresh.cards.reduce((sum, n) => sum + n, 0)], [1, 0, 0, 100, 0, 0]);
+    assert.deepEqual([fresh.sound, fresh.speed, fresh.motion, fresh.dailyDay, fresh.dailyStreak], [false, 2, 'reduced', 20000, 5]);
+    await a.locator('[data-command="settings"]').click(); await a.locator('#modal-layer [data-command="speed"]').click();
+    assert.equal(JSON.parse((await bytes(source))[0]).speed, 1, 'later guarded saves accept the replacement baseline');
+    const old = await bytes(source), current = await exported(a);
+    await a.evaluate(key => { const original = Storage.prototype.setItem; Storage.prototype.setItem = function(name, value) { if (name === key) throw new DOMException('Quota exceeded', 'QuotaExceededError'); return original.call(this, name, value); }; }, primary);
+    await a.locator('[data-command="reset"]').click(); await a.locator('[data-command="confirm-reset"]').click();
+    await a.getByText('The new game could not be saved. Your current progress was not deleted.', { exact: true }).waitFor();
+    await a.getByRole('heading', { name: 'Start over?', exact: true }).waitFor();
+    assert.deepEqual(await bytes(source), old); assert.deepEqual(await exported(a), current);
+  });
   await scenario('pageshow-reloads-owner', async context => {
     const source = await setup(context), a = await open(context); await active(a); await summon(a);
     // Synthetic lifecycle events cover BFCache event handling without pretending to prove actual BFCache eligibility.
@@ -159,7 +193,7 @@ try {
     const source = await setup(context), initial = await bytes(source), a = await open(context);
     await blocked(a, 'Saving is unavailable'); await a.screenshot({ path: `${output}/unavailable-320.png` }); await a.locator('[data-command="session-temporary"]').click(); await a.getByText('Temporary play — progress is not saved.', { exact: true }).waitFor();
     await summon(a); await a.locator('[data-command="close"]').last().click();
-    await a.getByRole('button', { name: 'Battle', exact: true }).click(); await a.locator('[data-command="settings"]').click(); assert.equal(await a.locator('[data-command="import"]').isDisabled(), true);
+    await a.getByRole('button', { name: 'Battle', exact: true }).click(); await a.locator('[data-command="settings"]').click(); assert.equal(await a.locator('[data-command="import"]').isDisabled(), true); assert.equal(await a.locator('[data-command="reset"]').isDisabled(), true);
     await a.locator('#modal-layer [data-command="speed"]').click(); await a.locator('[data-command="sound"]').click(); await a.locator('[data-command="motion"]').click(); const rescue = await exported(a); assert.equal(rescue.gems, 0); assert.equal(rescue.speed, 2); assert.equal(rescue.motion, 'system');
     await a.evaluate(() => { dispatchEvent(new PageTransitionEvent('pagehide', { persisted: true })); dispatchEvent(new PageTransitionEvent('pageshow', { persisted: true })); });
     assert.equal(await a.locator('#app').getAttribute('data-save-session'), 'temporary'); await a.waitForTimeout(5500); assert.deepEqual(await bytes(source), initial); await a.close(); assert.deepEqual(await bytes(source), initial);
@@ -173,7 +207,7 @@ try {
     await a.close(); assert.deepEqual(await bytes(source), initial);
   });
   assert.deepEqual(diagnostics.pageErrors, [], 'no application page errors');
-  assert.ok(diagnostics.cases.length === 11 && diagnostics.cases.every(result => result.status === 'passed'), JSON.stringify(diagnostics.cases.filter(result => result.status !== 'passed'), null, 2));
+  assert.ok(diagnostics.cases.length === 12 && diagnostics.cases.every(result => result.status === 'passed'), JSON.stringify(diagnostics.cases.filter(result => result.status !== 'passed'), null, 2));
   diagnostics.status = 'passed'; console.log(`Save-session review passed: ${diagnostics.cases.length} cases`);
 } catch (error) { diagnostics.error = error.stack; process.exitCode = 1; console.error(error); }
 finally { diagnostics.serverLog = log; writeFileSync(`${output}/diagnostics.json`, JSON.stringify(diagnostics, null, 2)); try { await browser?.close(); } finally { server.kill(); } }

@@ -28,13 +28,13 @@ function harness(motion = 'full') {
   const node = () => ({ dataset: {}, style: {}, hidden: false, classList: { toggle() {} }, setAttribute() {}, toggleAttribute() {}, querySelector() { return null; }, querySelectorAll() { return []; } });
   class BoundaryButton {
     dataset:Record<string,string>;disabled=false;
-    constructor(command:string){this.dataset={command};}
-    closest(selector:string){return selector==='button'||selector==='#modal-layer'?this:null;}
+    constructor(dataset:Record<string,string>){this.dataset=dataset;}
+    closest(selector:string){return selector==='button'||(selector==='#modal-layer'&&!this.dataset.tab)?this:null;}
   }
   const root = node(), elements = new Map<string, ReturnType<typeof node>>();
   const context: any = {
     Element:BoundaryButton, Game, game: new Game(defaultProfile()), sessionReady: true, pagePresent: true, lifetime: { disposed: false },
-    acquiring: null, acquisitionVersion: 0, hasPlayed: true, manualPaused: false, savedWarning: false, pendingImport: null, modal: null, evolutionFromResult: false,
+    acquiring: null, acquisitionVersion: 0, hasPlayed: true, manualPaused: false, savedWarning: false, pendingImport: null, modal: null, evolutionFromResult: false, modalPointerSequence: false,
     lastUpdate: 0, lastSave: 100, lastPhase: 'ready', resultDue: 0, resultShown: '', activeTab: 'battle', root,
     performance: { now: () => now }, document: { documentElement: { dataset: { motion } } },
     $: (id: string) => { if (!elements.has(id)) elements.set(id, node()); return elements.get(id); },
@@ -48,9 +48,9 @@ function harness(motion = 'full') {
     },
   };
   context.persist = () => context.session.save(context.game.profile).ok;
-  context.switchTab = () => context.update(true);
+  context.switchTab = (tab:string) => {context.activeTab=tab;context.update(true);};
   runInNewContext(`${code}\nthis.api = { update, action, acquireSession, dismissModal, returnToChapters, showResult }; this.update = update;`, context);
-  return { context, dialogs, click:(command:string)=>context.handleClick({target:new BoundaryButton(command)}), clock: (value: number) => { now = value; }, foreign: () => { foreign = true; } };
+  return { context, dialogs, click:(command:string,detail=0)=>context.handleClick({target:new BoundaryButton({command}),detail,preventDefault(){}}), clickData:(dataset:Record<string,string>,detail=0)=>context.handleClick({target:new BoundaryButton(dataset),detail,preventDefault(){}}), clock: (value: number) => { now = value; }, foreign: () => { foreign = true; } };
 }
 for (const [motion, delay] of [['full', 1300], ['reduced', 350]] as const) test(`${motion} result delay yields to save recovery before opening`, () => {
   const h = harness(motion), c = h.context;
@@ -133,4 +133,42 @@ for(const legacy of [false,true])for(const escape of [false,true])test(`actual t
  assert.equal(c.game.state.phase,'ready');assert.equal(c.modal,'battles');assert.equal(c.game.profile.pendingVictory,null);
  for(const field of ['timeline','mastery','wins','coins','gems','furthestBattle'])assert.deepEqual(c.game.profile[field],before[field]);
  c.api.dismissModal();assert.equal(c.modal,null);c.api.update(true);assert.equal(c.modal,null);
+});
+
+for(const chapter of [0,5])test(`native double-click ${chapter===5?'final-next rejection':'chapter continuation'} cannot select Cards navigation`,()=>{
+ const h=settledHarness(chapter,1,chapter===5),c=h.context,before=JSON.stringify(c.game.profile);
+ h.click('next',1);
+ if(chapter===5){
+  // Dependency checkpoint: final next intentionally rejects until Task 2 adds preview/confirmation.
+  assert.equal(c.game.state.phase,'won');assert.equal(c.modal,'result');assert.equal(JSON.stringify(c.game.profile),before);
+ }else{assert.equal(c.game.state.phase,'ready');assert.equal(c.modal,null);}
+ assert.equal(c.activeTab,'battle');
+ const after=JSON.stringify(c.game.profile);
+ // Continued modal-origin pointer input cannot select either exposed or isolated navigation.
+ h.clickData({tab:'cards'},2);assert.equal(c.activeTab,'battle');assert.equal(JSON.stringify(c.game.profile),after);
+ h.clickData({tab:'cards'},3);assert.equal(c.activeTab,'battle');
+ // New single clicks work once chapter continuation reveals navigation; final results stay isolated.
+ h.clickData({tab:'cards'},1);assert.equal(c.activeTab,chapter===5?'battle':'cards');
+ if(chapter===5){assert.equal(c.modal,'result');assert.equal(JSON.stringify(c.game.profile),before);}
+});
+test('normal native double-click deployment still accepts both affordable troop actions',()=>{
+ const h=harness(),c=h.context;c.game.dispatch({type:'start'});
+ h.clickData({unit:'0'},1);h.clickData({unit:'0'},2);
+ assert.equal(c.game.state.stats.deployed,2);assert.equal(c.game.state.food,0);
+});
+
+
+test('actual optional-probe evolution route retains Battle 5 and seals while resetting local army progress',()=>{
+ const h=harness(),c=h.context,p=defaultProfile();
+ Object.assign(p,{age:4,enemyAge:4,furthestBattle:4,coins:14000000,foodLevel:5,baseLevel:3,unlocked:[true,true,true]});
+ p.mastery.chapters[4]={earnedMask:3,bestSeconds:81,bestGateDamage:0};c.game=new Game(p);
+ const mastery=structuredClone(c.game.profile.mastery);
+ c.textIfChanged=(target:any,value:string)=>{target.textContent=value;};
+ h.clickData({tab:'evolution'},1);assert.equal(c.activeTab,'evolution');
+ h.click('evolve',1);assert.equal(c.modal,'evolve');h.click('confirm-evolve',1);
+ assert.equal(c.modal,null);assert.equal(c.activeTab,'battle');assert.equal(c.game.state.phase,'ready');
+ assert.deepEqual([c.game.profile.age,c.game.profile.enemyAge,c.game.profile.furthestBattle],[5,4,4]);
+ assert.deepEqual([c.game.profile.coins,c.game.profile.foodLevel,c.game.profile.baseLevel],[0,0,0]);
+ assert.deepEqual(c.game.profile.unlocked,[true,false,false]);assert.deepEqual(c.game.profile.mastery,mastery);
+ assert.equal(c.$('timeline').textContent,'TIMELINE 1 · BATTLE 5');
 });
