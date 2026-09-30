@@ -4,6 +4,7 @@ import './ui/continuation.css';
 import './ui/material-language.css';
 import './ui/combat-focus.css';
 import './ui/era-glow.css';
+import './ui/readability.css';
 import { Game } from './game/simulation.ts';
 import { ERAS, foodRate, unlockCost, QUESTS, dailyReward, localDay } from './game/data.ts';
 import { loadProfileWithStatus, saveProfile, MAX_SAVE_CHARS } from './game/save.ts';

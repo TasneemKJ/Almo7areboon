@@ -1,0 +1,5 @@
+/* Text floors for phone screens: informational copy never drops below 11px, and small caps labels stay at 10px. */
+.deploy-hint, .ready p, .screen-bottom small, .help-box small, .save-note, .quest-row small,
+.card-level, .card-copies, .era-copy small, .skill-rule, .rarity, .current-badge { font-size:11px; }
+.eyebrow, .ready-title, .bottom-nav .nav-item span { font-size:10px; }
+.skill-detail small { font-size:10px; }
