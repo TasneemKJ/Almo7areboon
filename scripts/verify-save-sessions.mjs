@@ -27,19 +27,31 @@ async function active(page) { await page.waitForFunction(() => document.querySel
 async function blocked(page, title = 'Game open in another tab') {
   const heading = page.getByRole('heading', { name: title, exact: true });
   await heading.waitFor();
-  const contrast = await heading.evaluate(node => {
+  // Session presentation can replace the modal after the role locator resolves.
+  // Reacquire both current elements and their styles in one synchronous task.
+  const measurement = await page.waitForFunction(title => {
+    const node = document.querySelector('#modal-layer .session-dialog #dialog-title');
+    if (!node?.isConnected || node.textContent.trim() !== title || !node.getClientRects().length) return false;
+    const dialog = node.closest('.dialog');
+    if (!dialog?.isConnected) return false;
     const luminance = color => {
-      const channels = color.match(/[\d.]+/g).slice(0, 3).map(Number).map(value => {
+      const rgb = color.match(/^rgba?\(([^)]+)\)$/)?.[1].split(/[,\s]+/).map(Number);
+      if (!rgb || (rgb.length !== 3 && !(rgb.length === 4 && rgb[3] === 1)) || rgb.slice(0, 3).some(value => !Number.isFinite(value) || value < 0 || value > 255)) return null;
+      const channels = rgb.slice(0, 3).map(value => {
         const channel = value / 255;
         return channel <= .04045 ? channel / 12.92 : ((channel + .055) / 1.055) ** 2.4;
       });
       return channels[0] * .2126 + channels[1] * .7152 + channels[2] * .0722;
     };
     const foreground = getComputedStyle(node).color;
-    const background = getComputedStyle(node.closest('.dialog')).backgroundColor;
+    const background = getComputedStyle(dialog).backgroundColor;
     const a = luminance(foreground), b = luminance(background);
+    if (a === null || b === null) return { error: 'Expected opaque computed RGB colors', foreground, background };
     return { foreground, background, ratio: (Math.max(a, b) + .05) / (Math.min(a, b) + .05) };
-  });
+  }, title);
+  let contrast;
+  try { contrast = await measurement.jsonValue(); } finally { await measurement.dispose(); }
+  assert.ok(!contrast.error, `Invalid recovery contrast measurement for ${title}: ${JSON.stringify(contrast)}`);
   assert.ok(contrast.ratio >= 4.5, `${title} must be readable on its paper dialog: ${JSON.stringify(contrast)}`);
 }
 async function exported(page) { const download = page.waitForEvent('download'); await page.locator('[data-command="export"]').click(); const result = await download; return JSON.parse(readFileSync(await result.path(), 'utf8')).profile; }
