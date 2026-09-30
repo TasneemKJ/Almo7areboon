@@ -1,6 +1,7 @@
 /**
  * Robustness probe for a built or running game: starts it against damaged saves, then feeds it random taps, keys and
- * button presses. It fails on any uncaught page error or when the game does not start.
+ * button presses, plus one end-to-end evolution. It fails on any uncaught page error, when the game does not start, or when
+ * evolving does not reset the chapter state.
  * Run: npm run build && npm run preview, then  node scripts/monkey-test.mjs [url=http://127.0.0.1:4173/] [seconds=30]
  * Set CHROMIUM_PATH to use an existing Chromium instead of the one Playwright downloads.
  */
@@ -34,6 +35,30 @@ for (const [name, raw] of Object.entries(saves)) {
   console.log(`${ok ? 'ok  ' : 'FAIL'} ${name.padEnd(15)} title=${title} phase=${phase}${errors.length ? ` errors=${errors.join(' | ')}` : ''}`);
   if (!ok) failures.push(name);
   await page.close();
+}
+
+// Evolution flow: the confirmed evolve must move to the next chapter and reset coins, upgrades, unlocks and battle progress.
+{
+  const flow = await browser.newPage({viewport: {width: 390, height: 844}});
+  const flowErrors = [];
+  flow.on('pageerror', error => flowErrors.push(error.message));
+  await flow.addInitScript(([key, value]) => localStorage.setItem(key, value), [SAVE, JSON.stringify({version: 2, timeline: 1, age: 4, enemyAge: 4, furthestBattle: 4, coins: 14000000, gems: 100, foodLevel: 5, baseLevel: 3, unlocked: [true, true, true], cards: Array(30).fill(0), summonCount: 0, summonSeed: 99, pendingVictory: null, kills: 0, wins: 0, deployed: 0, claimed: [], dailyDay: 0, dailyStreak: 0, sound: false, speed: 1, motion: 'system'})]);
+  await flow.goto(url);
+  await flow.waitForSelector('#age-title', {timeout: 10000});
+  await flow.click('[data-tab=evolution]');
+  await flow.click('[data-command=evolve]');
+  await flow.click('[data-command=confirm-evolve]');
+  await flow.waitForTimeout(600);
+  const after = await flow.evaluate(() => ({
+    title: document.getElementById('age-title').textContent,
+    timeline: document.getElementById('timeline').textContent,
+    coins: document.getElementById('coins').textContent,
+    locked: [...document.querySelectorAll('.unit-card')].map(card => card.classList.contains('locked') ? 'L' : 'U').join(''),
+  }));
+  const good = after.title === 'Courtyards Beyond' && after.timeline.includes('BATTLE 1') && after.coins === '0' && after.locked === 'ULL' && flowErrors.length === 0;
+  console.log(`${good ? 'ok  ' : 'FAIL'} evolution flow: ${JSON.stringify(after)}${flowErrors.length ? ` errors=${flowErrors.join(' | ')}` : ''}`);
+  if (!good) failures.push('evolution flow');
+  await flow.close();
 }
 
 const page = await browser.newPage({viewport: {width: 390, height: 844}});
