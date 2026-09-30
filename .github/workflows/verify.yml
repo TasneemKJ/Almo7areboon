@@ -100,6 +100,18 @@ jobs:
           name: skill-cues-browser-review
           path: artifacts/browser-review/skill-cues/
           retention-days: 7
+      - name: Verify regroup learning in production
+        id: regroup
+        if: steps.tests.outcome == 'success' && steps.build.outcome == 'success'
+        continue-on-error: true
+        run: node --experimental-strip-types scripts/capture-regroup-review.mjs
+      - name: Publish regroup teaching evidence
+        if: always() && steps.regroup.outcome != 'skipped'
+        uses: actions/upload-artifact@v4
+        with:
+          name: regroup-browser-review
+          path: artifacts/browser-review/regroup/
+          retention-days: 7
       - name: Capture portrait browser states
         id: browser
         if: steps.tests.outcome == 'success' && steps.build.outcome == 'success'
@@ -197,5 +209,5 @@ jobs:
           path: ${{ runner.temp }}/game-workspace.tar.gz
           retention-days: 3
       - name: Require passing checks
-        if: steps.tests.outcome != 'success' || steps.build.outcome != 'success' || steps.browser.outcome != 'success' || steps.layering.outcome != 'success' || steps.save_sessions.outcome != 'success' || steps.offline_audio.outcome != 'success' || steps.mastery.outcome != 'success' || steps.audio_browser.outcome != 'success' || steps.upgrade_text.outcome != 'success' || steps.skill_cues.outcome != 'success'
+        if: steps.tests.outcome != 'success' || steps.build.outcome != 'success' || steps.browser.outcome != 'success' || steps.layering.outcome != 'success' || steps.save_sessions.outcome != 'success' || steps.offline_audio.outcome != 'success' || steps.mastery.outcome != 'success' || steps.audio_browser.outcome != 'success' || steps.upgrade_text.outcome != 'success' || steps.skill_cues.outcome != 'success' || steps.regroup.outcome != 'success'
         run: exit 1
