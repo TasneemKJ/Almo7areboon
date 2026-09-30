@@ -18,3 +18,8 @@ test('informational text keeps an 11px floor and the readability sheet loads las
  for(const size of css.match(/font-size:\s*(\d+)px/g)??[])assert.ok(Number(size.match(/\d+/)![0])>=10,size);
  assert.ok(main.indexOf('./ui/readability.css')>main.indexOf('./ui/era-glow.css'),'the floor must win the cascade');
 });
+
+test('rarity captions use dark ink so rare and epic headers stay legible',()=>{
+ const css=readFileSync(new URL('../src/ui/readability.css',import.meta.url),'utf8');
+ assert.match(css,/\.rarity\s*\{\s*color:\s*#1[0-9a-f]{5}/i);
+});
