@@ -1,6 +1,6 @@
 import test from 'node:test';
 import assert from 'node:assert/strict';
-import { CARD_DEFS, cardProgress, cardBonuses, summonLevel, drawCard, cardPackCost } from '../src/game/cards.ts';
+import { CARD_DEFS, cardProgress, cardBonuses, summonLevel, drawCard, cardPackCost, nextCardRandom } from '../src/game/cards.ts';
 
 function close(actual: number, expected: number) {
   assert.ok(Math.abs(actual - expected) < 1e-10, `${actual} differs from ${expected}`);
@@ -152,4 +152,42 @@ test('card packs apply their reference discounts and reject unsupported pack siz
   assert.equal(cardPackCost(10), 950);
   assert.equal(cardPackCost(50), 4600);
   for (const count of [0, -1, 2, NaN, Infinity]) assert.throws(() => cardPackCost(count as 1), RangeError);
+});
+
+test('summon rarity frequencies match the stated odds over a long fixed-seed stream', () => {
+  const rarities = ['common', 'rare', 'epic', 'legendary'];
+  for (const draws of [50, 225, 950]) {
+    const total = 200_000;
+    let seed = 0x6d2b79f5;
+    const counts = [0, 0, 0, 0];
+    for (let i = 0; i < total; i++) {
+      const rarity = nextCardRandom(seed), choice = nextCardRandom(rarity.seed);
+      seed = choice.seed;
+      counts[rarities.indexOf(CARD_DEFS[drawCard(draws, rarity.value, choice.value)].rarity)]++;
+    }
+    const odds = summonLevel(draws).odds, sum = odds.reduce((a, b) => a + b, 0);
+    odds.forEach((weight, index) => {
+      const stated = weight / sum * 100, observed = counts[index] / total * 100;
+      assert.ok(Math.abs(observed - stated) < 0.35, `draws ${draws} ${rarities[index]}: stated ${stated.toFixed(2)}%, observed ${observed.toFixed(2)}%`);
+    });
+  }
+});
+
+test('the bonuses printed on the Cards screen are the ones battles apply', async () => {
+  const { Game } = await import('../src/game/simulation.ts');
+  const { defaultProfile } = await import('../src/game/save.ts');
+  const { ERAS, cardBonus } = await import('../src/game/data.ts');
+  const { cardsScreenHtml, multiplier } = await import('../src/ui/cards-screen.ts');
+  const profile = defaultProfile();
+  profile.cards = profile.cards.map((_, index) => (index % 5 === 0 ? 7 : index % 3 === 0 ? 2 : 0));
+  const bonus = cardBonus(profile);
+  const html = cardsScreenHtml(profile);
+  assert.ok(html.includes(`Damage <b>×${multiplier(bonus.damage)}</b>`));
+  assert.ok(html.includes(`Health <b>×${multiplier(bonus.health)}</b>`));
+  const game = new Game(profile);
+  game.dispatch({ type: 'start' });
+  game.state.food = 99;
+  assert.equal(game.dispatch({ type: 'spawn', kind: 0 }), true);
+  const unit = game.state.units.find(candidate => candidate.side === 'player')!;
+  assert.equal(unit.maxHp, Math.round(ERAS[0].units[0].hp * bonus.health), 'a deployed unit gets exactly the displayed health multiplier');
 });
