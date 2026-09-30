@@ -24,10 +24,10 @@ const server=spawn(process.execPath,[resolve(root,'node_modules/vite/bin/vite.js
 let serverLog='',serverError,browser,browserVersion;const errors=[],reports=[];
 server.stdout.on('data',chunk=>{serverLog+=chunk;});server.stderr.on('data',chunk=>{serverLog+=chunk;});server.on('error',error=>{serverError=error;});
 let revision='unavailable';try{revision=execFileSync('git',['rev-parse','HEAD'],{cwd:root,encoding:'utf8'}).trim();}catch{}
-const common=()=>({kind:browserMode?'native production-page audio controls and save ownership, Task2 cases1–3; not device listening':'native OfflineAudioContext production rendering; not live admission or device listening',revision,browserVersion,mode:browserMode?'browser':'offline',
+const common=()=>({kind:browserMode?'native production-page audio controls and save ownership, Task2 cases1–5; not device listening':'native OfflineAudioContext production rendering; not live admission or device listening',revision,browserVersion,mode:browserMode?'browser':'offline',
  sampleFormat:browserMode?'native DOM input and transparent native graph lifetime observations; no PCM measured':'pre-WAV Float32 browser samples; output stereo PCM16',
  limits:browserMode?{contexts:1,workers:1,beds:2,sharedTransients:8,atmosphereAccents:2}: {sampleRate:16000,isolatedDuration:1,crowdedDuration:20,peakExclusive:1,isolatedBoundaryResidualExclusive:1e-5},
- outstandingCases:browserMode?['Native lifecycle case4','Controlled production audio-export case5','Headphone and phone-speaker listening']:['Headphone and phone-speaker listening'],
+ outstandingCases:browserMode?['Headphone and phone-speaker listening','Real hidden state if headless document.hidden remains false']:['Headphone and phone-speaker listening'],
  listening:'Listening not performed; combat distinction and masking unverified. Auditory acceptance not established.',cases:reports,pageErrors:errors});
 const persist=status=>writeFileSync(resolve(directory,browserMode?'diagnostics.json':'metrics.json'),JSON.stringify({status,...common()},null,2)+'\n');
 try{
@@ -42,7 +42,7 @@ try{
  if(browserMode){
   const coverage=await reviewAudioBrowser({browser,origin,directory,reports,errors,persist});
   writeFileSync(resolve(directory,'diagnostics.json'),JSON.stringify({status:'passed',...common(),coverage},null,2)+'\n');
-  console.log(`Native production audio controls passed: ${reports.length} scenarios (Task2 cases1–3), Chromium ${browserVersion}.`);
+  console.log(`Native production audio controls passed: ${reports.length} scenarios (Task2 cases1–5), Chromium ${browserVersion}.`);
   console.log(`Assertions, native peak live counts and screenshots: ${directory}`);
  }else{
  const page=await browser.newPage();page.on('pageerror',error=>errors.push(error.message));page.setDefaultTimeout(30000);

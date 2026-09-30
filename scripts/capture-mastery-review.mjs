@@ -7,6 +7,7 @@ import { chromium } from 'playwright';
 import { Game } from '../src/game/simulation.ts';
 import { defaultProfile, decodeSave, SAVE_KEY, BACKUP_KEY } from '../src/game/save.ts';
 import { createMastery } from '../src/game/mastery.ts';
+import { reviewPrestige } from './capture-prestige-review.mjs';
 import { ERAS } from '../src/game/data.ts';
 
 const output = 'artifacts/browser-review/mastery', origin = 'http://127.0.0.1:4176';
@@ -248,6 +249,7 @@ try {
     ordinary: winSeed(prepared(0), 'ordinary-cleared'),
     final: winSeed(prepared(5), 'final-cleared'),
     older: winSeed(prepared(1), 'older-cleared-frontier-five'),
+    penultimate: winSeed(prepared(5, { timeline: 999, strongCards: true }), 'penultimate-real-win'),
     terminal: winSeed(prepared(5, { timeline: 1000, strongCards: true }), 'terminal-real-win'),
     partial: winSeed(prepared(0), 'clear-only-intentionally-missed-objectives', { clearOnly: true }),
   };
@@ -470,6 +472,8 @@ try {
   assert.deepEqual(diagnostics.pageErrors, [], 'no application page errors');
   assert.deepEqual(diagnostics.assetFailures, [], 'storybook requests succeed');
   assert.equal(diagnostics.cases.length, 37, 'all specified browser scenarios ran');
+  await reviewPrestige({scenario,seeds,setup,open,active,ready,result,saved,bytes,command,inspect,isolation,exported,memoryProfile,startAndLose});
+  assert.deepEqual(diagnostics.pageErrors, [], 'prestige raises no application errors');
   assert.ok(diagnostics.cases.every(item => item.status === 'passed'), JSON.stringify(diagnostics.cases.filter(item => item.status !== 'passed'), null, 2));
   diagnostics.status = 'passed'; console.log(`Mastery browser review passed: ${diagnostics.cases.length} cases`);
 } catch (error) { diagnostics.error = error.stack; process.exitCode = 1; console.error(error); }

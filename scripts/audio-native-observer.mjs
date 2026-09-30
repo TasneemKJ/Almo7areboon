@@ -58,7 +58,7 @@ export function installNativeAudioObserver({blockStorage=false}={}){
   if(blockStorage)throw new DOMException('Review storage blocked','SecurityError');
   const result=Reflect.apply(nativeSet,this,args);entry.ok=true;return result;
  };
- window.nativeAudioReview={snapshot:()=>({nativeAudio:typeof AudioContext==='function',nativeWorker:typeof Worker==='function',blockStorage,
+ window.nativeAudioReview={closeLatestContext:()=>contexts.at(-1)?.close(),snapshot:()=>({nativeAudio:typeof AudioContext==='function',nativeWorker:typeof Worker==='function',blockStorage,
   createdContexts:contexts.length,contextStates:contexts.map(c=>c.state),createdWorkers:workers.length,liveWorkers:workers.filter(w=>w.live).length,maxWorkers,
   liveBeds:count('bed'),liveTransients:count('transient'),maxBeds,maxTransients,liveAccents:accentCount(),maxAccents,
   nodes:nodes.map(({native,context,...entry})=>({...entry,contextIndex:contexts.indexOf(context)})),events:events.map(event=>({...event})),
