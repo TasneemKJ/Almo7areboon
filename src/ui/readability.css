@@ -7,3 +7,5 @@
 .rarity { color:#132a30; }
 /* The wave and incoming-threat readout is tactical information, so it follows the same floor. */
 .battle-meta>span { font-size:11px; }
+/* Troop role and specialty captions (e.g. RANGED · PIERCE) fit their cards at 10px with tight tracking. */
+.unit-role { font-size:10px; letter-spacing:0; }
