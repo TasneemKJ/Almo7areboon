@@ -12,6 +12,7 @@ test('native journey reaches fresh outcomes through public controls only',()=>{
  assert.match(script,/locator\(`\[data-skill="\$\{skill\}"\]`\)/);
  assert.match(script,/async function clickEnabled\(page,locator\)/);
  assert.match(script,/locator\.click\(\{timeout:750,noWaitAfter:true\}\)/);
+ assert.match(script,/if\(error instanceof Error&&error\.name==='TimeoutError'\)return false/,'a transient redraw must yield to the next public-control retry');
  assert.match(script,/if\(phase!=='won'&&phase!=='lost'\)throw error/);
  assert.match(script,/preparedChronicleProfile\(\)/);
  assert.doesNotMatch(script,/game\.state\.(phase|playerHp|enemyHp)\s*=/,'browser review must not fabricate an outcome');
