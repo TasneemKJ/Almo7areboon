@@ -13,9 +13,19 @@ async function open(name,width,height,profile,reducedMotion='reduce'){
  await page.goto(base,{waitUntil:'networkidle'});await page.waitForSelector('canvas');await page.waitForTimeout(500);return {page,context,name};
 }
 async function shot(fixture,state){const file=`${fixture.name}-${state}.png`;await fixture.page.screenshot({path:`${out}/${file}`});screens.push(file);}
-async function canvasShot(fixture,state){
- const file=`${fixture.name}-${state}.png`,encoded=await fixture.page.locator('canvas').evaluate(node=>node.toDataURL('image/png').split(',')[1]);
- await writeFile(`${out}/${file}`,Buffer.from(encoded,'base64'));screens.push(file);
+async function canvasShot(fixture,state,expected){
+ const capture=await fixture.page.locator('canvas').evaluate((node,phase)=>new Promise((resolve,reject)=>{
+  if(typeof node.battlefieldReviewSnapshot!=='function'){reject(new Error('Phaser post-render snapshot is unavailable'));return;}
+  node.battlefieldReviewSnapshot(({image,resultOpen,aftermath})=>{
+   if(!(image instanceof HTMLImageElement)){reject(new Error('Phaser post-render snapshot did not return an image'));return;}
+   const probe=document.createElement('canvas');probe.width=image.naturalWidth;probe.height=image.naturalHeight;const context=probe.getContext('2d',{willReadFrequently:true});if(!context){reject(new Error('Snapshot pixel probe is unavailable'));return;}context.drawImage(image,0,0);
+   const pixels=context.getImageData(0,0,probe.width,probe.height).data,step=Math.max(1,Math.floor(probe.width*probe.height/4096));let opaque=0;const colors=new Set();for(let pixel=0;pixel<probe.width*probe.height;pixel+=step){const i=pixel*4;if(pixels[i+3]>8){opaque++;colors.add(`${pixels[i]>>4}:${pixels[i+1]>>4}:${pixels[i+2]>>4}:${pixels[i+3]>>4}`);}}
+   resolve({encoded:image.src.split(',')[1],width:image.naturalWidth,height:image.naturalHeight,resultOpen,aftermath,opaque,colors:colors.size,phase});
+  });
+ }),expected);
+ assert.equal(capture.resultOpen,false,'survivor verdict snapshot must precede the result sheet');validateAftermathSnapshot(capture.aftermath,expected);assert.ok(capture.opaque>512&&capture.colors>32,`snapshot pixels are blank or uniform: ${JSON.stringify({opaque:capture.opaque,colors:capture.colors})}`);
+ const bytes=Buffer.from(capture.encoded,'base64');assert.deepEqual([...bytes.subarray(0,8)],[137,80,78,71,13,10,26,10]);assert.equal(bytes.readUInt32BE(16),capture.width);assert.equal(bytes.readUInt32BE(20),capture.height);
+ const file=`${fixture.name}-${state}.png`;await writeFile(`${out}/${file}`,bytes);screens.push(file);return capture.aftermath;
 }
 async function noOverflow(page){assert.ok(await page.evaluate(()=>document.documentElement.scrollWidth<=innerWidth+1),'root must not overflow horizontally');}
 const saved=page=>page.evaluate(()=>localStorage.getItem('almo7areboon.save.v1'));
@@ -106,8 +116,7 @@ try{
   if(outcome==='lost'){p.baseLevel=0;p.foodLevel=0;p.unlocked=[true,true,true];}
   const f=await open(name,width,height,p,'no-preference');await reachNaturalOutcome(f.page,outcome);
   await f.page.waitForFunction(expected=>{const raw=document.querySelector('canvas')?.dataset.battleAftermath;return raw&&JSON.parse(raw).phase===expected;},outcome,{timeout:1500});
-  assert.equal(await f.page.locator('.result-dialog').count(),0,'survivor verdict must precede the result sheet');
-  const state=await f.page.locator('canvas').evaluate(node=>JSON.parse(node.dataset.battleAftermath));validateAftermathSnapshot(state,outcome);await noOverflow(f.page);await canvasShot(f,`${outcome}-survivor-verdict`);
+  await canvasShot(f,`${outcome}-survivor-verdict`,outcome);await noOverflow(f.page);
   await f.page.locator('.result-dialog').waitFor({timeout:2500});const afterSettlement=await saved(f.page);await f.page.waitForTimeout(450);assert.equal(await saved(f.page),afterSettlement,'settled verdict presentation must remain save-inert');
   checks.push(`${width}: public controls reach a natural ${outcome}; bounded survivor verdict precedes the unchanged result sheet and remains save-inert`);await f.context.close();
  }

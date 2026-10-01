@@ -50,3 +50,11 @@ test('result timing and model ownership remain unchanged',()=>{
  assert.match(main,/resultDue=now\+\(document\.documentElement\.dataset\.motion==='reduced'\?350:1300\)/);
  assert.doesNotMatch(source,/\.dispatch\(/);assert.doesNotMatch(source,/profile\.[A-Za-z_$][\w$]*\s*=/);
 });
+
+test('native evidence uses Phaser post-render readback only under browser automation',()=>{
+ const source=battlefield();
+ assert.match(source,/if\(navigator\.webdriver\)/);
+ assert.match(source,/Object\.defineProperty\(renderer\.canvas,'battlefieldReviewSnapshot'/);
+ assert.match(source,/renderer\.renderer\.once\(Phaser\.Renderer\.Events\.POST_RENDER/);
+ assert.match(source,/renderer\.renderer\.snapshot\(/);
+});

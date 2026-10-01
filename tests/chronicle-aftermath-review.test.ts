@@ -23,10 +23,11 @@ test('victory and defeat tableaux are captured before the unchanged result sheet
  assert.match(script,/\['320-aftermath-loss',320,568,'lost'\]/);
  assert.match(script,/\['390-aftermath-win',390,844,'won'\]/);
  assert.match(script,/\['1024-aftermath-win',1024,768,'won'\]/);
- assert.match(script,/assert\.equal\(await f\.page\.locator\('\.result-dialog'\)\.count\(\),0/);
- assert.match(script,/async function canvasShot\(fixture,state\)/);
- assert.match(script,/node\.toDataURL\('image\/png'\)/,'the timed verdict evidence must atomically read the rendered canvas instead of racing the delayed result sheet');
- assert.match(script,/await canvasShot\(f,`\$\{outcome\}-survivor-verdict`\)/);
+ assert.match(script,/async function canvasShot\(fixture,state,expected\)/);
+ assert.match(script,/node\.battlefieldReviewSnapshot/,'timed verdict evidence must use Phaser post-render readback');
+ assert.doesNotMatch(script,/node\.toDataURL\(/,'an arbitrary WebGL canvas read can be cleared between frames');
+ assert.match(script,/resultOpen/,'modal absence must belong to the same rendered snapshot');
+ assert.match(script,/await canvasShot\(f,`\$\{outcome\}-survivor-verdict`,outcome\)/);
  assert.match(script,/await f\.page\.locator\('\.result-dialog'\)\.waitFor\(\{timeout:2500\}\)/);
 });
 
@@ -41,6 +42,9 @@ test('journey validates bounded diagnostics, settlement stability, overflow, run
  assert.match(script,/const afterSettlement=await saved\(f\.page\)/);
  assert.match(script,/assert\.equal\(await saved\(f\.page\),afterSettlement/);
  assert.match(script,/await noOverflow\(f\.page\)/);
+ assert.match(script,/capture\.opaque/);
+ assert.match(script,/capture\.colors/);
+ assert.match(script,/readUInt32BE\(16\)/);
  assert.match(script,/assetFailures/);
  assert.match(script,/assert\.equal\(assetFailures\.length,0/);
 });
