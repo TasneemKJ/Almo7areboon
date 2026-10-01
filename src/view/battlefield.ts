@@ -43,6 +43,7 @@ const xAt=(x:number)=>x*.45;
 /** View-only: nudges bodies sharing a lane by a few pixels so crowded columns read as individuals, not one stacked sprite. */
 const noise=(n:number)=>{const value=Math.sin(n*117.13)*43758.5453;return value-Math.floor(value);};
 const tint=(hex:string)=>parseInt(hex.slice(1),16);
+const stillReaction={x:0,y:0,angle:0} as const;
 
 /** Raster and SVG art share logical anchors; simulation remains the gameplay owner. */
 export function mountBattlefield(element:HTMLElement,game:GamePort,onFrame:()=>void,onEvents:(events:GameEvent[])=>void,options:{isVisible?:()=>boolean;villageMood?:()=>Readonly<VillageMoodSnapshot>;onPresentation?:(dt:number,events:readonly GameEvent[])=>void}={}):{destroy():void} {
@@ -288,7 +289,7 @@ export function mountBattlefield(element:HTMLElement,game:GamePort,onFrame:()=>v
     const verdict=this.aftermath?.phase===game.state.phase?battleAftermathPose({phase:this.aftermath.phase,side:unit.side,kind:unit.kind,elapsed:aftermathElapsed,reduced:this.reduce}):null;
     const facingDirection=verdict?.facing==='home'?-direction:direction;
     if(verdict){aftermathCounts[verdict.mode]++;aftermathCounts.roles[unit.kind]++;aftermathCounts.maxForward=Math.max(aftermathCounts.maxForward,verdict.forward);aftermathCounts.maxLift=Math.max(aftermathCounts.maxLift,verdict.lift);aftermathCounts.maxAngle=Math.max(aftermathCounts.maxAngle,Math.abs(verdict.angle));}
-    const recoil=hitReaction(unit.hitFlash,unit.side,unit.kind,this.reduce||frozen);
+    const recoil=verdict?stillReaction:hitReaction(unit.hitFlash,unit.side,unit.kind,this.reduce||frozen);
     for(const mark of unitFocusMarks(unit.side,unit.lane,unit.kind,unit.hitFlash,frozen)){g.fillStyle(mark.color,mark.alpha);g.fillEllipse(x+mark.x,y+mark.y,mark.width,mark.height);}
     g.fillStyle(0x243c42,perspective.shadowAlpha);g.fillEllipse(x+3,y+3,perspective.shadowWidth,perspective.shadowHeight);
     const halo=teamHalo(unit.side,unit.kind,perspective.scale,unit.hitFlash,frozen);
@@ -308,7 +309,7 @@ export function mountBattlefield(element:HTMLElement,game:GamePort,onFrame:()=>v
      if(unit.hitFlash>0)view.body.setTintFill(0xfff9db);else if(frozen)view.body.setTint(0x91e5f0);else if(unit.storyShadow)view.body.setTint((game.state.chronicle?.revealUntil??0)>game.state.time?0xd4e3bc:0xb8b8d1);else if(storybookArt(unit.age)&&unit.side==='enemy')view.body.setTint(0xffd9b5);else view.body.clearTint();
     }else{
      view.body.setPosition(verdict?x+recoil.x+verdict.forward*facingDirection:x+recoil.x+gesture.forward*direction,verdict?y-verdict.lift+recoil.y:y-gesture.lift+recoil.y).setScale(facingDirection*perspective.scale*(verdict?verdict.sx:gesture.sx),perspective.scale*(verdict?verdict.sy:gesture.sy)).setAngle(verdict?verdict.angle*facingDirection+recoil.angle:pose.angle*direction+gesture.angle*direction+recoil.angle);
-     drawTroop(view.body,unit.age,unit.kind,unit.side,verdict?verdict.frame/7:this.reduce||frozen?0:game.state.time,verdict?.mode==='triumph'||unit.attacking,unit.hitFlash>0);
+     drawTroop(view.body,unit.age,unit.kind,unit.side,verdict?verdict.frame/7:this.reduce||frozen?0:game.state.time,verdict?verdict.mode==='triumph':unit.attacking,unit.hitFlash>0);
     }
     // Troops win a same-baseline tie against the building and its damage marks.
     view.body.setDepth(y+.5);

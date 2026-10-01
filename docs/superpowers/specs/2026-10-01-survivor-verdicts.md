@@ -38,4 +38,3 @@
 5. Malformed kinds, sides, phases, and elapsed values return a safe finite pose or no pose.
 6. Phaser reuses current actors, reports phase/elapsed/role counts and bounds in `canvas.dataset.battleAftermath`, deletes the dataset outside a fresh terminal transition, and performs no model or save write.
 7. GitHub Actions Chromium reaches real public-action victory and defeat outcomes, captures the uncovered tableau at 320, 390, and 1024 widths before the unchanged result sheet, and reports no runtime, asset, overflow, or ownership failures.
-

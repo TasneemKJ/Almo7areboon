@@ -25,6 +25,8 @@ test('renderer observes terminal events and transforms its existing actor pool',
  assert.match(actorBlock,/view\.body\.setPosition/);assert.match(actorBlock,/view\.body\.setScale/);
  assert.doesNotMatch(actorBlock,/this\.add\.(image|graphics|sprite|text)/,'aftermath must reuse current actors instead of allocating per unit');
  assert.match(actorBlock,/else\{\s*view\.body\.setPosition[\s\S]*setScale\(facingDirection\*perspective\.scale/,'vector fallback must receive the same facing and bounded transform');
+ assert.match(actorBlock,/const recoil=verdict\?stillReaction:hitReaction/,'terminal verdict bounds must not compose with a stale hit recoil');
+ assert.match(actorBlock,/drawTroop\([\s\S]*verdict\?verdict\.mode==='triumph':unit\.attacking/,'a withdrawing vector survivor must not retain its terminal attack posture');
 });
 
 test('diagnostics are bounded and every reset or shutdown clears stale aftermath state',()=>{

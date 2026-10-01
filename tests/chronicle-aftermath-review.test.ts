@@ -10,6 +10,9 @@ test('native journey reaches fresh outcomes through public controls only',()=>{
  assert.match(script,/locator\('\[data-command="start"\]'\)\.click\(\)/);
  assert.match(script,/locator\(`\[data-unit="\$\{kind\}"\]`\)/);
  assert.match(script,/locator\(`\[data-skill="\$\{skill\}"\]`\)/);
+ assert.match(script,/async function clickEnabled\(page,locator\)/);
+ assert.match(script,/locator\.click\(\{timeout:750\}\)/);
+ assert.match(script,/if\(phase!=='won'&&phase!=='lost'\)throw error/);
  assert.match(script,/preparedChronicleProfile\(\)/);
  assert.doesNotMatch(script,/game\.state\.(phase|playerHp|enemyHp)\s*=/,'browser review must not fabricate an outcome');
 });
@@ -30,6 +33,9 @@ test('journey validates bounded diagnostics, settlement stability, overflow, run
  assert.match(script,/function validateAftermathSnapshot\(state,outcome\)/);
  for(const field of ['maxForward','maxLift','maxAngle'])assert.match(script,new RegExp(`state\\.${field}`));
  assert.match(script,/state\.roles\.length,3/);
+ assert.match(script,/if\(outcome==='lost'\)assert\.equal\(state\.withdraw>0,true/);
+ assert.match(script,/#base-status/);
+ assert.match(script,/\[data-unit="2"\]/);
  assert.match(script,/const afterSettlement=await saved\(f\.page\)/);
  assert.match(script,/assert\.equal\(await saved\(f\.page\),afterSettlement/);
  assert.match(script,/await noOverflow\(f\.page\)/);
