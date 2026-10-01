@@ -38,6 +38,6 @@ export function encodeAudioReviewWav(pcm){
 /** Fixture enumeration owns the count; merged role coverage and uniqueness are required. */
 export function validateAudioReviewCues(cues){
  assert.ok(Array.isArray(cues)&&cues.every(cue=>typeof cue==='string'&&cue.length>0),'cue enumeration required');
- assert.ok(cues.includes('death')&&cues.includes('summon'),'merged death and summon render previews required');
+ for(const cue of ['death','summon','story-rally','story-bell','story-shatter','story-protect','story-cover','story-breach','story-landmark','story-rescue'])assert.ok(cues.includes(cue),`${cue} render preview required`);
  assert.equal(new Set(cues).size,cues.length,'every preview cue must be unique');return cues.length;
 }

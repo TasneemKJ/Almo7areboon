@@ -2,7 +2,7 @@ import {selectCombatCues,type CombatCueId} from '../../src/view/combat-cues.ts';
 import {renderCombatCue,type CueVoice} from '../../src/view/audio.ts';
 import {synthesizeSoundscape} from '../../src/view/soundscape.ts';
 import type {GameEvent} from '../../src/game/types.ts';
-export const REVIEW_CUES:readonly CombatCueId[]=['deploy','hit-neutral','hit-blunt','hit-flick','hit-hollow','base-player','base-enemy','coin','freeze','meteor','food','upgrade','evolve','win','lose','death','summon'];
+export const REVIEW_CUES:readonly CombatCueId[]=['story-rally','story-bell','story-shatter','story-protect','story-cover','story-breach','story-landmark','story-rescue','deploy','hit-neutral','hit-blunt','hit-flick','hit-hollow','base-player','base-enemy','coin','freeze','meteor','food','upgrade','evolve','win','lose','death','summon'];
 interface Batch {at:number;events:GameEvent[]}
 /** Fixed integer-millisecond timeline avoids accidental near-equal batch keys. */
 export function crowdedAudioBatches():Batch[]{
@@ -13,6 +13,10 @@ export function crowdedAudioBatches():Batch[]{
  for(let ms=1500;ms<=18000;ms+=1500)add(ms,{type:'spawn',side:'player'});
  for(const ms of [3000,8000,13000,18000])add(ms,{type:'hit',target:'base',side:'enemy'});
  for(const [ms,skill] of [[4000,'freeze'],[9000,'meteor'],[14000,'food']] as const)add(ms,{type:'skill',skill});
+ add(2500,{type:'hit',target:'unit',storyCue:'covered',amount:8});
+ add(6500,{type:'hit',target:'unit',storyCue:'breach',amount:8});
+ add(10500,{type:'hit',storyCue:'landmark',amount:0});
+ add(16500,{type:'hit',storyCue:'rescued',amount:0});
  add(19000,{type:'win'});add(19000,{type:'coin',amount:10});add(19000,{type:'hit',target:'unit',side:'player'});
  return [...batches.entries()].sort(([a],[b])=>a-b).map(([ms,events])=>({at:ms/1000,events}));
 }

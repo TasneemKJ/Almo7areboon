@@ -1,5 +1,5 @@
 import type {GameEvent} from '../game/types.ts';
-export type CombatCueId='story-rally'|'story-bell'|'story-shatter'|'story-protect'|'deploy'|'hit-neutral'|'hit-blunt'|'hit-flick'|'hit-hollow'|'base-player'|'base-enemy'|'coin'|'freeze'|'meteor'|'food'|'upgrade'|'evolve'|'win'|'lose'|'death'|'summon';
+export type CombatCueId='story-rally'|'story-bell'|'story-shatter'|'story-protect'|'story-cover'|'story-breach'|'story-landmark'|'story-rescue'|'deploy'|'hit-neutral'|'hit-blunt'|'hit-flick'|'hit-hollow'|'base-player'|'base-enemy'|'coin'|'freeze'|'meteor'|'food'|'upgrade'|'evolve'|'win'|'lose'|'death'|'summon';
 export type CueCooldown='deployment'|'unit-hit'|'base-hit'|'coin'|'death';
 export interface CombatCue {
  readonly id:CombatCueId;readonly eventIndex:number;readonly priority:number;
@@ -12,9 +12,10 @@ export function selectCombatCues(events:readonly GameEvent[]):readonly CombatCue
   const event=events[index];if(!event||typeof event!=='object')continue;
   let id:CombatCueId,priority=1,critical=false,cooldown:CueCooldown|null=null;
   if(event.storyCue){
-   const accents:Partial<Record<NonNullable<GameEvent['storyCue']>,CombatCueId>>={rally:'story-rally','bell-warning':'story-bell','bell-ring':'story-bell','bell-stilled':'story-protect',shatter:'story-shatter',captain:'story-protect',rescued:'story-rally',landmark:'story-rally'};
+   const accents:Partial<Record<NonNullable<GameEvent['storyCue']>,CombatCueId>>={rally:'story-rally','bell-warning':'story-bell','bell-ring':'story-bell','bell-stilled':'story-protect',shatter:'story-shatter',captain:'story-protect',covered:'story-cover',breach:'story-breach',landmark:'story-landmark',rescued:'story-rescue'};
    const accent=accents[event.storyCue];
-   if(accent&&!other.has(accent))other.set(accent,{id:accent,eventIndex:index,priority:event.storyCue==='bell-warning'?6:4,critical:event.storyCue==='bell-warning',cooldown:event.storyCue==='shatter'?'unit-hit':null});
+   const replacesImpact=event.storyCue==='shatter'||event.storyCue==='covered'||event.storyCue==='breach';
+   if(accent&&!other.has(accent))other.set(accent,{id:accent,eventIndex:index,priority:event.storyCue==='bell-warning'?6:4,critical:event.storyCue==='bell-warning',cooldown:replacesImpact?'unit-hit':null});
    if((event.amount??0)<=0)continue;
   }
   switch(event.type){

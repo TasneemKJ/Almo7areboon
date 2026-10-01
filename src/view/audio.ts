@@ -73,10 +73,14 @@ type Point=readonly [seconds:number,value:number];
 interface CueDefinition {readonly wave:OscillatorType;readonly duration:number;readonly frequency:readonly Point[];readonly envelope:readonly Point[]}
 // Original short contours; these initial levels await perceptual/device review.
 const definitions:Readonly<Record<CombatCueId,CueDefinition>>={
- 'story-rally':{wave:'triangle',duration:.28,frequency:[[0,240],[.10,320],[.2,400]],envelope:[[.006,.032],[.08,.012],[.14,.026],[.28,0]]},
- 'story-bell':{wave:'sine',duration:.7,frequency:[[0,392],[.3,390],[.7,388]],envelope:[[.005,.043],[.12,.022],[.38,.012],[.7,0]]},
+ 'story-rally':{wave:'triangle',duration:.28,frequency:[[0,240],[.10,320],[.2,400]],envelope:[[.005,.032],[.08,.012],[.14,.026],[.28,0]]},
+ 'story-bell':{wave:'sine',duration:.65,frequency:[[0,392],[.3,390],[.65,388]],envelope:[[.005,.043],[.12,.022],[.38,.012],[.65,0]]},
  'story-shatter':{wave:'triangle',duration:.16,frequency:[[0,1550],[.035,890],[.16,310]],envelope:[[.003,.022],[.04,.008],[.065,.015],[.16,0]]},
- 'story-protect':{wave:'sine',duration:.36,frequency:[[0,294],[.14,392],[.36,440]],envelope:[[.008,.03],[.12,.019],[.2,.025],[.36,0]]},
+ 'story-protect':{wave:'sine',duration:.36,frequency:[[0,294],[.14,392],[.36,440]],envelope:[[.005,.03],[.12,.019],[.2,.025],[.36,0]]},
+ 'story-cover':{wave:'sine',duration:.22,frequency:[[0,220],[.08,277],[.22,247]],envelope:[[.003,.026],[.07,.012],[.12,.021],[.22,0]]},
+ 'story-breach':{wave:'sawtooth',duration:.18,frequency:[[0,620],[.05,310],[.18,130]],envelope:[[.002,.018],[.045,.007],[.08,.013],[.18,0]]},
+ 'story-landmark':{wave:'triangle',duration:.34,frequency:[[0,262],[.12,349],[.26,523]],envelope:[[.004,.025],[.1,.011],[.18,.02],[.34,0]]},
+ 'story-rescue':{wave:'sine',duration:.4,frequency:[[0,330],[.13,440],[.27,587]],envelope:[[.003,.022],[.11,.009],[.2,.024],[.31,.013],[.4,0]]},
  death:{wave:'sine',duration:.140,frequency:[[0,260],[.140,70]],envelope:[[.003,.020],[.040,.010],[.140,0]]},
  summon:{wave:'sine',duration:.320,frequency:[[0,660],[.100,990],[.260,1480]],envelope:[[.003,.035],[.090,.016],[.160,.028],[.240,.012],[.320,0]]},
  deploy:{wave:'triangle',duration:.080,frequency:[[0,330]],envelope:[[.003,.040],[.025,.026],[.080,0]]},
