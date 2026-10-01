@@ -5,11 +5,11 @@ import {simulateChronicle,preparedChronicleProfile} from './simulate-chronicle.t
 import {arrivalReviewFixtures,assertArrivalPaused,validateArrivalSnapshot} from './chronicle-arrival-review.ts';
 const base=process.env.REVIEW_URL??'http://127.0.0.1:4173',out='artifacts/chronicle';await mkdir(out,{recursive:true});
 const browser=await chromium.launch({headless:true,...(process.env.CHROMIUM_PATH?{executablePath:process.env.CHROMIUM_PATH}:{}),args:['--enable-unsafe-swiftshader']});
-const errors=[],checks=[],screens=[];
-async function open(name,width,height,profile){
- const context=await browser.newContext({viewport:{width,height},deviceScaleFactor:2,isMobile:width<600,hasTouch:width<600,reducedMotion:'reduce'});
+const errors=[],assetFailures=[],checks=[],screens=[];
+async function open(name,width,height,profile,reducedMotion='reduce'){
+ const context=await browser.newContext({viewport:{width,height},deviceScaleFactor:2,isMobile:width<600,hasTouch:width<600,reducedMotion});
  if(profile)await context.addInitScript(p=>{if(!localStorage.getItem('chronicle-fixture-loaded')){localStorage.setItem('almo7areboon.save.v1',JSON.stringify(p));localStorage.setItem('chronicle-fixture-loaded','yes');}},profile);
- const page=await context.newPage();page.on('pageerror',e=>errors.push({name,error:e.message}));page.on('console',m=>{if(m.type()==='error')errors.push({name,error:m.text()});});
+ const page=await context.newPage();page.on('pageerror',e=>errors.push({name,error:e.message}));page.on('console',m=>{if(m.type()==='error')errors.push({name,error:m.text()});});page.on('response',response=>{if(/\/(art|assets)\//.test(response.url())&&!response.ok())assetFailures.push({name,error:`${response.status()} ${response.url()}`});});
  await page.goto(base,{waitUntil:'networkidle'});await page.waitForSelector('canvas');await page.waitForTimeout(500);return {page,context,name};
 }
 async function shot(fixture,state){const file=`${fixture.name}-${state}.png`;await fixture.page.screenshot({path:`${out}/${file}`});screens.push(file);}
@@ -44,6 +44,28 @@ async function pauseAtWaveArrival(page,intent,onObserved){
  }
  throw new Error(`Timed out pausing at ${intent} wave arrival`);
 }
+function validateAftermathSnapshot(state,outcome){
+ assert.equal(state.phase,outcome);assert.ok(state.elapsed>=0&&state.elapsed<=1.3);
+ assert.equal(state.triumph>0,true,'the surviving winning side must answer the verdict');assert.ok(state.withdraw>=0);
+ assert.equal(Array.isArray(state.roles),true);assert.equal(state.roles.length,3);assert.equal(state.roles.every(value=>Number.isInteger(value)&&value>=0),true);
+ assert.ok(state.maxForward>=0&&state.maxForward<=4);assert.ok(state.maxLift>=0&&state.maxLift<=4);assert.ok(state.maxAngle>=0&&state.maxAngle<=4);assert.equal(state.reduced,false);
+}
+async function reachNaturalOutcome(page,outcome){
+ await page.locator('[data-command="start"]').click();
+ const deadline=Date.now()+90000,order=[0,1,0,2,1,2];let cursor=0;
+ while(Date.now()<deadline){
+  const phase=await page.locator('#world').getAttribute('data-phase');
+  if(phase===outcome)return;
+  if(phase==='won'||phase==='lost')throw new Error(`Expected ${outcome}, reached ${phase}`);
+  if(outcome==='won'){
+   const kind=order[cursor%order.length],unit=page.locator(`[data-unit="${kind}"]`);
+   if(!await unit.isDisabled()){await unit.click();cursor++;}
+   for(const skill of ['food','freeze','meteor']){const button=page.locator(`[data-skill="${skill}"]`);if(!await button.isDisabled())await button.click();}
+  }
+  await page.waitForTimeout(40);
+ }
+ throw new Error(`Timed out waiting for natural ${outcome}`);
+}
 try{
  for(const [width,height] of [[320,568],[390,844],[1024,768]]){
   const f=await open(`${width}`,width,height);await shot(f,'ready');await noOverflow(f.page);
@@ -67,6 +89,16 @@ try{
   assert.equal(await saved(f.page),before,'paused wave-arrival presentation must remain save-inert across the next autosave boundary');
   const still=await f.page.locator('canvas').evaluate(node=>JSON.parse(node.dataset.waveArrival));validateArrivalSnapshot(still,fixture.intent);assert.deepEqual(still,paused,'paused road omen must remain static');
   checks.push(`${fixture.width}: real ${fixture.intent} commander preview renders the schedule-derived road omen behind actors and stays static/save-inert under public pause`);await f.context.close();
+ }
+ for(const [name,width,height,outcome] of [['320-aftermath-loss',320,568,'lost'],['390-aftermath-win',390,844,'won'],['1024-aftermath-win',1024,768,'won']]){
+  const p=preparedChronicleProfile();p.motion='system';p.speed=2;p.age=0;p.enemyAge=0;p.chronicle.route='road';p.chronicle.expedition=null;
+  if(outcome==='lost'){p.baseLevel=0;p.foodLevel=0;p.unlocked=[true,false,false];}
+  const f=await open(name,width,height,p,'no-preference');await reachNaturalOutcome(f.page,outcome);
+  await f.page.waitForFunction(expected=>{const raw=document.querySelector('canvas')?.dataset.battleAftermath;return raw&&JSON.parse(raw).phase===expected;},outcome,{timeout:1500});
+  assert.equal(await f.page.locator('.result-dialog').count(),0,'survivor verdict must precede the result sheet');
+  const state=await f.page.locator('canvas').evaluate(node=>JSON.parse(node.dataset.battleAftermath));validateAftermathSnapshot(state,outcome);await noOverflow(f.page);await shot(f,`${outcome}-survivor-verdict`);
+  await f.page.locator('.result-dialog').waitFor({timeout:2500});const afterSettlement=await saved(f.page);await f.page.waitForTimeout(450);assert.equal(await saved(f.page),afterSettlement,'settled verdict presentation must remain save-inert');
+  checks.push(`${width}: public controls reach a natural ${outcome}; bounded survivor verdict precedes the unchanged result sheet and remains save-inert`);await f.context.close();
  }
  {
   const p=preparedChronicleProfile();p.sound=true;const f=await open('390-company',390,844,p);
@@ -128,6 +160,6 @@ try{
   await f.page.locator('[data-story-provision="shelter"]').click();await shot(f,'checkpoint');await f.page.locator('[data-command="story-continue"]').click();
   await f.page.reload({waitUntil:'networkidle'});await f.page.locator('[data-command="start"]').waitFor();const saved=await f.page.evaluate(()=>JSON.parse(localStorage.getItem('almo7areboon.save.v1')));assert.equal(saved.chronicle.expedition.stage,1);assert.equal(saved.chronicle.expedition.provision,'shelter');assert.equal(saved.pendingVictory,null);checks.push('expedition continue consumes receipt once and resumes the next objective after reload');await f.context.close();
  }
- assert.equal(errors.length,0,JSON.stringify(errors));
+ assert.equal(errors.length,0,JSON.stringify(errors));assert.equal(assetFailures.length,0,JSON.stringify(assetFailures));
 }catch(error){errors.push({name:'review',error:String(error)});process.exitCode=1;}
-finally{await writeFile(`${out}/report.json`,JSON.stringify({scope:'Chromium software rendering; portrait and desktop fixtures, not physical-device or organic-progression acceptance',checks,screens,errors},null,2));console.log(JSON.stringify({checks,screens,errors},null,2));await browser.close();}
+finally{await writeFile(`${out}/report.json`,JSON.stringify({scope:'Chromium software rendering; disclosed preparation fixtures, public battle controls, portrait and desktop viewports; not physical-device, Safari, organic-balance or retention acceptance',checks,screens,errors,assetFailures},null,2));console.log(JSON.stringify({checks,screens,errors,assetFailures},null,2));await browser.close();}

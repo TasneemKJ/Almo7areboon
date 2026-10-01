@@ -23,6 +23,7 @@ import {DeathVisuals} from './death-visuals.ts';
 import {stackedY} from './floater-stack.ts';
 import {waveArrivalForPort} from './wave-arrival.ts';
 import {paintWaveArrival,waveArrivalRenderPlan} from './wave-arrival-paint.ts';
+import {battleAftermathPose} from './battle-aftermath.ts';
 import {TROOP_FRAME} from './unit-illustrations.ts';
 import {compactNumber} from '../ui/battle-hud.ts';
 import {battleResolution} from './render-resolution.ts';
@@ -88,6 +89,7 @@ export function mountBattlefield(element:HTMLElement,game:GamePort,onFrame:()=>v
   private layout=arenaLayout(450,430);
   private ages='';
   private lastState:BattleState|null=null;
+  private aftermath:{phase:'won'|'lost';at:number}|null=null;
   private clock=0;
   private reduce=false;
   private failed=false;
@@ -136,7 +138,7 @@ export function mountBattlefield(element:HTMLElement,game:GamePort,onFrame:()=>v
     this.baseText.push(text);this.world.add(text);
    }
    this.scale.on('resize',this.resize,this);
-   this.events.once('shutdown',()=>{delete this.game.canvas.dataset.waveArrival;this.scale.off('resize',this.resize,this);this.resetEffects();this.units.clear();this.idle=[];});
+   this.events.once('shutdown',()=>{delete this.game.canvas.dataset.waveArrival;delete this.game.canvas.dataset.battleAftermath;this.aftermath=null;this.scale.off('resize',this.resize,this);this.resetEffects();this.units.clear();this.idle=[];});
    this.resize();this.syncEra();loading.remove();
    if(this.failed)element.dispatchEvent(new CustomEvent('visual-fallback',{bubbles:true}));
   }
@@ -265,6 +267,9 @@ export function mountBattlefield(element:HTMLElement,game:GamePort,onFrame:()=>v
   private drawArmy():void {
    const g=this.shadows,h=this.halos;g.clear();h.clear();
    const {groundY}=this.layout;
+   if(game.state.phase==='ready'||game.state.phase==='running')this.aftermath=null;
+   let aftermathElapsed=this.aftermath?Math.max(0,this.clock-this.aftermath.at):0;aftermathElapsed=Math.min(1.3,aftermathElapsed);
+   const aftermathCounts={triumph:0,withdraw:0,roles:[0,0,0],maxForward:0,maxLift:0,maxAngle:0};
    // A shared ground-plane sort lets rear-lane troops pass behind buildings.
    this.playerBase.setPosition(39,groundY+12).setDepth(groundY+12);
    this.enemyBase.setPosition(411,groundY+12).setDepth(groundY+12);
@@ -280,6 +285,9 @@ export function mountBattlefield(element:HTMLElement,game:GamePort,onFrame:()=>v
     const direction=unit.side==='player'?1:-1;
     const pose=troopPose(game.state.time+unit.id*.17,moving,unit.attacking,this.reduce||frozen);
     const gesture=characterGesture(unit.kind,game.state.time+unit.id*.17,moving,unit.attacking,this.reduce||frozen);
+    const verdict=this.aftermath?.phase===game.state.phase?battleAftermathPose({phase:this.aftermath.phase,side:unit.side,kind:unit.kind,elapsed:aftermathElapsed,reduced:this.reduce}):null;
+    const facingDirection=verdict?.facing==='home'?-direction:direction;
+    if(verdict){aftermathCounts[verdict.mode]++;aftermathCounts.roles[unit.kind]++;aftermathCounts.maxForward=Math.max(aftermathCounts.maxForward,verdict.forward);aftermathCounts.maxLift=Math.max(aftermathCounts.maxLift,verdict.lift);aftermathCounts.maxAngle=Math.max(aftermathCounts.maxAngle,Math.abs(verdict.angle));}
     const recoil=hitReaction(unit.hitFlash,unit.side,unit.kind,this.reduce||frozen);
     for(const mark of unitFocusMarks(unit.side,unit.lane,unit.kind,unit.hitFlash,frozen)){g.fillStyle(mark.color,mark.alpha);g.fillEllipse(x+mark.x,y+mark.y,mark.width,mark.height);}
     g.fillStyle(0x243c42,perspective.shadowAlpha);g.fillEllipse(x+3,y+3,perspective.shadowWidth,perspective.shadowHeight);
@@ -288,21 +296,27 @@ export function mountBattlefield(element:HTMLElement,game:GamePort,onFrame:()=>v
     h.fillStyle(halo.color,halo.alpha*.6);h.fillEllipse(x+halo.x,y+halo.y,halo.rx*1.2,halo.ry*1.1,10);
     g.fillStyle(0x2a4647,perspective.shadowAlpha*.82);g.fillEllipse(x+2,y+2,perspective.shadowWidth*.68,perspective.shadowHeight*.38);
     if(view.body instanceof Phaser.GameObjects.Image){
-     if(!game.state.paused)view.body.setFrame(String(pose.frame));
-     view.body.setAngle(pose.angle*direction+gesture.angle*direction+recoil.angle);
      const density=TROOP_FRAME.height/view.body.height;
-     view.body.setScale(scale*density*gesture.sx,scale*density*gesture.sy).setFlipX(unit.side==='enemy');
+     if(verdict){
+      view.body.setFrame(String(verdict.frame));view.body.setAngle(verdict.angle*facingDirection+recoil.angle);view.body.setScale(scale*density*verdict.sx,scale*density*verdict.sy).setFlipX(facingDirection<0);
+      view.body.setPosition(x+recoil.x+verdict.forward*facingDirection,y-verdict.lift+recoil.y);
+     }else{
+      if(!game.state.paused)view.body.setFrame(String(pose.frame));
+      view.body.setAngle(pose.angle*direction+gesture.angle*direction+recoil.angle);view.body.setScale(scale*density*gesture.sx,scale*density*gesture.sy).setFlipX(direction<0);
+      view.body.setPosition(x+recoil.x+gesture.forward*direction,y-(game.state.paused?0:pose.lift)-gesture.lift+recoil.y);
+     }
      if(unit.hitFlash>0)view.body.setTintFill(0xfff9db);else if(frozen)view.body.setTint(0x91e5f0);else if(unit.storyShadow)view.body.setTint((game.state.chronicle?.revealUntil??0)>game.state.time?0xd4e3bc:0xb8b8d1);else if(storybookArt(unit.age)&&unit.side==='enemy')view.body.setTint(0xffd9b5);else view.body.clearTint();
-     view.body.setPosition(x+recoil.x+gesture.forward*direction,y-(game.state.paused?0:pose.lift)-gesture.lift+recoil.y);
     }else{
-     view.body.setPosition(x+recoil.x+gesture.forward*direction,y-gesture.lift+recoil.y).setScale(direction*perspective.scale*gesture.sx,perspective.scale*gesture.sy).setAngle(pose.angle*direction+gesture.angle*direction+recoil.angle);
-     drawTroop(view.body,unit.age,unit.kind,unit.side,this.reduce||frozen?0:game.state.time,unit.attacking,unit.hitFlash>0);
+     view.body.setPosition(verdict?x+recoil.x+verdict.forward*facingDirection:x+recoil.x+gesture.forward*direction,verdict?y-verdict.lift+recoil.y:y-gesture.lift+recoil.y).setScale(facingDirection*perspective.scale*(verdict?verdict.sx:gesture.sx),perspective.scale*(verdict?verdict.sy:gesture.sy)).setAngle(verdict?verdict.angle*facingDirection+recoil.angle:pose.angle*direction+gesture.angle*direction+recoil.angle);
+     drawTroop(view.body,unit.age,unit.kind,unit.side,verdict?verdict.frame/7:this.reduce||frozen?0:game.state.time,verdict?.mode==='triumph'||unit.attacking,unit.hitFlash>0);
     }
     // Troops win a same-baseline tie against the building and its damage marks.
     view.body.setDepth(y+.5);
     if(moving&&!game.state.paused&&!frozen&&this.clock-view.dustAt>.28){this.emit(x,y+2,1,0xdfd4b1,true,.45,unit.lane);view.dustAt=this.clock;}
     view.x=x;view.y=y;
    }
+   if(this.aftermath?.phase===game.state.phase)this.game.canvas.dataset.battleAftermath=JSON.stringify({phase:this.aftermath.phase,elapsed:aftermathElapsed,triumph:aftermathCounts.triumph,withdraw:aftermathCounts.withdraw,roles:aftermathCounts.roles,maxForward:aftermathCounts.maxForward,maxLift:aftermathCounts.maxLift,maxAngle:aftermathCounts.maxAngle,reduced:this.reduce});
+   else delete this.game.canvas.dataset.battleAftermath;
    for(const [id,view]of this.units)if(!ids.has(id)){
     if(this.reduce)view.body.destroy();
     else {if(view.body instanceof Phaser.GameObjects.Image)view.body.clearTint();this.fallen.add(view.body,view.side);}
@@ -565,6 +579,7 @@ export function mountBattlefield(element:HTMLElement,game:GamePort,onFrame:()=>v
   }
   private event(e:GameEvent):void {
    const x=xAt(e.x??500),y=this.yAt(e.lane??1);
+   if(e.type==='win'||e.type==='lose')this.aftermath={phase:e.type==='win'?'won':'lost',at:this.clock};
    if(e.storyCue){
     const words:Partial<Record<NonNullable<GameEvent['storyCue']>,string>>={'bell-warning':'THE BELL WAKES','bell-stilled':'STILLED',shatter:'SHATTER',captain:game.profile.chronicle?.captain==='gatekeeper'?'STAND TOGETHER':'BORROWED DAWN',rally:'TOGETHER',rescued:'COME HOME'};
     if(words[e.storyCue])this.floatText(x,y-50,words[e.storyCue]!,'#e5d4ad',e.storyCue==='captain');
@@ -642,7 +657,7 @@ export function mountBattlefield(element:HTMLElement,game:GamePort,onFrame:()=>v
    const dt=Math.min(.05,Math.max(0,delta/1000));game.step(dt);
    const events=game.drainEvents();options.onPresentation?.(dt,events);if(events.length)onEvents(events);
    if(options.isVisible&&!options.isVisible()){onFrame();return;}
-   if(this.lastState!==game.state){this.lastState=game.state;this.resetEffects();for(const view of this.units.values())view.body.destroy();this.units.clear();}
+   if(this.lastState!==game.state){this.lastState=game.state;this.aftermath=null;delete this.game.canvas.dataset.battleAftermath;this.resetEffects();for(const view of this.units.values())view.body.destroy();this.units.clear();}
    const reduced=reducedMotion(game.profile.motion,motionQuery.matches);
    if(reduced&&!this.reduce)this.resetEffects();this.reduce=reduced;
    if(!game.state.paused&&!this.reduce)this.clock+=dt;
