@@ -18,10 +18,12 @@ test('one shared 64 by 64 light allocation keeps the manifest below the decoded 
 test('180 seconds of village rendering retains bounded marks and cached sky geometry',()=>{const advance=presentation(),g=new Game(defaultProfile());const path=life.villageSkyPath(2,viewport);let owner:any=null;for(let i=0;i<180*20;i++){owner=advance(owner,g.state,2,.05,[],false);const frame=life.villageFrame({age:2,time:owner.mood.time,reduced:false,restoration:7,mood:owner.mood,viewport:{...viewport,skyPath:path} as any});assert.ok(frame.residents.length<=2&&frame.lamps.length<=4&&frame.restorationLights.length<=2&&frame.water.length<=3);assert.ok(frame.residents.reduce((sum,r)=>sum+r.panes.length,0)<=90);assert.ok((frame.bird?.length??0)<=9);}assert.equal(g.state.time,0);});
 test('battlefield owns restored life through one saved mask and a fixed six-light pool',()=>{
  const source=readFileSync(new URL('../src/view/battlefield.ts',import.meta.url),'utf8');
+ const layeringReview=readFileSync(new URL('../scripts/capture-layering-review.mjs',import.meta.url),'utf8');
  assert.match(source,/restoration:game\.profile\.chronicle\?\.restoration\?\?0/);
  assert.match(source,/while\(this\.stageLight\.length<6\)/);
  assert.match(source,/const lights=\[\.\.\.frame\.lamps,\.\.\.frame\.restorationLights\]/);
  assert.match(source,/mark=lights\[i\]/);
+ assert.match(layeringReview,/v\.pools,\{lights:6,stars:0,clouds:0,mist:0\}/);
 });
 test('chronicle renderer no longer paints abstract restoration bars beside the player base',()=>{
  const source=readFileSync(new URL('../src/view/chronicle-view.ts',import.meta.url),'utf8');
