@@ -13,3 +13,6 @@ export function chronicleMaterial(colour:string):readonly [string,string,string]
     '#28383c':['#45504a','#28383c','#232b29'],
   };return colours[colour]??[colour,colour,colour];
 }
+
+/** Actors stagger up to 2.2px around their lane, then sort at +.5. Keep attachments ahead without jumping a lane. */
+export function chronicleAttachmentDepth(footY:number):number{return chronicleActorDepth(footY,30);}

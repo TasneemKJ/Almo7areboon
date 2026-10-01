@@ -1,6 +1,6 @@
 import Phaser from 'phaser';
 import type {Profile,BattleState} from '../game/types.ts';
-import {chronicleActorDepth,chroniclePaintPalette as P,bellMotion,chronicleMaterial} from './chronicle-presentation.ts';
+import {chronicleActorDepth,chroniclePaintPalette as P,bellMotion,chronicleMaterial,chronicleAttachmentDepth} from './chronicle-presentation.ts';
 type Prop='cart'|'lantern'|'cage'|'bell'|'supply';
 /** Small prepainted props reuse the storybook material grammar; they never own combat. */
 function paintedProp(scene:Phaser.Scene,kind:Prop):string {
@@ -85,8 +85,8 @@ export class ChronicleView {
     }
     if(c.rally){g.lineStyle(1.2,0xe4c894,.7);g.strokeEllipse(104,groundY+8,31,13);g.lineBetween(115,groundY+6,115,groundY-22);g.fillStyle(0xd3b880,.9);g.fillTriangle(115,groundY-22,130,groundY-18,115,groundY-12);}
     const keeper=s.units.find(u=>u.storyBoss&&u.hp>0);
-    if(keeper){const y=groundY+keeper.lane*laneGap;this.bell.setVisible(true).setPosition(keeper.x*.45+16,y-14).setDisplaySize(44,39).setDepth(chronicleActorDepth(y,8)).setAngle(bellMotion(s.time,c.boss.windupUntil>s.time,reduced||s.paused));
-      if(c.boss.windupUntil>s.time){this.label.setVisible(true).setText(`BELL · ${Math.ceil(c.boss.windupUntil-s.time)}s`).setPosition(keeper.x*.45,y-65).setDepth(groundY+laneGap*2+15);}
+    if(keeper){const y=groundY+keeper.lane*laneGap;this.bell.setVisible(true).setPosition(keeper.x*.45+34,y-4).setDisplaySize(64,57).setDepth(chronicleAttachmentDepth(y)).setAngle(bellMotion(s.time,c.boss.windupUntil>s.time,reduced||s.paused));
+      if(c.boss.windupUntil>s.time){this.label.setVisible(true).setText(`BELL · ${Math.ceil(c.boss.windupUntil-s.time)}s`).setPosition(keeper.x*.45,y-103).setDepth(groundY+laneGap*2+15);}
     }
     for(const u of s.units){const x=u.x*.45,y=groundY+u.lane*laneGap;
       if(u.storyVeteran!==undefined&&(p.chronicle?.veterans[u.storyVeteran]??0)>=3){g.fillStyle(0xe4c58e,.95);g.fillTriangle(x-4,y-17,x+4,y-17,x,y-11);}
