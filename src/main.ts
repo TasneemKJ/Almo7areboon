@@ -1,3 +1,7 @@
+import './ui/chronicle.css';
+import { chronicleScreenHtml, chronicleActionFromData } from './ui/chronicle-screen.ts';
+import { chronicleGuidance } from './game/chronicle-combat.ts';
+import { CAPTAINS, routeDefinition } from './game/chronicle.ts';
 import {storybookArt} from './view/storybook-art.ts';
 import './style.css';
 import './ui/continuation.css';
@@ -69,14 +73,14 @@ root.innerHTML = `
       <div class="stage"><div id="timeline" class="eyebrow"></div><h1 id="age-title"></h1><p id="scene-name" class="scene-name"></p><button id="battle-select" class="battle-select" data-command="battles" aria-label="Choose a battle"><span class="stage-progress" id="stage-progress"></span></button></div>
       <div class="world-tools"><button id="quests" class="square-button" data-command="quests" aria-label="Quests">${icon('quest')}<i class="notification"></i></button><button class="square-button" data-command="settings" aria-label="Settings">${icon('gear')}</button></div>
       <div class="battle-meta"><button id="wave-label" class="wave-inspect" data-command="wave-help"></button><div class="battle-toggles"><button id="speed" data-command="speed" aria-label="Change battle speed">1×</button><button id="pause" data-command="pause" aria-label="Pause battle">Ⅱ</button></div></div>
-      <div id="ready" class="ready"><div class="ready-title">YOUR ARMY. YOUR ERA.</div><button class="big-button green" data-command="start">BATTLE ${icon('battle')}</button><p>Destroy the enemy base!</p></div>
+      <div id="ready" class="ready"><div class="ready-title">YOUR ARMY. YOUR ERA.</div><button class="big-button green" data-command="start">BATTLE ${icon('battle')}</button><p id="story-ready-rule">Destroy the enemy base!</p><button class="story-open" data-command="chronicle">Open the storybook</button></div>
       <p id="base-status" class="sr-only"></p><p id="game-status" class="sr-only" role="status" aria-live="polite"></p><div id="pause-banner" class="pause-banner" hidden>PAUSED</div>
       <div class="battle-skills" id="battle-skills"></div>
     </section>
     <section class="deployment" aria-label="Deploy your army">
       <div class="food-line"><div class="food-total">${icon('food')}<strong id="food-count">6</strong><div class="food-meter"><i id="food-fill"></i></div></div><span id="production"></span></div>
       <div class="unit-cards" id="unit-cards"></div>
-      <div class="deploy-hint" id="deploy-hint">Tap a troop to send it into battle</div>
+      <div class="chronicle-command-row"><div class="deploy-hint" id="deploy-hint">Tap a troop to send it into battle</div><button id="story-rally" class="story-rally" data-command="story-rally" aria-pressed="false" aria-label="Gather newly deployed troops, then release them together">Gather</button></div>
     </section>
     <section class="upgrades" aria-label="Army upgrades"><div class="upgrade-row"><div class="upgrade-label">${icon('food')}<div>Food Production<small id="food-level"></small></div></div><button id="food-upgrade" class="buy-button" data-command="upgrade-food"></button></div><div class="upgrade-row"><div class="upgrade-label">${icon('heart')}<div>Base Health<small id="base-level"></small></div></div><button id="base-upgrade" class="buy-button" data-command="upgrade-base"></button></div></section>
   </div>
@@ -198,8 +202,8 @@ function update(force=false){
   textIfChanged($('speed'),`${p.speed}×`);$('speed').setAttribute('aria-label',`Battle speed ${p.speed} times. Change speed.`);
   $('battle-select').toggleAttribute('disabled',s.phase!=='ready');
   const wave=game.waveStatus();
-  textIfChanged($('wave-label'),s.phase==='running'?waveLabel(wave):s.phase==='ready'?'CHOOSE YOUR ARMY':'BATTLE COMPLETE');
-  $('wave-label').setAttribute('aria-label',s.phase==='running'?`Inspect wave. ${waveAccessibleLabel(wave)}`:$('wave-label').textContent??'');
+  textIfChanged($('wave-label'),s.phase==='running'?waveLabel(wave,s.chronicle?.enabled?s.chronicle.objective:undefined):s.phase==='ready'?'CHOOSE YOUR ARMY':'BATTLE COMPLETE');
+  $('wave-label').setAttribute('aria-label',s.phase==='running'?`Inspect wave. ${waveAccessibleLabel(wave,s.chronicle?.enabled?s.chronicle.objective:undefined)}`:$('wave-label').textContent??'');
   $('wave-label').toggleAttribute('disabled',s.phase!=='running');
   textIfChanged($('deploy-hint'),battleGuidance(p,s,wave.preview,game.deploymentStatus(0)));
   const health=baseHealthDisplay(s.playerHp,s.playerMaxHp);
@@ -225,6 +229,17 @@ function update(force=false){
   });
   const notification=$('quests').querySelector<HTMLElement>('.notification');
   if(notification)notification.hidden=!(dailyReward(p,localDay()).available||QUESTS.some(q=>p[q.stat]>=q.target&&!p.claimed.includes(q.id)));
+  const story=s.chronicle;
+  $('story-rally').hidden=!story?.enabled;
+  $('story-rally').toggleAttribute('disabled',s.phase!=='running'||s.paused);
+  $('story-rally').setAttribute('aria-pressed',String(story?.rally??false));
+  textIfChanged($('story-rally'),story?.rally?`Release ${story.gathered.length}/6`:'Gather');
+  if(story?.enabled){
+    const instruction=chronicleGuidance(p,s);
+    if(s.phase==='running'&&!s.paused&&(!health.danger)&&(story.route!=='road'||story.rally||p.unlocked[1]))textIfChanged($('deploy-hint'),instruction);
+    textIfChanged($('story-ready-rule'),p.wins===0&&story.route==='road'?'Rima waits at the gate. Tap Battle, then send a defender. The company fights together.':routeDefinition(story.route).rule);
+
+  }
   // Let the finishing blow and base collapse play before the result dialog covers them.
   if(s.phase!==lastPhase){if(lastPhase==='running'&&(s.phase==='won'||s.phase==='lost'))resultDue=now+(document.documentElement.dataset.motion==='reduced'?350:1300);lastPhase=s.phase;}
   if(playable()&&modal!=='session'&&(s.phase==='won'||s.phase==='lost')&&resultShown!==s.phase&&now>=resultDue){resultShown=s.phase;showResult();}
@@ -252,22 +267,28 @@ function renderScreen(legacyOnly=false){
   }else if(activeTab==='cards'){
     html=cardsScreenHtml(p);
   }else if(activeTab==='skills'){
-    html=`<div class="screen-heading"><span class="eyebrow">TURN THE TIDE</span><h2 id="secondary-title" tabindex="-1">Battle skills</h2><p>The right move can change everything.</p></div><div class="skill-list">${[{id:'freeze',name:'Freeze',tag:'CONTROL',copy:`Freeze every enemy for ${legacyEffects(p.legacy).freezeSeconds} seconds. Give your army time to strike.`,color:'#73bbdb'},{id:'meteor',name:'Meteor',tag:'DAMAGE',copy:'Hit every enemy on the battlefield. Best saved for a big wave.',color:'#de805d'},{id:'food',name:'Food Drop',tag:'SUPPORT',copy:'Gain up to 10 food instantly, limited by 99-food storage. Deploy reinforcements when you need them.',color:'#97bc6a'}].map(s=>`<article class="skill-detail"><div class="skill-art" style="background:${s.color}">${icon(s.id)}</div><div><small>${s.tag}</small><h3>${s.name}</h3><p>${s.copy}</p><span class="skill-rule">ONCE PER BATTLE</span></div></article>`).join('')}</div><div class="skill-note">${icon('battle')}<p>Use the three skill buttons above your army during a battle. Each skill refreshes when a new battle begins.</p></div><button class="big-button green" data-tab="battle">BACK TO BATTLE ${icon('arrow')}</button>`;
+    const captain=p.chronicle?.enabled&&p.chronicle.captain!=='none'?CAPTAINS.find(c=>c.id===p.chronicle!.captain):undefined;
+    html=`<div class="screen-heading"><span class="eyebrow">TURN THE TIDE</span><h2 id="secondary-title" tabindex="-1">Battle skills</h2><p>The right move can change everything.</p></div><div class="skill-list">${[{id:'freeze',name:'Freeze',tag:'CONTROL',copy:`Freeze every enemy for ${legacyEffects(p.legacy).freezeSeconds} seconds. Give your army time to strike.`,color:'#73bbdb'},{id:'meteor',name:'Meteor',tag:'DAMAGE',copy:'Hit every enemy on the battlefield. Best saved for a big wave.',color:'#de805d'},{id:'food',name:captain?.skill??'Food Drop',tag:captain?'CAPTAIN':'SUPPORT',copy:captain?.description??'Gain up to 10 food instantly, limited by 99-food storage. Deploy reinforcements when you need them.',color:'#97bc6a'}].map(s=>`<article class="skill-detail"><div class="skill-art" style="background:${s.color}">${icon(s.id)}</div><div><small>${s.tag}</small><h3>${s.name}</h3><p>${s.copy}</p><span class="skill-rule">ONCE PER BATTLE</span></div></article>`).join('')}</div><div class="skill-note">${icon('battle')}<p>Use the three skill buttons above your army during a battle. Each skill refreshes when a new battle begins.</p></div><button class="big-button green" data-tab="battle">BACK TO BATTLE ${icon('arrow')}</button>`;
   }
   if(activeTab!=='battle')htmlIfChanged($('secondary-screen'),html);
 }
 function showModal(id:string,html:string,focusCommand?:string){
   if(id!=='session'&&!playable())return;
-  const replacing=modal!==null,command=(document.activeElement as HTMLElement|null)?.dataset.command;
+  const replacing=modal!==null,active=document.activeElement as HTMLElement|null,command=active?.dataset.command;
+  const storyAction=active?chronicleActionFromData(active.dataset):null,storyPage=active?.dataset.storyPage;
+  const layer=$('modal-layer'),previousScroll=replacing?layer.querySelector<HTMLElement>('.dialog')?.scrollTop:null;
   if(!replacing)focusBefore=document.activeElement as HTMLElement;
-  modal=id;modalVersion++;const version=modalVersion,layer=$('modal-layer');
-  layer.hidden=false;layer.innerHTML=`<section class="dialog ${id==='result'?'result-dialog':id==='session'?'session-dialog':id==='prestige'?'prestige-dialog':''}" role="dialog" tabindex="-1" aria-modal="true" aria-labelledby="dialog-title">${id!=='result'&&id!=='session'?`<button class="close-button" data-command="close" aria-label="Close">${icon('close')}</button>`:''}${html}</section>`;
+  modal=id;modalVersion++;const version=modalVersion;
+  layer.hidden=false;layer.innerHTML=`<section class="dialog ${id==='result'?'result-dialog':id==='session'?'session-dialog':id==='prestige'?'prestige-dialog':id==='chronicle'?'chronicle-dialog':''}" role="dialog" tabindex="-1" aria-modal="true" aria-labelledby="dialog-title">${id!=='result'&&id!=='session'?`<button class="close-button" data-command="close" aria-label="Close">${icon('close')}</button>`:''}${html}</section>`;
   isolateModal(true);syncPause();window.cancelAnimationFrame(focusFrame);
   focusFrame=requestAnimationFrame(()=>{
     if(lifetime.disposed||layer.hidden||version!==modalVersion)return;
     const previous=replacing&&command?Array.from(layer.querySelectorAll<HTMLElement>('[data-command]')).find(element=>element.dataset.command===command):null;
     const requested=focusCommand?Array.from(layer.querySelectorAll<HTMLElement>('[data-command]')).find(element=>element.dataset.command===focusCommand):null;
-    (requested??previous??modalFocusables(layer)[0]??layer.querySelector<HTMLElement>('.dialog'))?.focus();
+    const storyMatch=storyAction?Array.from(layer.querySelectorAll<HTMLElement>('[data-story-route],[data-story-captain],[data-story-tale],[data-story-preparation],[data-story-discovery],[data-story-provision]')).find(element=>JSON.stringify(chronicleActionFromData(element.dataset))===JSON.stringify(storyAction)):storyPage!==undefined?Array.from(layer.querySelectorAll<HTMLElement>('[data-story-page]')).find(element=>element.dataset.storyPage===storyPage):null;
+    const storyPrevious=storyMatch&&!storyMatch.matches(':disabled,[aria-disabled="true"]')?storyMatch:null;
+    const dialog=layer.querySelector<HTMLElement>('.dialog');if(previousScroll!==null&&previousScroll!==undefined&&dialog)dialog.scrollTop=previousScroll;
+    (requested??previous??storyPrevious??modalFocusables(layer)[0]??dialog)?.focus();
   });
 }
 function closeModal(refresh=true){
@@ -322,6 +343,7 @@ function returnToChapters(){
 }
 function dismissModal(){
   if(modal==='session')return;
+  if(modal==='chronicle'&&(game.state.phase==='won'||game.state.phase==='lost')){showResult();return;}
   if(modal==='prestige'){returnFromPrestige();return;}
   if(modal==='result'){
     if(advanceStatus(game.profile,game.state).reason==='complete')returnToChapters();
@@ -386,6 +408,24 @@ lifetime.listen<MouseEvent>(root,'click',e=>{
   if(!guardAction())return;
   if(modal&&!button.closest('#modal-layer'))return;
   unlockAudio(game.profile.sound);
+  if(command==='chronicle'){showModal('chronicle',chronicleScreenHtml(game.profile,game.state));return;}
+  if(button.dataset.storyPage!==undefined){
+    const page=Number(button.dataset.storyPage);if(Number.isInteger(page)&&page>=0&&page<=game.profile.furthestBattle)showModal('chronicle',chronicleScreenHtml(game.profile,game.state,page));return;
+  }
+  const storyAction=chronicleActionFromData(button.dataset);
+  if(storyAction){
+    if(action(storyAction)&&playable()&&modal!=='session'){
+      if(storyAction.type==='rally')return;
+      if(storyAction.type==='chronicle-discover'||storyAction.type==='chronicle-provision'){
+        if(game.state.phase==='won'||game.state.phase==='lost'){showResult();$('modal-layer').querySelector<HTMLDetailsElement>('.story-discoveries')?.setAttribute('open','');}
+        else showModal('chronicle',chronicleScreenHtml(game.profile,game.state));
+      }else if(['chronicle-route','chronicle-expedition','chronicle-continue','chronicle-abandon'].includes(storyAction.type)){
+        closeModal(false);manualPaused=false;switchTab('battle');
+        if(storyAction.type==='chronicle-abandon')showModal('chronicle',chronicleScreenHtml(game.profile,game.state));
+      }else {showModal('chronicle',chronicleScreenHtml(game.profile,game.state));$('modal-layer').querySelector<HTMLDetailsElement>('.story-company')?.setAttribute('open','');}
+    }
+    return;
+  }
   if(button.dataset.tab){switchTab(button.dataset.tab);return;}
   if(button.dataset.unit!==undefined){const kind=Number(button.dataset.unit) as UnitKind;if(!game.profile.unlocked[kind]){if(action({type:'unlock',kind})&&playable()&&!savedWarning)toast(troopUnlockMessage(game.profile,game.state.phase,kind,game.deploymentStatus(kind)),7000);}else action({type:'spawn',kind});return;}
   if(button.dataset.skill){action({type:'skill',skill:button.dataset.skill as Skill});return;}
@@ -402,7 +442,7 @@ lifetime.listen<MouseEvent>(root,'click',e=>{
     case 'upgrade-food':action({type:'upgrade',stat:'food'});break;
     case 'upgrade-base':action({type:'upgrade',stat:'base'});break;
     case 'battles':showModal('battles',battleSelectionHtml(game.profile,game.state));break;
-    case 'wave-help':if(game.state.phase==='running')showModal('wave-help',waveInspectionHtml(game.waveStatus()));break;
+    case 'wave-help':if(game.state.phase==='running')showModal('wave-help',waveInspectionHtml(game.waveStatus(),game.state.chronicle?.enabled?game.state.chronicle.objective:undefined));break;
     case 'evolve':{const html=evolutionDialogHtml(game.profile,game.state);if(html){evolutionFromResult=modal==='result';showModal('evolve',html);}break;}
     case 'confirm-evolve':{
       const returnToResult=evolutionFromResult,ok=action({type:'evolve'});

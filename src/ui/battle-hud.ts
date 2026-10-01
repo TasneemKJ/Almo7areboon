@@ -1,3 +1,4 @@
+import { CAPTAINS, type MissionObjective } from '../game/chronicle.ts';
 import { ERAS, foodRate, foodUpgradeCost, unlockCost } from '../game/data.ts';
 import { cardPackCost } from '../game/cards.ts';
 import type { WavePreview, WaveStatus } from '../game/encounters.ts';
@@ -23,8 +24,9 @@ export function battleGuidance(profile: Profile, state: BattleState, preview?: W
   if (state.paused) return 'Battle paused. Resume to deploy your army.';
   if (state.playerHp / state.playerMaxHp <= 0.3) return 'Your base is in danger. Deploy reinforcements or use a skill.';
   if (state.stats.deployed === 0 && state.food >= ERAS[profile.age].units[0].cost) return 'Deploy a melee warrior. Save some food for the next wave.';
+  const captain=profile.chronicle?.enabled&&profile.chronicle.captain!=='none'?CAPTAINS.find(c=>c.id===profile.chronicle!.captain):undefined;
   const wait = Math.ceil((ERAS[profile.age].units[0].cost - state.food) / foodRate(profile));
-  if (wait > 0) return profile.wins<3&&!state.skillsUsed.includes('food')
+  if (wait > 0) return profile.wins<3&&!captain&&!state.skillsUsed.includes('food')
     ? `Food Drop adds 10 now, once per battle; or wait ${wait}s.`
     : `More food in ${wait}s. Your warriors fight automatically.`;
   if(profile.wins<3&&melee?.allowed){
@@ -36,7 +38,7 @@ export function battleGuidance(profile: Profile, state: BattleState, preview?: W
     const skills = [
       ...(enemies && !state.skillsUsed.includes('freeze') ? ['Freeze'] : []),
       ...(enemies && !state.skillsUsed.includes('meteor') ? ['Meteor'] : []),
-      ...(state.food < 99 && !state.skillsUsed.includes('food') ? ['Food Drop'] : []),
+      ...((captain || state.food < 99) && !state.skillsUsed.includes('food') ? [captain?.skill??'Food Drop'] : []),
     ];
     if (skills.length) return `Try a skill: ${skills.join(' or ')}. Each works once per battle.`;
   }
@@ -78,20 +80,22 @@ export function baseHealthDisplay(hp: number, maximum: number): { ratio: number;
 
 
 /** Compact visible chip; delayed final members always precede clearance. */
-export function waveLabel(status: WaveStatus): string {
+const objectiveOrder=(objective?:MissionObjective)=>({escort:'Escort the cart',hold:'Protect the courtyard',rescue:'Bring the scout home',light:'Hold the lantern, then break the gate',boss:'Defeat the keeper, then break the gate',siege:'Attack the base'}[objective??'siege']);
+
+export function waveLabel(status: WaveStatus,objective?:MissionObjective): string {
   const p=status.preview;
   if(p){
     const counts=p.counts.flatMap((count,index)=>count>0?[`${count}${['M','R','H'][index]}`]:[]).join(' ');
     return `${p.intent.toUpperCase()} ${p.number}/${p.total} · ${counts} · ${Math.ceil(p.nextIn)}s`;
   }
   if(status.pendingEnemies>0)return `FINAL WAVE · ${status.pendingEnemies} INCOMING`;
-  return status.cleared?'WAVES CLEARED · ATTACK THE BASE':`${status.enemiesRemaining} ENEMIES REMAIN`;
+  return status.cleared?`WAVES CLEARED · ${objectiveOrder(objective).toUpperCase()}`:`${status.enemiesRemaining} ENEMIES REMAIN`;
 }
 
 /** Updated accessible name, deliberately not a countdown live region. */
-export function waveAccessibleLabel(status: WaveStatus): string {
+export function waveAccessibleLabel(status: WaveStatus,objective?:MissionObjective): string {
   const p=status.preview;
-  if(!p)return status.pendingEnemies>0?`Final wave. ${status.pendingEnemies} ${status.pendingEnemies===1?'enemy':'enemies'} incoming.`:status.cleared?'Waves cleared. Attack the base.':`${status.enemiesRemaining} enemies remain.`;
+  if(!p)return status.pendingEnemies>0?`Final wave. ${status.pendingEnemies} ${status.pendingEnemies===1?'enemy':'enemies'} incoming.`:status.cleared?`Waves cleared. ${objectiveOrder(objective)}.`:`${status.enemiesRemaining} enemies remain.`;
   const counts=p.counts.flatMap((count,index)=>count>0?[`${count} ${['melee','ranged','heavy'][index]}`]:[]).join(', ');
   return `${p.intent[0].toUpperCase()+p.intent.slice(1)} wave ${p.number} of ${p.total}. ${counts}. Arrives in ${Math.ceil(p.nextIn)} seconds.`;
 }

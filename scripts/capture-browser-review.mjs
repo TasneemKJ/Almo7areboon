@@ -147,7 +147,7 @@ async function captureTacticalWaves(browser,errors,assetFailures,output) {
  const {context,page}=await tacticalSession(browser,errors,assetFailures,{speed:2});
  try{
   await page.getByRole('button',{name:/^BATTLE/}).click();
-  assert.equal(await page.locator('#deploy-hint').textContent(),'Deploy a melee warrior. Save some food for the next wave.');
+  assert.equal(await page.locator('#deploy-hint').textContent(),'Deploy a defender before ranged troops; defenders protect them.');
   for(const [prefix,pattern] of [['33-first-fires-opening',/^RUSH/],['34-incoming-volley',/^VOLLEY/],['35-incoming-bulwark',/^BULWARK/]]){
    await page.waitForFunction(source=>new RegExp(source).test(document.querySelector('#wave-label').textContent),pattern.source,{timeout:25000});
    for(const [width,height] of [[320,640],[390,844]]){

@@ -7,7 +7,7 @@ export function isLegacyChoice(value: unknown): value is LegacyChoice {
 }
 export function normalizeLegacy(value: unknown, timeline: number, sourceVersion: number): LegacyProgress {
   const fallback = timeline > 1 ? 1 : 0;
-  if (sourceVersion !== 4) return {rank:fallback,selected:'hearth'};
+  if (sourceVersion !== 4 && sourceVersion !== 5) return {rank:fallback,selected:'hearth'};
   const record = value && typeof value === 'object' && !Array.isArray(value) ? value as Record<string,unknown> : {};
   const rank = typeof record.rank === 'number' && Number.isInteger(record.rank) && record.rank >= 0 && record.rank <= 3 ? record.rank as LegacyRank : fallback;
   return {rank,selected:isLegacyChoice(record.selected)?record.selected:'hearth'};

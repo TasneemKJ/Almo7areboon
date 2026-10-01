@@ -48,10 +48,10 @@ test('continuation follows selected Clear with legacy Continue-first and termina
   p.enemyAge = NaN; assert.equal(advanceStatus(p,{phase:'won'}).reason,'invalid');
 });
 test('schema 3 migration preserves paid masks and validates receipts without paying on load', () => {
-  const p = defaultProfile(); assert.equal(p.version,4); p.mastery.chapters[0] = {earnedMask:7,bestSeconds:null,bestGateDamage:12};
+  const p = defaultProfile(); assert.equal(p.version,5); p.mastery.chapters[0] = {earnedMask:7,bestSeconds:null,bestGateDamage:12};
   const raw = {...p,version:3,mastery:{timeline:1,chapters:[{earnedMask:7,bestSeconds:'bad',bestGateDamage:12}]}, pendingVictory:{timeline:1,battle:0,earned:560,seconds:50,playerHp:180,settlement:'mastery-v1',eligibleMask:7,newMask:7,masteryCoins:300,masteryGems:50}};
   const loaded = decodeSave(JSON.stringify(raw)).profile!; assert.equal(loaded.mastery.chapters[0].earnedMask,7); assert.equal(loaded.pendingVictory?.settlement,'mastery-v1'); assert.equal(loaded.coins,p.coins);
   raw.pendingVictory.newMask = 8; assert.equal(decodeSave(JSON.stringify(raw)).profile!.pendingVictory?.settlement,'legacy');
   for (const version of [1,2]) { const old = decodeSave(JSON.stringify({...p,version,pendingVictory:raw.pendingVictory})).profile!; assert.deepEqual(old.mastery,createMastery(1)); assert.equal(old.pendingVictory?.settlement,'legacy'); }
-  assert.equal(decodeSave(JSON.stringify({...p,version:5})).problem,'unsupported');
+  assert.equal(decodeSave(JSON.stringify({...p,version:6})).problem,'unsupported');
 });

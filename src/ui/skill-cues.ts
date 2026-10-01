@@ -1,3 +1,4 @@
+import { CAPTAINS } from '../game/chronicle.ts';
 import { legacyEffects } from '../game/prestige.ts';
 import type { BattleState,Profile,Skill } from '../game/types.ts';
 
@@ -16,6 +17,11 @@ export function skillCue(profile:Readonly<Profile>,state:Readonly<BattleState>,s
   return {badge:used?'✓':String(targets),label:`Freeze enemies for ${duration} seconds${used?' · used this battle':` · ${targetText}; starts immediately${suffix}`}`,opportunity:active&&available&&!used&&targets>=3,activeEffect:false};
  }
  if(skill==='meteor')return {badge:used?'✓':String(targets),label:used?'Meteor strike · used this battle':`Meteor strike · ${targetText}; damages every living enemy${suffix}`,opportunity:active&&available&&!used&&targets>=3,activeEffect:false};
+ const captain=profile.chronicle?.enabled&&profile.chronicle.captain!=='none'?CAPTAINS.find(c=>c.id===profile.chronicle!.captain):undefined;
+ if(captain){
+  const remaining=running&&used?Math.max(0,((captain.id==='gatekeeper'?state.chronicle?.shieldUntil:state.chronicle?.revealUntil)??0)-state.time):0;
+  return {badge:used?'✓':captain.id==='gatekeeper'?'GUARD':'LIGHT',label:`${captain.skill}${used?' · used this battle':` · ${captain.description.replace(/^Replace Food Drop: /,'')}${suffix}`}`,opportunity:active&&available&&!used&&targets>=3,activeEffect:remaining>0};
+ }
  const full=state.food>=99,limited=state.food>89;
  return {badge:used?'✓':full?'FULL':limited?'CAP':'+10',label:used?'Food Drop · used this battle':full?'Food Drop · food storage full at 99 food':`Food Drop · ${limited?'storage almost full; ':''}gain up to 10 food, limited to 99 food${suffix}`,opportunity:false,activeEffect:false};
 }

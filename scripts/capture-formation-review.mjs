@@ -3,7 +3,7 @@ import {mkdirSync,writeFileSync,existsSync} from 'node:fs';
 import {spawn,spawnSync} from 'node:child_process';
 import {chromium} from 'playwright';
 import {defaultProfile,SAVE_KEY,BACKUP_KEY} from '../src/game/save.ts';
-const output='artifacts/browser-review/formation-learning',origin='http://127.0.0.1:4188',cue='Ranged troops need cover. Add a melee guard.';
+const output='artifacts/browser-review/formation-learning',origin='http://127.0.0.1:4188',cue='Deploy a defender before ranged troops; defenders protect them.';
 mkdirSync(output,{recursive:true});
 const diagnostics={revision:spawnSync('git',['rev-parse','HEAD'],{encoding:'utf8'}).stdout.trim(),status:'failed',cases:[],pageErrors:[],assetFailures:[]};
 let browser,server,serverLog='';

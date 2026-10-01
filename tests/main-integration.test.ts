@@ -1,3 +1,6 @@
+import {chronicleScreenHtml,chronicleActionFromData} from '../src/ui/chronicle-screen.ts';
+import {chronicleGuidance} from '../src/game/chronicle-combat.ts';
+import {CAPTAINS,routeDefinition,createChronicle} from '../src/game/chronicle.ts';
 import test from 'node:test';
 import assert from 'node:assert/strict';
 import { readFileSync } from 'node:fs';
@@ -55,7 +58,7 @@ function harness(motion = 'full') {
     lastUpdate: 0, lastSave: 100, lastPhase: 'ready', resultDue: 0, resultShown: '', activeTab: 'battle', root,
     performance: { now: () => now }, document: { documentElement: { dataset: { motion } } },
     $: (id: string) => { if (!elements.has(id)) elements.set(id, node()); return elements.get(id); },
-    advanceStatus, battleSelectionHtml, evolutionDialogHtml, ERAS, QUESTS, foodRate, unlockCost, dailyReward, localDay, battleGuidance, baseHealthDisplay, compactNumber, waveLabel, waveAccessibleLabel, chapterPresentation, unitPresentationName, resultsHtml,isLegacyChoice,legacyEffects,prestigePreview,prestigeDetailsHtml,prestigeDialogHtml,legacyCurrentHtml,evolutionScreenHtml,saveSessionDialogHtml,temporarySessionNotice,skillCue,troopUnlockMessage,waveInspectionHtml,
+    chronicleScreenHtml,chronicleActionFromData,chronicleGuidance,CAPTAINS,routeDefinition,advanceStatus, battleSelectionHtml, evolutionDialogHtml, ERAS, QUESTS, foodRate, unlockCost, dailyReward, localDay, battleGuidance, baseHealthDisplay, compactNumber, waveLabel, waveAccessibleLabel, chapterPresentation, unitPresentationName, resultsHtml,isLegacyChoice,legacyEffects,prestigePreview,prestigeDetailsHtml,prestigeDialogHtml,legacyCurrentHtml,evolutionScreenHtml,saveSessionDialogHtml,temporarySessionNotice,skillCue,troopUnlockMessage,waveInspectionHtml,
     earlierChapter,storybookArt: () => false, money: String, coin: String, icon:()=>'',textIfChanged(target:any,value:string){target.textContent=value;},htmlIfChanged(target:any,value:string){target.innerHTML=value;},unlockAudio() {}, syncPause() {}, rebuildArmy() {}, syncMotion() {}, isolateModal(){}, toast() {},
     closeModal() { context.modal=null; }, showModal: (id: string,html:string,focusCommand?:string) => {context.modal=id;context.dialogHtml=html;context.focusCommand=focusCommand;dialogs.push(id);},
     session: {
@@ -69,7 +72,7 @@ function harness(motion = 'full') {
   return { context, dialogs, click:(command:string,detail=0)=>context.handleClick({target:new BoundaryButton({command}),detail,preventDefault(){}}), clickData:(dataset:Record<string,string>,detail=0)=>context.handleClick({target:new BoundaryButton(dataset),detail,preventDefault(){}}), change:(name:string,value:string)=>context.handleChange({target:new BoundaryInput(name,value)}),clock: (value: number) => { now = value; }, foreign: () => { foreign = true; } };
 }
 test('loss recovery opens chapter choice without selecting, buying or starting and ignores duplicate invocation',()=>{
- const h=harness(),c=h.context;Object.assign(c.game.profile,{age:4,enemyAge:5,furthestBattle:5,coins:0,gems:0});
+ const h=harness(),c=h.context;Object.assign(c.game.profile,{age:4,enemyAge:5,furthestBattle:5,coins:0,gems:0,chronicle:createChronicle(1,5)});
  c.game.dispatch({type:'start'});c.game.dispatch({type:'retreat'});c.modal='result';c.manualPaused=true;
  const before=JSON.stringify(c.game.profile);h.click('regroup-chapters');
  assert.equal(c.game.state.phase,'ready');assert.equal(c.modal,'battles');assert.equal(c.manualPaused,false);
@@ -78,8 +81,8 @@ test('loss recovery opens chapter choice without selecting, buying or starting a
  h.clickData({battle:'4'});assert.equal(c.game.profile.enemyAge,4);assert.equal(c.game.state.phase,'ready');assert.equal(c.game.profile.coins,0);
 });
 test('recovery route rejects wrong phase and yields to ownership loss before or during retry persistence',()=>{
- for(const phase of ['ready','running','won'] as const){const h=harness(),c=h.context;Object.assign(c.game.profile,{enemyAge:2,furthestBattle:2});c.game.state.phase=phase;c.modal='result';const before=JSON.stringify([c.game.profile,c.game.state]);h.click('regroup-chapters');assert.equal(JSON.stringify([c.game.profile,c.game.state]),before);assert.equal(c.modal,'result');}
- for(const duringSave of [false,true]){const h=harness(),c=h.context;Object.assign(c.game.profile,{enemyAge:2,furthestBattle:2});c.game.dispatch({type:'start'});c.game.dispatch({type:'retreat'});c.modal='result';const before=JSON.stringify(c.game.profile);
+ for(const phase of ['ready','running','won'] as const){const h=harness(),c=h.context;Object.assign(c.game.profile,{enemyAge:2,furthestBattle:2,chronicle:createChronicle(1,2)});c.game.state.phase=phase;c.modal='result';const before=JSON.stringify([c.game.profile,c.game.state]);h.click('regroup-chapters');assert.equal(JSON.stringify([c.game.profile,c.game.state]),before);assert.equal(c.modal,'result');}
+ for(const duringSave of [false,true]){const h=harness(),c=h.context;Object.assign(c.game.profile,{enemyAge:2,furthestBattle:2,chronicle:createChronicle(1,2)});c.game.dispatch({type:'start'});c.game.dispatch({type:'retreat'});c.modal='result';const before=JSON.stringify(c.game.profile);
   if(duringSave)c.session.save=()=>{c.session.status='conflict';c.sessionPresentation('conflict');return {ok:false};};else h.foreign();
   h.click('regroup-chapters');assert.equal(c.modal,'session');assert.equal(JSON.stringify(c.game.profile),before);
  }
@@ -324,3 +327,6 @@ test('actual optional-probe evolution route retains Battle 5 and seals while res
  assert.deepEqual(c.game.profile.unlocked,[true,false,false]);assert.deepEqual(c.game.profile.mastery,mastery);
  assert.equal(c.$('timeline').textContent,'TIMELINE 1 · BATTLE 5');
 });
+test('closing a storybook opened from a settled victory returns to its result without losing the receipt',()=>{const h=settledHarness(),c=h.context,before=JSON.stringify(c.game.profile);h.click('chronicle');assert.equal(c.modal,'chronicle');c.api.dismissModal();assert.equal(c.modal,'result');assert.equal(JSON.stringify(c.game.profile),before);});
+test('storybook writes yield to save ownership recovery before a route is selected',()=>{const h=harness(),c=h.context;h.click('chronicle');const before=JSON.stringify(c.game.profile);h.foreign();h.clickData({storyRoute:'escort',storyBattle:'0'});assert.equal(c.modal,'session');assert.equal(JSON.stringify(c.game.profile),before);});
+test('the skills page explains the selected captain instead of advertising Food Drop',()=>{const h=harness(),c=h.context;c.game.dispatch({type:'chronicle-captain',captain:'gatekeeper'});c.activeTab='skills';c.api.renderScreen();const html=c.$('secondary-screen').innerHTML;assert.match(html,/Stand together/);assert.doesNotMatch(html,/Gain up to 10 food instantly/);});

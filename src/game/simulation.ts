@@ -1,3 +1,6 @@
+import { normalizeChronicle, chronicleEncounter, recordChronicleWin, type ChronicleAction } from './chronicle.ts';
+import { planChronicleAction } from './chronicle-actions.ts';
+import { createChronicleBattle, chronicleStartingFood, chronicleGateFactor, chronicleSpawn, toggleRally, chronicleMovementLimit, chronicleDamage, chronicleBaseDamage, chronicleAfterHit, chronicleSkill, captainSkill, chronicleTick, chronicleOutcome, type ChronicleHost } from './chronicle-combat.ts';
 import { isLegacyChoice, legacyEffects, prestigePreview } from './prestige.ts';
 import { advanceStatus, canRetry, createMastery, masteryAward } from './mastery.ts';
 import { encounterForAge, scheduledSpawns, wavePreview } from './encounters.ts';
@@ -38,18 +41,28 @@ export class Game implements GamePort {
     if (victory) {
       this.state.phase = 'won';
       this.state.stats = battleStats(victory.stats);
-      this.state.enemyHp = 0;
+      this.state.enemyHp = Math.min(this.state.enemyMaxHp,victory.story?.enemyHp??0);
       this.state.playerHp = Math.min(this.state.playerMaxHp, victory.playerHp);
       this.state.earned = victory.earned;
       this.state.time = victory.seconds;
       this.state.wave = this.state.totalWaves;
+      if(this.state.chronicle){
+        const c=this.state.chronicle,story=victory.story;c.settled=true;
+        if(story){
+          c.cart={x:story.cartX,hp:Math.min(story.cartHp,story.cartMaxHp),maxHp:story.cartMaxHp};
+          c.rescued=story.rescued;c.rescueProgress=story.rescueProgress;c.lightSeconds=story.lightSeconds;
+          c.boss.spawned=story.bossDefeated;c.boss.interrupts=story.interrupts;
+          c.coveredHits=story.coveredHits;c.shatters=story.shatters;
+        }
+      }
       this.nextSpawn = this.schedule.length;
     }
   }
 
   private newBattle(): BattleState {
     this.events = [];
-    this.encounter = encounterForAge(this.profile.enemyAge);
+    this.profile.chronicle=normalizeChronicle(this.profile.chronicle,this.profile.timeline,this.profile.enemyAge);
+    this.encounter = chronicleEncounter(encounterForAge(this.profile.enemyAge),this.profile.chronicle,this.profile.enemyAge);
     this.schedule = scheduledSpawns(this.encounter);
     this.nextSpawn = 0;
     this.nextId = 1;
@@ -60,10 +73,10 @@ export class Game implements GamePort {
     this.rewardRemainder = 0;
     this.playerLane = 0;
     this.enemyLane = 0;
-    return { stats: battleStats(), phase: 'ready', paused: false, time: 0, food: legacyEffects(this.profile.legacy).startingFood, playerHp, playerMaxHp: playerHp, enemyHp, enemyMaxHp: enemyHp, units: [], wave: 0, totalWaves: this.encounter.waves.length, earned: 0, freezeUntil: 0, skillsUsed: [] };
+    return { chronicle: createChronicleBattle(this.profile), stats: battleStats(), phase: 'ready', paused: false, time: 0, food: Math.min(99,legacyEffects(this.profile.legacy).startingFood+chronicleStartingFood(this.profile)), playerHp, playerMaxHp: playerHp, enemyHp, enemyMaxHp: enemyHp, units: [], wave: 0, totalWaves: this.encounter.waves.length, earned: 0, freezeUntil: 0, skillsUsed: [] };
   }
 
-  private baseHealth(): number { return Math.round(180 * 1.65 ** this.profile.age * (1 + this.profile.baseLevel * 0.4) * this.bonuses().base * legacyEffects(this.profile.legacy).gateFactor); }
+  private baseHealth(): number { return Math.round(180 * 1.65 ** this.profile.age * (1 + this.profile.baseLevel * 0.4) * this.bonuses().base * legacyEffects(this.profile.legacy).gateFactor * chronicleGateFactor(this.profile)); }
   private refreshBaseHealth(): void {
     const nextMaxHp = this.baseHealth();
     this.state.playerHp = this.state.phase === 'lost' ? 0 : Math.max(0, Math.min(nextMaxHp, this.state.playerHp + nextMaxHp - this.state.playerMaxHp));
@@ -74,7 +87,20 @@ export class Game implements GamePort {
   private isActive(): boolean { return this.state.phase === 'running' && !this.state.paused; }
   private canPrepare(): boolean { return this.state.phase !== 'running' || this.state.paused; }
 
+  private chronicleHost(): ChronicleHost {
+    return {hurt:(unit,damage)=>this.hurt(unit,damage),spawnEnemy:(kind)=>this.spawn('enemy',kind)?this.state.units[this.state.units.length-1]:undefined,emit:event=>this.events.push(event)};
+  }
+
   dispatch(action: Action): boolean {
+    if(action.type==='rally'){const changed=toggleRally(this.profile,this.state);if(changed)this.events.push({type:'hit',storyCue:'rally',x:235,amount:0});return changed;}
+    if(action.type.startsWith('chronicle-')){
+      const plan=planChronicleAction(this.profile,this.state,action as ChronicleAction);
+      if(!plan)return false;
+      this.profile.chronicle=plan.chronicle;this.profile.enemyAge=plan.enemyAge;
+      if(plan.reset){this.profile.pendingVictory=null;this.state=this.newBattle();}
+      return true;
+    }
+    if(this.profile.chronicle?.expedition&&['next','prestige','select-battle','evolve'].includes(action.type))return false;
     switch (action.type) {
       case 'start':
         if (this.state.phase !== 'ready') return false;
@@ -96,6 +122,7 @@ export class Game implements GamePort {
         if (!this.deploymentStatus(action.kind).allowed) return false;
         if (!this.spawn('player', action.kind)) return false;
         this.state.food -= ERAS[this.profile.age].units[action.kind].cost;
+        chronicleSpawn(this.profile,this.state,this.state.units[this.state.units.length-1]);
         this.profile.deployed++;
         this.state.stats.deployed++;
         this.state.stats.deployedByKind[action.kind]++;
@@ -230,7 +257,7 @@ export class Game implements GamePort {
     const level = stat === 'food' ? this.profile.foodLevel : this.profile.baseLevel;
     if (level >= 100) return { allowed: false, reason: 'max', cost: null, nextValue: null };
     const cost = stat === 'food' ? foodUpgradeCost(this.profile) : baseUpgradeCost(this.profile);
-    const nextValue = stat === 'food' ? (0.8 + (level + 1) * 0.14) * this.bonuses().food : Math.round(180 * 1.65 ** this.profile.age * (1 + (level + 1) * 0.4) * this.bonuses().base * legacyEffects(this.profile.legacy).gateFactor);
+    const nextValue = stat === 'food' ? (0.8 + (level + 1) * 0.14) * this.bonuses().food : Math.round(180 * 1.65 ** this.profile.age * (1 + (level + 1) * 0.4) * this.bonuses().base * legacyEffects(this.profile.legacy).gateFactor * chronicleGateFactor(this.profile));
     return { allowed: this.profile.coins >= cost, reason: this.profile.coins >= cost ? 'available' : 'coins', cost, nextValue };
   }
 
@@ -276,14 +303,15 @@ export class Game implements GamePort {
     const healthBonus = side === 'player' ? this.bonuses().health : this.timelinePower() * 0.94;
     const hp = Math.round(def.hp * healthBonus);
     this.state.units.push({ id: this.nextId++, side, kind, age, x, lane, hp, maxHp: hp, attackTimer: 0, attacking: false, hitFlash: 0 });
+    if(side==='enemy')chronicleSpawn(this.profile,this.state,this.state.units[this.state.units.length-1]);
     this.events.push({ type: 'spawn', x, lane, side });
     return true;
   }
 
   canUseSkill(skill: Skill): boolean {
     if (!this.isActive() || !['food', 'freeze', 'meteor'].includes(skill) || this.state.skillsUsed.includes(skill)) return false;
-    if (skill === 'food' && this.state.food >= 99) return false;
-    if (skill === 'meteor' && !this.state.units.some(unit => unit.side === 'enemy' && unit.hp > 0)) return false;
+    if (skill === 'food' && this.state.food >= 99 && (!this.profile.chronicle?.enabled || this.profile.chronicle.captain==='none')) return false;
+    if (skill === 'meteor' && !this.state.units.some(unit => unit.side === 'enemy' && unit.hp > 0) && !(this.state.chronicle?.landmark.kind==='cover'&&!this.state.chronicle.landmark.broken)) return false;
     return true;
   }
 
@@ -292,7 +320,8 @@ export class Game implements GamePort {
     const foodGain = Math.min(10, 99 - this.state.food);
     this.state.skillsUsed.push(skill);
     this.state.stats.skillsCast++;
-    if (skill === 'food') this.state.food = Math.min(99, this.state.food + 10);
+    const captainUsed=skill==='food'&&captainSkill(this.profile,this.state);
+    if (skill === 'food'&&!captainUsed) this.state.food = Math.min(99, this.state.food + 10);
     if (skill === 'freeze') {
       this.state.stats.maxFreezeTargets = Math.max(this.state.stats.maxFreezeTargets,this.state.units.filter(unit=>unit.side === 'enemy' && unit.hp > 0).length);
       this.state.freezeUntil = this.state.time + legacyEffects(this.profile.legacy).freezeSeconds;
@@ -305,7 +334,8 @@ export class Game implements GamePort {
       }
       this.state.units = this.state.units.filter(u => u.hp > 0);
     }
-    this.events.push({ type: 'skill', skill, amount: skill === 'food' ? foodGain : undefined });
+    chronicleSkill(this.profile,this.state,skill);
+    this.events.push({ type: 'skill', skill, ...(captainUsed?{storyCue:'captain' as const}:{}), amount: skill === 'food' ? (captainUsed?0:foodGain) : undefined });
     return true;
   }
 
@@ -324,7 +354,9 @@ export class Game implements GamePort {
     this.state.time += dt;
     this.state.food = Math.min(99, this.state.food + (0.8 + this.profile.foodLevel * 0.14) * this.bonuses().food * dt);
     this.state.units = this.state.units.filter(u => u.hp > 0);
-    if (this.checkEnd()) return;
+    chronicleTick(this.profile,this.state,dt,this.chronicleHost());
+    const deferChronicleWin=this.state.chronicle?.enabled===true&&chronicleOutcome(this.profile,this.state)==='won';
+    if (this.checkEnd(deferChronicleWin)) return;
     while (this.state.wave < this.encounter.waves.length && this.state.time + 1e-9 >= this.encounter.waves[this.state.wave].time) this.state.wave++;
     while (this.nextSpawn < this.schedule.length && this.state.time + 1e-9 >= this.schedule[this.nextSpawn].time) {
       this.spawn('enemy', this.schedule[this.nextSpawn].kind);
@@ -357,7 +389,8 @@ export class Game implements GamePort {
           const source = { id: unit.id, x: unit.x, lane: unit.lane, side: unit.side, age: unit.age, kind: unit.kind };
           const hit = (targetUnit: Unit, secondary = false) => {
             const resolved = resolveRoleHit(unit.kind, targetUnit.kind, damage, secondary);
-            const actual = this.hurt(targetUnit, resolved.damage);
+            const actual = this.hurt(targetUnit, chronicleDamage(this.profile,this.state,unit,targetUnit,resolved.damage,secondary));
+            chronicleAfterHit(this.profile,this.state,unit,targetUnit,resolved.damage,secondary,this.chronicleHost());
             this.events.push({ type: 'hit', x: targetUnit.x, lane: targetUnit.lane, side: unit.side, amount: actual, source, target: 'unit', ...(resolved.trait ? { trait: resolved.trait } : {}) });
           };
           if (targetInRange) {
@@ -373,6 +406,8 @@ export class Game implements GamePort {
         }
       } else {
         let nextX = unit.x + def.speed * direction * dt;
+        const rallyLimit=chronicleMovementLimit(this.state,unit);
+        if(rallyLimit!==null)nextX=Math.min(nextX,rallyLimit);
         for (const friend of this.state.units) {
           if (friend.id === unit.id || friend.side !== unit.side || friend.lane !== unit.lane || friend.hp <= 0) continue;
           if ((friend.x - unit.x) * direction > 0) nextX = direction === 1 ? Math.min(nextX, friend.x - 22) : Math.max(nextX, friend.x + 22);
@@ -380,9 +415,10 @@ export class Game implements GamePort {
         // Never retreat because two bodies were added at an identical position.
         unit.x = direction === 1 ? Math.max(unit.x, Math.min(910, nextX)) : Math.min(unit.x, Math.max(90, nextX));
       }
-      if (this.checkEnd()) break;
+      if (this.checkEnd(deferChronicleWin)) break;
     }
     this.state.units = this.state.units.filter(u => u.hp > 0);
+    if(this.state.phase==='running')this.checkEnd();
   }
 
   private hurt(unit: Unit, damage: number): number {
@@ -404,6 +440,7 @@ export class Game implements GamePort {
   }
 
   private hurtBase(attacker: Side, damage: number): number {
+    damage=chronicleBaseDamage(this.state,attacker,damage);
     if (attacker === 'player') {
       const actual = Math.min(this.state.enemyHp, damage);
       this.state.enemyHp = Math.max(0, this.state.enemyHp - actual);
@@ -434,17 +471,23 @@ export class Game implements GamePort {
     this.events.push({ type: 'coin', x, amount: credited });
   }
 
-  private checkEnd(): boolean {
+  private checkEnd(deferChronicleWin=false): boolean {
     if (this.state.phase !== 'running') return true;
-    if (this.state.playerHp <= 0) {
-      this.state.playerHp = 0;
+    const outcome=chronicleOutcome(this.profile,this.state);
+    if (outcome==='lost') {
+      this.state.playerHp = Math.max(0,this.state.playerHp);
       this.state.phase = 'lost';
       this.events.push({ type: 'lose' });
       return true;
     }
-    if (this.state.enemyHp <= 0) {
-      this.state.enemyHp = 0;
+    if (outcome==='won') {
+      if(deferChronicleWin&&this.state.chronicle?.enabled)return false;
+      if(!this.state.chronicle || ['siege','light','boss'].includes(this.state.chronicle.objective))this.state.enemyHp=0;
       this.state.phase = 'won';
+      if(this.profile.chronicle&&this.state.chronicle&&!this.state.chronicle.settled){
+        this.profile.chronicle=recordChronicleWin(this.profile.chronicle,this.profile,{deployedByKind:this.state.stats.deployedByKind,survivingRoles:[0,1].map(kind=>{const id=this.state.chronicle!.veteranIds[kind];return id!==null&&this.state.units.some(unit=>unit.id===id&&unit.side==='player'&&unit.hp>0);}),food:this.state.food});
+        this.state.chronicle.settled=true;
+      }
       this.nextSpawn = this.schedule.length;
       this.profile.wins++;
       this.reward(120 * (1 + this.profile.enemyAge), 910);
@@ -459,6 +502,13 @@ export class Game implements GamePort {
         pendingVictory: { settlement: 'mastery-v1', stats: battleStats(this.state.stats), timeline: this.profile.timeline, battle: this.profile.enemyAge, earned: this.state.earned, seconds: this.state.time, playerHp: this.state.playerHp, eligibleMask: award.eligibleMask, newMask: award.newMask, masteryCoins: award.coins, masteryGems: award.gems },
       });
       if (award.coins) this.events.push({type:'coin',x:910,amount:award.coins});
+      const c=this.state.chronicle;
+      if(c&&this.profile.pendingVictory)this.profile.pendingVictory.story={
+        route:c.route,enemyHp:this.state.enemyHp,cartX:c.cart.x,cartHp:c.cart.hp,cartMaxHp:c.cart.maxHp,
+        rescued:c.rescued,rescueProgress:c.rescueProgress,lightSeconds:c.lightSeconds,
+        bossDefeated:c.boss.spawned&&!this.state.units.some(unit=>unit.id===c.boss.id&&unit.hp>0),
+        interrupts:c.boss.interrupts,coveredHits:c.coveredHits,shatters:c.shatters,
+      };
       this.events.push({ type: 'win' });
       return true;
     }

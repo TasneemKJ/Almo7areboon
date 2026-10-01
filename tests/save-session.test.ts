@@ -282,7 +282,7 @@ test('schema-4 settled ledger and receipt persist together through guarded impor
     }
     assert.equal(g.state.phase,'won'); assert.equal(g.profile.pendingVictory?.settlement,'mastery-v1'); assert.ok(g.profile.mastery.chapters[0].earnedMask & 1);
     assert.equal(session.save(g.profile).ok,true);
-    const persisted=JSON.parse(storage.getItem(SAVE_KEY)!); assert.equal(persisted.version,4);assert.deepEqual(persisted.legacy,g.profile.legacy);assert.deepEqual(persisted.mastery,g.profile.mastery);assert.deepEqual(persisted.pendingVictory,g.profile.pendingVictory);
+    const persisted=JSON.parse(storage.getItem(SAVE_KEY)!); assert.equal(persisted.version,5);assert.deepEqual(persisted.legacy,g.profile.legacy);assert.deepEqual(persisted.mastery,g.profile.mastery);assert.deepEqual(persisted.pendingVictory,g.profile.pendingVictory);
     const parsed=importBackup(exportBackup(g.profile)); assert.equal(parsed.ok,true);
     if(!parsed.ok)throw Error('Backup round trip failed');
     const imported=restoreBackupWithSave(new Game(),parsed.profile,p=>session.save(p).ok);assert.equal(imported.ok,true);assert.deepEqual(imported.game.profile,g.profile);

@@ -1,3 +1,4 @@
+import {CAPTAINS} from '../game/chronicle.ts';
 import { ERAS, unlockCost } from '../game/data.ts';
 import type { DeploymentStatus, Phase, Profile, UnitKind } from '../game/types.ts';
 import { unitPresentationName } from './chapter-presentation.ts';
@@ -38,7 +39,7 @@ export function troopUnlockMessage(profile: Readonly<Profile>, phase: Phase, kin
 type MarkupTarget = Pick<HTMLElement, 'innerHTML'>;
 
 export function createArmyUpdater(targets: { units: MarkupTarget; skills: MarkupTarget; stages: MarkupTarget }, portrait: (age: number, kind: UnitKind) => string, formatCost = (cost: number) => cost.toLocaleString('en-US')) {
-  let armyKey = '', stageKey = '', skillsReady = false;
+  let armyKey = '', stageKey = '', skillsKey = '';
   return (profile: Profile): boolean => {
     const nextArmyKey = `${profile.age}:${profile.unlocked.join(',')}`;
     const unitsChanged = nextArmyKey !== armyKey;
@@ -50,9 +51,11 @@ export function createArmyUpdater(targets: { units: MarkupTarget; skills: Markup
       }).join('');
       armyKey = nextArmyKey;
     }
-    if (!skillsReady) {
-      targets.skills.innerHTML = (['freeze', 'meteor', 'food'] as const).map(skill => `<button class="skill-circle ${skill}" data-skill="${skill}" aria-label="${skill === 'food' ? 'Food drop' : skill === 'freeze' ? 'Freeze enemies' : 'Meteor strike'}">${icon(skill)}<small>${skill === 'food' ? '+10' : skill === 'freeze' ? '❄' : '✦'}</small></button>`).join('');
-      skillsReady = true;
+    const captain=profile.chronicle?.enabled&&profile.chronicle.captain!=='none'?CAPTAINS.find(c=>c.id===profile.chronicle!.captain):undefined;
+    const nextSkillsKey=captain?.id??'none';
+    if (nextSkillsKey!==skillsKey) {
+      targets.skills.innerHTML = (['freeze', 'meteor', 'food'] as const).map(skill => `<button class="skill-circle ${skill}" data-skill="${skill}" aria-label="${skill === 'food' ? captain?.skill??'Food drop' : skill === 'freeze' ? 'Freeze enemies' : 'Meteor strike'}">${icon(skill==='food'&&captain?(captain.id==='gatekeeper'?'shield':'evolution'):skill)}<small>${skill === 'food' ? captain?(captain.id==='gatekeeper'?'GUARD':'LIGHT'):'+10' : skill === 'freeze' ? '❄' : '✦'}</small></button>`).join('');
+      skillsKey = nextSkillsKey;
     }
     const nextStageKey = String(profile.enemyAge);
     if (nextStageKey !== stageKey) {

@@ -1,4 +1,5 @@
 import Phaser from 'phaser';
+import {ChronicleView} from './chronicle-view.ts';
 import {storybookArt} from './storybook-art.ts';
 import {reducedMotion,projectileForHit,traitCueForHit} from './combat-feedback.ts';
 import {arenaLayout,foregroundPlacement,landscapePlacement,troopPose,visualEra} from './visual-theme.ts';
@@ -48,6 +49,7 @@ export function mountBattlefield(element:HTMLElement,game:GamePort,onFrame:()=>v
  const loading=document.createElement('div');loading.className='world-loader';loading.setAttribute('role','status');loading.textContent='Preparing the battlefield…';element.append(loading);
  class Battlefield extends Phaser.Scene {
   private world!:Phaser.GameObjects.Container;
+  private chronicleView!:ChronicleView;
   private sky!:Phaser.GameObjects.Image;
   private ambience!:Phaser.GameObjects.Graphics;
   private baseDamage!:Phaser.GameObjects.Graphics;
@@ -115,6 +117,7 @@ export function mountBattlefield(element:HTMLElement,game:GamePort,onFrame:()=>v
    this.shadows=this.add.graphics();this.world.add(this.shadows);
    this.halos=this.add.graphics().setBlendMode(Phaser.BlendModes.ADD);this.world.add(this.halos);
    this.armyLayer=this.add.container();this.world.add(this.armyLayer);
+   this.chronicleView=new ChronicleView(this,this.armyLayer);
    this.baseDamage=this.add.graphics();this.armyLayer.add(this.baseDamage);
    // Fixed pools share the actor sort; no masks or per-particle game objects.
    for(let lane=0;lane<3;lane++){const g=this.add.graphics();this.armyLayer.add(g);this.groundFx.push(g);}
@@ -269,7 +272,7 @@ export function mountBattlefield(element:HTMLElement,game:GamePort,onFrame:()=>v
     ids.add(unit.id);let view=this.units.get(unit.id);
     const x=xAt(unit.x),y=this.yAt(unit.lane)+rankStagger(unit.id),frozen=unit.side==='enemy'&&game.state.freezeUntil>game.state.time;
     if(!view){const body=this.sprite(unit.age,unit.kind,unit.side);this.armyLayer.add(body);view={body,x,y,side:unit.side,dustAt:0};this.units.set(unit.id,view);}
-    const moving=Math.abs(view.x-x)>.001,perspective=lanePresentation(unit.lane,unit.kind),scale=troopScale(unit.kind,unit.lane);
+    const moving=Math.abs(view.x-x)>.001,perspective=lanePresentation(unit.lane,unit.kind),scale=troopScale(unit.kind,unit.lane)*(unit.storyBoss?1.35:1);
     const direction=unit.side==='player'?1:-1;
     const pose=troopPose(game.state.time+unit.id*.17,moving,unit.attacking,this.reduce||frozen);
     const gesture=characterGesture(unit.kind,game.state.time+unit.id*.17,moving,unit.attacking,this.reduce||frozen);
@@ -285,7 +288,7 @@ export function mountBattlefield(element:HTMLElement,game:GamePort,onFrame:()=>v
      view.body.setAngle(pose.angle*direction+gesture.angle*direction+recoil.angle);
      const density=TROOP_FRAME.height/view.body.height;
      view.body.setScale(scale*density*gesture.sx,scale*density*gesture.sy).setFlipX(unit.side==='enemy');
-     if(unit.hitFlash>0)view.body.setTintFill(0xfff9db);else if(frozen)view.body.setTint(0x91e5f0);else if(storybookArt(unit.age)&&unit.side==='enemy')view.body.setTint(0xffd9b5);else view.body.clearTint();
+     if(unit.hitFlash>0)view.body.setTintFill(0xfff9db);else if(frozen)view.body.setTint(0x91e5f0);else if(unit.storyShadow)view.body.setTint((game.state.chronicle?.revealUntil??0)>game.state.time?0xd4e3bc:0xb8b8d1);else if(storybookArt(unit.age)&&unit.side==='enemy')view.body.setTint(0xffd9b5);else view.body.clearTint();
      view.body.setPosition(x+recoil.x+gesture.forward*direction,y-(game.state.paused?0:pose.lift)-gesture.lift+recoil.y);
     }else{
      view.body.setPosition(x+recoil.x+gesture.forward*direction,y-gesture.lift+recoil.y).setScale(direction*perspective.scale*gesture.sx,perspective.scale*gesture.sy).setAngle(pose.angle*direction+gesture.angle*direction+recoil.angle);
@@ -310,6 +313,7 @@ export function mountBattlefield(element:HTMLElement,game:GamePort,onFrame:()=>v
     if(actor instanceof Phaser.GameObjects.Image){actor.setScale(.47*TROOP_FRAME.height/actor.height).setFlipX(i===1);if(i===1&&storybookArt(game.profile.enemyAge))actor.setTint(0xffd9b5);}
     else {actor.setScale(i===0?1:-1,1);drawTroop(actor,i===0?game.profile.age:game.profile.enemyAge,0,side,0,false);}
    }
+   this.chronicleView.update(game.profile,game.state,groundY,this.layout.laneGap,this.reduce);
    this.armyLayer.sort('depth');
   }
   private drawAtmosphere():void {
@@ -549,6 +553,12 @@ export function mountBattlefield(element:HTMLElement,game:GamePort,onFrame:()=>v
   }
   private event(e:GameEvent):void {
    const x=xAt(e.x??500),y=this.yAt(e.lane??1);
+   if(e.storyCue){
+    const words:Partial<Record<NonNullable<GameEvent['storyCue']>,string>>={'bell-warning':'THE BELL WAKES','bell-stilled':'STILLED',shatter:'SHATTER',captain:game.profile.chronicle?.captain==='gatekeeper'?'STAND TOGETHER':'BORROWED DAWN',rally:'TOGETHER',rescued:'COME HOME'};
+    if(words[e.storyCue])this.floatText(x,y-50,words[e.storyCue]!,'#e5d4ad',e.storyCue==='captain');
+    this.ring(x,y-10,e.storyCue==='shatter'?0xacc9c5:0xd5bd89,18);
+    if((e.amount??0)<=0)return;
+   }
    if(e.type==='spawn'){this.emit(x,y,5,0xdfd4b1,true,.4,e.lane??1);this.ring(x,y,0xc9e2b3,13);this.flare(x,y-4,16,e.side==='enemy'?0xff8b55:0x6fd6ff,.3);}
    if(e.type==='hit'){
     const trait=traitCueForHit(e);
@@ -566,6 +576,7 @@ export function mountBattlefield(element:HTMLElement,game:GamePort,onFrame:()=>v
    }
    if(e.type==='death'){this.emit(x,y-12,9,e.side==='player'?0x82cce8:0xe6b388,true,.52,e.lane??1);this.flare(x,y-14,18,e.side==='player'?0x5ccfff:0xff8a50,.3);}
    if(e.type==='coin'&&e.amount)this.floatText(x,y-51,`+${compactNumber(e.amount)}`,'#ffdf7f');
+   if(e.type==='win'&&game.state.chronicle&&['escort','hold','rescue'].includes(game.state.chronicle.objective)){this.floatText(225,this.layout.groundY-70,'THE COMPANY RETURNS','#e5d4ad',true);this.ring(110,this.layout.groundY-12,0xd5bd89,24);return;}
    if(e.type==='win'){this.emit(408,this.layout.groundY-27,40,0xffd373,false,1.25);this.flare(411,this.layout.groundY-30,120,0xffd27a,1.1);if(!this.reduce){this.cameras.main.shake(100,.0015);this.cameras.main.flash(260,255,226,170);}}
    if(e.type==='lose')this.emit(39,this.layout.groundY-10,20,0xb6a484,true,.8);
    if(e.type==='evolve')this.ring(225,this.layout.groundY,0xd2f9d8,200);
