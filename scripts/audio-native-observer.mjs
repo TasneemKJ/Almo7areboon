@@ -16,7 +16,7 @@ export function installNativeAudioObserver({blockStorage=false}={}){
   }
  };
  const observeNode=(context,node,kind)=>{
-  const entry={id:++nextId,context,kind,live:false,connected:false,starts:[],stops:[],connections:[],disconnects:0};nodes.push(entry);
+  const entry={id:++nextId,context,kind,live:false,connected:false,starts:[],stops:[],connections:[],disconnects:0,...(kind==='transient'?{wave:null}:{})};nodes.push(entry);
   const connect=node.connect,disconnect=node.disconnect;
   node.connect=function(...args){const result=Reflect.apply(connect,this,args);entry.connected=true;entry.connections.push(nodes.find(n=>n.native===args[0])?.id??'destination');return result;};
   node.disconnect=function(...args){const result=Reflect.apply(disconnect,this,args);if(args.length===0){entry.connected=false;entry.live=false;}entry.disconnects++;return result;};
@@ -24,7 +24,7 @@ export function installNativeAudioObserver({blockStorage=false}={}){
   if(kind==='gain')recordParameter(node.gain,entry.id);
   if(kind==='bed'||kind==='transient'){
    const start=node.start,stop=node.stop;
-   node.start=function(...args){const result=Reflect.apply(start,this,args);entry.starts.push({at:args[0]??context.currentTime,bufferFrames:node.buffer?.length??null});entry.live=entry.connected;peaks();return result;};
+   node.start=function(...args){const result=Reflect.apply(start,this,args);entry.starts.push({at:args[0]??context.currentTime,bufferFrames:node.buffer?.length??null});if(kind==='transient')entry.wave=node.type;entry.live=entry.connected;peaks();return result;};
    node.stop=function(...args){const result=Reflect.apply(stop,this,args);entry.stops.push(args[0]??context.currentTime);return result;};
    node.addEventListener('ended',()=>{entry.live=false;});
   }

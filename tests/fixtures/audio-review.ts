@@ -13,8 +13,8 @@ export function crowdedAudioBatches():Batch[]{
  for(let ms=1500;ms<=18000;ms+=1500)add(ms,{type:'spawn',side:'player'});
  for(const ms of [3000,8000,13000,18000])add(ms,{type:'hit',target:'base',side:'enemy'});
  for(const [ms,skill] of [[4000,'freeze'],[9000,'meteor'],[14000,'food']] as const)add(ms,{type:'skill',skill});
- add(2500,{type:'hit',target:'unit',storyCue:'covered',amount:8});
- add(6500,{type:'hit',target:'unit',storyCue:'breach',amount:8});
+ add(2500,{type:'hit',storyCue:'covered',amount:0,side:'player',source:{id:401,x:480,lane:1,side:'player',age:0,kind:1}});
+ add(6500,{type:'hit',storyCue:'breach',amount:0,side:'player',source:{id:402,x:520,lane:1,side:'player',age:0,kind:2}});
  add(10500,{type:'hit',storyCue:'landmark',amount:0});
  add(16500,{type:'hit',storyCue:'rescued',amount:0});
  add(19000,{type:'win'});add(19000,{type:'coin',amount:10});add(19000,{type:'hit',target:'unit',side:'player'});

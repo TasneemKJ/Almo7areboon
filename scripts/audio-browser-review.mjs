@@ -169,16 +169,20 @@ export async function reviewAudioBrowser({browser,origin,directory,reports,error
   const starts=probe=>probe.nodes.filter(n=>n.kind==='transient').reduce((n,v)=>n+v.starts.length,0);
   await page.evaluate(()=>window.audioLiveReview.playCombatEvents([{type:'hit',target:'base',side:'enemy',x:0,lane:0,amount:1},{type:'win',amount:0}],true));let probe=await snapshot(page);assert.equal(starts(probe)-starts(before),1,'result+base batch admits exactly one production result cue');assert.ok(Math.abs(probe.nodes.filter(n=>n.kind==='transient').at(-1).stops[0]-probe.nodes.filter(n=>n.kind==='transient').at(-1).starts[0].at-.6)<1e-6);
   await page.evaluate(()=>window.audioLiveReview.stopCombatAudio());
-  const storyStarts=await page.evaluate(async()=>{
-   const a=window.audioLiveReview,before=window.nativeAudioReview.snapshot().nodes.filter(node=>node.kind==='transient').reduce((count,node)=>count+node.starts.length,0);
-   for(const event of [
-    {type:'hit',target:'unit',storyCue:'covered',amount:8,source:{id:1,x:350,lane:1,side:'enemy',age:0,kind:0}},
-    {type:'hit',target:'unit',storyCue:'breach',amount:8,source:{id:2,x:450,lane:1,side:'player',age:0,kind:2}},
-    {type:'hit',storyCue:'landmark',amount:0},
-    {type:'hit',storyCue:'rescued',amount:0},
-   ]){a.playCombatEvents([event],true);await new Promise(resolve=>setTimeout(resolve,110));}
-   return window.nativeAudioReview.snapshot().nodes.filter(node=>node.kind==='transient').reduce((count,node)=>count+node.starts.length,0)-before;
-  });assert.equal(storyStarts,4,'four tactical events admit one semantic production voice each');await page.evaluate(()=>window.audioLiveReview.stopCombatAudio());
+  const storyShapes=await page.evaluate(async()=>{
+   const a=window.audioLiveReview,shapes=[];
+   for(const events of [
+    [{type:'hit',storyCue:'covered',amount:0,source:{id:2,x:400,lane:1,side:'player',age:0,kind:1}},{type:'hit',target:'unit',amount:8,source:{id:1,x:500,lane:1,side:'enemy',age:0,kind:0}}],
+    [{type:'hit',storyCue:'breach',amount:0,source:{id:3,x:500,lane:1,side:'player',age:0,kind:2}},{type:'hit',target:'unit',amount:8,source:{id:3,x:500,lane:1,side:'player',age:0,kind:2}}],
+    [{type:'hit',storyCue:'landmark',amount:0}],
+    [{type:'hit',storyCue:'rescued',amount:0}],
+   ]){
+    const before=window.nativeAudioReview.snapshot().nodes.filter(node=>node.kind==='transient').length;a.playCombatEvents(events,true);
+    const added=window.nativeAudioReview.snapshot().nodes.filter(node=>node.kind==='transient').slice(before),node=added[0];
+    shapes.push({count:added.length,wave:node?.wave,durationMs:node?Math.round((node.stops[0]-node.starts[0].at)*1000):null});await new Promise(resolve=>setTimeout(resolve,110));
+   }
+   return shapes;
+  });assert.deepEqual(storyShapes,[{count:1,wave:'sine',durationMs:220},{count:1,wave:'sawtooth',durationMs:180},{count:1,wave:'triangle',durationMs:340},{count:1,wave:'sine',durationMs:400}],'canonical tactical batches admit their distinct semantic production contours');await page.evaluate(()=>window.audioLiveReview.stopCombatAudio());
   // Identical simulation cadence is delivered twice as fast at 2x. Native currentTime owns cooldown.
   const cadence=[];for(const speed of [1,2]){const count=await page.evaluate(async speed=>{const a=window.audioLiveReview;const before=window.nativeAudioReview.snapshot().nodes.filter(n=>n.kind==='transient').length;for(let i=0;i<3;i++){a.playCombatEvents([{type:'spawn',side:'player',x:0,lane:0}],true);await new Promise(r=>setTimeout(r,200/speed));}return window.nativeAudioReview.snapshot().nodes.filter(n=>n.kind==='transient').length-before;},speed);assert.equal(count,speed===1?3:2);cadence.push({speed,realIntervalMs:200/speed,accepted:count});}
   const rampBefore=await snapshot(page);await page.evaluate(()=>{window.audioLiveReview.updateAudioMix({effects:0,atmosphere:65});window.audioLiveReview.playCombatEvents([{type:'skill',skill:'meteor',x:0,lane:0}],true);});probe=await snapshot(page);assert.equal(starts(probe),starts(rampBefore),'zero effects drops new native cue');for(const target of [0,.65])assert.ok(probe.events.some(e=>e.method==='linearRampToValueAtTime'&&e.args[0]===target));await page.evaluate(()=>window.audioLiveReview.updateAudioMix({effects:75,atmosphere:65}));

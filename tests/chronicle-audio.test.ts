@@ -25,3 +25,21 @@ test('tactical accents remain bounded and outcomes still silence the battle batc
  assert.deepEqual(selectCombatCues([{type:'hit',storyCue:'story-that-does-not-exist' as any,amount:0}]),[]);
  assert.deepEqual(selectCombatCues([{type:'hit',storyCue:'story-that-does-not-exist' as any,amount:0},{type:'lose'}]).map(cue=>cue.id),['lose']);
 });
+test('terminal outcomes dominate even when malformed metadata rides on the result event',()=>{
+ assert.deepEqual(selectCombatCues([{type:'win',storyCue:'covered',amount:0}]).map(cue=>cue.id),['win']);
+ assert.deepEqual(selectCombatCues([{type:'lose',storyCue:'landmark'}]).map(cue=>cue.id),['lose']);
+});
+test('story cue lookup ignores prototype and non-string metadata',()=>{
+ for(const storyCue of ['__proto__','constructor',{toString(){throw Error('must not coerce');}}]){
+  assert.doesNotThrow(()=>selectCombatCues([{type:'hit',storyCue,amount:0} as any]));
+  assert.deepEqual(selectCombatCues([{type:'hit',storyCue,amount:0} as any]),[]);
+ }
+});
+test('semantic impacts replace the generic hit in canonical two-event batches',()=>{
+ const hit={type:'hit',target:'unit',amount:8,source:{id:1,x:350,lane:1,side:'enemy',age:0,kind:0}} as const;
+ for(const [storyCue,id] of [['covered','story-cover'],['breach','story-breach'],['shatter','story-shatter']] as const){
+  const story={type:'hit',storyCue,amount:0} as const;
+  assert.deepEqual(selectCombatCues([story,hit]).map(cue=>cue.id),[id]);
+  assert.deepEqual(selectCombatCues([hit,story]).map(cue=>cue.id),[id]);
+ }
+});
