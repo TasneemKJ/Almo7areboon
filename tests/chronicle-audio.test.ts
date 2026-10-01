@@ -43,3 +43,15 @@ test('semantic impacts replace the generic hit in canonical two-event batches',(
   assert.deepEqual(selectCombatCues([hit,story]).map(cue=>cue.id),[id]);
  }
 });
+test('semantic unit impacts never suppress unrelated base alarms',()=>{
+ const story={type:'hit',storyCue:'covered',amount:0} as const;
+ for(const base of [{type:'hit',target:'base',side:'enemy',amount:8},{type:'hit',target:'base',side:'player',amount:8}] as const){
+  for(const events of [[story,base],[base,story]]){
+   const ids=selectCombatCues(events).map(cue=>cue.id);
+   assert.ok(ids.includes('story-cover'));assert.ok(ids.includes(base.side==='enemy'?'base-player':'base-enemy'));
+  }
+ }
+ assert.deepEqual(selectCombatCues([
+  story,{type:'skill',skill:'freeze'},{type:'skill',skill:'meteor'},{type:'hit',target:'base',side:'enemy',amount:8},
+ ]).map(cue=>cue.id),['freeze','meteor','base-player']);
+});

@@ -48,6 +48,6 @@ export function selectCombatCues(events:readonly GameEvent[]):readonly CombatCue
   }
   if(!other.has(id))other.set(id,{id,eventIndex:index,priority,critical,cooldown});
  }
- const candidates=[...skills,...other.values()];if(hit&&!replacesImpact)candidates.push(hit);
+ const candidates=[...skills,...other.values()];if(hit&&(!replacesImpact||hit.cooldown!=='unit-hit'))candidates.push(hit);
  return candidates.sort((a,b)=>b.priority-a.priority||a.eventIndex-b.eventIndex).slice(0,3);
 }

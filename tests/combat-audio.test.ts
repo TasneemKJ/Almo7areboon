@@ -106,7 +106,7 @@ test('onsetAndResultDuration',()=>{
   assert.equal(c.oscillators.length,1);assert.equal(c.gains.length,1);const envelope=c.gains[0].gain.events,osc=c.oscillators[0];
   assert.deepEqual(envelope[0],['set',0,1]);assert.ok(envelope[1][2]-1>=.002-1e-9&&envelope[1][2]-1<=.005+1e-9);assert.equal(envelope.at(-1)[1],0);
   assert.equal(osc.starts[0],1);assert.ok(osc.stops[0]<=1.650);assert.equal(envelope.at(-1)[2],osc.stops[0]);
-  if(['story-cover','story-breach','story-landmark','story-rescue'].includes(id))assert.ok(osc.stops[0]<=1.45,`${id} stays within its 450ms plan bound`);
+  if(['story-cover','story-breach','story-landmark','story-rescue'].includes(id))assert.ok(osc.stops[0]<1.45,`${id} stays below its 450ms plan bound`);
   shapes.set(id,JSON.stringify([osc.type,envelope.map((e:any[])=>[e[0],e[1],e[2]-1])]));voice!.dispose();assert.equal(released,1);
  }
  assert.equal(new Set(['hit-blunt','hit-flick','hit-hollow'].map(id=>shapes.get(id))).size,3);
