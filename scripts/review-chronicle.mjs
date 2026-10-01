@@ -52,7 +52,7 @@ function validateAftermathSnapshot(state,outcome){
 }
 async function clickEnabled(page,locator){
  if(await page.locator('#world').getAttribute('data-phase')!=='running'||!await locator.isEnabled())return false;
- try{await locator.click({timeout:750});return true;}catch(error){const phase=await page.locator('#world').getAttribute('data-phase');if(phase!=='won'&&phase!=='lost')throw error;return false;}
+ try{await locator.click({timeout:750,noWaitAfter:true});return true;}catch(error){const phase=await page.locator('#world').getAttribute('data-phase');if(phase!=='won'&&phase!=='lost')throw error;return false;}
 }
 async function reachNaturalOutcome(page,outcome){
  await page.locator('[data-command="start"]').click();
