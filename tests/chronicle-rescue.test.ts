@@ -1,5 +1,6 @@
 import {test} from 'node:test';
 import assert from 'node:assert/strict';
+import {readFile} from 'node:fs/promises';
 
 test('the cage stays at the rescue point while four real progress knots fill',async()=>{
   const presentation=await import('../src/view/chronicle-rescue.ts').catch(()=>null);
@@ -53,4 +54,10 @@ test('the rescue draw plan uses age-matched storybook art and keeps ground marks
   assert.ok(plan.groundDepth<plan.cageDepth&&plan.groundDepth<plan.scoutDepth);
   const fallback=presentation.chronicleRescueRenderPlan(4,200,frame,()=>false);
   assert.equal(fallback.scoutMode,'fallback','a missing painted strip uses the same bounded fallback language as combatants');
+});
+
+test('native rescue review resumes through the dedicated pause owner rather than matching explanatory troop labels',async()=>{
+  const source=await readFile(new URL('../scripts/review-chronicle.mjs',import.meta.url),'utf8');
+  assert.doesNotMatch(source,/getByRole\('button',\{name:\/Resume battle\/i\}\)/);
+  assert.ok((source.match(/locator\('\[data-command="pause"\]'\)/g)??[]).length>=2);
 });
