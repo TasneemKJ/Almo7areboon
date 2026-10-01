@@ -58,6 +58,8 @@ export function chronicleLandmarkStatus(p:Profile,s:BattleState):ChronicleLandma
   let progress=Math.abs(capture)/threshold;
   if(phase==='claiming-player')progress=owner==='enemy'?(capture+threshold)/(threshold*2):Math.max(0,capture/threshold);
   if(phase==='claiming-enemy')progress=owner==='player'?(threshold-capture)/(threshold*2):Math.max(0,-capture/threshold);
+  if(!playerCount&&!enemyCount&&owner==='player'&&capture<threshold-1e-9)progress=(threshold-capture)/(threshold*2);
+  if(!playerCount&&!enemyCount&&owner==='enemy'&&capture>-threshold+1e-9)progress=(capture+threshold)/(threshold*2);
   if(phase==='neutral'||phase==='contested')progress=Math.abs(capture)/threshold;
   if(phase==='broken')progress=0;
   return {kind,x,owner,capture,threshold,progress:Math.min(1,Math.max(0,progress)),playerCount,enemyCount,phase};

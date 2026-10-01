@@ -32,8 +32,20 @@ test('abandoned capture and both held owners retain their signed seal grammar',(
  const heldPlayer=chronicleLandmarkFrame({...status('held-player',1),owner:'player',capture:3}),heldEnemy=chronicleLandmarkFrame({...status('held-enemy',1),owner:'enemy',capture:-3});
  assert.equal(heldPlayer.marks.filter(mark=>mark.active).length,8);assert.equal(heldEnemy.marks.filter(mark=>mark.active).length,8);assert.notDeepEqual(heldPlayer.marks,heldEnemy.marks);
  assert.equal(heldPlayer.ownerShape,'ring');assert.equal(heldEnemy.ownerShape,'corners');
- const abandonedTakeover=chronicleLandmarkFrame({...status('held-player',2/3),owner:'player',capture:-2,playerCount:0,enemyCount:0});
- assert.equal(abandonedTakeover.ownerShape,'ring');assert.equal(abandonedTakeover.marks.filter(mark=>mark.active&&mark.side==='enemy').length,5);
+ const abandonedTakeover=chronicleLandmarkFrame({...status('held-player',5/6),owner:'player',capture:-2,playerCount:0,enemyCount:0});
+ assert.equal(abandonedTakeover.ownerShape,'ring');assert.equal(abandonedTakeover.marks.filter(mark=>mark.active&&mark.side==='enemy').length,7);
+});
+test('owned takeover marks retain the same claimant progress when pressure leaves',()=>{
+ for(const sample of [
+  {owner:'player' as const,capture:2,phase:'claiming-enemy' as const,side:'enemy' as const,progress:1/6},
+  {owner:'player' as const,capture:-2,phase:'claiming-enemy' as const,side:'enemy' as const,progress:5/6},
+  {owner:'enemy' as const,capture:-2,phase:'claiming-player' as const,side:'player' as const,progress:1/6},
+  {owner:'enemy' as const,capture:2,phase:'claiming-player' as const,side:'player' as const,progress:5/6},
+ ]){
+  const active=chronicleLandmarkFrame({...status(sample.phase,sample.progress),owner:sample.owner,capture:sample.capture,playerCount:sample.side==='player'?1:0,enemyCount:sample.side==='enemy'?1:0});
+  const idle=chronicleLandmarkFrame({...status(sample.owner==='player'?'held-player':'held-enemy',sample.progress),owner:sample.owner,capture:sample.capture,playerCount:0,enemyCount:0});
+  assert.deepEqual(idle.marks,active.marks);assert.equal(idle.marks.filter(mark=>mark.active).length,Math.round(sample.progress*8));assert.ok(idle.marks.filter(mark=>mark.active).every(mark=>mark.side===sample.side));
+ }
 });
 test('landmark frame sanitizes malformed input and is static for equal state',()=>{
  const malformed={...status('claiming-player'),x:Number.NaN,capture:Number.NaN,threshold:Number.NaN,progress:Number.POSITIVE_INFINITY} as ChronicleLandmarkStatus;

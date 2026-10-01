@@ -13,7 +13,7 @@ export function chronicleLandmarkFrame(status:ChronicleLandmarkStatus){
   const count=Math.round(progress*8);
   const phase=status.phase;
   const threshold=Math.max(.001,finite(status.threshold,3)),abandonedOwned=(phase==='held-player'||phase==='held-enemy')&&!status.playerCount&&!status.enemyCount&&Math.abs(finite(status.capture))<threshold-1e-9;
-  const pressure=abandonedOwned?finite(status.capture)>0?'player':finite(status.capture)<0?'enemy':'neutral':phase==='claiming-player'||phase==='held-player'?'player':phase==='claiming-enemy'||phase==='held-enemy'?'enemy':phase==='neutral'&&finite(status.capture)>0?'player':phase==='neutral'&&finite(status.capture)<0?'enemy':'neutral';
+  const pressure=abandonedOwned?status.owner==='player'?'enemy':'player':phase==='claiming-player'||phase==='held-player'?'player':phase==='claiming-enemy'||phase==='held-enemy'?'enemy':phase==='neutral'&&finite(status.capture)>0?'player':phase==='neutral'&&finite(status.capture)<0?'enemy':'neutral';
   const shape:ChronicleLandmarkMarkShape=phase==='broken'?'gap':phase==='contested'?'cross':pressure==='player'?'knot':pressure==='enemy'?'stitch':'dash';
   const ownerShape=phase==='broken'||status.owner==='neutral'?null:status.owner==='player'?'ring' as const:'corners' as const;
   const marks:ChronicleLandmarkMark[]=Array.from({length:8},(_,index)=>{

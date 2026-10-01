@@ -140,8 +140,8 @@ test('landmark status preserves abandoned signed progress and both held sides',(
  landmark.capture=1.5;let status=chronicleLandmarkStatus(f.profile,f.state)!;assert.equal(status.phase,'neutral');assert.equal(status.progress,.5);
  landmark.capture=3;landmark.owner='player';status=chronicleLandmarkStatus(f.profile,f.state)!;assert.equal(status.phase,'held-player');assert.equal(status.progress,1);
  landmark.capture=-3;landmark.owner='enemy';status=chronicleLandmarkStatus(f.profile,f.state)!;assert.equal(status.phase,'held-enemy');assert.equal(status.progress,1);
- landmark.capture=-2;landmark.owner='player';status=chronicleLandmarkStatus(f.profile,f.state)!;assert.equal(status.phase,'held-player');assert.equal(status.progress,2/3);
- landmark.capture=1.5;landmark.owner='enemy';status=chronicleLandmarkStatus(f.profile,f.state)!;assert.equal(status.phase,'held-enemy');assert.equal(status.progress,.5);
+ landmark.capture=-2;landmark.owner='player';status=chronicleLandmarkStatus(f.profile,f.state)!;assert.equal(status.phase,'held-player');assert.equal(status.progress,5/6);
+ landmark.capture=1.5;landmark.owner='enemy';status=chronicleLandmarkStatus(f.profile,f.state)!;assert.equal(status.phase,'held-enemy');assert.equal(status.progress,.75);
 });
 test('unlit enemy-held lantern names the full eight-second recapture',()=>{
  const f=fixture('lantern');f.profile.timeline=2;f.state.chronicle=createChronicleBattle(f.profile);const landmark=f.state.chronicle.landmark;landmark.owner='enemy';landmark.capture=-4;
