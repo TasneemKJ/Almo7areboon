@@ -588,7 +588,7 @@ function events(batch:GameEvent[]){
   playCombatEvents(batch,game.profile.sound&&playable()&&!document.hidden&&!manualPaused&&!game.state.paused&&activeTab==='battle'&&modal===null);
   if(batch.some(event=>event.type==='win'||event.type==='lose'))persist();
 }
-const port=createBattlefieldPort(game,action,dt=>{syncPause();if(playable())game.step(dt*game.profile.speed);});
+const port=createBattlefieldPort(()=>game,action,dt=>{syncPause();if(playable())game.step(dt*game.profile.speed);});
 rebuildArmy();syncMotion();syncPause();update(true);
 const renderer=mountBattlefield($('battlefield'),port,()=>update(),events,{isVisible:()=>activeTab==='battle'&&!document.hidden,villageMood:()=>villagePresentation!.mood,onPresentation:syncVillagePresentation});
 lifetime.add(()=>renderer.destroy());lifetime.add(disposeAudio);

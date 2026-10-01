@@ -11,8 +11,8 @@ async function subject(){
 }
 
 test('production battlefield port forwards the live authoritative wave query',async()=>{
- const m=await subject(),game=new Game();
- const port=m.createBattlefieldPort(game,(action:Action)=>game.dispatch(action),(dt:number)=>game.step(dt));
+ const m=await subject();let game=new Game();
+ const port=m.createBattlefieldPort(()=>game,(action:Action)=>game.dispatch(action),(dt:number)=>game.step(dt));
  assert.equal(port.dispatch({type:'start'}),true);
  assert.deepEqual(port.waveStatus(),game.waveStatus());
  const before=port.waveStatus().preview!.nextIn;
@@ -20,4 +20,7 @@ test('production battlefield port forwards the live authoritative wave query',as
  assert.equal(port.waveStatus().preview!.nextIn,before-.25);
  assert.equal(port.profile,game.profile);assert.equal(port.state,game.state);
  assert.deepEqual(port.drainEvents(),game.drainEvents());
+ const replacement=new Game();game=replacement;
+ assert.equal(port.profile,replacement.profile);assert.equal(port.state,replacement.state);
+ assert.deepEqual(port.waveStatus(),replacement.waveStatus(),'a loaded save must replace every authoritative battlefield read');
 });

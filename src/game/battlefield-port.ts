@@ -8,16 +8,16 @@ export interface BattlefieldPort extends GamePort {waveStatus():WaveStatus}
  * read query required by the battlefield from the authoritative simulation.
  */
 export function createBattlefieldPort(
- game:BattlefieldPort,
+ game:()=>BattlefieldPort,
  dispatch:(action:Action)=>boolean,
  step:(dt:number)=>void,
 ):BattlefieldPort {
  return {
-  get profile(){return game.profile;},
-  get state(){return game.state;},
+  get profile(){return game().profile;},
+  get state(){return game().state;},
   dispatch,
   step,
-  drainEvents:()=>game.drainEvents(),
-  waveStatus:()=>game.waveStatus(),
+  drainEvents:()=>game().drainEvents(),
+  waveStatus:()=>game().waveStatus(),
  };
 }
