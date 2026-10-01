@@ -98,6 +98,8 @@ export class ChronicleView {
       const status=chronicleLandmarkStatus(p,s)!;
       const frame=chronicleLandmarkFrame(status),plan=chronicleLandmarkRenderPlan(groundY,frame,status.x),key=status.kind==='lantern'?'lantern':'supply';
       this.landmarkGround.setDepth(plan.groundDepth);
+      if(frame.ownerShape==='ring'){this.landmarkGround.lineStyle(1.2,0x7c937d,.8);this.landmarkGround.strokeEllipse(plan.x,plan.y,30,6);}
+      else if(frame.ownerShape==='corners'){this.landmarkGround.lineStyle(1.2,0xd3916d,.8);for(const sx of [-1,1])for(const sy of [-1,1]){this.landmarkGround.lineBetween(plan.x+sx*8,plan.y+sy*3,plan.x+sx*13,plan.y+sy*3);this.landmarkGround.lineBetween(plan.x+sx*13,plan.y,plan.x+sx*13,plan.y+sy*3);}}
       for(const mark of frame.marks){
         const x=plan.x+mark.x,y=plan.y+mark.y,colour=mark.active?(mark.side==='player'?0x7c937d:0xd3916d):0xd6b78c,alpha=mark.active?.95:.58;
         this.landmarkGround.lineStyle(mark.active?1.8:1.15,colour,alpha);
@@ -110,13 +112,16 @@ export class ChronicleView {
           if(mark.active)this.landmarkGround.lineBetween(x-dx*.55,y-dy*.55,x+dx*.55,y+dy*.55);
         }else if(mark.shape==='cross'){
           this.landmarkGround.lineBetween(x-2.5,y-2,x+2.5,y+2);this.landmarkGround.lineBetween(x-2.5,y+2,x+2.5,y-2);
+        }else if(mark.shape==='dash'){
+          const dx=Math.cos(mark.angle+Math.PI/2)*3.2,dy=Math.sin(mark.angle+Math.PI/2)*1.8;
+          this.landmarkGround.lineBetween(x-dx,y-dy,x+dx,y+dy);
         }else{
           const dx=Math.cos(mark.angle+Math.PI/2)*3.2,dy=Math.sin(mark.angle+Math.PI/2)*1.8;
           this.landmarkGround.lineBetween(x-dx,y-dy,x-dx*.35,y-dy*.35);this.landmarkGround.lineBetween(x+dx*.35,y+dy*.35,x+dx,y+dy);
         }
       }
       this.landmark.setTexture(`chronicle-${key}-ink-v1`).setVisible(true).setPosition(plan.x,groundY-8).setDisplaySize(key==='lantern'?58:61,key==='lantern'?65:49).setDepth(plan.propDepth).setAlpha(status.phase==='broken'?.35:1);
-      this.scene.game.canvas.dataset.chronicleLandmark=JSON.stringify({kind:status.kind,phase:status.phase,owner:status.owner,capture:status.capture,threshold:status.threshold,progress:frame.progress,playerCount:status.playerCount,enemyCount:status.enemyCount,activeMarks:frame.marks.filter(mark=>mark.active).length,shapes:[...new Set(frame.marks.map(mark=>mark.shape))],x:plan.x,y:plan.y,groundDepth:plan.groundDepth,propDepth:plan.propDepth,actorFrontDepth:plan.actorFrontDepth});
+      this.scene.game.canvas.dataset.chronicleLandmark=JSON.stringify({kind:status.kind,phase:status.phase,owner:status.owner,ownerShape:frame.ownerShape,capture:status.capture,threshold:status.threshold,progress:frame.progress,playerCount:status.playerCount,enemyCount:status.enemyCount,activeMarks:frame.marks.filter(mark=>mark.active).length,shapes:[...new Set(frame.marks.map(mark=>mark.shape))],x:plan.x,y:plan.y,groundDepth:plan.groundDepth,propDepth:plan.propDepth,actorFrontDepth:plan.actorFrontDepth});
     }
     if(c.objective==='escort'){
       this.traveller.setTexture('chronicle-cart-ink-v1').setVisible(true).setPosition(c.cart.x*.45,groundY+8).setDisplaySize(67,53).setDepth(chronicleActorDepth(groundY+8)).clearTint();

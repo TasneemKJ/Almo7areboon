@@ -55,7 +55,7 @@ export function chronicleLandmarkStatus(p:Profile,s:BattleState):ChronicleLandma
   else if(playerCount)phase=owner==='player'&&capture>=threshold-1e-9?'held-player':'claiming-player';
   else if(enemyCount)phase=owner==='enemy'&&capture<=-threshold+1e-9?'held-enemy':'claiming-enemy';
   else phase=owner==='player'?'held-player':owner==='enemy'?'held-enemy':'neutral';
-  let progress=owner==='player'?1:owner==='enemy'?1:Math.abs(capture)/threshold;
+  let progress=Math.abs(capture)/threshold;
   if(phase==='claiming-player')progress=owner==='enemy'?(capture+threshold)/(threshold*2):Math.max(0,capture/threshold);
   if(phase==='claiming-enemy')progress=owner==='player'?(threshold-capture)/(threshold*2):Math.max(0,-capture/threshold);
   if(phase==='neutral'||phase==='contested')progress=Math.abs(capture)/threshold;
@@ -225,9 +225,9 @@ export function chronicleGuidance(p:Profile,s:BattleState):string {
   const landmark=chronicleLandmarkStatus(p,s),landmarkName=landmark?.kind==='lantern'?'lantern':landmark?.kind==='supply'?'supplies':'road shelter';
   if(landmark&&landmark.phase!=='broken'){
     if(landmark.phase==='contested')return `${landmarkName[0]!.toUpperCase()+landmarkName.slice(1)} contested · clear nearby enemies to keep claiming`;
-    if(landmark.phase==='claiming-player'&&landmark.owner!=='player')return `Claiming ${landmarkName} · ${Math.max(0,landmark.capture).toFixed(1)}/${landmark.threshold} seconds`;
-    if(landmark.phase==='claiming-enemy')return `Enemy claiming ${landmarkName} · contest the ground beside it`;
-    if(landmark.owner!=='player'&&c.objective==='light')return `Claim the lantern · stand beside it uncontested for ${landmark.threshold} seconds`;
+    if(landmark.phase==='claiming-player'&&landmark.owner!=='player')return `${landmark.owner==='enemy'?'Reclaiming':'Claiming'} ${landmarkName} · ${Math.max(0,landmark.threshold-landmark.capture).toFixed(1)} seconds left`;
+    if(landmark.phase==='claiming-enemy')return `Enemy claiming ${landmarkName} · ${Math.max(0,landmark.threshold+landmark.capture).toFixed(1)} seconds to take it · contest the ground`;
+    if(landmark.owner!=='player'&&c.objective==='light')return `${landmark.owner==='enemy'?'Reclaim':'Claim'} the lantern · stand beside it uncontested for ${landmark.threshold*(landmark.owner==='enemy'?2:1)} seconds`;
   }
   if(c.objective==='escort')return `Flour cart ${Math.round((c.cart.x-210)/580*100)}% · ${Math.ceil(c.cart.hp)}/${Math.ceil(c.cart.maxHp)} health`;
   if(c.objective==='hold')return `Keep the courtyard safe · ${Math.max(0,Math.ceil(75-s.time))} seconds left`;

@@ -21,6 +21,19 @@ test('contested and broken seals use non-colour shapes without inventing progres
  assert.ok(contested.marks.every(mark=>mark.shape==='cross'&&!mark.active));
  const broken=chronicleLandmarkFrame(status('broken',1));
  assert.ok(broken.marks.every(mark=>mark.shape==='gap'&&!mark.active));
+ const neutral=chronicleLandmarkFrame(status('neutral',0));
+ assert.ok(neutral.marks.every(mark=>mark.shape==='dash'&&!mark.active));assert.notDeepEqual(neutral,broken);
+});
+test('abandoned capture and both held owners retain their signed seal grammar',()=>{
+ const player=chronicleLandmarkFrame({...status('neutral',.5),capture:1.5});
+ const enemy=chronicleLandmarkFrame({...status('neutral',.5),capture:-1.5});
+ assert.equal(player.marks.filter(mark=>mark.active).length,4);assert.ok(player.marks.filter(mark=>mark.active).every(mark=>mark.shape==='knot'&&mark.side==='player'));
+ assert.equal(enemy.marks.filter(mark=>mark.active).length,4);assert.ok(enemy.marks.filter(mark=>mark.active).every(mark=>mark.shape==='stitch'&&mark.side==='enemy'));
+ const heldPlayer=chronicleLandmarkFrame({...status('held-player',1),owner:'player',capture:3}),heldEnemy=chronicleLandmarkFrame({...status('held-enemy',1),owner:'enemy',capture:-3});
+ assert.equal(heldPlayer.marks.filter(mark=>mark.active).length,8);assert.equal(heldEnemy.marks.filter(mark=>mark.active).length,8);assert.notDeepEqual(heldPlayer.marks,heldEnemy.marks);
+ assert.equal(heldPlayer.ownerShape,'ring');assert.equal(heldEnemy.ownerShape,'corners');
+ const abandonedTakeover=chronicleLandmarkFrame({...status('held-player',2/3),owner:'player',capture:-2,playerCount:0,enemyCount:0});
+ assert.equal(abandonedTakeover.ownerShape,'ring');assert.equal(abandonedTakeover.marks.filter(mark=>mark.active&&mark.side==='enemy').length,5);
 });
 test('landmark frame sanitizes malformed input and is static for equal state',()=>{
  const malformed={...status('claiming-player'),x:Number.NaN,capture:Number.NaN,threshold:Number.NaN,progress:Number.POSITIVE_INFINITY} as ChronicleLandmarkStatus;

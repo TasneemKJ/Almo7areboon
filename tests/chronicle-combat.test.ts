@@ -122,12 +122,29 @@ test('light guidance teaches claiming and contest before the post-capture hold',
  const f=fixture('lantern');
  assert.equal(chronicleGuidance(f.profile,f.state),'Claim the lantern · stand beside it uncontested for 3 seconds');
  f.state.units=[unit(1,'player',0,500)];for(let i=0;i<4;i++)chronicleTick(f.profile,f.state,.25,f.host);
- assert.equal(chronicleGuidance(f.profile,f.state),'Claiming lantern · 1.0/3 seconds');
+ assert.equal(chronicleGuidance(f.profile,f.state),'Claiming lantern · 2.0 seconds left');
  f.state.units.push(unit(2,'enemy',0,520));
  assert.equal(chronicleGuidance(f.profile,f.state),'Lantern contested · clear nearby enemies to keep claiming');
  f.state.units=[unit(1,'player',0,500)];for(let i=0;i<8;i++)chronicleTick(f.profile,f.state,.25,f.host);
  assert.equal(f.state.chronicle!.landmark.owner,'player');
  assert.match(chronicleGuidance(f.profile,f.state),/^Lantern \d+\/18 seconds/);
  f.state.units=[unit(2,'enemy',0,500)];
- assert.equal(chronicleGuidance(f.profile,f.state),'Enemy claiming lantern · contest the ground beside it');
+ assert.equal(chronicleGuidance(f.profile,f.state),'Enemy claiming lantern · 6.0 seconds to take it · contest the ground');
+ f.state.chronicle!.landmark.owner='enemy';f.state.chronicle!.landmark.capture=-2;f.state.units=[unit(1,'player',0,500)];
+ assert.equal(chronicleGuidance(f.profile,f.state),'Reclaiming lantern · 5.0 seconds left');
+ f.state.chronicle!.landmark.capture=-3;f.state.units=[];
+ assert.equal(chronicleGuidance(f.profile,f.state),'Reclaim the lantern · stand beside it uncontested for 6 seconds');
+});
+test('landmark status preserves abandoned signed progress and both held sides',()=>{
+ const f=fixture('lantern'),landmark=f.state.chronicle!.landmark;
+ landmark.capture=1.5;let status=chronicleLandmarkStatus(f.profile,f.state)!;assert.equal(status.phase,'neutral');assert.equal(status.progress,.5);
+ landmark.capture=3;landmark.owner='player';status=chronicleLandmarkStatus(f.profile,f.state)!;assert.equal(status.phase,'held-player');assert.equal(status.progress,1);
+ landmark.capture=-3;landmark.owner='enemy';status=chronicleLandmarkStatus(f.profile,f.state)!;assert.equal(status.phase,'held-enemy');assert.equal(status.progress,1);
+ landmark.capture=-2;landmark.owner='player';status=chronicleLandmarkStatus(f.profile,f.state)!;assert.equal(status.phase,'held-player');assert.equal(status.progress,2/3);
+ landmark.capture=1.5;landmark.owner='enemy';status=chronicleLandmarkStatus(f.profile,f.state)!;assert.equal(status.phase,'held-enemy');assert.equal(status.progress,.5);
+});
+test('unlit enemy-held lantern names the full eight-second recapture',()=>{
+ const f=fixture('lantern');f.profile.timeline=2;f.state.chronicle=createChronicleBattle(f.profile);const landmark=f.state.chronicle.landmark;landmark.owner='enemy';landmark.capture=-4;
+ assert.equal(chronicleGuidance(f.profile,f.state),'Reclaim the lantern · stand beside it uncontested for 8 seconds');
+ f.state.units=[unit(1,'player',0,500)];assert.equal(chronicleGuidance(f.profile,f.state),'Reclaiming lantern · 8.0 seconds left');chronicleTick(f.profile,f.state,.25,f.host);assert.equal(chronicleGuidance(f.profile,f.state),'Reclaiming lantern · 7.8 seconds left');
 });
