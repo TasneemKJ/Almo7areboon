@@ -14,12 +14,19 @@ export interface ChronicleBattle {
   boss: {spawned:boolean;id:number|null;windupUntil:number;nextRing:number;interrupts:number;rings:number};
   coveredHits:number;shatters:number;settled:boolean;
 }
+export type ChronicleLandmarkPhase = 'neutral'|'claiming-player'|'claiming-enemy'|'contested'|'held-player'|'held-enemy'|'broken';
+export interface ChronicleLandmarkStatus {
+  kind: Exclude<ChronicleBattle['landmark']['kind'],'none'>; x:number;
+  owner: ChronicleBattle['landmark']['owner']; capture:number; threshold:number; progress:number;
+  playerCount:number; enemyCount:number; phase:ChronicleLandmarkPhase;
+}
 export interface ChronicleHost { hurt(unit:Unit,damage:number):number; spawnEnemy(kind:0|1|2):Unit|undefined; emit(event:GameEvent):void; }
 const progress=(p:Profile)=>p.chronicle??createChronicle(p.timeline,p.enemyAge);
 const alive=(unit:Unit)=>unit.hp>0;
 const distance=(a:Unit,b:Unit)=>Math.hypot(a.x-b.x,(a.lane-b.lane)*10);
 const active=(s:BattleState)=>s.phase==='running'&&!s.paused&&s.chronicle?.enabled===true;
 const source=(u:Unit)=>({id:u.id,x:u.x,lane:u.lane,side:u.side,age:u.age,kind:u.kind});
+const unitsNear=(s:BattleState,x:number,side:'player'|'enemy',radius=85)=>s.units.filter(u=>u.side===side&&alive(u)&&Number.isFinite(u.x)&&Math.abs(u.x-x)<=radius);
 function cue(host:ChronicleHost,storyCue:ChronicleCue,x=500,amount=0,unit?:Unit):void {
   host.emit({type:'hit',storyCue,x,lane:unit?.lane??1,side:unit?.side??'player',amount,...(unit?{source:source(unit)}:{})});
 }
@@ -31,6 +38,31 @@ export function createChronicleBattle(p:Profile):ChronicleBattle {
     cart:{x:objective==='rescue'?620:210,hp:health,maxHp:health},rescued:false,rescueProgress:0,lightSeconds:0,
     landmark:{kind,x:500,owner:'neutral',capture:0,pulse:0,broken:false},
     boss:{spawned:false,id:null,windupUntil:0,nextRing:variant.id==='unlit'?10:14,interrupts:0,rings:0},coveredHits:0,shatters:0,settled:false};
+}
+/** One sanitized landmark contract shared by simulation, guidance, and presentation. */
+export function chronicleLandmarkStatus(p:Profile,s:BattleState):ChronicleLandmarkStatus|null {
+  const landmark=s.chronicle?.landmark;
+  if(!s.chronicle?.enabled||!landmark||landmark.kind==='none')return null;
+  const kind=(['cover','supply','lantern'] as const).includes(landmark.kind)?landmark.kind:'cover';
+  const x=Number.isFinite(landmark.x)?Math.min(1000,Math.max(0,landmark.x)):500;
+  const threshold=timelineVariant(p.timeline).id==='unlit'&&kind==='lantern'?4:3;
+  const capture=Number.isFinite(landmark.capture)?Math.min(threshold,Math.max(-threshold,landmark.capture)):0;
+  const owner=landmark.owner==='player'||landmark.owner==='enemy'?landmark.owner:'neutral';
+  const playerCount=unitsNear(s,x,'player').length,enemyCount=unitsNear(s,x,'enemy').length;
+  let phase:ChronicleLandmarkPhase;
+  if(landmark.broken)phase='broken';
+  else if(playerCount&&enemyCount)phase='contested';
+  else if(playerCount)phase=owner==='player'&&capture>=threshold-1e-9?'held-player':'claiming-player';
+  else if(enemyCount)phase=owner==='enemy'&&capture<=-threshold+1e-9?'held-enemy':'claiming-enemy';
+  else phase=owner==='player'?'held-player':owner==='enemy'?'held-enemy':'neutral';
+  let progress=Math.abs(capture)/threshold;
+  if(phase==='claiming-player')progress=owner==='enemy'?(capture+threshold)/(threshold*2):Math.max(0,capture/threshold);
+  if(phase==='claiming-enemy')progress=owner==='player'?(threshold-capture)/(threshold*2):Math.max(0,-capture/threshold);
+  if(!playerCount&&!enemyCount&&owner==='player'&&capture<threshold-1e-9)progress=(threshold-capture)/(threshold*2);
+  if(!playerCount&&!enemyCount&&owner==='enemy'&&capture>-threshold+1e-9)progress=(capture+threshold)/(threshold*2);
+  if(phase==='neutral'||phase==='contested')progress=Math.abs(capture)/threshold;
+  if(phase==='broken')progress=0;
+  return {kind,x,owner,capture,threshold,progress:Math.min(1,Math.max(0,progress)),playerCount,enemyCount,phase};
 }
 export function chronicleStartingFood(p:Profile):number {
   const c=progress(p);if(!c.enabled)return 0;
@@ -133,19 +165,20 @@ export function chronicleTick(p:Profile,s:BattleState,dt:number,host:ChronicleHo
   dt=Math.min(dt,0.25);const c=s.chronicle!,variant=timelineVariant(p.timeline);
   c.gathered=c.gathered.filter(id=>s.units.some(u=>u.id===id&&alive(u)));
   if(c.rally&&c.gathered.length===6&&c.gathered.every(id=>{const u=s.units.find(actor=>actor.id===id)!;return u.x>=(rallyPosition(s,u)??0)-0.5;})){release(p,s);cue(host,'rally',235);}
-  const near=(x:number,side:'player'|'enemy',radius=85)=>s.units.filter(u=>u.side===side&&alive(u)&&Math.abs(u.x-x)<=radius);
+  const near=(x:number,side:'player'|'enemy',radius=85)=>unitsNear(s,x,side,radius);
   if(c.landmark.kind!=='none'&&!c.landmark.broken){
-    const friends=near(c.landmark.x,'player'),enemies=near(c.landmark.x,'enemy');
-    const threshold=variant.id==='unlit'&&c.landmark.kind==='lantern'?4:3;
+    const status=chronicleLandmarkStatus(p,s)!;
+    const friends=status.playerCount,enemies=status.enemyCount,threshold=status.threshold;
+    c.landmark.x=status.x;c.landmark.capture=status.capture;
     const owner=c.landmark.owner;
-    if(friends.length&&!enemies.length)c.landmark.capture=Math.min(threshold,c.landmark.capture+dt);
-    if(enemies.length&&!friends.length)c.landmark.capture=Math.max(-threshold,c.landmark.capture-dt);
+    if(friends&&!enemies)c.landmark.capture=Math.min(threshold,c.landmark.capture+dt);
+    if(enemies&&!friends)c.landmark.capture=Math.max(-threshold,c.landmark.capture-dt);
     if(c.landmark.capture>=threshold-1e-9)c.landmark.owner='player';else if(c.landmark.capture<=-threshold+1e-9)c.landmark.owner='enemy';
     if(owner!==c.landmark.owner)cue(host,'landmark',c.landmark.x);
     if(c.landmark.owner==='player'){
-      if(c.landmark.kind==='lantern'&&friends.length&&!enemies.length)c.lightSeconds=Math.min(18,c.lightSeconds+dt);
+      if(c.landmark.kind==='lantern'&&friends&&!enemies)c.lightSeconds=Math.min(18,c.lightSeconds+dt);
       if(c.landmark.kind==='supply'){c.landmark.pulse+=dt;if(c.landmark.pulse>=5){s.food=Math.min(99,s.food+1);c.landmark.pulse-=5;}}
-      if(progress(p).tale==='olive-thread'&&friends.length&&!enemies.length){const mend=2*1.65**p.age*dt;s.playerHp=Math.min(s.playerMaxHp,s.playerHp+mend);c.cart.hp=Math.min(c.cart.maxHp,c.cart.hp+mend);}
+      if(progress(p).tale==='olive-thread'&&friends&&!enemies){const mend=2*1.65**p.age*dt;s.playerHp=Math.min(s.playerMaxHp,s.playerHp+mend);c.cart.hp=Math.min(c.cart.maxHp,c.cart.hp+mend);}
     }
   }
   if(c.objective==='escort'){
@@ -191,6 +224,16 @@ export function chronicleOutcome(p:Profile,s:BattleState):'won'|'lost'|null {
 export function chronicleGuidance(p:Profile,s:BattleState):string {
   const c=s.chronicle;if(!c?.enabled)return '';
   if(s.phase==='ready')return routeDefinition(c.route).rule;
+  const landmark=chronicleLandmarkStatus(p,s),landmarkName=landmark?.kind==='lantern'?'lantern':landmark?.kind==='supply'?'supplies':'road shelter';
+  if(landmark&&landmark.phase!=='broken'){
+    if(landmark.phase==='contested')return `${landmarkName[0]!.toUpperCase()+landmarkName.slice(1)} contested · clear nearby enemies to keep claiming`;
+    if(landmark.phase==='claiming-player'&&landmark.owner!=='player')return `${landmark.owner==='enemy'?'Reclaiming':'Claiming'} ${landmarkName} · ${Math.max(0,landmark.threshold-landmark.capture).toFixed(1)} seconds left`;
+    if(landmark.phase==='claiming-enemy')return `Enemy claiming ${landmarkName} · ${Math.max(0,landmark.threshold+landmark.capture).toFixed(1)} seconds to take it · contest the ground`;
+    if(landmark.owner!=='player'&&c.objective==='light'){
+      const remaining=Math.max(0,landmark.threshold-landmark.capture),seconds=Number.isInteger(remaining)?String(remaining):remaining.toFixed(1);
+      return `${landmark.owner==='enemy'?'Reclaim':'Claim'} the lantern · stand beside it uncontested for ${seconds} ${remaining===1?'second':'seconds'}`;
+    }
+  }
   if(c.objective==='escort')return `Flour cart ${Math.round((c.cart.x-210)/580*100)}% · ${Math.ceil(c.cart.hp)}/${Math.ceil(c.cart.maxHp)} health`;
   if(c.objective==='hold')return `Keep the courtyard safe · ${Math.max(0,Math.ceil(75-s.time))} seconds left`;
   if(c.objective==='rescue')return c.rescued?`Scout returning home · ${Math.round((620-c.cart.x)/470*100)}%`:`Free the scout · ${c.rescueProgress.toFixed(1)}/4 seconds beside the cage`;

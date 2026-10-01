@@ -14,6 +14,18 @@ async function open(name,width,height,profile){
 async function shot(fixture,state){const file=`${fixture.name}-${state}.png`;await fixture.page.screenshot({path:`${out}/${file}`});screens.push(file);}
 async function noOverflow(page){assert.ok(await page.evaluate(()=>document.documentElement.scrollWidth<=innerWidth+1),'root must not overflow horizontally');}
 const saved=page=>page.evaluate(()=>localStorage.getItem('almo7areboon.save.v1'));
+async function pauseAtLandmarkPhase(page,phase){
+ const deadline=Date.now()+60000;
+ while(Date.now()<deadline){
+  await page.waitForFunction(value=>{const raw=document.querySelector('canvas')?.dataset.chronicleLandmark;if(!raw)return false;const state=JSON.parse(raw);return state.phase===value&&(value!=='claiming-player'||state.activeMarks>0&&state.activeMarks<8);},phase,{timeout:Math.max(1,deadline-Date.now())});
+  const state=await page.locator('#pause').evaluate((button,value)=>{const raw=document.querySelector('canvas')?.dataset.chronicleLandmark;if(!raw)return null;const current=JSON.parse(raw);if(current.phase!==value||value==='claiming-player'&&!(current.activeMarks>0&&current.activeMarks<8))return null;button.click();return current;},phase);
+  if(!state)continue;
+  await page.locator('#pause[aria-pressed="true"]').waitFor();
+  assert.deepEqual(await page.locator('canvas').evaluate(node=>JSON.parse(node.dataset.chronicleLandmark)),state,'public pause control must freeze the observed landmark phase');
+  return state;
+ }
+ throw new Error(`Timed out pausing at landmark phase ${phase}`);
+}
 // Production persists playable profiles every five seconds. Cross that real
 // boundary before asserting that a paused presentation itself writes nothing.
 async function settledSaveAfterAutosave(page){await page.waitForTimeout(5250);return saved(page);}
@@ -53,8 +65,20 @@ try{
   const p=preparedChronicleProfile();p.chronicle.route='bell';const f=await open('390-bell',390,844,p);await f.page.locator('[data-command="start"]').click();
   await f.page.waitForFunction(()=>document.querySelector('#deploy-hint')?.textContent?.includes('Bell ringing in'),null,{timeout:90000});await shot(f,'warning');assert.match(await f.page.locator('#deploy-hint').textContent(),/Bell ringing in/);checks.push('boss actor and objective guidance are present');await f.context.close();
  }
- {
-  const p=preparedChronicleProfile();p.timeline=2;p.mastery.timeline=2;p.chronicle.timeline=2;p.chronicle.route='lantern';const f=await open('390-night',390,844,p);await f.page.locator('[data-command="start"]').click();await f.page.locator('[data-unit="0"]').click();await f.page.waitForTimeout(3600);await shot(f,'lantern');checks.push('alternate timeline and lantern route render without errors');await f.context.close();
+ for(const [width,height] of [[320,568],[390,844],[1024,768]]){
+  const p=preparedChronicleProfile();p.timeline=2;p.mastery.timeline=2;p.chronicle.timeline=2;p.chronicle.route='lantern';const f=await open(`${width}-night`,width,height,p);await f.page.locator('[data-command="start"]').click();
+  for(const kind of [0,1,0,2,1,2]){const button=f.page.locator(`[data-unit="${kind}"]`);await f.page.waitForFunction(value=>{const node=document.querySelector(`[data-unit="${value}"]`);return node instanceof HTMLButtonElement&&!node.disabled;},String(kind),{timeout:20000});await button.click();}
+  for(const [phase,name,shape] of [['claiming-player','lantern-claim','knot'],['contested','lantern-contested','cross'],['held-player','lantern-owned','knot']]){
+   const state=await pauseAtLandmarkPhase(f.page,phase);
+   assert.equal(state.phase,phase);assert.ok(state.groundDepth<state.propDepth&&state.propDepth<state.actorFrontDepth);assert.deepEqual(state.shapes,[shape]);
+   if(phase==='claiming-player')assert.ok(state.progress>0&&state.progress<1&&state.activeMarks>0&&state.activeMarks<8);
+   if(phase==='contested')assert.ok(state.playerCount>0&&state.enemyCount>0&&state.activeMarks===0);
+   if(phase==='held-player')assert.ok(state.progress===1&&state.activeMarks===8&&state.owner==='player');
+   await f.page.waitForTimeout(5250);assert.deepEqual(await f.page.locator('canvas').evaluate(node=>JSON.parse(node.dataset.chronicleLandmark)),state,'paused landmark presentation must stay static while legitimate pre-pause combat changes settle');const before=await saved(f.page);
+   await shot(f,name);await f.page.waitForTimeout(5250);assert.equal(await saved(f.page),before,'paused landmark presentation must stay save-inert across the next autosave boundary');assert.deepEqual(await f.page.locator('canvas').evaluate(node=>JSON.parse(node.dataset.chronicleLandmark)),state,'paused landmark presentation must stay static');await noOverflow(f.page);
+   await f.page.locator('#pause').click();await f.page.locator('#pause[aria-pressed="false"]').waitFor();
+  }
+  checks.push(`${width}: public deployments reach real lantern claim, contest and ownership; seal is depth-safe, static and save-inert`);await f.context.close();
  }
  for(const [width,height] of [[320,568],[390,844],[1024,768]]){
   const p=preparedChronicleProfile();p.chronicle.route='scout';const f=await open(`${width}-rescue`,width,height,p);await f.page.locator('[data-command="start"]').click();
