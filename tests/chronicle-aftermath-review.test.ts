@@ -24,7 +24,9 @@ test('victory and defeat tableaux are captured before the unchanged result sheet
  assert.match(script,/\['390-aftermath-win',390,844,'won'\]/);
  assert.match(script,/\['1024-aftermath-win',1024,768,'won'\]/);
  assert.match(script,/assert\.equal\(await f\.page\.locator\('\.result-dialog'\)\.count\(\),0/);
- assert.match(script,/await shot\(f,`\$\{outcome\}-survivor-verdict`\)/);
+ assert.match(script,/async function canvasShot\(fixture,state\)/);
+ assert.match(script,/node\.toDataURL\('image\/png'\)/,'the timed verdict evidence must atomically read the rendered canvas instead of racing the delayed result sheet');
+ assert.match(script,/await canvasShot\(f,`\$\{outcome\}-survivor-verdict`\)/);
  assert.match(script,/await f\.page\.locator\('\.result-dialog'\)\.waitFor\(\{timeout:2500\}\)/);
 });
 

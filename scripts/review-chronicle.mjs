@@ -13,6 +13,10 @@ async function open(name,width,height,profile,reducedMotion='reduce'){
  await page.goto(base,{waitUntil:'networkidle'});await page.waitForSelector('canvas');await page.waitForTimeout(500);return {page,context,name};
 }
 async function shot(fixture,state){const file=`${fixture.name}-${state}.png`;await fixture.page.screenshot({path:`${out}/${file}`});screens.push(file);}
+async function canvasShot(fixture,state){
+ const file=`${fixture.name}-${state}.png`,encoded=await fixture.page.locator('canvas').evaluate(node=>node.toDataURL('image/png').split(',')[1]);
+ await writeFile(`${out}/${file}`,Buffer.from(encoded,'base64'));screens.push(file);
+}
 async function noOverflow(page){assert.ok(await page.evaluate(()=>document.documentElement.scrollWidth<=innerWidth+1),'root must not overflow horizontally');}
 const saved=page=>page.evaluate(()=>localStorage.getItem('almo7areboon.save.v1'));
 async function pauseAtLandmarkPhase(page,phase){
@@ -103,7 +107,7 @@ try{
   const f=await open(name,width,height,p,'no-preference');await reachNaturalOutcome(f.page,outcome);
   await f.page.waitForFunction(expected=>{const raw=document.querySelector('canvas')?.dataset.battleAftermath;return raw&&JSON.parse(raw).phase===expected;},outcome,{timeout:1500});
   assert.equal(await f.page.locator('.result-dialog').count(),0,'survivor verdict must precede the result sheet');
-  const state=await f.page.locator('canvas').evaluate(node=>JSON.parse(node.dataset.battleAftermath));validateAftermathSnapshot(state,outcome);await noOverflow(f.page);await shot(f,`${outcome}-survivor-verdict`);
+  const state=await f.page.locator('canvas').evaluate(node=>JSON.parse(node.dataset.battleAftermath));validateAftermathSnapshot(state,outcome);await noOverflow(f.page);await canvasShot(f,`${outcome}-survivor-verdict`);
   await f.page.locator('.result-dialog').waitFor({timeout:2500});const afterSettlement=await saved(f.page);await f.page.waitForTimeout(450);assert.equal(await saved(f.page),afterSettlement,'settled verdict presentation must remain save-inert');
   checks.push(`${width}: public controls reach a natural ${outcome}; bounded survivor verdict precedes the unchanged result sheet and remains save-inert`);await f.context.close();
  }
