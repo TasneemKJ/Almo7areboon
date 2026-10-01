@@ -34,7 +34,7 @@ try{
  }
  {
   const p=preparedChronicleProfile();p.chronicle.route='bell';const f=await open('390-bell',390,844,p);await f.page.locator('[data-command="start"]').click();
-  await f.page.waitForTimeout(7400);await shot(f,'warning');assert.match(await f.page.locator('#deploy-hint').textContent(),/Bell|bell/);checks.push('boss actor and objective guidance are present');await f.context.close();
+  await f.page.waitForFunction(()=>document.querySelector('#deploy-hint')?.textContent?.includes('Bell ringing in'),null,{timeout:90000});await shot(f,'warning');assert.match(await f.page.locator('#deploy-hint').textContent(),/Bell ringing in/);checks.push('boss actor and objective guidance are present');await f.context.close();
  }
  {
   const p=preparedChronicleProfile();p.timeline=2;p.mastery.timeline=2;p.chronicle.timeline=2;p.chronicle.route='lantern';const f=await open('390-night',390,844,p);await f.page.locator('[data-command="start"]').click();await f.page.locator('[data-unit="0"]').click();await f.page.waitForTimeout(3600);await shot(f,'lantern');checks.push('alternate timeline and lantern route render without errors');await f.context.close();
@@ -42,7 +42,7 @@ try{
  {
   const p=simulateChronicle('escort').profile;p.chronicle.discoveries=0;const f=await open('390-discovery',390,844,p);await f.page.locator('.result-dialog').waitFor();await f.page.locator('.story-discoveries summary').click();
   await f.page.locator('[data-story-discovery="door"]').click();await f.page.waitForTimeout(200);assert.equal(await f.page.locator('[data-story-discovery="door"]').isDisabled(),true);await shot(f,'found-page');
-  await f.page.locator('[data-command="chronicle"]').click();await f.page.keyboard.press('Escape');await f.page.locator('.result-dialog').waitFor();
+  await f.page.locator('.result-dialog [data-command="chronicle"]').click();await f.page.keyboard.press('Escape');await f.page.locator('.result-dialog').waitFor();
   await f.page.reload({waitUntil:'networkidle'});await f.page.locator('.result-dialog').waitFor();const save=await f.page.evaluate(()=>JSON.parse(localStorage.getItem('almo7areboon.save.v1')));assert.equal(save.chronicle.discoveries,1);checks.push('discovery persists and closing storybook restores the result instead of stranding the player');await f.context.close();
  }
  {

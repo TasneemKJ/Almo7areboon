@@ -1,22 +1,27 @@
 import Phaser from 'phaser';
 import type {Profile,BattleState} from '../game/types.ts';
-import {chronicleActorDepth,chroniclePaintPalette as P,bellMotion} from './chronicle-presentation.ts';
+import {chronicleActorDepth,chroniclePaintPalette as P,bellMotion,chronicleMaterial} from './chronicle-presentation.ts';
 type Prop='cart'|'lantern'|'cage'|'bell'|'supply';
 /** Small prepainted props reuse the storybook material grammar; they never own combat. */
 function paintedProp(scene:Phaser.Scene,kind:Prop):string {
   const key=`chronicle-${kind}-ink-v1`;if(scene.textures.exists(key))return key;
   const texture=scene.textures.createCanvas(key,240,192);if(!texture)return '__WHITE';
   const c=texture.getContext();c.lineCap='round';c.lineJoin='round';
-  function path(points:number[][],fill:string,close=true,width=4){c.beginPath();points.forEach(([x,y],i)=>i?c.lineTo(x,y):c.moveTo(x,y));if(close)c.closePath();c.fillStyle=fill;if(close)c.fill();c.strokeStyle=P.ink;c.lineWidth=width;c.stroke();}
-  function oval(x:number,y:number,rx:number,ry:number,fill:string,stroke=true){c.beginPath();c.ellipse(x,y,rx,ry,-.08,0,Math.PI*2);c.fillStyle=fill;c.fill();if(stroke){c.strokeStyle=P.ink;c.lineWidth=4;c.stroke();}}
+  function pigment(fill:string,x:number,y:number,w:number,h:number){const [light,mid,shadow]=chronicleMaterial(fill),wash=c.createLinearGradient(x,y,x+w*.72,y+h);wash.addColorStop(0,light);wash.addColorStop(.38,mid);wash.addColorStop(1,shadow);return wash;}
+  function path(points:number[][],fill:string,close=true,width=4){c.beginPath();points.forEach(([x,y],i)=>i?c.lineTo(x,y):c.moveTo(x,y));if(close)c.closePath();const xs=points.map(p=>p[0]),ys=points.map(p=>p[1]);c.fillStyle=pigment(fill,Math.min(...xs),Math.min(...ys),Math.max(...xs)-Math.min(...xs),Math.max(...ys)-Math.min(...ys));if(close)c.fill();c.strokeStyle='#37372e';c.lineWidth=width;c.stroke();}
+  function oval(x:number,y:number,rx:number,ry:number,fill:string,stroke=true){c.beginPath();c.ellipse(x,y,rx,ry,-.08,0,Math.PI*2);c.fillStyle=pigment(fill,x-rx,y-ry,rx*2,ry*2);c.fill();if(stroke){c.strokeStyle='#37372e';c.lineWidth=3;c.stroke();}}
   if(kind==='cart'||kind==='supply'){
     path([[27,111],[196,115],[185,147],[40,143]],P.wood);
     path([[36,115],[27,99],[53,99],[58,144]],P.wood);
     path([[180,117],[195,105],[219,108]],P.wood,false);
-    oval(63,150,18,20,P.wood);oval(164,154,19,21,P.wood);
+    oval(63,150,18,20,P.ink);oval(164,154,19,21,P.ink);oval(63,150,13,15,P.wood);oval(164,154,14,16,P.wood);
+    for(let i=0;i<4;i++)path([[42,118+i*6],[183,121+i*6]],'#523e2c',false,1);
     for(const x of [63,164]){path([[x-12,150],[x+12,151]],P.ink,false,2);path([[x,138],[x,163]],P.ink,false,2);oval(x,151,3,3,P.ink,false);}
     for(const [x,y,rx,ry] of [[81,83,32,37],[131,87,29,32],[161,99,22,20]]){
       oval(x,y,rx,ry,P.linen);path([[x-13,y-27],[x-4,y-33],[x+10,y-29],[x+16,y-34]],P.teal);path([[x-17,y-15],[x-20,y+8],[x-13,y+22]],P.wood,false,2);
+      c.strokeStyle='#a28b60';c.lineWidth=.8;for(let j=0;j<6;j++){c.beginPath();c.moveTo(x-22+j*6,y-12);c.quadraticCurveTo(x-20+j*6,y+4,x-18+j*6,y+17);c.stroke();}
+      c.strokeStyle='#6b7452';c.lineWidth=1.5;c.beginPath();c.moveTo(x+3,y+16);c.quadraticCurveTo(x-7,y,x+4,y-12);c.stroke();
+      for(let j=0;j<4;j++){oval(x+(j%2?7:-1),y-9+j*5,4,1.7,'#8d8957',false);}
     }
     path([[38,113],[187,118],[183,130],[41,128]],P.wood);
     path([[84,108],[83,134]],P.teal,false,6);
@@ -44,7 +49,7 @@ function paintedProp(scene:Phaser.Scene,kind:Prop):string {
   }
   // Fixed paper flecks clipped to paint: deterministic, one-time texture work.
   c.globalCompositeOperation='source-atop';
-  for(let i=0;i<570;i++){const x=(i*67%239),y=(i*43%191);c.fillStyle=i%3?'rgba(255,239,209,.075)':'rgba(34,42,42,.075)';c.fillRect(x,y,1+i%3,1);}
+  let seed=739;for(let i=0;i<5100;i++){seed=(Math.imul(seed,1664525)+1013904223)>>>0;const x=seed%240;seed=(Math.imul(seed,1664525)+1013904223)>>>0;const y=seed%192;c.fillStyle=i%3?'rgba(249,218,169,.13)':'rgba(44,37,24,.14)';c.fillRect(x,y,1+i%3,.7+i%2);}
   c.globalCompositeOperation='source-over';texture.refresh();return key;
 }
 export class ChronicleView {

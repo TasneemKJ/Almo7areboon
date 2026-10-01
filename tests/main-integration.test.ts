@@ -327,3 +327,6 @@ test('actual optional-probe evolution route retains Battle 5 and seals while res
  assert.deepEqual(c.game.profile.unlocked,[true,false,false]);assert.deepEqual(c.game.profile.mastery,mastery);
  assert.equal(c.$('timeline').textContent,'TIMELINE 1 · BATTLE 5');
 });
+test('closing a storybook opened from a settled victory returns to its result without losing the receipt',()=>{const h=settledHarness(),c=h.context,before=JSON.stringify(c.game.profile);h.click('chronicle');assert.equal(c.modal,'chronicle');c.api.dismissModal();assert.equal(c.modal,'result');assert.equal(JSON.stringify(c.game.profile),before);});
+test('storybook writes yield to save ownership recovery before a route is selected',()=>{const h=harness(),c=h.context;h.click('chronicle');const before=JSON.stringify(c.game.profile);h.foreign();h.clickData({storyRoute:'escort',storyBattle:'0'});assert.equal(c.modal,'session');assert.equal(JSON.stringify(c.game.profile),before);});
+test('the skills page explains the selected captain instead of advertising Food Drop',()=>{const h=harness(),c=h.context;c.game.dispatch({type:'chronicle-captain',captain:'gatekeeper'});c.activeTab='skills';c.api.renderScreen();const html=c.$('secondary-screen').innerHTML;assert.match(html,/Stand together/);assert.doesNotMatch(html,/Gain up to 10 food instantly/);});

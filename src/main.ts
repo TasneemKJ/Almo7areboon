@@ -202,8 +202,8 @@ function update(force=false){
   textIfChanged($('speed'),`${p.speed}×`);$('speed').setAttribute('aria-label',`Battle speed ${p.speed} times. Change speed.`);
   $('battle-select').toggleAttribute('disabled',s.phase!=='ready');
   const wave=game.waveStatus();
-  textIfChanged($('wave-label'),s.phase==='running'?waveLabel(wave):s.phase==='ready'?'CHOOSE YOUR ARMY':'BATTLE COMPLETE');
-  $('wave-label').setAttribute('aria-label',s.phase==='running'?`Inspect wave. ${waveAccessibleLabel(wave)}`:$('wave-label').textContent??'');
+  textIfChanged($('wave-label'),s.phase==='running'?waveLabel(wave,s.chronicle?.enabled?s.chronicle.objective:undefined):s.phase==='ready'?'CHOOSE YOUR ARMY':'BATTLE COMPLETE');
+  $('wave-label').setAttribute('aria-label',s.phase==='running'?`Inspect wave. ${waveAccessibleLabel(wave,s.chronicle?.enabled?s.chronicle.objective:undefined)}`:$('wave-label').textContent??'');
   $('wave-label').toggleAttribute('disabled',s.phase!=='running');
   textIfChanged($('deploy-hint'),battleGuidance(p,s,wave.preview,game.deploymentStatus(0)));
   const health=baseHealthDisplay(s.playerHp,s.playerMaxHp);
@@ -238,10 +238,7 @@ function update(force=false){
     const instruction=chronicleGuidance(p,s);
     if(s.phase==='running'&&!s.paused&&(!health.danger)&&(story.route!=='road'||story.rally||p.unlocked[1]))textIfChanged($('deploy-hint'),instruction);
     textIfChanged($('story-ready-rule'),p.wins===0&&story.route==='road'?'Rima waits at the gate. Tap Battle, then send a defender. The company fights together.':routeDefinition(story.route).rule);
-    if(p.chronicle?.captain&&p.chronicle.captain!=='none'){
-      const captain=CAPTAINS.find(c=>c.id===p.chronicle!.captain)!,button=root!.querySelector<HTMLButtonElement>('[data-skill="food"]');
-      if(button){button.title=captain.skill;button.setAttribute('aria-label',`${captain.skill}. ${captain.description} Once per battle.`);button.classList.remove('skill-opportunity');const badge=button.querySelector('small');if(badge)textIfChanged(badge,s.skillsUsed.includes('food')?'USED':p.chronicle.captain==='gatekeeper'?'GUARD':'LIGHT');}
-    }
+
   }
   // Let the finishing blow and base collapse play before the result dialog covers them.
   if(s.phase!==lastPhase){if(lastPhase==='running'&&(s.phase==='won'||s.phase==='lost'))resultDue=now+(document.documentElement.dataset.motion==='reduced'?350:1300);lastPhase=s.phase;}
@@ -270,7 +267,8 @@ function renderScreen(legacyOnly=false){
   }else if(activeTab==='cards'){
     html=cardsScreenHtml(p);
   }else if(activeTab==='skills'){
-    html=`<div class="screen-heading"><span class="eyebrow">TURN THE TIDE</span><h2 id="secondary-title" tabindex="-1">Battle skills</h2><p>The right move can change everything.</p></div><div class="skill-list">${[{id:'freeze',name:'Freeze',tag:'CONTROL',copy:`Freeze every enemy for ${legacyEffects(p.legacy).freezeSeconds} seconds. Give your army time to strike.`,color:'#73bbdb'},{id:'meteor',name:'Meteor',tag:'DAMAGE',copy:'Hit every enemy on the battlefield. Best saved for a big wave.',color:'#de805d'},{id:'food',name:'Food Drop',tag:'SUPPORT',copy:'Gain up to 10 food instantly, limited by 99-food storage. Deploy reinforcements when you need them.',color:'#97bc6a'}].map(s=>`<article class="skill-detail"><div class="skill-art" style="background:${s.color}">${icon(s.id)}</div><div><small>${s.tag}</small><h3>${s.name}</h3><p>${s.copy}</p><span class="skill-rule">ONCE PER BATTLE</span></div></article>`).join('')}</div><div class="skill-note">${icon('battle')}<p>Use the three skill buttons above your army during a battle. Each skill refreshes when a new battle begins.</p></div><button class="big-button green" data-tab="battle">BACK TO BATTLE ${icon('arrow')}</button>`;
+    const captain=p.chronicle?.enabled&&p.chronicle.captain!=='none'?CAPTAINS.find(c=>c.id===p.chronicle!.captain):undefined;
+    html=`<div class="screen-heading"><span class="eyebrow">TURN THE TIDE</span><h2 id="secondary-title" tabindex="-1">Battle skills</h2><p>The right move can change everything.</p></div><div class="skill-list">${[{id:'freeze',name:'Freeze',tag:'CONTROL',copy:`Freeze every enemy for ${legacyEffects(p.legacy).freezeSeconds} seconds. Give your army time to strike.`,color:'#73bbdb'},{id:'meteor',name:'Meteor',tag:'DAMAGE',copy:'Hit every enemy on the battlefield. Best saved for a big wave.',color:'#de805d'},{id:'food',name:captain?.skill??'Food Drop',tag:captain?'CAPTAIN':'SUPPORT',copy:captain?.description??'Gain up to 10 food instantly, limited by 99-food storage. Deploy reinforcements when you need them.',color:'#97bc6a'}].map(s=>`<article class="skill-detail"><div class="skill-art" style="background:${s.color}">${icon(s.id)}</div><div><small>${s.tag}</small><h3>${s.name}</h3><p>${s.copy}</p><span class="skill-rule">ONCE PER BATTLE</span></div></article>`).join('')}</div><div class="skill-note">${icon('battle')}<p>Use the three skill buttons above your army during a battle. Each skill refreshes when a new battle begins.</p></div><button class="big-button green" data-tab="battle">BACK TO BATTLE ${icon('arrow')}</button>`;
   }
   if(activeTab!=='battle')htmlIfChanged($('secondary-screen'),html);
 }
@@ -439,7 +437,7 @@ lifetime.listen<MouseEvent>(root,'click',e=>{
     case 'upgrade-food':action({type:'upgrade',stat:'food'});break;
     case 'upgrade-base':action({type:'upgrade',stat:'base'});break;
     case 'battles':showModal('battles',battleSelectionHtml(game.profile,game.state));break;
-    case 'wave-help':if(game.state.phase==='running')showModal('wave-help',waveInspectionHtml(game.waveStatus()));break;
+    case 'wave-help':if(game.state.phase==='running')showModal('wave-help',waveInspectionHtml(game.waveStatus(),game.state.chronicle?.enabled?game.state.chronicle.objective:undefined));break;
     case 'evolve':{const html=evolutionDialogHtml(game.profile,game.state);if(html){evolutionFromResult=modal==='result';showModal('evolve',html);}break;}
     case 'confirm-evolve':{
       const returnToResult=evolutionFromResult,ok=action({type:'evolve'});
