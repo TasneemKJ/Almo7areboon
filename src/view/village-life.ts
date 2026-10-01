@@ -6,8 +6,8 @@ export interface PaintedPolygon {points:readonly Point[];color:number;alpha:numb
 export interface VillageHalo {center:Point;rx:number;ry:number;color:number;alpha:number}
 export interface VillageStroke {from:Point;to:Point;width:number;color:number;alpha:number}
 export interface VillageViewport {placement:{x:number;y:number;scale:number};cssWorldScale:number;visibleSource:Bounds;hudSourceBounds:readonly Bounds[];skyPath?:Bounds|null}
-export interface VillageFrameInput {age:number;time:number;reduced:boolean;mood:Readonly<VillageMoodSnapshot>;viewport:VillageViewport}
-export interface VillageFrame {residents:readonly {apertureId:string;panes:readonly PaintedPolygon[]}[];lamps:readonly VillageHalo[];water:readonly VillageStroke[];bird:readonly PaintedPolygon[]|null}
+export interface VillageFrameInput {age:number;time:number;reduced:boolean;restoration?:number;mood:Readonly<VillageMoodSnapshot>;viewport:VillageViewport}
+export interface VillageFrame {residents:readonly {apertureId:string;panes:readonly PaintedPolygon[]}[];lamps:readonly VillageHalo[];restorationLights:readonly VillageHalo[];water:readonly VillageStroke[];bird:readonly PaintedPolygon[]|null}
 interface Aperture {id:string;bounds:Bounds;framing:readonly Bounds[];panes:readonly (readonly Point[])[];dark:boolean}
 type Lamp=readonly [number,number,number,number];
 interface Plate {path:string;sha256:string;width:900;height:1000;windows:readonly Aperture[];lamps:readonly Lamp[];sky:Bounds}
@@ -119,6 +119,7 @@ export function villageSkyPath(age:number,viewport:VillageViewport):Bounds|null 
 /** Bounded geometry in world coordinates, registered exclusively from measured source anchors. */
 export function villageFrame(input:VillageFrameInput):VillageFrame {
  const age=Number.isInteger(input.age)&&input.age>=0&&input.age<6?input.age:0,plate=VILLAGE_PLATES[age];
+ const restoration=Number.isInteger(input.restoration)&&input.restoration!>=0&&input.restoration!<=7?input.restoration!:0;
  const time=input.reduced?0:Number.isFinite(input.time)?Math.max(0,input.time):0;
  const sharedMix=Number.isFinite(input.mood.alarmMix)?Math.max(0,Math.min(1,input.mood.alarmMix)):0;
  // Reduced motion uses discrete visual states; the shared long ramp remains intact for audio.
@@ -129,18 +130,19 @@ export function villageFrame(input:VillageFrameInput):VillageFrame {
  const residents:VillageFrame['residents'][number][]=[];
  const interval=12+age*.8,visit=Math.floor(time/interval),phase=time%interval,duration=6+(age%3)*.5;
  const occupied=input.reduced||phase<duration;
+ const courtyard=(restoration&2)!==0;
  const returning=input.mood.mood==='quiet'||input.mood.mood==='recovering'&&sharedMix<=.375;
  for(let index=0;index<plate.windows.length;index++){
   const room=plate.windows[index],panes:PaintedPolygon[]=[];
   // Darkening shares the exact panes; the baked framing and hanging shadow remain intact.
   if(mix>0)for(const pane of room.panes)panes.push(paint(pane,.10*mix));
-  if(occupied&&returning&&index===(input.reduced?0:visit%2)){
+  if(returning&&(courtyard||occupied&&index===(input.reduced?0:visit%2))){
    const [l,t,r,b]=room.bounds,w=r-l,h=b-t,small=w*placement.scale*input.viewport.cssWorldScale<6||h*placement.scale*input.viewport.cssWorldScale<8;
-   const envelope=input.reduced?1:Math.min(1,phase/.7,(duration-phase)/.7);
+   const envelope=input.reduced||courtyard?1:Math.min(1,phase/.7,(duration-phase)/.7);
    const warmth=!input.reduced&&input.mood.mood==='recovering'?1-sharedMix/.375:1;
    const alpha=(room.dark?.28:.40)*Math.max(0,envelope)*warmth;
    const travel=small||input.reduced?0:.14*w*Math.sin(phase/duration*Math.PI*2);
-   const rise=small||input.reduced?0:(1-Math.max(0,envelope))*.20*h;
+   const rise=small||input.reduced||courtyard?0:(1-Math.max(0,envelope))*.20*h;
    if(alpha>0)for(const triangle of RESIDENT){
     const shape=triangle.map(p=>({x:l+p.x*w+travel,y:t+p.y*h+rise}));
     for(const pane of room.panes){const clipped=clip(shape,pane);if(clipped.length>=3)panes.push(paint(clipped,alpha));}
@@ -150,6 +152,13 @@ export function villageFrame(input:VillageFrameInput):VillageFrame {
  }
  const lamps=plate.lamps.map(([x,y,rx,ry],index)=>({center:project({x,y}),rx:rx*placement.scale,ry:ry*placement.scale,color:age===5&&index>=2?0x8edfc9:0xffd08a,
  alpha:(.12+index*.008+(input.reduced?0:.018*Math.sin(time*2*Math.PI/(3.7+index*.9)+age+index*2)))*(1-.55*mix)}));
+ const restorationLights:VillageHalo[]=[];
+ const restoredLight=(index:number,color:number,alpha:number)=>{
+  const [l,t,r,b]=plate.windows[index].bounds;
+  restorationLights.push({center:project({x:(l+r)/2,y:(t+b)/2}),rx:Math.max(16,(r-l)*.95)*placement.scale,ry:Math.max(18,(b-t)*.9)*placement.scale,color,alpha:alpha*(1-.65*mix)});
+ };
+ if((restoration&1)!==0)restoredLight(0,0xffb36d,.18);
+ if((restoration&4)!==0)restoredLight(1,0xf2cf79,.14+(input.reduced?0:.025*Math.sin(time*1.7+age*.8)));
  const water:VillageStroke[]=age===2?[0,1,2].map(index=>{
   const x=495+index*29,y=482+index*15+(input.reduced?0:2*Math.sin(time*.7+index*2));
   return {from:project({x,y}),to:project({x:x+14+index*3,y}),width:.9*placement.scale,color:0xffd08a,alpha:.10+index*.015};
@@ -165,5 +174,5 @@ export function villageFrame(input:VillageFrameInput):VillageFrame {
    if(path){const x=path[0]+21+(path[2]-path[0]-42)*progress,y=(path[1]+path[3])/2;const pose=Math.min(2,Math.floor(progress*3));bird=BIRDS[pose].map(triangle=>paint(triangle.map(p=>({x:x+p.x,y:y+p.y})),.54));}
   }
  }
- return {residents,lamps,water,bird};
+ return {residents,lamps,restorationLights,water,bird};
 }

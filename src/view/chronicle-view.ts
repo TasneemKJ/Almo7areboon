@@ -99,8 +99,6 @@ export class ChronicleView {
       if(u.side==='player'&&c.shieldUntil>s.time){g.lineStyle(1.3,0xb6d4bd,.9);g.strokeEllipse(x,y-14,28,32);}
       if((u.breachedUntil??0)>s.time){g.lineStyle(1.4,0xd39a78,.9);g.lineBetween(x-5,y-17,x,y-11);g.lineBetween(x,y-11,x+5,y-18);}
     }
-    const restoration=p.chronicle?.restoration??0;
-    for(let i=0;i<3;i++)if(restoration&(1<<i)){g.fillStyle(0xe9b964,.85);g.fillRoundedRect(24+i*9,groundY-19,4,6,1);}
   }
   destroy():void{for(const object of [...this.formation,this.landmark,this.traveller,this.bell,this.marks,this.label])object.destroy();}
 }

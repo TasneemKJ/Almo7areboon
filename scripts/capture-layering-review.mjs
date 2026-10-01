@@ -19,7 +19,7 @@ function assertVillage(diagnostic, fixture) {
   assert.deepEqual(v.light,{width:64,height:64});assert.equal(v.softLight,false);
   assert.equal(v.decodedBytes,41_989_912,'actual decoded source dimensions stay within the 42 MB budget');
   assert.equal(v.textures.filter(key=>key==='village-light').length,1);
-  assert.deepEqual(v.pools,{lights:4,stars:0,clouds:0,mist:0});
+  assert.deepEqual(v.pools,{lights:6,stars:0,clouds:0,mist:0});
   assert.ok(v.skyIndex<v.ambience.paintIndex&&v.ambience.paintIndex<v.shadows.paintIndex&&v.shadows.paintIndex<v.halos.paintIndex,'village ink below combat shadows/halos');
   const visibleLamps=v.lamps.filter(lamp=>lamp.visible);assert.equal(visibleLamps.length,v.plate.lamps.length);
   const {placement,visibleSource,hudSourceBounds}=v.viewport,s=placement.scale*v.viewport.cssWorldScale;
