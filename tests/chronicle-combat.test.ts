@@ -1,7 +1,7 @@
 import test from 'node:test';
 import assert from 'node:assert/strict';
 import { createChronicle, type RouteId } from '../src/game/chronicle.ts';
-import { createChronicleBattle, chronicleSpawn, toggleRally, rallyPosition, chronicleDamage, chronicleAfterHit, chronicleTick, chronicleOutcome, captainSkill, chronicleSkill, chronicleStartingFood, chronicleGateFactor, chronicleGuidance } from '../src/game/chronicle-combat.ts';
+import { createChronicleBattle, chronicleSpawn, toggleRally, rallyPosition, chronicleDamage, chronicleAfterHit, chronicleTick, chronicleOutcome, captainSkill, chronicleSkill, chronicleStartingFood, chronicleGateFactor, chronicleGuidance, chronicleLandmarkStatus } from '../src/game/chronicle-combat.ts';
 import type { Profile, BattleState, Unit, GameEvent } from '../src/game/types.ts';
 function fixture(route:RouteId='road'){
  const profile={age:0,enemyAge:0,timeline:1,chronicle:{...createChronicle(),route}} as Profile;
@@ -91,4 +91,43 @@ test('preparation and expedition reserve are bounded and have different conseque
 test('guidance names the current objective and teaches defender placement',()=>{
  const f=fixture('escort');assert.match(chronicleGuidance(f.profile,f.state),/cart/i);
  const road=fixture();assert.equal(chronicleGuidance(road.profile,road.state),'Deploy a defender before ranged troops; defenders protect them.');
+});
+test('landmark status reports the exact claim threshold and battlefield pressure',()=>{
+ const f=fixture('lantern'),landmark=f.state.chronicle!.landmark;
+ assert.deepEqual(chronicleLandmarkStatus(f.profile,f.state),{kind:'lantern',x:500,owner:'neutral',capture:0,threshold:3,progress:0,playerCount:0,enemyCount:0,phase:'neutral'});
+ f.state.units=[unit(1,'player',0,500)];
+ assert.equal(chronicleLandmarkStatus(f.profile,f.state)?.phase,'claiming-player');
+ f.state.units.push(unit(2,'enemy',0,540));
+ assert.equal(chronicleLandmarkStatus(f.profile,f.state)?.phase,'contested');
+ landmark.broken=true;
+ assert.equal(chronicleLandmarkStatus(f.profile,f.state)?.phase,'broken');
+});
+test('unlit lantern status and tick share one four-second threshold',()=>{
+ const f=fixture('lantern');f.profile.timeline=5;f.state.chronicle=createChronicleBattle(f.profile);f.state.units=[unit(1,'player',0,500)];
+ assert.equal(chronicleLandmarkStatus(f.profile,f.state)?.threshold,4);
+ for(let i=0;i<15;i++)chronicleTick(f.profile,f.state,.25,f.host);
+ assert.equal(f.state.chronicle!.landmark.owner,'neutral');
+ assert.equal(f.state.chronicle!.landmark.capture,3.75);
+ chronicleTick(f.profile,f.state,.25,f.host);
+ assert.equal(f.state.chronicle!.landmark.owner,'player');
+ assert.equal(f.events.filter(event=>event.storyCue==='landmark').length,1);
+});
+test('landmark status contains malformed coordinates and capture values',()=>{
+ const f=fixture('lantern');f.state.chronicle!.landmark.x=Number.NaN;f.state.chronicle!.landmark.capture=Number.POSITIVE_INFINITY;
+ const status=chronicleLandmarkStatus(f.profile,f.state)!;
+ assert.equal(status.x,500);assert.equal(status.capture,0);assert.equal(status.progress,0);
+ assert.ok(Object.values(status).every(value=>typeof value!=='number'||Number.isFinite(value)));
+});
+test('light guidance teaches claiming and contest before the post-capture hold',()=>{
+ const f=fixture('lantern');
+ assert.equal(chronicleGuidance(f.profile,f.state),'Claim the lantern · stand beside it uncontested for 3 seconds');
+ f.state.units=[unit(1,'player',0,500)];for(let i=0;i<4;i++)chronicleTick(f.profile,f.state,.25,f.host);
+ assert.equal(chronicleGuidance(f.profile,f.state),'Claiming lantern · 1.0/3 seconds');
+ f.state.units.push(unit(2,'enemy',0,520));
+ assert.equal(chronicleGuidance(f.profile,f.state),'Lantern contested · clear nearby enemies to keep claiming');
+ f.state.units=[unit(1,'player',0,500)];for(let i=0;i<8;i++)chronicleTick(f.profile,f.state,.25,f.host);
+ assert.equal(f.state.chronicle!.landmark.owner,'player');
+ assert.match(chronicleGuidance(f.profile,f.state),/^Lantern \d+\/18 seconds/);
+ f.state.units=[unit(2,'enemy',0,500)];
+ assert.equal(chronicleGuidance(f.profile,f.state),'Enemy claiming lantern · contest the ground beside it');
 });
