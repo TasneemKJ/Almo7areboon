@@ -60,4 +60,5 @@ test('native rescue review resumes through the dedicated pause owner rather than
   const source=await readFile(new URL('../scripts/review-chronicle.mjs',import.meta.url),'utf8');
   assert.doesNotMatch(source,/getByRole\('button',\{name:\/Resume battle\/i\}\)/);
   assert.ok((source.match(/locator\('\[data-command="pause"\]'\)/g)??[]).length>=2);
+  assert.match(source,/async function stableSaved\(page\)/,'the presentation baseline must wait for an already-queued gameplay save to settle');
 });
