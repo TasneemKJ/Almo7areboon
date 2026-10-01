@@ -102,7 +102,7 @@ export function chronicleBaseDamage(s:BattleState,attacker:'player'|'enemy',dama
 export function chronicleAfterHit(p:Profile,s:BattleState,attacker:Unit,target:Unit,damage:number,secondary:boolean,host:ChronicleHost):void {
   const c=s.chronicle;if(!c?.enabled||secondary)return;
   attacker.chargeReady=false;
-  if(target.kind===1&&chronicleDamage(p,s,attacker,target,100)<100){c.coveredHits++;cue(host,'covered',target.x,0,target);}
+  if(target.kind===1&&chronicleProtector(s,target)!==undefined){c.coveredHits++;cue(host,'covered',target.x,0,target);}
   if(attacker.kind===2&&target.kind===0&&target.hp>0){target.breachedUntil=s.time+2;cue(host,'breach',target.x,0,attacker);}
   if(attacker.side==='player'&&attacker.kind===2){
     if(target.id===c.boss.id&&c.boss.windupUntil>s.time){c.boss.windupUntil=0;c.boss.nextRing=s.time+10;c.boss.interrupts++;cue(host,'bell-stilled',target.x,0,attacker);}
