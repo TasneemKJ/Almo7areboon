@@ -148,3 +148,10 @@ test('unlit enemy-held lantern names the full eight-second recapture',()=>{
  assert.equal(chronicleGuidance(f.profile,f.state),'Reclaim the lantern · stand beside it uncontested for 8 seconds');
  f.state.units=[unit(1,'player',0,500)];assert.equal(chronicleGuidance(f.profile,f.state),'Reclaiming lantern · 8.0 seconds left');chronicleTick(f.profile,f.state,.25,f.host);assert.equal(chronicleGuidance(f.profile,f.state),'Reclaiming lantern · 7.8 seconds left');
 });
+test('idle lantern guidance keeps abandoned signed progress truthful',()=>{
+ const f=fixture('lantern'),landmark=f.state.chronicle!.landmark;
+ landmark.capture=1.5;assert.equal(chronicleGuidance(f.profile,f.state),'Claim the lantern · stand beside it uncontested for 1.5 seconds');
+ landmark.capture=-1.5;assert.equal(chronicleGuidance(f.profile,f.state),'Claim the lantern · stand beside it uncontested for 4.5 seconds');
+ landmark.owner='enemy';landmark.capture=-2;assert.equal(chronicleGuidance(f.profile,f.state),'Reclaim the lantern · stand beside it uncontested for 5 seconds');
+ landmark.capture=1.5;assert.equal(chronicleGuidance(f.profile,f.state),'Reclaim the lantern · stand beside it uncontested for 1.5 seconds');
+});

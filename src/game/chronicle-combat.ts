@@ -227,7 +227,10 @@ export function chronicleGuidance(p:Profile,s:BattleState):string {
     if(landmark.phase==='contested')return `${landmarkName[0]!.toUpperCase()+landmarkName.slice(1)} contested · clear nearby enemies to keep claiming`;
     if(landmark.phase==='claiming-player'&&landmark.owner!=='player')return `${landmark.owner==='enemy'?'Reclaiming':'Claiming'} ${landmarkName} · ${Math.max(0,landmark.threshold-landmark.capture).toFixed(1)} seconds left`;
     if(landmark.phase==='claiming-enemy')return `Enemy claiming ${landmarkName} · ${Math.max(0,landmark.threshold+landmark.capture).toFixed(1)} seconds to take it · contest the ground`;
-    if(landmark.owner!=='player'&&c.objective==='light')return `${landmark.owner==='enemy'?'Reclaim':'Claim'} the lantern · stand beside it uncontested for ${landmark.threshold*(landmark.owner==='enemy'?2:1)} seconds`;
+    if(landmark.owner!=='player'&&c.objective==='light'){
+      const remaining=Math.max(0,landmark.threshold-landmark.capture),seconds=Number.isInteger(remaining)?String(remaining):remaining.toFixed(1);
+      return `${landmark.owner==='enemy'?'Reclaim':'Claim'} the lantern · stand beside it uncontested for ${seconds} seconds`;
+    }
   }
   if(c.objective==='escort')return `Flour cart ${Math.round((c.cart.x-210)/580*100)}% · ${Math.ceil(c.cart.hp)}/${Math.ceil(c.cart.maxHp)} health`;
   if(c.objective==='hold')return `Keep the courtyard safe · ${Math.max(0,Math.ceil(75-s.time))} seconds left`;
