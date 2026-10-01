@@ -19,6 +19,11 @@ test('informational text keeps an 11px floor and the readability sheet loads las
  assert.ok(main.indexOf('./ui/readability.css')>main.indexOf('./ui/era-glow.css'),'the floor must win the cascade');
 });
 
+test('the story rally row does not override the phone hint below the 11px floor',()=>{
+ const css=readFileSync(new URL('../src/ui/chronicle.css',import.meta.url),'utf8');
+ assert.match(css,/@media\(max-width:350px\)\{[^\n]*\.chronicle-command-row \.deploy-hint\{font-size:11px\}/);
+});
+
 test('rarity captions use dark ink so rare and epic headers stay legible',()=>{
  const css=readFileSync(new URL('../src/ui/readability.css',import.meta.url),'utf8');
  assert.match(css,/\.rarity\s*\{\s*color:\s*#1[0-9a-f]{5}/i);

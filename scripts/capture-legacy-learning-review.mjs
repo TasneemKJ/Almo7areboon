@@ -18,6 +18,7 @@ function fixture(kind){
   profile.timeline=1000;profile.mastery.timeline=1000;profile.age=5;profile.enemyAge=5;profile.furthestBattle=5;
   profile.legacy={rank:kind==='terminal-earned'?3:0,selected:'stillness'};
  }
+ profile.chronicle.timeline=profile.timeline;profile.chronicle.chapter=profile.enemyAge;
  return profile;
 }
 async function session(viewport,kind){

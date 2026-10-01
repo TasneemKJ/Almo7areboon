@@ -77,7 +77,7 @@ test('captains replace rather than add a skill, and original Food Drop stays ava
 test('preparation and expedition reserve are bounded and have different consequences',()=>{
  const f=fixture();assert.equal(chronicleStartingFood(f.profile),0);f.profile.chronicle!.preparation='bread';assert.equal(chronicleStartingFood(f.profile),3);f.profile.chronicle!.preparation='repair';assert.equal(chronicleGateFactor(f.profile),1.15);
 });
-test('guidance names the current objective and new-player action',()=>{
+test('guidance names the current objective and teaches defender placement',()=>{
  const f=fixture('escort');assert.match(chronicleGuidance(f.profile,f.state),/cart/i);
- const road=fixture();assert.match(chronicleGuidance(road.profile,road.state),/defender|troop|deploy/i);
+ const road=fixture();assert.equal(chronicleGuidance(road.profile,road.state),'Deploy a defender before ranged troops; defenders protect them.');
 });

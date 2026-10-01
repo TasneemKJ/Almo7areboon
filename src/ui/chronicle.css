@@ -65,6 +65,6 @@
 .story-provisions button{flex:1;}
 .story-result .big-button{margin:12px 0 0;}
 .story-run-result{padding:12px 0;}
-@media(max-width:350px){.story-route{padding:9px 7px;}.story-route strong{font-size:15px}.story-route span{font-size:11px}.story-houses{gap:6px}.story-house{padding-left:4px;padding-right:4px}.chronicle-command-row .deploy-hint{font-size:10px}.story-rally{min-width:67px;font-size:12px}.story-illustration{height:170px;}}
+@media(max-width:350px){.story-route{padding:9px 7px;}.story-route strong{font-size:15px}.story-route span{font-size:11px}.story-houses{gap:6px}.story-house{padding-left:4px;padding-right:4px}.chronicle-command-row .deploy-hint{font-size:11px}.story-rally{min-width:67px;font-size:12px}.story-illustration{height:170px;}}
 @media(prefers-reduced-motion:reduce){.story-route{transition:none!important}.story-map-lantern{animation:none!important}}
 @media(forced-colors:active){.chronicle-dialog,.story-route,.story-house,.story-rally,.story-choices button{border:1px solid ButtonText!important;background:Canvas!important;color:CanvasText!important}.story-route.selected,.story-choices .chosen{outline:3px solid Highlight}.story-chapter-name{background:Canvas;color:CanvasText;text-shadow:none}.story-illustration{background:Canvas}}

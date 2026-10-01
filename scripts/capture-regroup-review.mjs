@@ -63,7 +63,7 @@ async function recoverySession(viewport,foreign=false){
   // A real Retreat reopens the same voluntary route after cancellation.
   await page.locator('[data-command="start"]').click();await page.locator('[data-command="settings"]').click();await page.locator('[data-command="retreat"]').click();await route.click();
   await page.waitForFunction(()=>document.activeElement?.getAttribute('data-battle')==='4');await page.keyboard.press('Enter');await settled();
-  const selected=JSON.parse((await bytes())[0]);assert.equal(selected.enemyAge,4);assert.deepEqual({...selected,enemyAge:5},JSON.parse(lossBytes[0]));
+  const selected=JSON.parse((await bytes())[0]),prior=JSON.parse(lossBytes[0]);assert.equal(selected.enemyAge,4);assert.equal(selected.chronicle.chapter,4);assert.deepEqual({...selected,enemyAge:prior.enemyAge,chronicle:{...selected.chronicle,chapter:prior.chronicle.chapter}},prior);
   await page.reload({waitUntil:'networkidle'});await page.waitForFunction(()=>document.querySelector('#app')?.dataset.saveSession==='active');assert.equal(await page.locator('#world').getAttribute('data-phase'),'ready');
   assert.equal(JSON.parse((await bytes())[0]).enemyAge,4);
   await page.screenshot({path:`${output}/${name}-ready.png`});
