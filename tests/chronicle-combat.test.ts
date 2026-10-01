@@ -34,6 +34,10 @@ test('a forward defender protects a ranged ally from every attacker role',()=>{
  const f=fixture(),target=unit(10,'player',1,400),guard=unit(11,'player',0,440);f.state.units=[target,guard];
  for(const kind of [0,1,2] as const){const attacker=unit(kind+1,'enemy',kind,600);f.state.units[2]=attacker;assert.equal(chronicleDamage(f.profile,f.state,attacker,target,100),65);}
 });
+test('a lethal hit on protected ranged still records its resolved cover cue',()=>{
+ const f=fixture(),attacker=unit(1,'enemy',0,600),target=unit(2,'player',1,400),guard=unit(3,'player',0,440);f.state.units=[attacker,target,guard];target.hp=0;
+ chronicleAfterHit(f.profile,f.state,attacker,target,65,false,f.host);assert.equal(f.state.chronicle!.coveredHits,1);assert.equal(f.events.at(-1)?.storyCue,'covered');
+});
 test('heavy breach temporarily cancels a defender’s role protection',()=>{
  const f=fixture(),heavy=unit(1,'player',2),guard=unit(2,'enemy',0,220),archer=unit(3,'player',1);
  chronicleAfterHit(f.profile,f.state,heavy,guard,10,false,f.host);

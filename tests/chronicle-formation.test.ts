@@ -1,6 +1,7 @@
 import test from 'node:test';
 import assert from 'node:assert/strict';
-import {chronicleFormationFrame,chronicleThreadDepth} from '../src/view/chronicle-formation.ts';
+import {chronicleFormationFrame,chronicleThreadDepth,chronicleThreadStyle} from '../src/view/chronicle-formation.ts';
+import {paintChronicleFormation} from '../src/view/chronicle-formation-paint.ts';
 import type {BattleState,Unit} from '../src/game/types.ts';
 
 const unit=(id:number,side:'player'|'enemy',kind:0|1|2,x:number,lane=1,breachedUntil=0):Unit=>({id,side,kind,age:0,x,lane,hp:100,maxHp:100,attackTimer:0,attacking:false,hitFlash:0,...(breachedUntil?{breachedUntil}:{})});
@@ -39,8 +40,35 @@ test('rally knots point gathered living troops to their actual hold positions an
  units[2].hp=0;assert.deepEqual(chronicleFormationFrame(s).rally.map(mark=>mark.unitId),[1,2,4,5,6]);
 });
 
+test('malformed coordinates and timers cannot manufacture a protector relationship',()=>{
+ const target=unit(1,'player',1,400,1),guard=unit(2,'player',0,430,1);const s=state([target,guard]);
+ for(const poison of [()=>{guard.x=NaN;},()=>{guard.lane=NaN;},()=>{guard.breachedUntil=NaN;},()=>{s.time=NaN;},()=>{target.x=NaN;}]){Object.assign(target,{x:400,lane:1});Object.assign(guard,{x:430,lane:1,breachedUntil:0});s.time=5;poison();assert.deepEqual(chronicleFormationFrame(s).links,[]);}
+});
+
+test('malformed duplicate rally ids render only their authoritative first assignment',()=>{
+ const s=state([unit(1,'player',0,180,0),unit(2,'player',1,180,1)]);s.chronicle!.rally=true;s.chronicle!.gathered=[1,2,999,1];
+ assert.deepEqual(chronicleFormationFrame(s).rally.map(mark=>[mark.unitId,mark.holdX]),[[1,240],[2,240]]);
+});
+
+test('both sides and breach states have pigment plus shape distinction',()=>{
+ const styles=[chronicleThreadStyle('player','active'),chronicleThreadStyle('enemy','active'),chronicleThreadStyle('player','breached'),chronicleThreadStyle('enemy','breached')];
+ assert.equal(new Set(styles.map(style=>style.colour)).size,4);assert.equal(new Set(styles.map(style=>style.glyph)).size,4);
+});
+
+test('the painter executes active, breached and rally commands deterministically without motion state',()=>{
+ class Painter {calls:Array<[string,...number[]]>=[];lineStyle(...v:number[]){this.calls.push(['lineStyle',...v]);return this;}lineBetween(...v:number[]){this.calls.push(['lineBetween',...v]);return this;}beginPath(){this.calls.push(['beginPath']);return this;}moveTo(...v:number[]){this.calls.push(['moveTo',...v]);return this;}lineTo(...v:number[]){this.calls.push(['lineTo',...v]);return this;}strokePath(){this.calls.push(['strokePath']);return this;}fillStyle(...v:number[]){this.calls.push(['fillStyle',...v]);return this;}fillEllipse(...v:number[]){this.calls.push(['fillEllipse',...v]);return this;}fillTriangle(...v:number[]){this.calls.push(['fillTriangle',...v]);return this;}strokeEllipse(...v:number[]){this.calls.push(['strokeEllipse',...v]);return this;}fillCircle(...v:number[]){this.calls.push(['fillCircle',...v]);return this;}}
+ const frame={links:[{targetId:1,protectorId:2,side:'player' as const,status:'active' as const,targetX:400,targetLane:1,protectorX:430,protectorLane:0},{targetId:3,protectorId:4,side:'enemy' as const,status:'breached' as const,targetX:600,targetLane:2,protectorX:570,protectorLane:2}],rally:[{unitId:5,unitX:180,unitLane:1,holdX:240,holdLane:1}]};
+ const render=()=>{const layers=[new Painter(),new Painter(),new Painter()];paintChronicleFormation(layers,frame,280,12);return layers.map(layer=>layer.calls);},first=render();
+ assert.ok(first[0].some(([name])=>name==='beginPath'));assert.ok(first[1].some(([name])=>name==='fillCircle'));assert.ok(first[2].filter(([name])=>name==='lineBetween').length>=5);assert.deepEqual(render(),first);
+});
+
+test('pause changes no formation or painter command because marks carry no motion clock',()=>{
+ const s=state([unit(1,'player',1,400,1),unit(2,'player',0,430,0)]),before=chronicleFormationFrame(s);s.paused=true;assert.deepEqual(chronicleFormationFrame(s),before);
+});
+
 test('thread depth follows the rear-most endpoint and stays behind actors on that foot plane',()=>{
- assert.equal(chronicleThreadDepth(280,2,0,12),280.25);
- assert.equal(chronicleThreadDepth(280,2,1,12),292.25);
- assert.equal(chronicleThreadDepth(280,99,NaN,12),292.25);
+ assert.equal(chronicleThreadDepth(280,2,0,12),278);
+ assert.equal(chronicleThreadDepth(280,2,1,12),290);
+ assert.equal(chronicleThreadDepth(280,99,NaN,12),290);
+ const lowestStaggeredActor=280+12-2.2+.5;assert.ok(chronicleThreadDepth(280,2,1,12)<lowestStaggeredActor);
 });

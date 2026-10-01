@@ -7,6 +7,7 @@ export type FormationLink={
 };
 export type RallyMark={unitId:number;unitX:number;unitLane:number;holdX:number;holdLane:number};
 export type ChronicleFormationFrame={links:FormationLink[];rally:RallyMark[]};
+export type FormationThreadStyle={colour:number;glyph:'leaves'|'wedge'|'split'|'cross'};
 
 const lane=(value:number)=>Number.isFinite(value)&&value>=0&&value<=2?Math.round(value):1;
 const alive=(unit:Unit)=>unit.hp>0;
@@ -26,16 +27,22 @@ export function chronicleFormationFrame(s:BattleState):ChronicleFormationFrame {
   }
   links.push(...frontier);
  }
- const rally:RallyMark[]=[];
+ const rally:RallyMark[]=[],seen=new Set<number>();
  if(c.rally)for(const [index,id] of c.gathered.slice(0,6).entries()){
+  if(seen.has(id))continue;seen.add(id);
   const unit=s.units.find(actor=>actor.id===id&&actor.side==='player'&&alive(actor));if(!unit)continue;
   rally.push({unitId:id,unitX:unit.x,unitLane:lane(unit.lane),holdX:240-Math.floor(index/3)*24,holdLane:lane(unit.lane)});
  }
  return {links,rally};
 }
 
+export function chronicleThreadStyle(side:Side,status:FormationLink['status']):FormationThreadStyle {
+ if(status==='breached')return side==='player'?{colour:0xc88268,glyph:'split'}:{colour:0x9f6f62,glyph:'cross'};
+ return side==='player'?{colour:0x93b394,glyph:'leaves'}:{colour:0xc28b73,glyph:'wedge'};
+}
+
 /** Threads sort behind both endpoint actors even when the relationship spans adjacent lanes. */
 export function chronicleThreadDepth(groundY:number,fromLane:number,toLane:number,laneGap:number):number {
  const ground=Number.isFinite(groundY)?groundY:0,gap=Number.isFinite(laneGap)&&laneGap>0?laneGap:12;
- return ground+Math.min(lane(fromLane),lane(toLane))*gap+.25;
+ return ground+Math.min(lane(fromLane),lane(toLane))*gap-2;
 }

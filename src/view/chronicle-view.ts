@@ -2,6 +2,7 @@ import Phaser from 'phaser';
 import type {Profile,BattleState} from '../game/types.ts';
 import {chronicleActorDepth,chroniclePaintPalette as P,bellMotion,chronicleMaterial,chronicleAttachmentDepth} from './chronicle-presentation.ts';
 import {chronicleFormationFrame,chronicleThreadDepth} from './chronicle-formation.ts';
+import {paintChronicleFormation} from './chronicle-formation-paint.ts';
 type Prop='cart'|'lantern'|'cage'|'bell'|'supply';
 /** Small prepainted props reuse the storybook material grammar; they never own combat. */
 function paintedProp(scene:Phaser.Scene,kind:Prop):string {
@@ -74,24 +75,7 @@ export class ChronicleView {
     const c=s.chronicle;this.marks.clear();for(let lane=0;lane<3;lane++)this.formation[lane].clear().setDepth(chronicleThreadDepth(groundY,lane,lane,laneGap));for(const image of [this.landmark,this.traveller,this.bell])image.setVisible(false);this.label.setVisible(false);
     if(!c?.enabled)return;
     const g=this.marks;g.setDepth(groundY+laneGap*2+3);
-    const frame=chronicleFormationFrame(s);
-    for(const link of frame.links){
-      const layer=this.formation[Math.min(link.targetLane,link.protectorLane)],x1=link.targetX*.45,y1=groundY+link.targetLane*laneGap+3,x2=link.protectorX*.45,y2=groundY+link.protectorLane*laneGap+3;
-      if(link.status==='breached'){
-        layer.lineStyle(1.35,0xc88268,.78);for(const [a,b] of [[0,.21],[.39,.59],[.78,1]])layer.lineBetween(x1+(x2-x1)*a,y1+(y2-y1)*a,x1+(x2-x1)*b,y1+(y2-y1)*b);
-        layer.lineBetween(x1-4,y1-3,x1,y1+1);layer.lineBetween(x1,y1+1,x1+4,y1-3);
-      }else{
-        const colour=link.side==='player'?0x93b394:0xc28b73;layer.lineStyle(1.15,colour,.58);layer.beginPath();layer.moveTo(x1,y1);layer.lineTo((x1+x2)/2,(y1+y2)/2+4);layer.lineTo(x2,y2);layer.strokePath();
-        const mx=(x1+x2)/2,my=(y1+y2)/2+2;layer.fillStyle(colour,.72);
-        if(link.side==='player'){layer.fillEllipse(mx-2,my,4,2);layer.fillEllipse(mx+2,my-2,4,2);}else layer.fillTriangle(mx,my-3,mx+3,my+1,mx-3,my+1);
-        layer.lineStyle(1.1,colour,.82);layer.strokeEllipse(x1,y1,10,5);
-      }
-    }
-    for(const rally of frame.rally){
-      const layer=this.formation[rally.holdLane],x1=rally.unitX*.45,y=groundY+rally.holdLane*laneGap+4,x2=rally.holdX*.45;
-      layer.lineStyle(.9,0xd8bc7d,.44);if(Math.abs(x2-x1)>4)for(let i=0;i<3;i++){const a=i/3+.05,b=Math.min(1,a+.14);layer.lineBetween(x1+(x2-x1)*a,y,x1+(x2-x1)*b,y);}
-      layer.lineStyle(1.1,0xe4c894,.78);layer.strokeEllipse(x2,y,9,5);layer.fillStyle(0xd8bc7d,.72);layer.fillCircle(x1,y,1.8);
-    }
+    paintChronicleFormation(this.formation,chronicleFormationFrame(s),groundY,laneGap);
     if(c.landmark.kind!=='none'){
       const key=c.landmark.kind==='lantern'?'lantern':'supply';
       this.landmark.setTexture(`chronicle-${key}-ink-v1`).setVisible(true).setPosition(c.landmark.x*.45,groundY-8).setDisplaySize(key==='lantern'?58:61,key==='lantern'?65:49).setDepth(chronicleActorDepth(groundY-8)).setAlpha(c.landmark.broken?.35:1);

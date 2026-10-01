@@ -71,11 +71,11 @@ export function chronicleMovementLimit(s:BattleState,u:Unit):number|null {
 }
 /** Shared authoritative relationship query for combat and presentation. */
 export function chronicleProtector(s:BattleState,target:Unit,includeBreached=false):Unit|undefined {
-  if(target.kind!==1||target.hp<=0)return;
+  if(target.kind!==1||!Number.isFinite(s.time)||!Number.isFinite(target.x)||!Number.isFinite(target.lane))return;
   const direction=target.side==='player'?1:-1;
   let best:Unit|undefined;
   for(const u of s.units){
-    if(u.side!==target.side||u.kind!==0||!alive(u)||!includeBreached&&(u.breachedUntil??0)>s.time||Math.abs(u.lane-target.lane)>1||(u.x-target.x)*direction<=0||(u.x-target.x)*direction>70)continue;
+    if(u.side!==target.side||u.kind!==0||!alive(u)||!Number.isFinite(u.x)||!Number.isFinite(u.lane)||u.breachedUntil!==undefined&&!Number.isFinite(u.breachedUntil)||!includeBreached&&(u.breachedUntil??0)>s.time||Math.abs(u.lane-target.lane)>1||(u.x-target.x)*direction<=0||(u.x-target.x)*direction>70)continue;
     if(!best||Math.abs(u.x-target.x)<Math.abs(best.x-target.x)||Math.abs(u.x-target.x)===Math.abs(best.x-target.x)&&(Math.abs(u.lane-target.lane)<Math.abs(best.lane-target.lane)||Math.abs(u.lane-target.lane)===Math.abs(best.lane-target.lane)&&u.id<best.id))best=u;
   }
   return best;
