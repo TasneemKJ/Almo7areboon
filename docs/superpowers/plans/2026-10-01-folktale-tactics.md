@@ -1,25 +1,25 @@
 # Folktale Tactics Implementation Plan
 
-> Execute inline with superpowers:executing-plans and test-driven-development.
-
-**Goal:** Implement the twenty approved ideas in one expansion branch.
-**Architecture:** Bounded pure progression plus deterministic fixed-step combat hooks; existing Game remains the state owner. Existing guarded actions and scene renderer host the journey and contextual Rally order.
-**Tech Stack:** Existing TypeScript, Phaser 3, Vite, Node tests and Playwright. No new dependencies.
+**Goal:** Integrate the twenty approved ideas and raise one PR, without merging.
+**Architecture:** Bounded pure progression and deterministic combat hooks; Game remains the state owner. Existing guarded actions and the scene renderer host the optional illustrated journey and Rally command.
+**Stack:** Existing TypeScript, Phaser 3, Vite, Node tests and Playwright; no new dependencies.
 **Spec:** docs/superpowers/specs/2026-10-01-folktale-tactics.md
 
 ## Global constraints
 Portrait first; preserve existing artwork and saves. No main-branch writes, merge, scheduler or independent storage writer. Invalid and paused actions are no-ops. Outcomes settle once.
 
 ## Review focus
-Old/future/corrupt saves; simultaneous victory/loss; repeated victory receipts; expedition reload; pause and session ownership; small-screen layering, focus and objective clarity.
+Old/future/corrupt saves; simultaneous victory/loss; repeated victory receipts; expedition reload; pause and save ownership; small-screen layering, focus and objective clarity.
 
-## Tasks
-- [x] Implement bounded route, unlock, choice, settlement, veteran, discovery, expedition and alternate-timeline state; 12 local tests pass.
-- [ ] Implement combat hooks and tests for rally, cover, shatter, objectives, captains and boss behavior.
-- [ ] Integrate Game and schema migration; verify receipts and old save compatibility.
-- [ ] Integrate scenic journey, preparation, teaching, results, Phaser marks and mobile styling.
-- [ ] Run full tests, typecheck, build and production browser review; inspect screenshots and fix regressions.
-- [ ] Record coverage, limitations and review findings; raise the PR without merging.
+## Implementation
+- [x] Bounded routes, unlocks, choices, settlement, veterans, discoveries, expeditions and alternate-timeline state.
+- [x] Rally, cover, shatter, objectives, captains and boss behavior with regression tests.
+- [x] Game integration and schema-5 migration; mission receipts and old-save compatibility.
+- [x] Scenic journey, preparation, teaching, results, Phaser props and mobile styling.
+- [x] Local suite: 739 passing tests; typecheck and production build pass.
+- [x] Initial browser screenshots inspected; ambiguous result selector, boss timing, captain guidance and pale result-heading defects corrected.
+- [x] Twenty-idea scope, verification and explicit limits recorded in docs/FOLKTALE-TACTICS.md.
+- [ ] Final PR workflow acceptance; consult the PR checks for current status.
 
-## Execution ruling
-Direct cloning is blocked in the local container. GitHub provides live reads and branch commits. New pure modules are tested locally; repository CI supplies full-tree verification. An exact-anchor integration script may run in a temporary branch-scoped workflow to apply reviewed edits. Remove that write-enabled workflow before final handoff. No scheduled task is created.
+## Execution record
+Direct cloning and local browser navigation were blocked. GitHub provided authorized branch reads/writes and an Actions artifact with dependencies for local verification. Browser checks ran in GitHub Actions. The temporary branch-scoped assembly workflow and transport files are removed from the proposed merge tree; the permanent browser-review workflow has read-only repository permissions. No scheduled task or merge was created.
