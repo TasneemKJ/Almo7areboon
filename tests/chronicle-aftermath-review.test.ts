@@ -11,7 +11,7 @@ test('native journey reaches fresh outcomes through public controls only',()=>{
  assert.match(script,/locator\(`\[data-unit="\$\{kind\}"\]`\)/);
  assert.match(script,/locator\(`\[data-skill="\$\{skill\}"\]`\)/);
  assert.match(script,/async function clickEnabled\(page,locator\)/);
- assert.match(script,/locator\.click\(\{timeout:750,noWaitAfter:true\}\)/);
+ assert.match(script,/locator\.click\(\{timeout:750,noWaitAfter:true,force:true\}\)/,'the native policy must use the real enabled public control without spending the battle clock on HUD stability');
  assert.match(script,/if\(error instanceof Error&&error\.name==='TimeoutError'\)return false/,'a transient redraw must yield to the next public-control retry');
  assert.match(script,/if\(phase!=='won'&&phase!=='lost'\)throw error/);
  assert.match(script,/preparedChronicleProfile\(\)/);
