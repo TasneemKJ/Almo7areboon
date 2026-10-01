@@ -187,7 +187,13 @@ async function inspect(page, name, seals = false) {
   await page.screenshot({ path: `${output}/${name}.png` });
   const buttons = page.locator('#modal-layer button:not([disabled])');
   for (let index = 0; index < await buttons.count(); index++) {
-    const button = buttons.nth(index); if(!await button.isVisible())continue; await button.scrollIntoViewIfNeeded();
+    const button = buttons.nth(index);
+    if(!await button.isVisible()) {
+      const intentionallyCollapsed = await button.evaluate(node => node.closest('details:not([open])') !== null);
+      assert.equal(intentionallyCollapsed, true, `enabled action hidden outside closed details: ${await button.textContent()}`);
+      continue;
+    }
+    await button.scrollIntoViewIfNeeded();
     const painted = await button.evaluate(node => {
       const r = node.getBoundingClientRect(), top = document.elementFromPoint(r.left + r.width / 2, r.top + r.height / 2);
       return r.width > 0 && r.height > 0 && r.top >= 0 && r.bottom <= innerHeight + 1 && (top === node || node.contains(top));

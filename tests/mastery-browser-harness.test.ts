@@ -11,7 +11,9 @@ import { saveProfile } from '../src/game/save.ts';
 const source=readFileSync(new URL('../scripts/capture-mastery-review.mjs',import.meta.url),'utf8');
 const ast=ts.createSourceFile('capture-mastery-review.mjs',source,ts.ScriptTarget.Latest,true,ts.ScriptKind.JS);
 test('mastery action geometry ignores controls hidden inside closed story details',()=>{
- assert.match(source,/if\(!await button\.isVisible\(\)\)continue/);
+ assert.match(source,/node\.closest\('details:not\(\[open\]\)'\) !== null/);
+ assert.match(source,/assert\.equal\(intentionallyCollapsed, true, `enabled action hidden outside closed details:/);
+ assert.doesNotMatch(source,/if\(!await button\.isVisible\(\)\)continue/);
 });
 test('scouting baseline waits for Retry backup rotation before comparing disclosure bytes',async()=>{
  const scouting=readFileSync(new URL('../scripts/capture-scouting-review.mjs',import.meta.url),'utf8');
