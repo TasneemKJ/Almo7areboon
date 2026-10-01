@@ -13,7 +13,7 @@ import {groundEffectDepth,groundEffectLayer} from './ground-effects.ts';
 import {attackCueFrame,hitReaction} from './combat-choreography.ts';
 import {impactMaterialFrame} from './impact-material.ts';
 import {characterGesture} from './character-gesture.ts';
-import {healthOffset,lanePresentation,projectileLift,troopScale} from './lane-perspective.ts';
+import {healthOffset,lanePresentation,projectileLift,rankStagger,troopScale} from './lane-perspective.ts';
 import {unitFocusMarks} from './silhouette-focus.ts';
 import {visualAssets,baseTexture,foregroundTexture,unitTexture,landscapeTexture} from './visual-assets.ts';
 import {projectileGeometry,paintProjectile,projectileStyle} from './projectile-art.ts';
@@ -21,6 +21,8 @@ import {cloudFrame,shootingStar,starFrame} from './living-sky.ts';
 import {VIGNETTE_RADIUS,eraGrade,gradeMatrix,gradePixels,keyLightRays,projectileGlow,stageGlow,teamHalo,vignetteStops,foregroundMist,type GlowMark} from './cinematic-grade.ts';
 import {DeathVisuals} from './death-visuals.ts';
 import {stackedY} from './floater-stack.ts';
+import {waveArrivalForPort} from './wave-arrival.ts';
+import {paintWaveArrival,waveArrivalRenderPlan} from './wave-arrival-paint.ts';
 import {TROOP_FRAME} from './unit-illustrations.ts';
 import {compactNumber} from '../ui/battle-hud.ts';
 import {battleResolution} from './render-resolution.ts';
@@ -38,7 +40,6 @@ type ImpactCue={x:number;y:number;age:number;kind:Unit['kind'];side:Side;life:nu
 type Flare={x:number;y:number;life:number;max:number;radius:number;color:number};
 const xAt=(x:number)=>x*.45;
 /** View-only: nudges bodies sharing a lane by a few pixels so crowded columns read as individuals, not one stacked sprite. */
-const rankStagger=(id:number)=>((id*7)%5-2)*1.1;
 const noise=(n:number)=>{const value=Math.sin(n*117.13)*43758.5453;return value-Math.floor(value);};
 const tint=(hex:string)=>parseInt(hex.slice(1),16);
 
@@ -54,6 +55,7 @@ export function mountBattlefield(element:HTMLElement,game:GamePort,onFrame:()=>v
   private ambience!:Phaser.GameObjects.Graphics;
   private baseDamage!:Phaser.GameObjects.Graphics;
   private armyLayer!:Phaser.GameObjects.Container;
+  private arrivalSignal!:Phaser.GameObjects.Graphics;
   private foreground!:Phaser.GameObjects.Image;
   private groundFx:Phaser.GameObjects.Graphics[]=[];
   private shadows!:Phaser.GameObjects.Graphics;
@@ -117,6 +119,7 @@ export function mountBattlefield(element:HTMLElement,game:GamePort,onFrame:()=>v
    this.shadows=this.add.graphics();this.world.add(this.shadows);
    this.halos=this.add.graphics().setBlendMode(Phaser.BlendModes.ADD);this.world.add(this.halos);
    this.armyLayer=this.add.container();this.world.add(this.armyLayer);
+   this.arrivalSignal=this.add.graphics();this.armyLayer.add(this.arrivalSignal);
    this.chronicleView=new ChronicleView(this,this.armyLayer);
    this.baseDamage=this.add.graphics();this.armyLayer.add(this.baseDamage);
    // Fixed pools share the actor sort; no masks or per-particle game objects.
@@ -133,7 +136,7 @@ export function mountBattlefield(element:HTMLElement,game:GamePort,onFrame:()=>v
     this.baseText.push(text);this.world.add(text);
    }
    this.scale.on('resize',this.resize,this);
-   this.events.once('shutdown',()=>{this.scale.off('resize',this.resize,this);this.resetEffects();this.units.clear();this.idle=[];});
+   this.events.once('shutdown',()=>{delete this.game.canvas.dataset.waveArrival;this.scale.off('resize',this.resize,this);this.resetEffects();this.units.clear();this.idle=[];});
    this.resize();this.syncEra();loading.remove();
    if(this.failed)element.dispatchEvent(new CustomEvent('visual-fallback',{bubbles:true}));
   }
@@ -265,6 +268,7 @@ export function mountBattlefield(element:HTMLElement,game:GamePort,onFrame:()=>v
    // A shared ground-plane sort lets rear-lane troops pass behind buildings.
    this.playerBase.setPosition(39,groundY+12).setDepth(groundY+12);
    this.enemyBase.setPosition(411,groundY+12).setDepth(groundY+12);
+   this.drawWaveArrival(groundY);
    this.baseDamage.setDepth(groundY+12.1);
    for(let lane=0;lane<3;lane++)this.groundFx[lane].clear().setDepth(groundEffectDepth(groundY,lane,this.layout.laneGap));
    const ids=new Set<number>();
@@ -315,6 +319,13 @@ export function mountBattlefield(element:HTMLElement,game:GamePort,onFrame:()=>v
    }
    this.chronicleView.update(game.profile,game.state,groundY,this.layout.laneGap,this.reduce);
    this.armyLayer.sort('depth');
+  }
+  private drawWaveArrival(groundY:number):void {
+   const graphics=this.arrivalSignal.clear();delete this.game.canvas.dataset.waveArrival;
+   const frame=waveArrivalForPort(game,this.reduce);if(!frame)return;
+   const plan=waveArrivalRenderPlan(groundY),report=paintWaveArrival(graphics,frame,plan);
+   graphics.setDepth(plan.depth);
+   this.game.canvas.dataset.waveArrival=JSON.stringify({intent:frame.intent,counts:frame.counts,nextIn:frame.nextIn,progress:frame.progress,banner:report.banner,roleShapes:report.roleShapes,knots:report.knots,x:plan.x,y:plan.y,depth:plan.depth,baseDepth:plan.baseDepth,actorFrontDepth:plan.actorFrontDepth,reduced:this.reduce,paused:game.state.paused});
   }
   private drawAtmosphere():void {
    const g=this.ambience;g.clear();

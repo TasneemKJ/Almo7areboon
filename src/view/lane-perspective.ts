@@ -10,6 +10,16 @@ export interface LanePresentation {
 const LANE_SCALE=[.93,1,1.07] as const;
 const clampLane=(lane:number)=>Number.isFinite(lane)&&lane>=0&&lane<=2?Math.round(lane):1;
 const clampKind=(kind:number)=>([0,1,2].includes(kind)?kind:0) as UnitKind;
+export const rankStagger=(id:number)=>((id*7)%5-2)*1.1;
+
+/** Shared actor sort depth, including the five-position crowded-rank stagger. */
+export function actorRenderDepth(groundY:number,lane:number,laneGap:number,id:number):number {
+  return groundY+lane*laneGap+rankStagger(id)+.5;
+}
+
+export function minimumActorRenderDepth(groundY:number):number {
+  return Math.min(...Array.from({length:5},(_,id)=>actorRenderDepth(groundY,0,0,id)));
+}
 
 /**
  * View-only lane perspective. Simulation positions and collision distances stay unchanged;

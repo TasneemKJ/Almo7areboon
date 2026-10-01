@@ -2,6 +2,7 @@ import {chromium} from 'playwright';
 import {mkdir,writeFile} from 'node:fs/promises';
 import assert from 'node:assert/strict';
 import {simulateChronicle,preparedChronicleProfile} from './simulate-chronicle.ts';
+import {arrivalReviewFixtures,assertArrivalPaused,validateArrivalSnapshot} from './chronicle-arrival-review.ts';
 const base=process.env.REVIEW_URL??'http://127.0.0.1:4173',out='artifacts/chronicle';await mkdir(out,{recursive:true});
 const browser=await chromium.launch({headless:true,...(process.env.CHROMIUM_PATH?{executablePath:process.env.CHROMIUM_PATH}:{}),args:['--enable-unsafe-swiftshader']});
 const errors=[],checks=[],screens=[];
@@ -29,6 +30,20 @@ async function pauseAtLandmarkPhase(page,phase){
 // Production persists playable profiles every five seconds. Cross that real
 // boundary before asserting that a paused presentation itself writes nothing.
 async function settledSaveAfterAutosave(page){await page.waitForTimeout(5250);return saved(page);}
+async function pauseAtWaveArrival(page,intent,onObserved){
+ const deadline=Date.now()+30000;
+ while(Date.now()<deadline){
+  await page.waitForFunction(value=>{const raw=document.querySelector('canvas')?.dataset.waveArrival;if(!raw)return false;const state=JSON.parse(raw);return state.intent===value&&state.nextIn>=0&&state.nextIn<=4&&!state.paused;},intent,{timeout:Math.max(1,deadline-Date.now())});
+  const observed=await page.locator('canvas').evaluate((node,value)=>{const raw=node.dataset.waveArrival;if(!raw)return null;const state=JSON.parse(raw);return state.intent===value&&!state.paused?state:null;},intent);
+  if(!observed)continue;validateArrivalSnapshot(observed,intent);await onObserved?.(observed);
+  const before=await page.locator('#pause').evaluate((button,value)=>{const raw=document.querySelector('canvas')?.dataset.waveArrival;if(!raw)return null;const state=JSON.parse(raw);if(state.intent!==value||state.paused)return null;button.click();return state;},intent);
+  if(!before)continue;
+  await page.waitForFunction(()=>{const raw=document.querySelector('canvas')?.dataset.waveArrival;return raw&&JSON.parse(raw).paused===true;});
+  const paused=await page.locator('canvas').evaluate(node=>JSON.parse(node.dataset.waveArrival));
+  validateArrivalSnapshot(before,intent);validateArrivalSnapshot(paused,intent);assertArrivalPaused(before,paused);return {before,paused};
+ }
+ throw new Error(`Timed out pausing at ${intent} wave arrival`);
+}
 try{
  for(const [width,height] of [[320,568],[390,844],[1024,768]]){
   const f=await open(`${width}`,width,height);await shot(f,'ready');await noOverflow(f.page);
@@ -43,6 +58,15 @@ try{
   const p=preparedChronicleProfile();p.chronicle.restoration=restoration;const f=await open(`390-restoration-${restoration?'full':'none'}`,390,844,p),before=await saved(f.page);
   await shot(f,'ready');await f.page.waitForTimeout(450);assert.equal(await saved(f.page),before);await noOverflow(f.page);
   checks.push(`disclosed restoration=${restoration} ready-state fixture renders the current painted settlement without presentation save writes`);await f.context.close();
+ }
+ for(const fixture of arrivalReviewFixtures()){
+  const p=preparedChronicleProfile();p.speed=1;p.enemyAge=0;p.furthestBattle=Math.max(0,p.furthestBattle);p.chronicle.chapter=0;p.chronicle.route=fixture.route;p.chronicle.expedition=null;
+  const f=await open(fixture.name,fixture.width,fixture.height,p);await f.page.locator('[data-command="start"]').click();
+  const {paused}=await pauseAtWaveArrival(f.page,fixture.intent,()=>shot(f,'incoming-road'));assert.equal(paused.reduced,true);assert.ok(paused.x>=340&&paused.x<=410);assert.ok(paused.y>120&&paused.y<430);
+  const before=await settledSaveAfterAutosave(f.page);await noOverflow(f.page);await f.page.waitForTimeout(5250);
+  assert.equal(await saved(f.page),before,'paused wave-arrival presentation must remain save-inert across the next autosave boundary');
+  const still=await f.page.locator('canvas').evaluate(node=>JSON.parse(node.dataset.waveArrival));validateArrivalSnapshot(still,fixture.intent);assert.deepEqual(still,paused,'paused road omen must remain static');
+  checks.push(`${fixture.width}: real ${fixture.intent} commander preview renders the schedule-derived road omen behind actors and stays static/save-inert under public pause`);await f.context.close();
  }
  {
   const p=preparedChronicleProfile();p.sound=true;const f=await open('390-company',390,844,p);

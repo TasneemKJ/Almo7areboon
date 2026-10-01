@@ -1,6 +1,7 @@
 import type { ChronicleProgress, ChronicleAction, ChronicleReceipt } from './chronicle.ts';
 import type { ChronicleBattle, ChronicleCue, ChronicleUnitMarks } from './chronicle-combat.ts';
 import type { CombatTrait } from './role-traits.ts';
+import type { WaveStatus } from './encounters.ts';
 export type UnitKind = 0 | 1 | 2;
 export type Side = 'player' | 'enemy';
 export type Phase = 'ready' | 'running' | 'won' | 'lost';
@@ -23,4 +24,4 @@ export interface BattleState { chronicle?: ChronicleBattle; stats: BattleStats; 
 export interface GameEvent { storyCue?: ChronicleCue; trait?: CombatTrait; source?: Pick<Unit, 'id'|'x'|'lane'|'side'|'age'|'kind'>; target?: 'unit'|'base'; type: 'spawn'|'hit'|'death'|'coin'|'win'|'lose'|'skill'|'upgrade'|'evolve'; x?: number; lane?: number; side?: Side; amount?: number; skill?: Skill; cardIndices?: number[]; }
 export type Action = ChronicleAction | {type:'prestige';expectedTimeline:number;legacy:LegacyChoice} | {type:'select-legacy';legacy:LegacyChoice} | {type:'start'|'retry'|'next'|'evolve'|'pause'|'retreat'} | {type:'spawn'|'unlock';kind:UnitKind} | {type:'upgrade';stat:'food'|'base'} | {type:'skill';skill:Skill} | {type:'claim';id:string} | {type:'daily';day:number} | {type:'select-battle';battle:number} | {type:'summon';count?:1|10|50};
 export interface DeploymentStatus { allowed: boolean; reason: 'available'|'invalid'|'locked'|'ready'|'paused'|'food'|'capacity'|'blocked'; missingFood: number; waitSeconds: number; }
-export interface GamePort { profile: Profile; state: BattleState; dispatch(action: Action): boolean; step(dt: number): void; drainEvents(): GameEvent[]; }
+export interface GamePort { profile: Profile; state: BattleState; dispatch(action: Action): boolean; step(dt: number): void; drainEvents(): GameEvent[]; waveStatus?(): WaveStatus; }
