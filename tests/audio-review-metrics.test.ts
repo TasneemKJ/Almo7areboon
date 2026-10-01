@@ -24,7 +24,9 @@ test('pre-WAV metrics retain float energy and onset/end inspection windows; WAV 
 });
 
 test('native runner derives cue count and rejects duplicates or missing merged roles',()=>{
- const cues=['deploy','hit-neutral','hit-blunt','hit-flick','hit-hollow','base-player','base-enemy','coin','freeze','meteor','food','upgrade','evolve','win','lose','death','summon'];
- assert.equal(validateAudioReviewCues(cues),17);assert.equal(validateAudioReviewCues([...cues,'additional-review-role']),18);
+ const stories=['story-rally','story-bell','story-shatter','story-protect','story-cover','story-breach','story-landmark','story-rescue'];
+ const cues=[...stories,'deploy','hit-neutral','hit-blunt','hit-flick','hit-hollow','base-player','base-enemy','coin','freeze','meteor','food','upgrade','evolve','win','lose','death','summon'];
+ assert.equal(validateAudioReviewCues(cues),25);assert.equal(validateAudioReviewCues([...cues,'additional-review-role']),26);
  assert.throws(()=>validateAudioReviewCues([...cues,'death']));assert.throws(()=>validateAudioReviewCues(cues.filter(c=>c!=='summon')));
+ for(const story of stories)assert.throws(()=>validateAudioReviewCues(cues.filter(cue=>cue!==story)),`missing ${story}`);
 });

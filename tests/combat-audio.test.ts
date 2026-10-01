@@ -7,7 +7,7 @@ import {recordedContext,installContext} from './helpers/audio-context.ts';
 const hit:GameEvent={type:'hit'},skill:GameEvent={type:'skill',skill:'freeze'};
 const tick=()=>new Promise(resolve=>setImmediate(resolve));
 function harness(){audio.disposeAudio();const c=recordedContext(),restore=installContext(c);audio.unlockAudio();return {...c,close(){audio.disposeAudio();restore();}};}
-const cueIds:CombatCueId[]=['deploy','hit-neutral','hit-blunt','hit-flick','hit-hollow','base-player','base-enemy','coin','freeze','meteor','food','upgrade','evolve','win','lose','death','summon'];
+const cueIds:CombatCueId[]=['story-rally','story-bell','story-shatter','story-protect','story-cover','story-breach','story-landmark','story-rescue','deploy','hit-neutral','hit-blunt','hit-flick','hit-hollow','base-player','base-enemy','coin','freeze','meteor','food','upgrade','evolve','win','lose','death','summon'];
 test('audioClockCooldownBoundaries',()=>{
  for(const [event,other,interval] of [
   [{type:'spawn',side:'player'},{type:'spawn',side:'player'},.120],
@@ -106,10 +106,21 @@ test('onsetAndResultDuration',()=>{
   assert.equal(c.oscillators.length,1);assert.equal(c.gains.length,1);const envelope=c.gains[0].gain.events,osc=c.oscillators[0];
   assert.deepEqual(envelope[0],['set',0,1]);assert.ok(envelope[1][2]-1>=.002-1e-9&&envelope[1][2]-1<=.005+1e-9);assert.equal(envelope.at(-1)[1],0);
   assert.equal(osc.starts[0],1);assert.ok(osc.stops[0]<=1.650);assert.equal(envelope.at(-1)[2],osc.stops[0]);
+  if(['story-cover','story-breach','story-landmark','story-rescue'].includes(id))assert.ok(osc.stops[0]<1.45,`${id} stays below its 450ms plan bound`);
   shapes.set(id,JSON.stringify([osc.type,envelope.map((e:any[])=>[e[0],e[1],e[2]-1])]));voice!.dispose();assert.equal(released,1);
  }
  assert.equal(new Set(['hit-blunt','hit-flick','hit-hollow'].map(id=>shapes.get(id))).size,3);
  assert.equal(new Set(['freeze','meteor','food'].map(id=>shapes.get(id))).size,3);
+ assert.equal(new Set(['story-rally','story-cover','story-breach','story-landmark','story-rescue'].map(id=>shapes.get(id))).size,5);
+});
+
+test('covered and breached hits admit one semantic voice before the generic impact',()=>{
+ const h=harness();try{
+  audio.playCombatEvents([{type:'hit',target:'unit',storyCue:'covered',amount:8,source:{id:1,x:350,lane:1,side:'enemy',age:0,kind:0}}],true);
+  assert.equal(h.oscillators.length,1);
+  h.ctx.currentTime=1.09;audio.playCombatEvents([{type:'hit',target:'unit',storyCue:'breach',amount:8,source:{id:2,x:450,lane:1,side:'player',age:0,kind:2}}],true);
+  assert.equal(h.oscillators.length,2);
+ }finally{h.close();}
 });
 
 test('death uses one shared audio-time cooldown across both sides',()=>{

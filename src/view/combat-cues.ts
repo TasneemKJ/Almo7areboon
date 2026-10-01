@@ -1,24 +1,32 @@
 import type {GameEvent} from '../game/types.ts';
-export type CombatCueId='story-rally'|'story-bell'|'story-shatter'|'story-protect'|'deploy'|'hit-neutral'|'hit-blunt'|'hit-flick'|'hit-hollow'|'base-player'|'base-enemy'|'coin'|'freeze'|'meteor'|'food'|'upgrade'|'evolve'|'win'|'lose'|'death'|'summon';
+export type CombatCueId='story-rally'|'story-bell'|'story-shatter'|'story-protect'|'story-cover'|'story-breach'|'story-landmark'|'story-rescue'|'deploy'|'hit-neutral'|'hit-blunt'|'hit-flick'|'hit-hollow'|'base-player'|'base-enemy'|'coin'|'freeze'|'meteor'|'food'|'upgrade'|'evolve'|'win'|'lose'|'death'|'summon';
 export type CueCooldown='deployment'|'unit-hit'|'base-hit'|'coin'|'death';
 export interface CombatCue {
  readonly id:CombatCueId;readonly eventIndex:number;readonly priority:number;
  readonly critical:boolean;readonly cooldown:CueCooldown|null;
 }
+function storyAccent(storyCue:GameEvent['storyCue']):CombatCueId|undefined {
+ switch(storyCue){
+  case 'rally':return 'story-rally';case 'bell-warning':case 'bell-ring':return 'story-bell';
+  case 'bell-stilled':case 'captain':return 'story-protect';case 'shatter':return 'story-shatter';
+  case 'covered':return 'story-cover';case 'breach':return 'story-breach';
+  case 'landmark':return 'story-landmark';case 'rescued':return 'story-rescue';default:return undefined;
+ }
+}
 /** Pure presentation selection: fixed retained categories, no copied batch/history. */
 export function selectCombatCues(events:readonly GameEvent[]):readonly CombatCue[] {
- const skills:CombatCue[]=[],other=new Map<CombatCueId,CombatCue>();let hit:CombatCue|undefined;
+ const skills:CombatCue[]=[],other=new Map<CombatCueId,CombatCue>();let hit:CombatCue|undefined,replacesImpact=false;
  for(let index=0;index<events.length;index++){
   const event=events[index];if(!event||typeof event!=='object')continue;
   let id:CombatCueId,priority=1,critical=false,cooldown:CueCooldown|null=null;
+  if(event.type==='win'||event.type==='lose')return [{id:event.type,eventIndex:index,priority:7,critical:true,cooldown:null}];
   if(event.storyCue){
-   const accents:Partial<Record<NonNullable<GameEvent['storyCue']>,CombatCueId>>={rally:'story-rally','bell-warning':'story-bell','bell-ring':'story-bell','bell-stilled':'story-protect',shatter:'story-shatter',captain:'story-protect',rescued:'story-rally',landmark:'story-rally'};
-   const accent=accents[event.storyCue];
-   if(accent&&!other.has(accent))other.set(accent,{id:accent,eventIndex:index,priority:event.storyCue==='bell-warning'?6:4,critical:event.storyCue==='bell-warning',cooldown:event.storyCue==='shatter'?'unit-hit':null});
+   const accent=storyAccent(event.storyCue);
+   const semanticImpact=event.storyCue==='shatter'||event.storyCue==='covered'||event.storyCue==='breach';
+   if(accent){if(semanticImpact)replacesImpact=true;if(!other.has(accent))other.set(accent,{id:accent,eventIndex:index,priority:event.storyCue==='bell-warning'?6:4,critical:event.storyCue==='bell-warning',cooldown:semanticImpact?'unit-hit':null});}
    if((event.amount??0)<=0)continue;
   }
   switch(event.type){
-   case 'win':case 'lose':return [{id:event.type,eventIndex:index,priority:7,critical:true,cooldown:null}];
    case 'skill':if(event.skill!=='freeze'&&event.skill!=='meteor'&&event.skill!=='food')continue;
     if(skills.length<3)skills.push({id:event.skill,eventIndex:index,priority:6,critical:true,cooldown:null});continue;
    case 'hit':
@@ -40,6 +48,6 @@ export function selectCombatCues(events:readonly GameEvent[]):readonly CombatCue
   }
   if(!other.has(id))other.set(id,{id,eventIndex:index,priority,critical,cooldown});
  }
- const candidates=[...skills,...other.values()];if(hit)candidates.push(hit);
+ const candidates=[...skills,...other.values()];if(hit&&(!replacesImpact||hit.cooldown!=='unit-hit'))candidates.push(hit);
  return candidates.sort((a,b)=>b.priority-a.priority||a.eventIndex-b.eventIndex).slice(0,3);
 }
