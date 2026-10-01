@@ -59,12 +59,13 @@ try{
   for(const [phase,name,shape] of [['claiming-player','lantern-claim','knot'],['contested','lantern-contested','cross'],['held-player','lantern-owned','knot']]){
    await f.page.waitForFunction(value=>{const raw=document.querySelector('canvas')?.dataset.chronicleLandmark;if(!raw)return false;const state=JSON.parse(raw);return state.phase===value&&(value!=='claiming-player'||state.activeMarks>0&&state.activeMarks<8);},phase,{timeout:60000});
    await f.page.locator('#pause').click();await f.page.locator('#pause[aria-pressed="true"]').waitFor();
-   const before=await saved(f.page),state=await f.page.locator('canvas').evaluate(node=>JSON.parse(node.dataset.chronicleLandmark));
+   const state=await f.page.locator('canvas').evaluate(node=>JSON.parse(node.dataset.chronicleLandmark));
    assert.equal(state.phase,phase);assert.ok(state.groundDepth<state.propDepth&&state.propDepth<state.actorFrontDepth);assert.deepEqual(state.shapes,[shape]);
    if(phase==='claiming-player')assert.ok(state.progress>0&&state.progress<1&&state.activeMarks>0&&state.activeMarks<8);
    if(phase==='contested')assert.ok(state.playerCount>0&&state.enemyCount>0&&state.activeMarks===0);
    if(phase==='held-player')assert.ok(state.progress===1&&state.activeMarks===8&&state.owner==='player');
-   await shot(f,name);await f.page.waitForTimeout(5250);assert.equal(await saved(f.page),before,'paused landmark presentation must stay save-inert across autosave');assert.deepEqual(await f.page.locator('canvas').evaluate(node=>JSON.parse(node.dataset.chronicleLandmark)),state,'paused landmark presentation must stay static');await noOverflow(f.page);
+   await f.page.waitForTimeout(5250);assert.deepEqual(await f.page.locator('canvas').evaluate(node=>JSON.parse(node.dataset.chronicleLandmark)),state,'paused landmark presentation must stay static while legitimate pre-pause combat changes settle');const before=await saved(f.page);
+   await shot(f,name);await f.page.waitForTimeout(5250);assert.equal(await saved(f.page),before,'paused landmark presentation must stay save-inert across the next autosave boundary');assert.deepEqual(await f.page.locator('canvas').evaluate(node=>JSON.parse(node.dataset.chronicleLandmark)),state,'paused landmark presentation must stay static');await noOverflow(f.page);
    await f.page.locator('#pause').click();await f.page.locator('#pause[aria-pressed="false"]').waitFor();
   }
   checks.push(`${width}: public deployments reach real lantern claim, contest and ownership; seal is depth-safe, static and save-inert`);await f.context.close();
