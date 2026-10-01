@@ -13,6 +13,9 @@ async function open(name,width,height,profile,reducedMotion='reduce'){
  await page.goto(base,{waitUntil:'networkidle'});await page.waitForSelector('canvas');await page.waitForTimeout(500);return {page,context,name};
 }
 async function shot(fixture,state){const file=`${fixture.name}-${state}.png`;await fixture.page.screenshot({path:`${out}/${file}`});screens.push(file);}
+async function armCanvasShot(fixture,expected){await fixture.page.locator('canvas').evaluate((node,phase)=>{
+ if(typeof node.battlefieldReviewArm!=='function'||!node.battlefieldReviewArm(phase))throw new Error('Phaser post-render snapshot could not be armed');
+},expected);}
 async function canvasShot(fixture,state,expected){
  const capture=await fixture.page.locator('canvas').evaluate((node,phase)=>new Promise((resolve,reject)=>{
   if(typeof node.battlefieldReviewSnapshot!=='function'){reject(new Error('Phaser post-render snapshot is unavailable'));return;}
@@ -114,8 +117,7 @@ try{
  for(const [name,width,height,outcome] of [['320-aftermath-loss',320,568,'lost'],['390-aftermath-win',390,844,'won'],['1024-aftermath-win',1024,768,'won']]){
   const p=preparedChronicleProfile();p.motion='system';p.speed=2;p.age=0;p.enemyAge=0;p.chronicle.route='road';p.chronicle.expedition=null;
   if(outcome==='lost'){p.baseLevel=0;p.foodLevel=0;p.unlocked=[true,true,true];}
-  const f=await open(name,width,height,p,'no-preference');await reachNaturalOutcome(f.page,outcome);
-  await f.page.waitForFunction(expected=>{const raw=document.querySelector('canvas')?.dataset.battleAftermath;return raw&&JSON.parse(raw).phase===expected;},outcome,{timeout:1500});
+  const f=await open(name,width,height,p,'no-preference');await armCanvasShot(f,outcome);await reachNaturalOutcome(f.page,outcome);
   await canvasShot(f,`${outcome}-survivor-verdict`,outcome);await noOverflow(f.page);
   await f.page.locator('.result-dialog').waitFor({timeout:2500});const afterSettlement=await saved(f.page);await f.page.waitForTimeout(450);assert.equal(await saved(f.page),afterSettlement,'settled verdict presentation must remain save-inert');
   checks.push(`${width}: public controls reach a natural ${outcome}; bounded survivor verdict precedes the unchanged result sheet and remains save-inert`);await f.context.close();

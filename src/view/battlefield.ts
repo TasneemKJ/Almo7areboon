@@ -672,11 +672,20 @@ export function mountBattlefield(element:HTMLElement,game:GamePort,onFrame:()=>v
  try{
   renderer=new Phaser.Game({type:Phaser.AUTO,parent:element,width:(element.clientWidth||450)*pixelRatio,height:(element.clientHeight||430)*pixelRatio,transparent:true,antialias:true,render:{antialias:true,pixelArt:false},scale:{mode:Phaser.Scale.NONE,zoom:1/pixelRatio,autoCenter:Phaser.Scale.NO_CENTER},scene:[new Battlefield()],audio:{noAudio:true},fps:{target:60},banner:false});
  }catch(error){loading.textContent='The battlefield could not start. Reload or try another browser.';throw error;}
- if(navigator.webdriver)Object.defineProperty(renderer.canvas,'battlefieldReviewSnapshot',{configurable:true,value:(callback:(snapshot:ReviewSnapshot)=>void)=>{
-  let frame={resultOpen:true,aftermath:null as unknown};
-  renderer.renderer.once(Phaser.Renderer.Events.POST_RENDER,()=>{const raw=renderer.canvas.dataset.battleAftermath;frame={resultOpen:document.querySelector('.result-dialog')!==null,aftermath:raw?JSON.parse(raw):null};});
-  renderer.renderer.snapshot(image=>callback({...frame,image:image instanceof HTMLImageElement?image:null}),'image/png');
- }} satisfies PropertyDescriptor);
+ if(navigator.webdriver){
+  let reviewResult:ReviewSnapshot|null=null,reviewWaiter:((snapshot:ReviewSnapshot)=>void)|null=null,reviewArmed=false;
+  Object.defineProperty(renderer.canvas,'battlefieldReviewArm',{configurable:true,value:(expected:'won'|'lost')=>{
+   if(reviewArmed||expected!=='won'&&expected!=='lost')return false;reviewArmed=true;
+   const waitForOutcome=()=>renderer.renderer.once(Phaser.Renderer.Events.POST_RENDER,()=>{
+    const raw=renderer.canvas.dataset.battleAftermath;let state:unknown=null;try{state=raw?JSON.parse(raw):null;}catch{state=null;}
+    if(!state||typeof state!=='object'||!('phase' in state)||state.phase!==expected){waitForOutcome();return;}
+    const frame={resultOpen:document.querySelector('.result-dialog')!==null,aftermath:state};
+    renderer.renderer.snapshot(image=>{reviewResult={...frame,image:image instanceof HTMLImageElement?image:null};reviewWaiter?.(reviewResult);reviewWaiter=null;},'image/png');
+   });
+   waitForOutcome();return true;
+  }} satisfies PropertyDescriptor);
+  Object.defineProperty(renderer.canvas,'battlefieldReviewSnapshot',{configurable:true,value:(callback:(snapshot:ReviewSnapshot)=>void)=>{if(reviewResult)callback(reviewResult);else reviewWaiter=callback;}} satisfies PropertyDescriptor);
+ }
  renderer.canvas.setAttribute('role','img');renderer.canvas.setAttribute('aria-label','Illustrated battlefield. Blue warriors attack the red enemy base.');
  const observer=new ResizeObserver(()=>{if(!disposed&&element.clientWidth>0&&element.clientHeight>0)renderer.scale.resize(Math.round(element.clientWidth*pixelRatio),Math.round(element.clientHeight*pixelRatio));});observer.observe(element);
  return {destroy(){if(disposed)return;disposed=true;observer.disconnect();loading.remove();renderer.destroy(true);}};

@@ -26,8 +26,10 @@ test('victory and defeat tableaux are captured before the unchanged result sheet
  assert.match(script,/\['1024-aftermath-win',1024,768,'won'\]/);
  assert.match(script,/async function canvasShot\(fixture,state,expected\)/);
  assert.match(script,/node\.battlefieldReviewSnapshot/,'timed verdict evidence must use Phaser post-render readback');
+ assert.match(script,/node\.battlefieldReviewArm\(phase\)/,'the renderer must be armed for the authoritative outcome before browser polling can race the result timer');
  assert.doesNotMatch(script,/node\.toDataURL\(/,'an arbitrary WebGL canvas read can be cleared between frames');
  assert.match(script,/resultOpen/,'modal absence must belong to the same rendered snapshot');
+ assert.match(script,/await armCanvasShot\(f,outcome\);await reachNaturalOutcome\(f\.page,outcome\);/);
  assert.match(script,/await canvasShot\(f,`\$\{outcome\}-survivor-verdict`,outcome\)/);
  assert.match(script,/await f\.page\.locator\('\.result-dialog'\)\.waitFor\(\{timeout:2500\}\)/);
 });

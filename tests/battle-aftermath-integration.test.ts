@@ -54,7 +54,9 @@ test('result timing and model ownership remain unchanged',()=>{
 test('native evidence uses Phaser post-render readback only under browser automation',()=>{
  const source=battlefield();
  assert.match(source,/if\(navigator\.webdriver\)/);
+ assert.match(source,/Object\.defineProperty\(renderer\.canvas,'battlefieldReviewArm'/);
  assert.match(source,/Object\.defineProperty\(renderer\.canvas,'battlefieldReviewSnapshot'/);
+ assert.match(source,/state\.phase!==expected/,'the pre-armed hook must wait for the requested authoritative terminal frame');
  assert.match(source,/renderer\.renderer\.once\(Phaser\.Renderer\.Events\.POST_RENDER/);
  assert.match(source,/renderer\.renderer\.snapshot\(/);
 });
