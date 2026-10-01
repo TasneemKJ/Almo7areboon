@@ -677,8 +677,8 @@ export function mountBattlefield(element:HTMLElement,game:GamePort,onFrame:()=>v
   Object.defineProperty(renderer.canvas,'battlefieldReviewArm',{configurable:true,value:(expected:'won'|'lost')=>{
    if(reviewArmed||expected!=='won'&&expected!=='lost')return false;reviewArmed=true;
    const waitForOutcome=()=>renderer.renderer.once(Phaser.Renderer.Events.POST_RENDER,()=>{
-    const raw=renderer.canvas.dataset.battleAftermath;let state:unknown=null;try{state=raw?JSON.parse(raw):null;}catch{state=null;}
-    if(!state||typeof state!=='object'||!('phase' in state)||state.phase!==expected){waitForOutcome();return;}
+    const raw=renderer.canvas.dataset.battleAftermath;let state:{phase?:unknown;elapsed?:unknown}|null=null;try{state=raw?JSON.parse(raw) as {phase?:unknown;elapsed?:unknown}:null;}catch{state=null;}
+    if(!state||state.phase!==expected||typeof state.elapsed!=='number'||state.elapsed<.35){waitForOutcome();return;}
     const frame={resultOpen:document.querySelector('.result-dialog')!==null,aftermath:state};
     renderer.renderer.snapshot(image=>{reviewResult={...frame,image:image instanceof HTMLImageElement?image:null};reviewWaiter?.(reviewResult);reviewWaiter=null;},'image/png');
    });
