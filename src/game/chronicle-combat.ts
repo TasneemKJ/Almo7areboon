@@ -69,6 +69,17 @@ export function chronicleMovementLimit(s:BattleState,u:Unit):number|null {
   if(c?.enabled&&c.objective==='light'&&c.lightSeconds<18&&u.side==='player'&&u.kind===0&&u.x>=430&&u.x<=520)return 480;
   return null;
 }
+/** Shared authoritative relationship query for combat and presentation. */
+export function chronicleProtector(s:BattleState,target:Unit,includeBreached=false):Unit|undefined {
+  if(target.kind!==1||!Number.isFinite(s.time)||!Number.isFinite(target.x)||!Number.isFinite(target.lane))return;
+  const direction=target.side==='player'?1:-1;
+  let best:Unit|undefined;
+  for(const u of s.units){
+    if(u.side!==target.side||u.kind!==0||!alive(u)||!Number.isFinite(u.x)||!Number.isFinite(u.lane)||u.breachedUntil!==undefined&&!Number.isFinite(u.breachedUntil)||!includeBreached&&(u.breachedUntil??0)>s.time||Math.abs(u.lane-target.lane)>1||(u.x-target.x)*direction<=0||(u.x-target.x)*direction>70)continue;
+    if(!best||Math.abs(u.x-target.x)<Math.abs(best.x-target.x)||Math.abs(u.x-target.x)===Math.abs(best.x-target.x)&&(Math.abs(u.lane-target.lane)<Math.abs(best.lane-target.lane)||Math.abs(u.lane-target.lane)===Math.abs(best.lane-target.lane)&&u.id<best.id))best=u;
+  }
+  return best;
+}
 export function chronicleDamage(p:Profile,s:BattleState,attacker:Unit,target:Unit,damage:number,secondary=false):number {
   if(!Number.isFinite(damage)||damage<=0)return 0;
   const c=s.chronicle;if(!c?.enabled)return damage;
@@ -76,8 +87,7 @@ export function chronicleDamage(p:Profile,s:BattleState,attacker:Unit,target:Uni
   // resolveRoleHit applied the ordinary 25% self-guard first. Breach removes it temporarily.
   if(attacker.kind===1&&target.kind===0&&(target.breachedUntil??0)>s.time)factor/=0.75;
   if(target.kind===1){
-    const direction=target.side==='player'?1:-1;
-    const protectedBy=s.units.some(u=>u.side===target.side&&u.kind===0&&alive(u)&&(u.breachedUntil??0)<=s.time&&Math.abs(u.lane-target.lane)<=1&&(u.x-target.x)*direction>0&&(u.x-target.x)*direction<=70);
+    const protectedBy=chronicleProtector(s,target)!==undefined;
     if(protectedBy)factor*=target.side==='player'&&(progress(p).veterans[0]??0)>=3?0.60:0.65;
   }
   if(target.side==='player'&&c.shieldUntil>s.time)factor*=0.65;

@@ -1,6 +1,8 @@
 import Phaser from 'phaser';
 import type {Profile,BattleState} from '../game/types.ts';
 import {chronicleActorDepth,chroniclePaintPalette as P,bellMotion,chronicleMaterial,chronicleAttachmentDepth} from './chronicle-presentation.ts';
+import {chronicleFormationFrame,chronicleThreadDepth} from './chronicle-formation.ts';
+import {paintChronicleFormation} from './chronicle-formation-paint.ts';
 type Prop='cart'|'lantern'|'cage'|'bell'|'supply';
 /** Small prepainted props reuse the storybook material grammar; they never own combat. */
 function paintedProp(scene:Phaser.Scene,kind:Prop):string {
@@ -56,6 +58,7 @@ export class ChronicleView {
   private landmark:Phaser.GameObjects.Image;
   private traveller:Phaser.GameObjects.Image;
   private bell:Phaser.GameObjects.Image;
+  private formation:Phaser.GameObjects.Graphics[]=[];
   private marks:Phaser.GameObjects.Graphics;
   private label:Phaser.GameObjects.Text;
   constructor(scene:Phaser.Scene,private layer:Phaser.GameObjects.Container){
@@ -63,14 +66,16 @@ export class ChronicleView {
     this.landmark=scene.add.image(0,0,'chronicle-supply-ink-v1').setOrigin(.5,.91);
     this.traveller=scene.add.image(0,0,'chronicle-cart-ink-v1').setOrigin(.5,.91);
     this.bell=scene.add.image(0,0,'chronicle-bell-ink-v1').setOrigin(.5,.83);
+    for(let lane=0;lane<3;lane++)this.formation.push(scene.add.graphics());
     this.marks=scene.add.graphics();
     this.label=scene.add.text(0,0,'',{fontFamily:'Trebuchet MS, Arial, sans-serif',fontSize:'10px',color:P.linen,stroke:P.ink,strokeThickness:3}).setOrigin(.5);
-    layer.add([this.landmark,this.traveller,this.bell,this.marks,this.label]);
+    layer.add([...this.formation,this.landmark,this.traveller,this.bell,this.marks,this.label]);
   }
   update(p:Profile,s:BattleState,groundY:number,laneGap:number,reduced:boolean):void {
-    const c=s.chronicle;this.marks.clear();for(const image of [this.landmark,this.traveller,this.bell])image.setVisible(false);this.label.setVisible(false);
+    const c=s.chronicle;this.marks.clear();for(let lane=0;lane<3;lane++)this.formation[lane].clear().setDepth(chronicleThreadDepth(groundY,lane,lane,laneGap));for(const image of [this.landmark,this.traveller,this.bell])image.setVisible(false);this.label.setVisible(false);
     if(!c?.enabled)return;
     const g=this.marks;g.setDepth(groundY+laneGap*2+3);
+    paintChronicleFormation(this.formation,chronicleFormationFrame(s),groundY,laneGap);
     if(c.landmark.kind!=='none'){
       const key=c.landmark.kind==='lantern'?'lantern':'supply';
       this.landmark.setTexture(`chronicle-${key}-ink-v1`).setVisible(true).setPosition(c.landmark.x*.45,groundY-8).setDisplaySize(key==='lantern'?58:61,key==='lantern'?65:49).setDepth(chronicleActorDepth(groundY-8)).setAlpha(c.landmark.broken?.35:1);
@@ -97,5 +102,5 @@ export class ChronicleView {
     const restoration=p.chronicle?.restoration??0;
     for(let i=0;i<3;i++)if(restoration&(1<<i)){g.fillStyle(0xe9b964,.85);g.fillRoundedRect(24+i*9,groundY-19,4,6,1);}
   }
-  destroy():void{for(const object of [this.landmark,this.traveller,this.bell,this.marks,this.label])object.destroy();}
+  destroy():void{for(const object of [...this.formation,this.landmark,this.traveller,this.bell,this.marks,this.label])object.destroy();}
 }
