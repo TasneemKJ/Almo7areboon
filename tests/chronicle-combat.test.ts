@@ -153,5 +153,5 @@ test('idle lantern guidance keeps abandoned signed progress truthful',()=>{
  landmark.capture=1.5;assert.equal(chronicleGuidance(f.profile,f.state),'Claim the lantern · stand beside it uncontested for 1.5 seconds');
  landmark.capture=-1.5;assert.equal(chronicleGuidance(f.profile,f.state),'Claim the lantern · stand beside it uncontested for 4.5 seconds');
  landmark.owner='enemy';landmark.capture=-2;assert.equal(chronicleGuidance(f.profile,f.state),'Reclaim the lantern · stand beside it uncontested for 5 seconds');
- landmark.capture=1.5;assert.equal(chronicleGuidance(f.profile,f.state),'Reclaim the lantern · stand beside it uncontested for 1.5 seconds');
+ landmark.capture=1.5;assert.equal(chronicleGuidance(f.profile,f.state),'Reclaim the lantern · stand beside it uncontested for 1.5 seconds');landmark.capture=2;assert.equal(chronicleGuidance(f.profile,f.state),'Reclaim the lantern · stand beside it uncontested for 1 second');
 });

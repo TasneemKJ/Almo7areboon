@@ -231,7 +231,7 @@ export function chronicleGuidance(p:Profile,s:BattleState):string {
     if(landmark.phase==='claiming-enemy')return `Enemy claiming ${landmarkName} · ${Math.max(0,landmark.threshold+landmark.capture).toFixed(1)} seconds to take it · contest the ground`;
     if(landmark.owner!=='player'&&c.objective==='light'){
       const remaining=Math.max(0,landmark.threshold-landmark.capture),seconds=Number.isInteger(remaining)?String(remaining):remaining.toFixed(1);
-      return `${landmark.owner==='enemy'?'Reclaim':'Claim'} the lantern · stand beside it uncontested for ${seconds} seconds`;
+      return `${landmark.owner==='enemy'?'Reclaim':'Claim'} the lantern · stand beside it uncontested for ${seconds} ${remaining===1?'second':'seconds'}`;
     }
   }
   if(c.objective==='escort')return `Flour cart ${Math.round((c.cart.x-210)/580*100)}% · ${Math.ceil(c.cart.hp)}/${Math.ceil(c.cart.maxHp)} health`;
