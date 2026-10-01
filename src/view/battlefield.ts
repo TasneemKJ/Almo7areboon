@@ -161,9 +161,9 @@ export function mountBattlefield(element:HTMLElement,game:GamePort,onFrame:()=>v
   }
   private initVillageLights():void {
    const key=ensureVillageLight(this.textures);
-   // Four scene-lifetime quads; chapters only retint/resize these existing objects.
-   while(this.stageLight.length<4)this.stageLight.add(this.add.image(0,0,key).setBlendMode(Phaser.BlendModes.ADD).setVisible(false));
-   for(let i=0;i<4;i++)(this.stageLight.getAt(i) as Phaser.GameObjects.Image).setTexture(key);
+   // Six scene-lifetime quads: four authored lamps plus two saved restoration witnesses.
+   while(this.stageLight.length<6)this.stageLight.add(this.add.image(0,0,key).setBlendMode(Phaser.BlendModes.ADD).setVisible(false));
+   for(let i=0;i<6;i++)(this.stageLight.getAt(i) as Phaser.GameObjects.Image).setTexture(key);
   }
   /**
    * Bakes the chapter grade into its static art once: no per-frame post pass, and Canvas and WebGL match.
@@ -321,12 +321,13 @@ export function mountBattlefield(element:HTMLElement,game:GamePort,onFrame:()=>v
    if(storybookArt(game.profile.age)){
     this.streak.clear();this.stars.setVisible(false);this.clouds.setVisible(false);this.mist.setVisible(false);this.stageLight.setVisible(true);
     const mood=options.villageMood?.()??this.quietVillage;
-    const frame=villageFrame({age:game.profile.age,time:options.villageMood?mood.time:this.clock,reduced:this.reduce,mood,viewport:this.villageViewport});
+    const frame=villageFrame({age:game.profile.age,time:options.villageMood?mood.time:this.clock,reduced:this.reduce,restoration:game.profile.chronicle?.restoration??0,mood,viewport:this.villageViewport});
     for(const resident of frame.residents)for(const pane of resident.panes){g.fillStyle(pane.color,pane.alpha);g.fillPoints(pane.points as Phaser.Types.Math.Vector2Like[],true);}
     for(const mark of frame.water){g.lineStyle(mark.width,mark.color,mark.alpha);g.lineBetween(mark.from.x,mark.from.y,mark.to.x,mark.to.y);}
     if(frame.bird)for(const shape of frame.bird){g.fillStyle(shape.color,shape.alpha);g.fillPoints(shape.points as Phaser.Types.Math.Vector2Like[],true);}
+    const lights=[...frame.lamps,...frame.restorationLights];
     for(let i=0;i<this.stageLight.length;i++){
-     const image=this.stageLight.getAt(i) as Phaser.GameObjects.Image,mark=frame.lamps[i];
+     const image=this.stageLight.getAt(i) as Phaser.GameObjects.Image,mark=lights[i];
      if(!mark){image.setVisible(false);continue;}
      image.setVisible(true).setPosition(mark.center.x,mark.center.y).setDisplaySize(mark.rx*2,mark.ry*2).setTint(mark.color).setAlpha(mark.alpha);
     }

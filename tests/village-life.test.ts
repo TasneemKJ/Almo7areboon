@@ -89,3 +89,38 @@ test('harbor reflections remain short and bounded, and measured lights retain th
 test('complete birds avoid HUD and roofs, need readable continuous travel, and finish through alarm',async()=>{const m=await life();let birds=0;for(let age=0;age<6;age++)for(let time=0;time<180;time+=.25){const f=m.villageFrame({age,time,reduced:false,mood:quiet,viewport});if(f.bird){birds++;for(const poly of f.bird)for(const p of poly.points)assert.ok(inside(p,m.VILLAGE_PLATES[age].sky));}}assert.ok(birds>100);const flying=m.villageFrame({age:0,time:10,reduced:false,mood:quiet,viewport});assert.ok(flying.bird);assert.deepEqual(m.villageFrame({age:0,time:10,reduced:false,mood:{...quiet,mood:'alarmed',alarmMix:1,alarmEnteredAt:9},viewport}).bird,flying.bird);assert.equal(m.villageFrame({age:0,time:10,reduced:false,mood:{...quiet,mood:'alarmed',alarmEnteredAt:7},viewport}).bird,null);for(const clipped of [{...viewport,cssWorldScale:.1},{...viewport,visibleSource:[0,200,900,1000] as const},{...viewport,hudSourceBounds:[[230,90,670,195] as const]},{...viewport,visibleSource:[300,100,400,180] as const}])assert.equal(m.villageFrame({age:0,time:10,reduced:false,mood:quiet,viewport:clipped}).bird,null);});
 test('reduced motion is still inhabited and identical across clocks, with no bird',async()=>{const m=await life();for(let age=0;age<6;age++){const a=m.villageFrame({age,time:0,reduced:true,mood:quiet,viewport});assert.deepEqual(a,m.villageFrame({age,time:99,reduced:true,mood:quiet,viewport}));assert.ok(a.residents.some((r:any)=>r.panes.some((p:any)=>p.alpha>.2)));assert.equal(a.bird,null);const alarm=m.villageFrame({age,time:0,reduced:true,mood:{...quiet,mood:'alarmed',alarmMix:1},viewport});assert.ok(alarm.residents.every((r:any)=>r.panes.every((p:any)=>p.alpha<=.2)));}});
 test('source registration follows uniform painted placement at narrow and short layouts',async()=>{const m=await life();for(const [width,height] of [[320,300],[390,430],[450,430],[320,180]]){const layout=arenaLayout(width,height),placement=landscapePlacement(450,layout.height,layout.groundY);const f=m.villageFrame({age:5,time:0,reduced:true,mood:quiet,viewport:{...viewport,placement,cssWorldScale:width/450}});assert.equal(f.lamps[3].center.x,placement.x+871*placement.scale);assert.equal(f.lamps[3].center.y,placement.y+365*placement.scale);assert.equal(f.lamps[3].color,0x8edfc9);assert.equal(f.lamps[0].color,0xffd08a);assert.ok(f.residents.every((r:any)=>r.panes.every((p:any)=>p.points.every((point:any)=>Number.isFinite(point.x)&&Number.isFinite(point.y)))));}});
+
+test('oven and workshop restoration illuminate their own measured apertures while courtyard restoration brings both rooms home',async()=>{
+ const m=await life(),frame=(restoration:number)=>m.villageFrame({age:0,time:0,reduced:true,restoration,mood:quiet,viewport});
+ assert.deepEqual(frame(0).restorationLights,[]);
+ const oven=frame(1),courtyard=frame(2),workshop=frame(4),complete=frame(7),windows=m.VILLAGE_PLATES[0].windows;
+ const center=(bounds:readonly number[])=>[(bounds[0]+bounds[2])/2,(bounds[1]+bounds[3])/2];
+ assert.deepEqual([oven.restorationLights.length,...Object.values(oven.restorationLights[0].center)], [1,...center(windows[0].bounds)]);
+ assert.equal(courtyard.restorationLights.length,0);assert.deepEqual(courtyard.residents.map((resident:any)=>resident.apertureId).sort(),windows.map((window:any)=>window.id).sort());
+ assert.deepEqual([workshop.restorationLights.length,...Object.values(workshop.restorationLights[0].center)], [1,...center(windows[1].bounds)]);
+ assert.equal(complete.restorationLights.length,2);assert.equal(complete.residents.length,2);
+ assert.notEqual(complete.restorationLights[0].center.x,complete.restorationLights[1].center.x,'oven and workshop remain spatially distinct without relying on hue');
+});
+
+test('restored neighbours obey alarm evacuation and return only in late recovery',async()=>{
+ const m=await life(),frame=(mood:any)=>m.villageFrame({age:3,time:9,reduced:true,restoration:7,mood,viewport});
+ const quietFrame=frame(quiet);assert.equal(quietFrame.residents.filter((resident:any)=>resident.panes.some((pane:any)=>pane.alpha>.2)).length,2);
+ const alarm=frame({...quiet,mood:'alarmed',alarmMix:1,alarmEnteredAt:8});assert.ok(alarm.residents.every((resident:any)=>resident.panes.every((pane:any)=>pane.alpha<=.2)));assert.ok(alarm.restorationLights.every((light:any)=>light.alpha<quietFrame.restorationLights[0].alpha));
+ const early=frame({...quiet,mood:'recovering',alarmMix:.8});assert.ok(early.residents.every((resident:any)=>resident.panes.every((pane:any)=>pane.alpha<=.2)));
+ const late=frame({...quiet,mood:'recovering',alarmMix:.2});assert.equal(late.residents.filter((resident:any)=>resident.panes.some((pane:any)=>pane.alpha>.2)).length,2);
+});
+
+test('restoration frames are finite, immutable and hard bounded for every accepted or malformed mask',async()=>{
+ const m=await life();
+ for(let age=0;age<6;age++)for(const restoration of [0,1,2,3,4,5,6,7,NaN,Infinity,-1,8,999,1.5]){
+  const input:any={age,time:13.75,reduced:false,restoration,mood:{...quiet},viewport:{...viewport,placement:{...viewport.placement},hudSourceBounds:[]}};const before=structuredClone(input),frame=m.villageFrame(input);
+  assert.deepEqual(input,before);assert.ok(frame.restorationLights.length<=2);assert.ok(frame.residents.length<=2);
+  for(const light of frame.restorationLights){assert.ok(Object.values(light.center).every(Number.isFinite));assert.ok(Number.isFinite(light.rx)&&Number.isFinite(light.ry)&&Number.isFinite(light.alpha));assert.ok(light.rx>0&&light.ry>0&&light.alpha>=0&&light.alpha<=1);}
+  if(!Number.isInteger(restoration)||restoration<0||restoration>7)assert.equal(frame.restorationLights.length,0);
+ }
+});
+
+test('reduced motion freezes restored warmth and habitation without hiding saved progress',async()=>{
+ const m=await life();
+ for(let age=0;age<6;age++){const first=m.villageFrame({age,time:0,reduced:true,restoration:7,mood:quiet,viewport}),later=m.villageFrame({age,time:999,reduced:true,restoration:7,mood:quiet,viewport});assert.deepEqual(later,first);assert.equal(first.restorationLights.length,2);assert.equal(first.residents.length,2);}
+});
