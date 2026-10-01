@@ -110,6 +110,14 @@ test('restored neighbours obey alarm evacuation and return only in late recovery
  const late=frame({...quiet,mood:'recovering',alarmMix:.2});assert.equal(late.residents.filter((resident:any)=>resident.panes.some((pane:any)=>pane.alpha>.2)).length,2);
 });
 
+test('courtyard restoration keeps both rooms inhabited through normal-motion visitor gaps and late recovery',async()=>{
+ const m=await life(),occupied=(age:number,time:number,mood:any=quiet)=>m.villageFrame({age,time,reduced:false,restoration:2,mood,viewport}).residents.filter((resident:any)=>resident.panes.some((pane:any)=>pane.alpha>.2)).map((resident:any)=>resident.apertureId).sort();
+ for(let age=0;age<6;age++)for(const time of [0,1,5.9,7,9,11.9,12,25])assert.deepEqual(occupied(age,time),m.VILLAGE_PLATES[age].windows.map((window:any)=>window.id).sort(),`age ${age} time ${time}`);
+ assert.deepEqual(occupied(0,9,{...quiet,mood:'recovering',alarmMix:.1}),m.VILLAGE_PLATES[0].windows.map((window:any)=>window.id).sort());
+ assert.deepEqual(occupied(0,9,{...quiet,mood:'recovering',alarmMix:.8}),[]);
+ assert.deepEqual(occupied(0,9,{...quiet,mood:'alarmed',alarmMix:1,alarmEnteredAt:0}),[]);
+});
+
 test('restoration frames are finite, immutable and hard bounded for every accepted or malformed mask',async()=>{
  const m=await life();
  for(let age=0;age<6;age++)for(const restoration of [0,1,2,3,4,5,6,7,NaN,Infinity,-1,8,999,1.5]){

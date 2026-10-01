@@ -130,18 +130,19 @@ export function villageFrame(input:VillageFrameInput):VillageFrame {
  const residents:VillageFrame['residents'][number][]=[];
  const interval=12+age*.8,visit=Math.floor(time/interval),phase=time%interval,duration=6+(age%3)*.5;
  const occupied=input.reduced||phase<duration;
+ const courtyard=(restoration&2)!==0;
  const returning=input.mood.mood==='quiet'||input.mood.mood==='recovering'&&sharedMix<=.375;
  for(let index=0;index<plate.windows.length;index++){
   const room=plate.windows[index],panes:PaintedPolygon[]=[];
   // Darkening shares the exact panes; the baked framing and hanging shadow remain intact.
   if(mix>0)for(const pane of room.panes)panes.push(paint(pane,.10*mix));
-  if(occupied&&returning&&((restoration&2)!==0||index===(input.reduced?0:visit%2))){
+  if(returning&&(courtyard||occupied&&index===(input.reduced?0:visit%2))){
    const [l,t,r,b]=room.bounds,w=r-l,h=b-t,small=w*placement.scale*input.viewport.cssWorldScale<6||h*placement.scale*input.viewport.cssWorldScale<8;
-   const envelope=input.reduced?1:Math.min(1,phase/.7,(duration-phase)/.7);
+   const envelope=input.reduced||courtyard?1:Math.min(1,phase/.7,(duration-phase)/.7);
    const warmth=!input.reduced&&input.mood.mood==='recovering'?1-sharedMix/.375:1;
    const alpha=(room.dark?.28:.40)*Math.max(0,envelope)*warmth;
    const travel=small||input.reduced?0:.14*w*Math.sin(phase/duration*Math.PI*2);
-   const rise=small||input.reduced?0:(1-Math.max(0,envelope))*.20*h;
+   const rise=small||input.reduced||courtyard?0:(1-Math.max(0,envelope))*.20*h;
    if(alpha>0)for(const triangle of RESIDENT){
     const shape=triangle.map(p=>({x:l+p.x*w+travel,y:t+p.y*h+rise}));
     for(const pane of room.panes){const clipped=clip(shape,pane);if(clipped.length>=3)panes.push(paint(clipped,alpha));}
