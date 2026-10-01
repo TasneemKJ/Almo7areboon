@@ -38,6 +38,13 @@ test('a lethal hit on protected ranged still records its resolved cover cue',()=
  const f=fixture(),attacker=unit(1,'enemy',0,600),target=unit(2,'player',1,400),guard=unit(3,'player',0,440);f.state.units=[attacker,target,guard];target.hp=0;
  chronicleAfterHit(f.profile,f.state,attacker,target,65,false,f.host);assert.equal(f.state.chronicle!.coveredHits,1);assert.equal(f.events.at(-1)?.storyCue,'covered');
 });
+test('captain or landmark shielding never masquerades as defender cover',()=>{
+ const f=fixture(),attacker=unit(1,'enemy',0,600),target=unit(2,'player',1,400);f.state.units=[attacker,target];
+ f.state.chronicle!.shieldUntil=10;chronicleAfterHit(f.profile,f.state,attacker,target,65,false,f.host);
+ assert.equal(f.state.chronicle!.coveredHits,0);assert.equal(f.events.some(event=>event.storyCue==='covered'),false);
+ f.state.chronicle!.shieldUntil=0;f.state.chronicle!.landmark={kind:'cover',x:400,owner:'player',capture:3,pulse:0,broken:false};chronicleAfterHit(f.profile,f.state,attacker,target,80,false,f.host);
+ assert.equal(f.state.chronicle!.coveredHits,0);assert.equal(f.events.some(event=>event.storyCue==='covered'),false);
+});
 test('heavy breach temporarily cancels a defender’s role protection',()=>{
  const f=fixture(),heavy=unit(1,'player',2),guard=unit(2,'enemy',0,220),archer=unit(3,'player',1);
  chronicleAfterHit(f.profile,f.state,heavy,guard,10,false,f.host);
