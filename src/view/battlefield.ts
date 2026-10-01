@@ -13,7 +13,7 @@ import {groundEffectDepth,groundEffectLayer} from './ground-effects.ts';
 import {attackCueFrame,hitReaction} from './combat-choreography.ts';
 import {impactMaterialFrame} from './impact-material.ts';
 import {characterGesture} from './character-gesture.ts';
-import {healthOffset,lanePresentation,projectileLift,troopScale} from './lane-perspective.ts';
+import {healthOffset,lanePresentation,projectileLift,rankStagger,troopScale} from './lane-perspective.ts';
 import {unitFocusMarks} from './silhouette-focus.ts';
 import {visualAssets,baseTexture,foregroundTexture,unitTexture,landscapeTexture} from './visual-assets.ts';
 import {projectileGeometry,paintProjectile,projectileStyle} from './projectile-art.ts';
@@ -40,7 +40,6 @@ type ImpactCue={x:number;y:number;age:number;kind:Unit['kind'];side:Side;life:nu
 type Flare={x:number;y:number;life:number;max:number;radius:number;color:number};
 const xAt=(x:number)=>x*.45;
 /** View-only: nudges bodies sharing a lane by a few pixels so crowded columns read as individuals, not one stacked sprite. */
-const rankStagger=(id:number)=>((id*7)%5-2)*1.1;
 const noise=(n:number)=>{const value=Math.sin(n*117.13)*43758.5453;return value-Math.floor(value);};
 const tint=(hex:string)=>parseInt(hex.slice(1),16);
 

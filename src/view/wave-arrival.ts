@@ -13,10 +13,12 @@ export interface WaveArrivalFrame {
  depthOffset:number;
 }
 
+export const WAVE_ARRIVAL_DEPTH_OFFSET=-3;
+
 const points=(values:readonly WaveArrivalPoint[])=>Object.freeze(values.map(point=>Object.freeze({...point})));
 const banners:Record<WaveIntent,{shape:WaveBannerShape;points:readonly WaveArrivalPoint[]}>=Object.freeze({
  rush:Object.freeze({shape:'swallowtail',points:points([{x:0,y:-72},{x:18,y:-68},{x:11,y:-62},{x:18,y:-55},{x:0,y:-58}])}),
- volley:Object.freeze({shape:'split-pennant',points:points([{x:0,y:-72},{x:18,y:-69},{x:13,y:-63},{x:18,y:-56},{x:0,y:-59}])}),
+ volley:Object.freeze({shape:'split-pennant',points:points([{x:0,y:-72},{x:20,y:-67},{x:9,y:-64},{x:20,y:-58},{x:0,y:-59},{x:5,y:-65}])}),
  bulwark:Object.freeze({shape:'weighted-square',points:points([{x:0,y:-70},{x:18,y:-68},{x:18,y:-54},{x:0,y:-56}])}),
 });
 const roleShapes:readonly WaveRoleShape[]=['footprints','sling-stitches','block-tread'];
@@ -45,7 +47,7 @@ export function waveArrivalFrame(input:WaveArrivalInput):WaveArrivalFrame|null {
  // This is derived only from battle-time preview progress. Pause owns that clock,
  // so the view cannot drift; reduced motion selects the fixed cloth pose.
  const clothLift=input.reduced?0:-2*Math.sin(progress*Math.PI);
- return freeze({intent,banner:banners[intent],counts,nextIn,progress,clothLift,roleMarks,countdownKnots,depthOffset:-1});
+ return freeze({intent,banner:banners[intent],counts,nextIn,progress,clothLift,roleMarks,countdownKnots,depthOffset:WAVE_ARRIVAL_DEPTH_OFFSET});
 }
 
 /** Optional read boundary keeps fixtures compatible and the simulation query authoritative. */

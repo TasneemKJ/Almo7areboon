@@ -11,6 +11,7 @@ import './ui/era-glow.css';
 import './ui/readability.css';
 import './ui/skill-cues.css';
 import { Game } from './game/simulation.ts';
+import { createBattlefieldPort } from './game/battlefield-port.ts';
 import { advanceStatus } from './game/mastery.ts';
 import { isLegacyChoice, legacyEffects, prestigePreview } from './game/prestige.ts';
 import { ERAS, foodRate, unlockCost, QUESTS, dailyReward, localDay } from './game/data.ts';
@@ -20,7 +21,7 @@ import type { SaveSessionStatus } from './game/save-session.ts';
 import { saveSessionDialogHtml, temporarySessionNotice } from './ui/save-session-screen.ts';
 import { startOverProfile } from './game/reset.ts';
 import { exportBackup, importBackup, restoreBackupWithSave } from './game/backup.ts';
-import type { Action, GameEvent, GamePort, LegacyChoice, Profile, Skill, UnitKind } from './game/types.ts';
+import type { Action, GameEvent, LegacyChoice, Profile, Skill, UnitKind } from './game/types.ts';
 import { mountBattlefield } from './view/battlefield.ts';
 import {advanceVillagePresentation,type VillagePresentation} from './view/village-mood.ts';
 import { unitPortrait } from './view/unit-illustrations.ts';
@@ -587,7 +588,7 @@ function events(batch:GameEvent[]){
   playCombatEvents(batch,game.profile.sound&&playable()&&!document.hidden&&!manualPaused&&!game.state.paused&&activeTab==='battle'&&modal===null);
   if(batch.some(event=>event.type==='win'||event.type==='lose'))persist();
 }
-const port:GamePort={get profile(){return game.profile;},get state(){return game.state;},dispatch:action,step:dt=>{syncPause();if(playable())game.step(dt*game.profile.speed);},drainEvents:()=>game.drainEvents()};
+const port=createBattlefieldPort(game,action,dt=>{syncPause();if(playable())game.step(dt*game.profile.speed);});
 rebuildArmy();syncMotion();syncPause();update(true);
 const renderer=mountBattlefield($('battlefield'),port,()=>update(),events,{isVisible:()=>activeTab==='battle'&&!document.hidden,villageMood:()=>villagePresentation!.mood,onPresentation:syncVillagePresentation});
 lifetime.add(()=>renderer.destroy());lifetime.add(disposeAudio);

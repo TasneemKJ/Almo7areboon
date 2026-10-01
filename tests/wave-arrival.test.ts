@@ -66,7 +66,7 @@ test('reduced motion fixes the cloth while pause adds no independent view clock'
  assert.deepEqual(paused,moving,'the same authoritative preview must paint identically while paused');
  assert.equal(reduced.clothLift,0);assert.notEqual(moving.clothLift,0);
  assert.deepEqual(m.waveArrivalFrame({...base,paused:true,reduced:true}),reduced);
- assert.equal(moving.depthOffset,-1);
+ assert.equal(moving.depthOffset,-3);
 });
 
 test('view boundary delegates the real game preview without mutating combat or profile',async()=>{

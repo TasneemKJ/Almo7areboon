@@ -16,16 +16,16 @@ test('native review fixtures cover three intent shapes across phone and desktop 
 });
 
 test('native diagnostic validation requires exact intent, role composition, geometry and depth',async()=>{
- const m=await subject(),state={intent:'volley',counts:[1,2,0],nextIn:2.4,progress:.4,banner:'split-pennant',roleShapes:['footprints','sling-stitches','sling-stitches'],knots:4,x:376,y:267,depth:259,baseDepth:272,actorFrontDepth:260.5,reduced:true,paused:false};
+ const m=await subject(),state={intent:'volley',counts:[1,2,0],nextIn:2.4,progress:.4,banner:'split-pennant',roleShapes:['footprints','sling-stitches','sling-stitches'],knots:4,x:376,y:267,depth:257,baseDepth:272,actorFrontDepth:258.3,reduced:true,paused:false};
  assert.deepEqual(m.validateArrivalSnapshot(state,'volley'),state);
  for(const bad of [
   {...state,intent:'rush'}, {...state,nextIn:4.1}, {...state,progress:NaN}, {...state,knots:3},
-  {...state,counts:[0,0,0]}, {...state,depth:261}, {...state,banner:'weighted-square'}, {...state,roleShapes:[]},
+  {...state,counts:[0,0,0]}, {...state,depth:259}, {...state,banner:'weighted-square'}, {...state,roleShapes:[]},
  ])assert.throws(()=>m.validateArrivalSnapshot(bad,'volley'));
 });
 
 test('paused native comparison allows only the pause flag to change',async()=>{
- const m=await subject(),before={intent:'rush',counts:[2,0,0],nextIn:1.5,progress:.625,banner:'swallowtail',roleShapes:['footprints','footprints'],knots:4,x:376,y:267,depth:259,baseDepth:272,actorFrontDepth:260.5,reduced:true,paused:false},after={...before,paused:true};
+ const m=await subject(),before={intent:'rush',counts:[2,0,0],nextIn:1.5,progress:.625,banner:'swallowtail',roleShapes:['footprints','footprints'],knots:4,x:376,y:267,depth:257,baseDepth:272,actorFrontDepth:258.3,reduced:true,paused:false},after={...before,paused:true};
  assert.doesNotThrow(()=>m.assertArrivalPaused(before,after));
  assert.throws(()=>m.assertArrivalPaused(before,{...after,nextIn:1.4}));
 });

@@ -1,6 +1,7 @@
 import test from 'node:test';
 import assert from 'node:assert/strict';
 import {waveArrivalFrame} from '../src/view/wave-arrival.ts';
+import {actorRenderDepth} from '../src/view/lane-perspective.ts';
 
 const path='../src/view/wave-arrival-paint.ts';
 async function subject(){
@@ -22,24 +23,29 @@ class Recorder {
 }
 const frame=(intent:'rush'|'volley'|'bulwark',counts:readonly [number,number,number])=>waveArrivalFrame({phase:'running',paused:false,reduced:true,preview:{number:2,total:5,intent,counts,nextIn:2}})!;
 
-test('render plan keeps the signal behind bases and every actor baseline',async()=>{
+test('render plan stays behind every lane and rank-stagger residue',async()=>{
  const m=await subject(),plan=m.waveArrivalRenderPlan(260);
- assert.deepEqual(plan,{x:376,y:267,depth:259,baseDepth:272,actorFrontDepth:260.5});
+ assert.deepEqual(plan,{x:376,y:267,depth:257,baseDepth:272,actorFrontDepth:258.3});
+ for(let lane=0;lane<3;lane++)for(let id=0;id<5;id++){
+  assert.ok(plan.depth<actorRenderDepth(260,lane,24,id),`signal must stay behind lane ${lane}, stagger residue ${id}`);
+ }
  assert.ok(plan.depth<plan.actorFrontDepth&&plan.depth<plan.baseDepth);
  assert.ok(Object.isFrozen(plan));
 });
 
-test('painter emits distinct banner polygons and exact role-shape primitives',async()=>{
- const m=await subject(),signatures=new Map<string,string>();
- for(const [intent,counts] of [['rush',[1,0,0]],['volley',[0,1,0]],['bulwark',[0,0,1]]] as const){
+test('painter emits distinct banner geometry with composition held constant',async()=>{
+ const m=await subject(),banners=new Map<string,string>();
+ for(const intent of ['rush','volley','bulwark'] as const){
+  const counts=[1,1,1] as const;
   const graphics=new Recorder(),report=m.paintWaveArrival(graphics,frame(intent,counts),{x:376,y:267});
   assert.equal(report.banner,({rush:'swallowtail',volley:'split-pennant',bulwark:'weighted-square'} as const)[intent]);
-  assert.equal(report.roleShapes.length,1);assert.equal(report.knots,4);
-  assert.equal(graphics.commands.filter(command=>command.name==='fillPoints').length,1,'each signal owns one cloth polygon');
+  assert.deepEqual(report.roleShapes,['footprints','sling-stitches','block-tread']);assert.equal(report.knots,4);
+  const cloth=graphics.commands.filter(command=>command.name==='fillPoints');
+  assert.equal(cloth.length,1,'each signal owns one cloth polygon');
   assert.equal(graphics.commands.filter(command=>command.name==='fillCircle'||command.name==='strokeCircle').length>=4,true,'countdown knots must be painted');
-  signatures.set(intent,graphics.commands.map(command=>command.name+JSON.stringify(command.args)).join('|'));
+  banners.set(intent,JSON.stringify(cloth[0].args[0]));
  }
- assert.equal(new Set(signatures.values()).size,3,'shape-distinct waves must not collapse to one drawing');
+ assert.equal(new Set(banners.values()).size,3,'shape-distinct waves must not collapse to one banner polygon');
 });
 
 test('painter uses bounded immutable frame data without changing it',async()=>{

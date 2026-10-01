@@ -39,44 +39,49 @@
 - Consumes: `WaveStatus.preview`, battle phase, pause, and reduced-motion flags.
 - Produces: `waveArrivalFrame(input: WaveArrivalInput): WaveArrivalFrame | null`, with finite banner, role marks, countdown knots, progress, and fixed depth offset.
 
-- [ ] **Step 1: Write failing tests** for phase/threshold gates, exact four/zero-second boundaries, all intent banners, all role marks, malformed counts/timing, five-mark/four-knot caps, reduced-motion fixed pose, pause stability, immutability, and finite bounds.
-- [ ] **Step 2: Run the focused test** with `node --experimental-strip-types --test tests/wave-arrival.test.ts` and confirm it fails because the module is absent.
-- [ ] **Step 3: Implement the minimal pure model** in `src/view/wave-arrival.ts`, consuming preview values only and returning frozen bounded data.
-- [ ] **Step 4: Run the focused test** and confirm every wave-arrival case passes.
-- [ ] **Step 5: Commit** the pure contract and tests.
+- [x] **Step 1: Write failing tests** for phase/threshold gates, exact four/zero-second boundaries, all intent banners, all role marks, malformed counts/timing, five-mark/four-knot caps, reduced-motion fixed pose, pause stability, immutability, and finite bounds.
+- [x] **Step 2: Run the focused test** with `node --experimental-strip-types --test tests/wave-arrival.test.ts` and confirm it fails because the module is absent.
+- [x] **Step 3: Implement the minimal pure model** in `src/view/wave-arrival.ts`, consuming preview values only and returning frozen bounded data.
+- [x] **Step 4: Run the focused test** and confirm every wave-arrival case passes.
+- [x] **Step 5: Commit** the pure contract and tests.
 
 ### Task 2: Phaser integration and schedule boundary
 
 **Files:**
 - Modify: `src/game/types.ts`
+- Create: `src/game/battlefield-port.ts`
+- Modify: `src/main.ts`
 - Modify: `src/view/battlefield.ts`
-- Modify: `tests/presentation.test.ts`
-- Modify: `tests/main-integration.test.ts`
+- Create: `src/view/wave-arrival-paint.ts`
+- Modify: `src/view/lane-perspective.ts`
+- Create: `tests/battlefield-port.test.ts`
+- Create: `tests/wave-arrival-paint.test.ts`
 
 **Interfaces:**
-- Consumes: optional `GamePort.waveStatus(): WaveStatus` and `waveArrivalFrame`.
+- Consumes: optional `GamePort.waveStatus(): WaveStatus`, the production `createBattlefieldPort` forwarding adapter, and `waveArrivalFrame`.
 - Produces: one pooled `Phaser.GameObjects.Graphics` plus `canvas.dataset.waveArrival` diagnostics.
 
-- [ ] **Step 1: Write failing source/integration tests** that require the optional read-only port, one allocation, exact preview delegation, fixed depth beneath bases/actors, dataset cleanup, and no save/input/model mutation.
-- [ ] **Step 2: Run the focused tests** and confirm the missing integration fails.
-- [ ] **Step 3: Add the optional port and painter** with intent-specific banner geometry, role-specific marks, four knots, and exact dataset fields; clear/delete it whenever no frame exists.
-- [ ] **Step 4: Run all focused presentation/integration tests** and `git diff --check`.
-- [ ] **Step 5: Commit** the integration.
+- [x] **Step 1: Write failing source/integration tests** that require the optional read-only port, an executable production adapter, one allocation, exact preview delegation, fixed depth beneath every rank-staggered actor, dataset cleanup, and no save/input/model mutation.
+- [x] **Step 2: Run the focused tests** and confirm the missing integration fails.
+- [x] **Step 3: Add the optional port and painter** with intent-specific banner geometry, role-specific marks, four knots, and exact dataset fields; clear/delete it whenever no frame exists.
+- [x] **Step 4: Run all focused presentation/integration tests** and `git diff --check`.
+- [x] **Step 5: Commit** the integration.
 
 ### Task 3: Native journey and release evidence
 
 **Files:**
 - Modify: `scripts/review-chronicle.mjs`
-- Modify: `tests/chronicle-browser-contract.test.ts`
+- Create: `scripts/chronicle-arrival-review.ts`
+- Create: `tests/chronicle-arrival-review.test.ts`
 - Modify: `docs/superpowers/plans/2026-10-01-incoming-road-signs.md`
 
 **Interfaces:**
 - Consumes: public Battle and Pause controls and `canvas.dataset.waveArrival`.
 - Produces: original rush/volley/bulwark screenshots and report assertions at 320/390/1024.
 
-- [ ] **Step 1: Write failing browser-contract tests** for the three disclosed commander fixtures, public pause, exact diagnostic assertions, save inertness, screenshots, and report copy.
-- [ ] **Step 2: Extend the read-only Chronicle journey** to wait for each real preview, pause atomically, prove state stability across an autosave boundary, check bounds/overflow/errors, and capture originals.
-- [ ] **Step 3: Run focused tests, all source tests, production build, script syntax, and `git diff --check` locally; do not launch a browser locally.**
+- [x] **Step 1: Write failing browser-contract tests** for the three disclosed commander fixtures, public pause, exact diagnostic assertions, save inertness, screenshots, and report copy.
+- [x] **Step 2: Extend the read-only Chronicle journey** to wait for each real preview, pause atomically, prove state stability across an autosave boundary, check bounds/overflow/errors, and capture originals.
+- [x] **Step 3: Run focused tests, all source tests, production build, script syntax, and `git diff --check` locally; do not launch a browser locally.**
 - [ ] **Step 4: Push the isolated branch, open a PR, run focused and full GitHub Actions, inspect every required completed job log, download and inspect original screenshots, and resolve supported failures.**
 - [ ] **Step 5: Obtain independent code review and bug audit; fix supported findings test-first and rerun all affected gates.**
 - [ ] **Step 6: Verify expected PR head and reviewed tree, merge only after every actual outcome passes, compare merged source, and independently verify the exact Vercel production deployment.**

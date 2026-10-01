@@ -1,4 +1,5 @@
-import type {WaveArrivalFrame,WaveArrivalPoint,WaveRoleShape} from './wave-arrival.ts';
+import {WAVE_ARRIVAL_DEPTH_OFFSET,type WaveArrivalFrame,type WaveArrivalPoint,type WaveRoleShape} from './wave-arrival.ts';
+import {minimumActorRenderDepth} from './lane-perspective.ts';
 
 interface WaveArrivalGraphics {
  lineStyle(width:number,color:number,alpha?:number):this;
@@ -15,7 +16,7 @@ export interface WaveArrivalPaintReport {banner:WaveArrivalFrame['banner']['shap
 
 export function waveArrivalRenderPlan(groundY:number):Readonly<WaveArrivalRenderPlan> {
  const ground=Number.isFinite(groundY)?groundY:260;
- return Object.freeze({x:376,y:ground+7,depth:ground-1,baseDepth:ground+12,actorFrontDepth:ground+.5});
+ return Object.freeze({x:376,y:ground+7,depth:ground+WAVE_ARRIVAL_DEPTH_OFFSET,baseDepth:ground+12,actorFrontDepth:minimumActorRenderDepth(ground)});
 }
 
 /** Paints a bounded storybook road omen without owning timing or gameplay. */
