@@ -274,16 +274,20 @@ function renderScreen(legacyOnly=false){
 }
 function showModal(id:string,html:string,focusCommand?:string){
   if(id!=='session'&&!playable())return;
-  const replacing=modal!==null,command=(document.activeElement as HTMLElement|null)?.dataset.command;
+  const replacing=modal!==null,active=document.activeElement as HTMLElement|null,command=active?.dataset.command;
+  const storyAction=active?chronicleActionFromData(active.dataset):null,storyPage=active?.dataset.storyPage;
+  const layer=$('modal-layer'),previousScroll=replacing?layer.querySelector<HTMLElement>('.dialog')?.scrollTop:null;
   if(!replacing)focusBefore=document.activeElement as HTMLElement;
-  modal=id;modalVersion++;const version=modalVersion,layer=$('modal-layer');
+  modal=id;modalVersion++;const version=modalVersion;
   layer.hidden=false;layer.innerHTML=`<section class="dialog ${id==='result'?'result-dialog':id==='session'?'session-dialog':id==='prestige'?'prestige-dialog':id==='chronicle'?'chronicle-dialog':''}" role="dialog" tabindex="-1" aria-modal="true" aria-labelledby="dialog-title">${id!=='result'&&id!=='session'?`<button class="close-button" data-command="close" aria-label="Close">${icon('close')}</button>`:''}${html}</section>`;
   isolateModal(true);syncPause();window.cancelAnimationFrame(focusFrame);
   focusFrame=requestAnimationFrame(()=>{
     if(lifetime.disposed||layer.hidden||version!==modalVersion)return;
     const previous=replacing&&command?Array.from(layer.querySelectorAll<HTMLElement>('[data-command]')).find(element=>element.dataset.command===command):null;
     const requested=focusCommand?Array.from(layer.querySelectorAll<HTMLElement>('[data-command]')).find(element=>element.dataset.command===focusCommand):null;
-    (requested??previous??modalFocusables(layer)[0]??layer.querySelector<HTMLElement>('.dialog'))?.focus();
+    const storyPrevious=storyAction?Array.from(layer.querySelectorAll<HTMLElement>('[data-story-route],[data-story-captain],[data-story-tale],[data-story-preparation],[data-story-discovery],[data-story-provision]')).find(element=>JSON.stringify(chronicleActionFromData(element.dataset))===JSON.stringify(storyAction)):storyPage!==undefined?Array.from(layer.querySelectorAll<HTMLElement>('[data-story-page]')).find(element=>element.dataset.storyPage===storyPage):null;
+    const dialog=layer.querySelector<HTMLElement>('.dialog');if(previousScroll!==null&&previousScroll!==undefined&&dialog)dialog.scrollTop=previousScroll;
+    (requested??previous??storyPrevious??modalFocusables(layer)[0]??dialog)?.focus();
   });
 }
 function closeModal(refresh=true){

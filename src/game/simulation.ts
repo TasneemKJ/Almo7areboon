@@ -355,7 +355,8 @@ export class Game implements GamePort {
     this.state.food = Math.min(99, this.state.food + (0.8 + this.profile.foodLevel * 0.14) * this.bonuses().food * dt);
     this.state.units = this.state.units.filter(u => u.hp > 0);
     chronicleTick(this.profile,this.state,dt,this.chronicleHost());
-    if (this.checkEnd()) return;
+    const deferChronicleWin=this.state.chronicle?.enabled===true&&chronicleOutcome(this.profile,this.state)==='won';
+    if (this.checkEnd(deferChronicleWin)) return;
     while (this.state.wave < this.encounter.waves.length && this.state.time + 1e-9 >= this.encounter.waves[this.state.wave].time) this.state.wave++;
     while (this.nextSpawn < this.schedule.length && this.state.time + 1e-9 >= this.schedule[this.nextSpawn].time) {
       this.spawn('enemy', this.schedule[this.nextSpawn].kind);
@@ -414,9 +415,10 @@ export class Game implements GamePort {
         // Never retreat because two bodies were added at an identical position.
         unit.x = direction === 1 ? Math.max(unit.x, Math.min(910, nextX)) : Math.min(unit.x, Math.max(90, nextX));
       }
-      if (this.checkEnd()) break;
+      if (this.checkEnd(deferChronicleWin)) break;
     }
     this.state.units = this.state.units.filter(u => u.hp > 0);
+    if(this.state.phase==='running')this.checkEnd();
   }
 
   private hurt(unit: Unit, damage: number): number {
@@ -469,7 +471,7 @@ export class Game implements GamePort {
     this.events.push({ type: 'coin', x, amount: credited });
   }
 
-  private checkEnd(): boolean {
+  private checkEnd(deferChronicleWin=false): boolean {
     if (this.state.phase !== 'running') return true;
     const outcome=chronicleOutcome(this.profile,this.state);
     if (outcome==='lost') {
@@ -479,10 +481,11 @@ export class Game implements GamePort {
       return true;
     }
     if (outcome==='won') {
+      if(deferChronicleWin&&this.state.chronicle?.enabled)return false;
       if(!this.state.chronicle || ['siege','light','boss'].includes(this.state.chronicle.objective))this.state.enemyHp=0;
       this.state.phase = 'won';
       if(this.profile.chronicle&&this.state.chronicle&&!this.state.chronicle.settled){
-        this.profile.chronicle=recordChronicleWin(this.profile.chronicle,this.profile,{deployedByKind:this.state.stats.deployedByKind,survivingRoles:[0,1].map(kind=>this.state.units.some(unit=>unit.side==='player'&&unit.kind===kind&&unit.hp>0)),food:this.state.food});
+        this.profile.chronicle=recordChronicleWin(this.profile.chronicle,this.profile,{deployedByKind:this.state.stats.deployedByKind,survivingRoles:[0,1].map(kind=>{const id=this.state.chronicle!.veteranIds[kind];return id!==null&&this.state.units.some(unit=>unit.id===id&&unit.side==='player'&&unit.hp>0);}),food:this.state.food});
         this.state.chronicle.settled=true;
       }
       this.nextSpawn = this.schedule.length;

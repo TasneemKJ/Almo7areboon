@@ -1,6 +1,6 @@
 import test from 'node:test';
 import assert from 'node:assert/strict';
-import { createChronicle, normalizeChronicle, ROUTES, routeAvailable, chooseRoute, recordChronicleWin, chooseCaptain, chooseTale, discover, beginExpedition, continueExpedition, timelineVariant, commanderFor, chronicleEncounter, preparationAvailable } from '../src/game/chronicle.ts';
+import { createChronicle, normalizeChronicle, ROUTES, routeAvailable, chooseRoute, recordChronicleWin, chooseCaptain, chooseTale, discover, beginExpedition, continueExpedition, timelineVariant, commanderFor, chronicleEncounter, preparationAvailable, veteranName } from '../src/game/chronicle.ts';
 const context = { timeline: 1, enemyAge: 0, furthestBattle: 5 };
 const victory = { deployedByKind: [2,2,1] as [number,number,number], survivingRoles: [true,true] as [boolean,boolean] };
 test('chronicle has bounded defaults and six objective types and an optional epilogue', () => {
@@ -52,3 +52,4 @@ test('commanders transform finite waves deterministically without mutating the s
  const c=chooseRoute(createChronicle(),'watch',0,0)!; const b=chronicleEncounter(base,c,0); assert.deepEqual(b,chronicleEncounter(base,c,0)); assert.equal(base.waves[0].members.length,1); assert.ok(b.waves.every(w=>w.time>=0&&w.members.length<=5)); assert.ok(commanderFor(c,0).name.length>0);
 });
 test('the three discovered fragments open a separate optional encounter',()=>{let c=createChronicle();assert.equal(routeAvailable(c,'whisper' as never,0,0),false);for(const id of ['door','roof','cat'] as const)c=discover(c,id,true)!;assert.equal(routeAvailable(c,'whisper' as never,0,0),true);});
+test('earned insignia keeps each recurring veteran named',()=>{assert.match(veteranName(0,3),/Rima/);assert.match(veteranName(1,3),/Nabil/);});

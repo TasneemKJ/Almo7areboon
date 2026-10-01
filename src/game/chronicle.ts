@@ -167,7 +167,7 @@ export function chronicleEncounter<T extends {readonly age:number;readonly waves
   return {age:base.age,waves};
 }
 export function veteranName(role: number, victories: number): string {
-  if(role===0)return victories>=3?'Salma’s Patched Buckler':'Rima, the steady hand';
+  if(role===0)return victories>=3?'Rima of the Patched Buckler':'Rima, the steady hand';
   return victories>=3?'Nabil of the Counting Stones':'Nabil, the nervous thrower';
 }
 export type ChronicleAction =

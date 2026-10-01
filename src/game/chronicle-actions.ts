@@ -22,6 +22,6 @@ export function planChronicleAction(p:Profile,s:BattleState,a:ChronicleAction):C
       reset=false;break;
     default:return null;
   }
-  if(c.expedition&&s.phase==='won'&&['chronicle-captain','chronicle-tale','chronicle-preparation'].includes(a.type))reset=false;
+  if((s.phase==='won'||s.phase==='lost')&&['chronicle-captain','chronicle-tale','chronicle-preparation'].includes(a.type))reset=false;
   return next?{chronicle:next,enemyAge:chapter,reset}:null;
 }

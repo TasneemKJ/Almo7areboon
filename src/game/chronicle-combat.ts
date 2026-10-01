@@ -75,7 +75,7 @@ export function chronicleDamage(p:Profile,s:BattleState,attacker:Unit,target:Uni
   let factor=1;
   // resolveRoleHit applied the ordinary 25% self-guard first. Breach removes it temporarily.
   if(attacker.kind===1&&target.kind===0&&(target.breachedUntil??0)>s.time)factor/=0.75;
-  if(attacker.kind===1&&target.kind===1){
+  if(target.kind===1){
     const direction=target.side==='player'?1:-1;
     const protectedBy=s.units.some(u=>u.side===target.side&&u.kind===0&&alive(u)&&(u.breachedUntil??0)<=s.time&&Math.abs(u.lane-target.lane)<=1&&(u.x-target.x)*direction>0&&(u.x-target.x)*direction<=70);
     if(protectedBy)factor*=target.side==='player'&&(progress(p).veterans[0]??0)>=3?0.60:0.65;
@@ -92,7 +92,7 @@ export function chronicleBaseDamage(s:BattleState,attacker:'player'|'enemy',dama
 export function chronicleAfterHit(p:Profile,s:BattleState,attacker:Unit,target:Unit,damage:number,secondary:boolean,host:ChronicleHost):void {
   const c=s.chronicle;if(!c?.enabled||secondary)return;
   attacker.chargeReady=false;
-  if(attacker.kind===1&&target.kind===1&&chronicleDamage(p,s,attacker,target,100)<100){c.coveredHits++;cue(host,'covered',target.x,0,target);}
+  if(target.kind===1&&chronicleDamage(p,s,attacker,target,100)<100){c.coveredHits++;cue(host,'covered',target.x,0,target);}
   if(attacker.kind===2&&target.kind===0&&target.hp>0){target.breachedUntil=s.time+2;cue(host,'breach',target.x,0,attacker);}
   if(attacker.side==='player'&&attacker.kind===2){
     if(target.id===c.boss.id&&c.boss.windupUntil>s.time){c.boss.windupUntil=0;c.boss.nextRing=s.time+10;c.boss.interrupts++;cue(host,'bell-stilled',target.x,0,attacker);}
