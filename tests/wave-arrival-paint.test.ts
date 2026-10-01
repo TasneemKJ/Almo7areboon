@@ -25,12 +25,20 @@ const frame=(intent:'rush'|'volley'|'bulwark',counts:readonly [number,number,num
 
 test('render plan stays behind every lane and rank-stagger residue',async()=>{
  const m=await subject(),plan=m.waveArrivalRenderPlan(260);
- assert.deepEqual(plan,{x:376,y:267,depth:257,baseDepth:272,actorFrontDepth:258.3});
+ assert.deepEqual(plan,{x:340,y:267,depth:257,baseDepth:272,actorFrontDepth:258.3});
  for(let lane=0;lane<3;lane++)for(let id=0;id<5;id++){
   assert.ok(plan.depth<actorRenderDepth(260,lane,24,id),`signal must stay behind lane ${lane}, stagger residue ${id}`);
  }
  assert.ok(plan.depth<plan.actorFrontDepth&&plan.depth<plan.baseDepth);
  assert.ok(Object.isFrozen(plan));
+});
+
+test('road omen cloth stays in the clear road pocket left of the enemy outpost',async()=>{
+ const m=await subject(),plan=m.waveArrivalRenderPlan(260);
+ // The widest cloth reaches 20 source pixels right of its pole. The painted
+ // enemy outpost begins around x=375, so preserve a visible ink gap as well.
+ assert.ok(plan.x+20<=368,'banner must not disappear behind the enemy outpost');
+ assert.ok(plan.x-24>=300,'role marks must remain on the approach road, away from central objectives');
 });
 
 test('painter emits distinct banner geometry with composition held constant',async()=>{

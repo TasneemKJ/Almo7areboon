@@ -16,12 +16,12 @@ export interface WaveArrivalPaintReport {banner:WaveArrivalFrame['banner']['shap
 
 export function waveArrivalRenderPlan(groundY:number):Readonly<WaveArrivalRenderPlan> {
  const ground=Number.isFinite(groundY)?groundY:260;
- return Object.freeze({x:376,y:ground+7,depth:ground+WAVE_ARRIVAL_DEPTH_OFFSET,baseDepth:ground+12,actorFrontDepth:minimumActorRenderDepth(ground)});
+ return Object.freeze({x:340,y:ground+7,depth:ground+WAVE_ARRIVAL_DEPTH_OFFSET,baseDepth:ground+12,actorFrontDepth:minimumActorRenderDepth(ground)});
 }
 
 /** Paints a bounded storybook road omen without owning timing or gameplay. */
 export function paintWaveArrival(graphics:WaveArrivalGraphics,frame:Readonly<WaveArrivalFrame>,anchor:{x:number;y:number}):Readonly<WaveArrivalPaintReport> {
- const x=Number.isFinite(anchor.x)?anchor.x:376,y=Number.isFinite(anchor.y)?anchor.y:267,lift=frame.clothLift;
+ const x=Number.isFinite(anchor.x)?anchor.x:340,y=Number.isFinite(anchor.y)?anchor.y:267,lift=frame.clothLift;
  const cloth=frame.banner.points.map(point=>({x:x+point.x,y:y+point.y+lift}));
  graphics.lineStyle(2.2,0x3b352b,.88).lineBetween(x,y+1,x,y-76);
  graphics.fillStyle(frame.intent==='volley'?0xb97862:frame.intent==='bulwark'?0x88664e:0xa96350,.86).fillPoints(cloth,true);
