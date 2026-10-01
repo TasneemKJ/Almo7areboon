@@ -30,11 +30,15 @@ test('malformed rescue presentation is finite, immutable, and static when motion
   assert.deepEqual(malformed,before);
   assert.deepEqual(safe.scout,{x:279,frame:0});
   assert.ok(safe.footprints.every(mark=>Number.isFinite(mark.x)&&Number.isFinite(mark.y)&&Number.isFinite(mark.alpha)));
+  const extreme=chronicleRescueFrame({rescued:true,rescueProgress:4,travellerX:300,time:Number.MAX_VALUE,paused:false,reduced:false});
+  assert.ok(Number.isInteger(extreme.scout?.frame)&&extreme.scout!.frame>=0&&extreme.scout!.frame<=3,'finite clocks that overflow during animation math still fail static');
   const reduced=chronicleRescueFrame({rescued:true,rescueProgress:4,travellerX:300,time:1,paused:false,reduced:true});
   const reducedLater=chronicleRescueFrame({rescued:true,rescueProgress:4,travellerX:300,time:999,paused:false,reduced:true});
   assert.deepEqual(reduced,reducedLater);
   assert.equal(reduced.scout?.frame,0);
   assert.equal(chronicleRescueFrame({rescued:true,rescueProgress:4,travellerX:300,time:99,paused:true,reduced:false}).scout?.frame,0);
+  assert.equal(chronicleRescueFrame({rescued:true,rescueProgress:4,travellerX:300,previousScoutX:135,time:1,paused:false,reduced:false}).scout?.frame,0,'a scout blocked at the same presented position does not walk in place');
+  assert.equal(chronicleRescueFrame({rescued:true,rescueProgress:4,travellerX:300,previousScoutX:140,time:1,paused:false,reduced:false}).scout?.frame,1,'a scout whose authoritative position moved uses a walking frame');
 });
 
 test('the rescue draw plan uses age-matched storybook art and keeps ground marks below both actors',async()=>{
@@ -47,4 +51,6 @@ test('the rescue draw plan uses age-matched storybook art and keeps ground marks
   assert.equal(plan.cageDepth,208);
   assert.equal(plan.scoutDepth,208.1);
   assert.ok(plan.groundDepth<plan.cageDepth&&plan.groundDepth<plan.scoutDepth);
+  const fallback=presentation.chronicleRescueRenderPlan(4,200,frame,()=>false);
+  assert.equal(fallback.scoutMode,'fallback','a missing painted strip uses the same bounded fallback language as combatants');
 });

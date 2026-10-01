@@ -53,14 +53,17 @@ try{
  {
   const p=preparedChronicleProfile();p.timeline=2;p.mastery.timeline=2;p.chronicle.timeline=2;p.chronicle.route='lantern';const f=await open('390-night',390,844,p);await f.page.locator('[data-command="start"]').click();await f.page.locator('[data-unit="0"]').click();await f.page.waitForTimeout(3600);await shot(f,'lantern');checks.push('alternate timeline and lantern route render without errors');await f.context.close();
  }
- {
-  const p=preparedChronicleProfile();p.chronicle.route='scout';const f=await open('390-rescue',390,844,p);await f.page.locator('[data-command="start"]').click();
+ for(const [width,height] of [[320,568],[390,844],[1024,768]]){
+  const p=preparedChronicleProfile();p.chronicle.route='scout';const f=await open(`${width}-rescue`,width,height,p);await f.page.locator('[data-command="start"]').click();
   for(const kind of [0,1,0,2,1,2]){const button=f.page.locator(`[data-unit="${kind}"]`);await f.page.waitForFunction(value=>{const node=document.querySelector(`[data-unit="${value}"]`);return node instanceof HTMLButtonElement&&!node.disabled;},String(kind),{timeout:20000});await button.click();}
   await f.page.waitForFunction(()=>/^Free the scout · [123]\./.test(document.querySelector('#deploy-hint')?.textContent??''),null,{timeout:60000});await f.page.keyboard.press('Space');await f.page.getByRole('button',{name:/Resume battle/i}).waitFor();
-  let before=await saved(f.page);await shot(f,'cage-progress');await f.page.waitForTimeout(450);assert.equal(await saved(f.page),before,'paused rescue presentation must not write progress');
-  await f.page.keyboard.press('Space');await f.page.waitForFunction(()=>document.querySelector('#deploy-hint')?.textContent?.includes('Scout returning home'),null,{timeout:20000});await f.page.keyboard.press('Space');await f.page.getByRole('button',{name:/Resume battle/i}).waitFor();
+  let before=await saved(f.page),state=await f.page.locator('canvas').evaluate(node=>JSON.parse(node.dataset.chronicleRescue));
+  assert.deepEqual(state.cage,{visible:true,x:279,texture:'chronicle-cage-ink-v1'});assert.equal(state.scout.visible,false);assert.ok(state.groundDepth<state.cageDepth);
+  await shot(f,'cage-progress');await f.page.waitForTimeout(450);assert.equal(await saved(f.page),before,'paused rescue presentation must not write progress');
+  await f.page.keyboard.press('Space');await f.page.waitForFunction(()=>{const match=document.querySelector('#deploy-hint')?.textContent?.match(/Scout returning home · (\d+)%/);return match&&Number(match[1])>=25;},null,{timeout:20000});await f.page.keyboard.press('Space');await f.page.getByRole('button',{name:/Resume battle/i}).waitFor();
+  state=await f.page.locator('canvas').evaluate(node=>JSON.parse(node.dataset.chronicleRescue));assert.deepEqual(state.cage,{visible:true,x:279,texture:'chronicle-cage-open-ink-v1'});assert.equal(state.scout.visible,true);assert.ok(state.scout.x<state.cage.x);assert.equal(state.scout.frame,0);assert.equal(state.scout.mode,'painted');assert.match(state.scout.texture,/^army-\d-1-player$/);assert.ok(state.groundDepth<state.cageDepth&&state.groundDepth<state.scoutDepth);
   before=await saved(f.page);await shot(f,'scout-homecoming');await f.page.waitForTimeout(450);assert.equal(await saved(f.page),before,'paused homecoming presentation must not write progress');await noOverflow(f.page);
-  checks.push('public controls reach real cage progress and a rescued scout returning separately, without presentation save writes');await f.context.close();
+  checks.push(`${width}: public controls reach real cage progress; runtime actors remain separate and depth-safe; paused presentation is static and save-inert`);await f.context.close();
  }
  {
   const p=simulateChronicle('escort').profile;p.chronicle.discoveries=0;const f=await open('390-discovery',390,844,p);await f.page.locator('.result-dialog').waitFor();await f.page.locator('.story-discoveries summary').click();
