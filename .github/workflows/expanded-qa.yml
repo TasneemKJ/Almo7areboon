@@ -1,0 +1,52 @@
+name: Expanded mobile QA
+on:
+  push:
+    branches: [chore/four-iterations-review]
+    paths: ['.github/workflows/expanded-qa.yml']
+permissions:
+  contents: read
+jobs:
+  baseline:
+    runs-on: ubuntu-latest
+    timeout-minutes: 15
+    strategy:
+      fail-fast: false
+      max-parallel: 2
+      matrix:
+        suite: [interface, recovery]
+        engine: [chromium, webkit]
+    steps:
+      - uses: actions/checkout@v4
+        with:
+          persist-credentials: false
+      - uses: actions/setup-node@v4
+        with:
+          node-version: 22
+          cache: npm
+      - name: Build production source and install browser
+        run: |
+          mkdir -p artifacts/expanded-qa
+          npm ci > artifacts/expanded-qa/install.log 2>&1
+          node --check scripts/qa/browser-driver.mjs
+          node --check scripts/qa/mobile-journeys.mjs
+          npm run build > artifacts/expanded-qa/build.log 2>&1 || { tail -50 artifacts/expanded-qa/build.log; exit 1; }
+          npx playwright install --with-deps ${{ matrix.engine }} > artifacts/expanded-qa/browser.log 2>&1
+      - name: Execute the pre-fix browser coverage matrix
+        env:
+          QA_SUITE: ${{ matrix.suite }}
+          QA_ENGINES: ${{ matrix.engine }}
+          QA_OUT: artifacts/expanded-qa/${{ matrix.suite }}-${{ matrix.engine }}
+        run: |
+          npm run preview -- --port 4173 > artifacts/expanded-qa/preview.log 2>&1 &
+          for i in $(seq 1 30); do curl -fsS http://127.0.0.1:4173/ >/dev/null && break || sleep 1; done
+          result=0
+          node --experimental-strip-types scripts/qa/mobile-journeys.mjs > artifacts/expanded-qa/${{ matrix.suite }}-${{ matrix.engine }}.log 2>&1 || result=$?
+          tail -110 artifacts/expanded-qa/${{ matrix.suite }}-${{ matrix.engine }}.log
+          echo "Baseline exit code: $result"
+          test -f artifacts/expanded-qa/${{ matrix.suite }}-${{ matrix.engine }}/report.json
+      - uses: actions/upload-artifact@v4
+        if: always()
+        with:
+          name: expanded-baseline-${{ matrix.suite }}-${{ matrix.engine }}
+          path: artifacts/expanded-qa/
+          retention-days: 7
