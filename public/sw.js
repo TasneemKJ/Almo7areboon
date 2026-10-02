@@ -26,14 +26,20 @@ async function trimBundles(cache) {
 async function precache() {
   const cache = await caches.open(CACHE);
   const page = await fetch(SCOPE.href, { cache: 'reload' });
-  if (!page.ok) return;
+  if (!page.ok) throw new Error(`Unable to cache ${SCOPE.href}`);
   const html = await page.clone().text();
+  const assets = await Promise.all(shellURLs(html).map(async url => {
+    const response = await fetch(url, { cache: 'reload' });
+    if (!response.ok) throw new Error(`Unable to cache ${url}`);
+    return [url, response];
+  }));
+  // Commit the page last: a failed update leaves the previous complete shell bootable.
+  for (const [url, response] of assets) await cache.put(url, response);
   await cache.put(SCOPE.href, page);
-  await Promise.all(shellURLs(html).map(url => cache.add(url).catch(() => {})));
 }
 
 self.addEventListener('install', event => {
-  event.waitUntil(precache().catch(() => {}).then(() => self.skipWaiting()));
+  event.waitUntil(precache().then(() => self.skipWaiting()));
 });
 
 self.addEventListener('activate', event => {

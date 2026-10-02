@@ -276,21 +276,21 @@ function renderScreen(legacyOnly=false){
 }
 function showModal(id:string,html:string,focusCommand?:string){
   if(id!=='session'&&!playable())return;
-  const replacing=modal!==null,active=document.activeElement as HTMLElement|null,command=active?.dataset.command;
+  const replacing=modal!==null,sameModal=modal===id,active=document.activeElement as HTMLElement|null,command=active?.dataset.command;
   const storyAction=active?chronicleActionFromData(active.dataset):null,storyPage=active?.dataset.storyPage;
-  const layer=$('modal-layer'),previousScroll=replacing?layer.querySelector<HTMLElement>('.dialog')?.scrollTop:null;
+  const layer=$('modal-layer'),previousScroll=sameModal?layer.querySelector<HTMLElement>('.dialog')?.scrollTop:null;
   if(!replacing)focusBefore=document.activeElement as HTMLElement;
   modal=id;modalVersion++;const version=modalVersion;
   layer.hidden=false;layer.innerHTML=`<section class="dialog ${id==='result'?'result-dialog':id==='session'?'session-dialog':id==='prestige'?'prestige-dialog':id==='chronicle'?'chronicle-dialog':''}" role="dialog" tabindex="-1" aria-modal="true" aria-labelledby="dialog-title">${id!=='result'&&id!=='session'?`<button class="close-button" data-command="close" aria-label="Close">${icon('close')}</button>`:''}${html}</section>`;
   isolateModal(true);syncPause();window.cancelAnimationFrame(focusFrame);
   focusFrame=requestAnimationFrame(()=>{
     if(lifetime.disposed||layer.hidden||version!==modalVersion)return;
-    const previous=replacing&&command?Array.from(layer.querySelectorAll<HTMLElement>('[data-command]')).find(element=>element.dataset.command===command):null;
+    const previous=sameModal&&command?Array.from(layer.querySelectorAll<HTMLElement>('[data-command]')).find(element=>element.dataset.command===command):null;
     const requested=focusCommand?Array.from(layer.querySelectorAll<HTMLElement>('[data-command]')).find(element=>element.dataset.command===focusCommand):null;
     const storyMatch=storyAction?Array.from(layer.querySelectorAll<HTMLElement>('[data-story-route],[data-story-captain],[data-story-tale],[data-story-preparation],[data-story-discovery],[data-story-provision]')).find(element=>JSON.stringify(chronicleActionFromData(element.dataset))===JSON.stringify(storyAction)):storyPage!==undefined?Array.from(layer.querySelectorAll<HTMLElement>('[data-story-page]')).find(element=>element.dataset.storyPage===storyPage):null;
-    const storyPrevious=storyMatch&&!storyMatch.matches(':disabled,[aria-disabled="true"]')?storyMatch:null;
+    const storyPrevious=sameModal&&storyMatch&&!storyMatch.matches(':disabled,[aria-disabled="true"]')?storyMatch:null;
     const dialog=layer.querySelector<HTMLElement>('.dialog');if(previousScroll!==null&&previousScroll!==undefined&&dialog)dialog.scrollTop=previousScroll;
-    (requested??previous??storyPrevious??(replacing?null:layer.querySelector<HTMLElement>('[data-initial-focus]'))??modalFocusables(layer)[0]??dialog)?.focus();
+    (requested??previous??storyPrevious??(sameModal?null:layer.querySelector<HTMLElement>('[data-initial-focus]'))??modalFocusables(layer)[0]??dialog)?.focus();
   });
 }
 function closeModal(refresh=true){

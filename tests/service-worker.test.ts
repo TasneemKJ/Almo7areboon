@@ -36,12 +36,12 @@ test('external and non-GET requests stay outside the game cache',async()=>{
 });
 
 /** Cache API adapter for production-worker tests. Replacements move to the end, as Cache.put does. */
-function cacheFixture(options: { failOpen?: boolean; failMatch?: boolean; failKeys?: boolean; status?: number; scope?: string } = {}) {
+function cacheFixture(options: { failOpen?: boolean; failMatch?: boolean; failKeys?: boolean; failAsset?: string; shell?: string; status?: number; scope?: string } = {}) {
   const scope = options.scope ?? 'https://game.test/';
   const handlers: Record<string, Function> = {};
   const entries = new Map<string, Response>();
   const names = new Set(['almo7areboon-runtime-v1', 'other-game-v1', 'almo7areboon-runtime-v99']);
-  let claimed = false, fetches = 0;
+  let claimed = false, skipped = false, fetches = 0;
   const href = (request: string | { url: string }) => new URL(typeof request === 'string' ? request : request.url, scope).href;
   const basic = (body: string, status = 200) => {
     const response = new Response(body, { status, headers: { 'Content-Type': 'text/html' } });
@@ -67,7 +67,7 @@ function cacheFixture(options: { failOpen?: boolean; failMatch?: boolean; failKe
     },
     async keys() { return [...entries.keys()].map(url => ({ url })); },
     async delete(request: string | { url: string }) { return entries.delete(href(request)); },
-    async add(request: string | { url: string }) { await this.put(request, basic('asset')); },
+    async add(request: string | { url: string }) { if(href(request).includes(options.failAsset ?? '\0'))throw Error('asset unavailable');await this.put(request, basic('asset')); },
   };
   const fresh = () => basic('network response', options.status ?? 200);
   runInNewContext(source, {
@@ -77,15 +77,15 @@ function cacheFixture(options: { failOpen?: boolean; failMatch?: boolean; failKe
       async keys() { if (options.failKeys) throw Error('cache listing unavailable'); return [...names]; },
       async delete(name: string) { return names.delete(name); },
     },
-    fetch: async () => { fetches++; return fresh(); },
+    fetch: async (request: string | { url: string }) => { fetches++;if(href(request).includes(options.failAsset ?? '\0'))throw Error('asset unavailable');return href(request)===scope&&options.shell!==undefined?basic(options.shell):fresh(); },
     self: {
       location: { origin: new URL(scope).origin }, registration: { scope },
-      clients: { async claim() { claimed = true; } }, skipWaiting: async () => {},
+      clients: { async claim() { claimed = true; } }, skipWaiting: async () => { skipped = true; },
       addEventListener: (name: string, handler: Function) => { handlers[name] = handler; },
     },
   });
   return {
-    cache, entries, names, basic, get claimed() { return claimed; }, get fetches() { return fetches; },
+    cache, entries, names, basic, get claimed() { return claimed; }, get skipped() { return skipped; }, get fetches() { return fetches; },
     async request(path = scope, mode = 'navigate') {
       let response: Promise<Response> | undefined;
       const lifetimes: Promise<unknown>[] = [];
@@ -102,8 +102,23 @@ function cacheFixture(options: { failOpen?: boolean; failMatch?: boolean; failKe
       handlers.activate({ waitUntil: (value: Promise<unknown>) => { lifetimes.push(value); } });
       await Promise.all(lifetimes);
     },
+    async install() {
+      const lifetimes: Promise<unknown>[] = [];
+      handlers.install({ waitUntil: (value: Promise<unknown>) => { lifetimes.push(value); } });
+      await Promise.all(lifetimes);
+    },
   };
 }
+
+test('a failed install asset keeps the last complete offline shell and does not activate',async()=>{
+ const fixture=cacheFixture({shell:'<script src="./assets/new.js"></script>',failAsset:'/assets/new.js'});
+ await fixture.cache.put('./',fixture.basic('<script src="./assets/old.js"></script>'));
+ await fixture.cache.put('./assets/old.js',fixture.basic('old bundle'));
+ await assert.rejects(fixture.install(),/asset unavailable/);
+ assert.equal(fixture.skipped,false);
+ assert.match(await (await fixture.cache.match('./'))!.text(),/old\.js/);
+ assert.equal(await fixture.cache.match('./assets/new.js'),undefined);
+});
 
 for (const mode of ['navigate', 'cors']) {
   for (const failure of ['failOpen', 'failMatch'] as const) {

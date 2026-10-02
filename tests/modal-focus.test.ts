@@ -47,3 +47,17 @@ test('a fresh result dialog focuses its outcome heading before below-the-fold ac
  context.showModal('result','', 'review-battlefield');
  assert.equal(document.activeElement,action);
 });
+
+test('replacing another modal with results resets scroll and focuses the outcome heading',()=>{
+ const document:any={activeElement:null};
+ const oldClose:any={dataset:{command:'close'},focus(){document.activeElement=this;}};
+ const heading:any={id:'dialog-title',dataset:{initialFocus:''},focus(){document.activeElement=this;}};
+ const action:any={dataset:{command:'review-battlefield'},focus(){document.activeElement=this;}};
+ document.activeElement=oldClose;
+ let dialog:any={scrollTop:486,focus(){document.activeElement=this;}};
+ const layer:any={hidden:false,get innerHTML(){return '';},set innerHTML(_value:string){dialog={scrollTop:0,focus(){document.activeElement=this;}};},querySelector(selector:string){return selector==='.dialog'?dialog:selector==='[data-initial-focus]'?heading:null;},querySelectorAll(selector:string){return selector==='[data-command]'?[action]:[];}};
+ const context:any={modal:'settings',modalVersion:0,focusFrame:0,focusBefore:null,document,lifetime:{disposed:false},playable:()=>true,$:()=>layer,icon:()=>'',isolateModal(){},syncPause(){},modalFocusables:()=>[action],chronicleActionFromData,window:{cancelAnimationFrame(){}},requestAnimationFrame(callback:()=>void){callback();return 1;}};
+ runInNewContext(code,context);context.showModal('result','<h2 id="dialog-title" tabindex="-1" data-initial-focus>Victory</h2><button data-command="review-battlefield">Look around</button>');
+ assert.equal(dialog.scrollTop,0,'scroll belongs only to a rerender of the same modal');
+ assert.equal(document.activeElement,heading,'a cross-modal result transition must announce its outcome');
+});

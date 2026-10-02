@@ -56,6 +56,8 @@ test('the timed seal tolerates roundoff, but not a genuinely late victory', () =
   for (const time of [75.0001, 75 + 1 / 60, 76]) {
     state.time = time;
     assert.equal(masteryEligibleMask(0, state) & 4, 0, `late boundary at ${time}`);
+    assert.match(masteryAttemptText(defaultProfile(), state), /Attempt: 1:16/, `late clock at ${time} must not display the eligible 1:15 boundary`);
+    assert.match(resultsHtml(defaultProfile(), state), /<dt>Battle time<\/dt><dd>1:16<\/dd>/);
   }
   state.stats.skillsCast = 1 + 5e-12;
   assert.equal(masteryEligibleMask(2, state) & 4, 0, 'count objectives are not time measurements');
@@ -64,7 +66,7 @@ test('the timed seal tolerates roundoff, but not a genuinely late victory', () =
 test('result and mastery clocks agree at accumulated second and minute boundaries', () => {
   const game = new Game();
   game.state.phase = 'lost';
-  for (const [time, display] of [[60 - 5e-12, '1:00'], [75 - 5e-12, '1:15'], [59.99, '0:59']] as const) {
+  for (const [time, display] of [[60 - 5e-12, '1:00'], [75 - 5e-12, '1:15'], [59.99, '1:00']] as const) {
     game.state.time = time;
     assert.ok(masteryAttemptText(game.profile, game.state).includes(`Attempt: ${display}`));
     assert.ok(resultsHtml(game.profile, game.state).includes(`<dt>Battle time</dt><dd>${display}</dd>`));
