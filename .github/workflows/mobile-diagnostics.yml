@@ -7,7 +7,7 @@ permissions:
 jobs:
   diagnose:
     runs-on: ubuntu-latest
-    timeout-minutes: 10
+    timeout-minutes: 5
     steps:
       - uses: actions/checkout@v4
         with:
@@ -16,62 +16,39 @@ jobs:
         with:
           node-version: 22
           cache: npm
-      - name: Build unchanged game and run its tests
+      - name: Build unchanged game
         run: |
           mkdir -p qa
-          npm ci > qa/install.log 2>&1 || { tail -60 qa/install.log; exit 1; }
-          npm test > qa/tests.log 2>&1 || { tail -80 qa/tests.log; exit 1; }
-          tail -8 qa/tests.log
-          npm run build > qa/build.log 2>&1 || { tail -60 qa/build.log; exit 1; }
-      - name: Install Chromium
-        run: npx playwright install --with-deps chromium > qa/browser-install.log 2>&1
-      - name: Recheck original rescue with the same 60-second budget as other route waits
-        id: cat
-        continue-on-error: true
+          npm ci > qa/install.log 2>&1
+          npm run build > qa/build.log 2>&1
+          npx playwright install --with-deps chromium > qa/browser-install.log 2>&1
+      - name: Trace worker promises without changing their order
         run: |
           python3 - <<'PY'
           from pathlib import Path
-          source=Path('scripts/review-chronicle.mjs').read_text()
-          outer=source.index('\ntry{\n for(const [width,height]')
-          marker="  const p=preparedChronicleProfile();p.speed=1;p.chronicle.discoveries=7;p.chronicle.route='whisper';p.chronicle.expedition=null;"
-          start=source.rfind(' for(const [width,height]',0,source.index(marker))
-          end=source.index("\n {\n  const p=preparedChronicleProfile();p.speed=1;p.chronicle.discoveries=7;p.chronicle.route='whisper';const f=await open('390-cat-reduced'",start)
-          loop=source[start:end].replace('[[320,568],[390,844],[1024,768]]','[[1024,768]]',1)
-          assert loop.count('{timeout:30000}')==1
-          loop=loop.replace('{timeout:30000}','{timeout:60000}')
-          tail="\n}catch(error){console.error('REPRO_FAILURE',error.stack);process.exitCode=1;}finally{console.log('REPRO_CHECKS',JSON.stringify(checks));console.log('REPRO_ERRORS',JSON.stringify(errors));await browser.close();}"
-          Path('scripts/.mobile-diagnose.mjs').write_text(source[:outer]+'\ntry{\n'+loop+tail)
-          PY
-          npm run preview -- --port 4173 > qa/preview.log 2>&1 &
-          for i in $(seq 1 30); do curl -fsS http://127.0.0.1:4173/ >/dev/null && break || sleep 1; done
-          result=0
-          node --experimental-strip-types scripts/.mobile-diagnose.mjs > qa/cat-repro.log 2>&1 || result=$?
-          tail -25 qa/cat-repro.log
-          exit $result
-      - name: Trace offline-worker installation and controller ownership
-        id: offline
-        continue-on-error: true
-        run: |
-          python3 - <<'PY'
-          from pathlib import Path
-          source=Path('scripts/capture-offline-game-review.mjs').read_text()
-          marker='page = await context.newPage();'
+          path=Path('dist/sw.js');source=path.read_text()
+          source="const trace=(...values)=>{(self.__mobileTrace??=[]).push(values);};\n"+source
+          changes={
+           'const html = await page.clone().text();':"trace('html-start'); const html = await page.clone().text(); trace('html-done',shellURLs(html));",
+           "response ||= await fetch(url, { cache: 'reload' });":"trace('asset-fetch-start',url,!!response); response ||= await fetch(url, { cache: 'reload' }); trace('asset-headers',url,response.status);",
+           'for (const [url, response] of assets) await cache.put(url, response);':"for (const [url,response] of assets){trace('asset-put-start',url);await cache.put(url,response);trace('asset-put-done',url);}",
+           'await cache.put(SCOPE.href, page);':"trace('page-put-start');await cache.put(SCOPE.href,page);trace('page-put-done');",
+           "const page = await fetch(SCOPE.href, { cache: 'reload' });":"trace('page-fetch-start');const page = await fetch(SCOPE.href,{cache:'reload'});trace('page-headers',page.status);",
+          }
+          for old,new in changes.items():
+              assert source.count(old)==1,old
+              source=source.replace(old,new)
+          path.write_text(source)
+          path=Path('scripts/capture-offline-game-review.mjs');source=path.read_text()
+          source=source.replace('await page.evaluate(() => navigator.serviceWorker.ready);',"await page.waitForFunction(() => !!navigator.serviceWorker.controller,null,{timeout:30000});")
+          marker="diagnostics.cases.push({ name, status: 'failed', error: error.stack });"
           assert source.count(marker)==1
-          source=source.replace(marker,marker+"\n    const cdp=await context.newCDPSession(page);cdp.on('ServiceWorker.workerErrorReported',info=>console.log('SW_ERROR',JSON.stringify(info)));cdp.on('ServiceWorker.workerVersionUpdated',info=>console.log('SW_VERSION',JSON.stringify(info)));await cdp.send('ServiceWorker.enable');")
-          marker='await page.evaluate(() => navigator.serviceWorker.ready);'
-          assert source.count(marker)==1
-          source=source.replace(marker,"console.log('PAGE_LOADED'); await page.waitForFunction(() => !!navigator.serviceWorker.controller, null, {timeout:30000}); console.log('CONTROLLER_READY');")
-          marker='proxy = createServer(async (request, response) => {'
-          assert source.count(marker)==1
-          source=source.replace(marker,marker+"\n    if(!/\\.webp(?:\\?|$)/.test(request.url)){console.log('HTTP_START',request.url);response.once('finish',()=>console.log('HTTP_END',request.url,response.statusCode));}")
-          marker='diagnostics.cases.push({ name, status: \'failed\', error: error.stack });'
-          assert source.count(marker)==1
-          source=source.replace(marker,"console.log('OFFLINE_STATUS',await page?.evaluate(async()=>({url:location.href,controlled:!!navigator.serviceWorker.controller,registrations:(await navigator.serviceWorker.getRegistrations()).map(r=>({scope:r.scope,installing:r.installing?.state,waiting:r.waiting?.state,active:r.active?.state}))})).catch(()=>null)); "+marker)
+          source=source.replace(marker,"for(const worker of context.serviceWorkers()) console.log('WORKER_TRACE',JSON.stringify(await worker.evaluate(()=>self.__mobileTrace??[]).catch(error=>({error:String(error)})))); "+marker)
           Path('scripts/.offline-diagnose.mjs').write_text(source)
           PY
           result=0
-          timeout 120s node --experimental-strip-types scripts/.offline-diagnose.mjs > qa/offline-repro.log 2>&1 || result=$?
-          tail -70 qa/offline-repro.log
+          timeout 100s node --experimental-strip-types scripts/.offline-diagnose.mjs > qa/offline-repro.log 2>&1 || result=$?
+          cat qa/offline-repro.log
           exit $result
       - uses: actions/upload-artifact@v4
         if: always()
@@ -79,14 +56,5 @@ jobs:
           name: focused-mobile-diagnostics
           path: |
             qa/
-            artifacts/chronicle/
             artifacts/browser-review/offline-game/
           retention-days: 7
-      - name: Report reproduction outcomes
-        if: always()
-        env:
-          CAT: ${{ steps.cat.outcome }}
-          OFFLINE: ${{ steps.offline.outcome }}
-        run: |
-          echo "Cat reproduction: $CAT; offline reproduction: $OFFLINE"
-          test "$CAT" = success && test "$OFFLINE" = success
