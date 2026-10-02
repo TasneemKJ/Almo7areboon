@@ -147,6 +147,15 @@ test('an unchanged content-hashed shell reuses its complete cached bundle',async
  assert.equal(fixture.fetches,1,'the navigation should not re-download an immutable cached bundle');
 });
 
+test('installation validates every shell dependency instead of trusting an older cache entry',async()=>{
+ const shell='<script src="./assets/game-AB12cd34.js"></script>';
+ const fixture=cacheFixture({shell});
+ await fixture.cache.put('./assets/game-AB12cd34.js',fixture.basic('older cached bundle'));
+ await fixture.install();
+ assert.equal(fixture.fetches,2,'install must fetch both the page and its declared bundle');
+ assert.equal(fixture.skipped,true);
+});
+
 for (const mode of ['navigate', 'cors']) {
   for (const failure of ['failOpen', 'failMatch'] as const) {
     test(`${mode} still reaches the network when ${failure} is unavailable`, async () => {

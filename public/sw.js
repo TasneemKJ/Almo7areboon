@@ -23,11 +23,11 @@ async function trimBundles(cache) {
   for (const request of stale.slice(0, bundles.length - KEEP_BUNDLES)) await cache.delete(request);
 }
 
-async function cacheShell(cache, page) {
+async function cacheShell(cache, page, reuseBundles = true) {
   const html = await page.clone().text();
   const assets = await Promise.all(shellURLs(html).map(async url => {
     let response;
-    if (immutableBundle(url)) {
+    if (reuseBundles && immutableBundle(url)) {
       try { response = await cache.match(url); } catch { /* Fetch below if storage is unavailable. */ }
     }
     response ||= await fetch(url, { cache: 'reload' });
@@ -44,7 +44,7 @@ async function precache() {
   const cache = await caches.open(CACHE);
   const page = await fetch(SCOPE.href, { cache: 'reload' });
   if (!page.ok) throw new Error(`Unable to cache ${SCOPE.href}`);
-  await cacheShell(cache, page);
+  await cacheShell(cache, page, false);
 }
 
 self.addEventListener('install', event => {
