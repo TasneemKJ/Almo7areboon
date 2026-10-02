@@ -48,7 +48,7 @@ test('pause, hidden ownership and reduced motion cannot advance an independent a
 test('result timing and model ownership remain unchanged',()=>{
  const main=readFileSync(new URL('../src/main.ts',import.meta.url),'utf8'),source=battlefield();
  assert.match(main,/resultDue=now\+\(document\.documentElement\.dataset\.motion==='reduced'\?350:1300\)/);
- assert.match(main,/const reviewHoldingResult=globalThis\.navigator\?\.webdriver&&document\.querySelector\('canvas'\)\?\.dataset\.battlefieldReviewFrameReady;/,'only native browser evidence may hold a due result sheet, while non-browser model tests remain inert');
+ assert.match(main,/const reviewHoldingResult=globalThis\.navigator\?\.webdriver&&document\.querySelector\('canvas'\)\?\.dataset\.battlefieldReviewFrameReady===s\.phase;/,'only phase-matched native browser evidence may hold a due result sheet, while non-browser model tests remain inert');
  assert.match(main,/resultShown!==s\.phase&&now>=resultDue&&!reviewHoldingResult/,'the evidence latch must not alter the production deadline or terminal ownership');
  assert.doesNotMatch(source,/\.dispatch\(/);assert.doesNotMatch(source,/profile\.[A-Za-z_$][\w$]*\s*=/);
 });

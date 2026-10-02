@@ -41,7 +41,9 @@ async function assertVerdictClearOfHud(page,state){
  },state.regions);
  assert.deepEqual(geometry.collisions,[],'village verdict must remain clear of the rendered DOM HUD');return geometry;
 }
-async function verdictWorldShot(fixture,state){assert.equal(await fixture.page.locator('.result-dialog').count(),0,'full-stage verdict screenshot must precede the result sheet');const file=`${fixture.name}-${state}.png`;await fixture.page.screenshot({path:`${out}/${file}`,scale:'css'});screens.push(file);assert.equal(await fixture.page.locator('.result-dialog').count(),0,'result sheet opened during the full-stage verdict screenshot');await fixture.page.locator('canvas').evaluate(node=>{delete node.dataset.battlefieldReviewFrameReady;});}
+async function releaseVerdictFrame(fixture){await fixture.page.locator('canvas').evaluate(node=>{delete node.dataset.battlefieldReviewFrameReady;});}
+async function canvasShotAndRelease(fixture,state,expected,reduced=false){try{return await canvasShot(fixture,state,expected,reduced);}finally{await releaseVerdictFrame(fixture);}}
+async function verdictWorldShot(fixture,state){try{assert.equal(await fixture.page.locator('.result-dialog').count(),0,'full-stage verdict screenshot must precede the result sheet');const file=`${fixture.name}-${state}.png`;await fixture.page.screenshot({path:`${out}/${file}`,scale:'css'});screens.push(file);assert.equal(await fixture.page.locator('.result-dialog').count(),0,'result sheet opened during the full-stage verdict screenshot');}finally{await releaseVerdictFrame(fixture);}}
 const saved=page=>page.evaluate(()=>localStorage.getItem('almo7areboon.save.v1'));
 async function pauseAtLandmarkPhase(page,phase){
  const deadline=Date.now()+60000;
@@ -157,7 +159,7 @@ try{
  for(const [name,width,height,outcome,reducedMotion] of [['390-aftermath-reduced',390,844,'won','reduce']]){
   const p=preparedChronicleProfile();p.motion='system';p.speed=2;p.age=0;p.enemyAge=0;p.chronicle.route='road';p.chronicle.expedition=null;
   const f=await open(name,width,height,p,reducedMotion);await armCanvasShot(f,outcome);await reachNaturalOutcome(f.page,outcome);
-  const capture=await canvasShot(f,`${outcome}-survivor-verdict`,outcome,true);await assertVerdictClearOfHud(f.page,capture.villageVerdict);await noOverflow(f.page);
+  const capture=await canvasShotAndRelease(f,`${outcome}-survivor-verdict`,outcome,true);await assertVerdictClearOfHud(f.page,capture.villageVerdict);await noOverflow(f.page);
   await f.page.locator('.result-dialog').waitFor({timeout:2500});await f.page.waitForTimeout(450);const settled=await f.page.locator('canvas').evaluate(node=>JSON.parse(node.dataset.villageVerdict));assert.deepEqual(settled,capture.villageVerdict,'reduced-motion verdict must remain complete and static');
   checks.push('390: reduced motion renders the complete stable village verdict through the same natural public-control win');await f.context.close();
  }
