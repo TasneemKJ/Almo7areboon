@@ -243,7 +243,8 @@ function update(force=false){
   }
   // Let the finishing blow and base collapse play before the result dialog covers them.
   if(s.phase!==lastPhase){if(lastPhase==='running'&&(s.phase==='won'||s.phase==='lost'))resultDue=now+(document.documentElement.dataset.motion==='reduced'?350:1300);lastPhase=s.phase;}
-  if(playable()&&modal!=='session'&&(s.phase==='won'||s.phase==='lost')&&resultShown!==s.phase&&now>=resultDue){resultShown=s.phase;showResult();}
+  const reviewHoldingResult=globalThis.navigator?.webdriver&&document.querySelector('canvas')?.dataset.battlefieldReviewFrameReady;
+  if(playable()&&modal!=='session'&&(s.phase==='won'||s.phase==='lost')&&resultShown!==s.phase&&now>=resultDue&&!reviewHoldingResult){resultShown=s.phase;showResult();}
   if(s.phase==='ready'||s.phase==='running')resultShown='';
   if(playable()&&session.status==='active'&&now-lastSave>5000)persist();
 }

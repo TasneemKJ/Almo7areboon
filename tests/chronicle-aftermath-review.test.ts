@@ -36,6 +36,7 @@ test('victory and defeat tableaux are captured before the unchanged result sheet
  assert.match(script,/\},state\.regions\)/);
  assert.match(script,/await verdictWorldShot\(f,`\$\{outcome\}-survivor-verdict-world`\)/);
  assert.match(script,/page\.screenshot\(\{path:`\$\{out\}\/\$\{file\}`,scale:'css'\}\)/,'the timed full-stage verdict must encode at viewport resolution so PNG work cannot consume the unchanged result delay');
+ assert.match(script,/delete node\.dataset\.battlefieldReviewFrameReady/,'the evidence latch must release immediately after the verified full-stage capture');
  assert.match(script,/await f\.page\.locator\('\.result-dialog'\)\.waitFor\(\{timeout:2500\}\)/);
 });
 
