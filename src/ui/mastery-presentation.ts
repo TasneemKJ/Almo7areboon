@@ -1,10 +1,10 @@
+import { battleClock as clock } from './battle-clock.ts';
 import { ERAS, unlockCost } from '../game/data.ts';
 import { chapterMastery, masteryObjectiveProgress } from '../game/mastery.ts';
 import { battleStats } from '../game/statistics.ts';
 import type { BattleState, Profile } from '../game/types.ts';
 
 const number=(value:number)=>Math.floor(value).toLocaleString('en-US');
-const clock=(value:number)=>`${Math.floor(value/60)}:${String(Math.floor(value%60)).padStart(2,'0')}`;
 
 /** Ledger display only: opening a chapter never earns or claims a seal. */
 export function masteryMarksHtml(profile:Profile,chapter:number):string {

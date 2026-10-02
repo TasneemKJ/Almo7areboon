@@ -1,3 +1,4 @@
+import { battleClock } from './battle-clock.ts';
 import { chronicleResultHtml } from './chronicle-screen.ts';
 import { ERAS } from '../game/data.ts';
 import { advanceStatus, canRetry, chapterMastery } from '../game/mastery.ts';
@@ -31,6 +32,6 @@ export function resultsHtml(profile: Profile, state: BattleState): string {
  ${state.phase==='lost'&&earlierChapter(profile)!==null?'<button class="big-button secondary" data-command="regroup-chapters">Choose an earlier chapter</button>':''}
  <div class="reward"><span>TOTAL BATTLE EARNINGS</span><strong>${icon('coin')}${compactNumber(state.earned)}</strong><small>Already added to your coins${won?' · victory bonus: up to 10 gems':''}</small>${settled?`<small>Normal combat: ${amount(state.earned-settled.masteryCoins)} coins</small><small>Mastery credited: ${amount(settled.masteryCoins)} coins · ${amount(settled.masteryGems)} gems</small>`:''}</div>
  <div class="result-mastery">${masteryMarksHtml(profile,profile.enemyAge)}${settled?`<p>New seals: ${newTitles.length?newTitles.join(', '):'none · previously earned seals stay earned'}.</p>`:''}<p>${masteryAttemptText(profile,state)}</p>${settled?`<small>Gate damage this attempt: ${amount(stats.gateDamageTaken)}</small>`:''}</div>
- <dl class="battle-statistics"><div><dt>Battle time</dt><dd>${Math.floor(state.time/60)}:${String(Math.floor(state.time%60)).padStart(2,'0')}</dd></div><div><dt>Warriors deployed</dt><dd>${stats.deployed}</dd></div><div><dt>Enemies defeated</dt><dd>${stats.kills}</dd></div><div><dt>Food spent</dt><dd>${compactNumber(stats.foodSpent)}</dd></div><div><dt>Damage dealt</dt><dd>${compactNumber(stats.damageDealt)}</dd></div><div><dt>Largest army</dt><dd>${stats.peakArmy}</dd></div></dl>
+ <dl class="battle-statistics"><div><dt>Battle time</dt><dd>${battleClock(state.time)}</dd></div><div><dt>Warriors deployed</dt><dd>${stats.deployed}</dd></div><div><dt>Enemies defeated</dt><dd>${stats.kills}</dd></div><div><dt>Food spent</dt><dd>${compactNumber(stats.foodSpent)}</dd></div><div><dt>Damage dealt</dt><dd>${compactNumber(stats.damageDealt)}</dd></div><div><dt>Largest army</dt><dd>${stats.peakArmy}</dd></div></dl>
  ${!won&&advance.target==='timeline'?`<p>${timelineResetText}</p>`:''}${chronicleResultHtml(profile,state)}${continuation}${retry}${evolve}${terminal?'<button class="big-button blue" data-command="return-chapters">Return to chapters</button>':''}`;
 }

@@ -1,3 +1,4 @@
+import { BATTLE_TIME_EPSILON } from './battle-time.ts';
 import { createChronicle, routeDefinition, timelineVariant, veteranName, type MissionObjective, type RouteId } from './chronicle.ts';
 import type { Profile, BattleState, Unit, GameEvent, Skill } from './types.ts';
 
@@ -215,7 +216,7 @@ export function chronicleOutcome(p:Profile,s:BattleState):'won'|'lost'|null {
   if(s.playerHp<=0)return 'lost';
   const c=s.chronicle;if(!c?.enabled)return s.enemyHp<=0?'won':null;
   if(c.objective==='escort')return c.cart.hp<=0?'lost':c.cart.x>=790?'won':null;
-  if(c.objective==='hold')return s.time>=75?'won':null;
+  if(c.objective==='hold')return s.time>=75-BATTLE_TIME_EPSILON?'won':null;
   if(c.objective==='rescue')return c.rescued&&c.cart.x<=150?'won':null;
   if(c.objective==='light')return s.enemyHp<=0&&c.lightSeconds>=18-1e-9?'won':null;
   if(c.objective==='boss')return c.boss.spawned&&!s.units.some(u=>u.id===c.boss.id&&alive(u))&&s.enemyHp<=0?'won':null;
