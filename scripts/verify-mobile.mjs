@@ -68,6 +68,8 @@ async function run(engine,width,height,temporary=false,insets=null){
   item.screens.push(await capture(page,name,'battle'));
   await page.locator('[data-command="settings"]').tap();
   item.screens.push(await capture(page,name,'settings'));
+  await page.locator('.dialog').evaluate(el=>el.scrollTop=el.scrollHeight);
+  item.screens.push(await capture(page,name,'settings-scroll'));
   await page.locator('.close-button').tap();
   assert.equal(await page.locator('#pause').getAttribute('aria-pressed'),'true','closing a menu preserves manual pause');
   await page.locator('[data-tab="cards"]').tap();
@@ -110,10 +112,8 @@ async function run(engine,width,height,temporary=false,insets=null){
       if(a)check(Math.min(a.bottom,b.bottom)-Math.max(a.y,b.y)<=0,`${prefix}: chapter selection overlaps ${b.command}`);
      }
     }
-    if(screen.phase.startsWith('storybook')){
-     const close=screen.controls.find(c=>c.dismiss);
-     check(close&&close.y>=top&&close.bottom<=bottom&&close.reachable,`${prefix}: close control is outside the safe visible area`);
-    }
+    const close=screen.controls.find(c=>c.dismiss);
+    if(close)check(close.y>=top&&close.bottom<=bottom&&close.reachable,`${prefix}: close control is outside the safe visible area`);
    }
    assert.deepEqual(item.issues,[],`${name}: mobile layout boundaries`);
   }
