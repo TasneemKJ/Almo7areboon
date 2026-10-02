@@ -61,6 +61,7 @@
 - [x] **Step 2:** Run `node --experimental-strip-types --test tests/village-verdict.test.ts tests/village-life.test.ts tests/village-integration.test.ts tests/battle-aftermath-integration.test.ts` and confirm the renderer contract fails.
 - [x] **Step 3:** Wire the verdict through `drawAtmosphere`, paint strokes on ambience, summarize only under webdriver, and clear every lifecycle boundary.
 - [x] **Amendment:** Suppress only aperture marks and light changes whose measured source extents overlap the live DOM HUD; report only actually changed halos so the collision oracle matches the rendered response.
+- [x] **Review amendment:** Preserve ordinary occupancy and alarm shading in a HUD-overlapped aperture, keep it out of verdict-witness diagnostics, and start full-stage evidence capture immediately when the armed post-render frame becomes available.
 - [x] **Step 4:** Re-run focused tests, all source tests and `npm run build`.
 - [x] **Step 5:** Commit the renderer slice.
 

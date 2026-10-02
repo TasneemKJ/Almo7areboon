@@ -166,14 +166,16 @@ test('defeat clears witnesses and closes both measured apertures with four cross
 
 test('verdict light changes skip measured HUD overlap and report only affected halos',async()=>{
  const m=await life(),hudViewport={...viewport,hudSourceBounds:[[190,470,215,505] as const,[219,339,255,385] as const]};
- const ordinary=m.villageFrame({age:0,time:13,reduced:false,restoration:0,mood:quiet,viewport:hudViewport});
+ const ordinary=m.villageFrame({age:0,time:0,reduced:true,restoration:0,mood:quiet,viewport:hudViewport});
+ assert.deepEqual(ordinary.residents.map(resident=>resident.apertureId),['left-hearth']);
  for(const mode of ['celebrate','shelter'] as const){
-  const verdict=m.villageFrame({age:0,time:13,reduced:false,restoration:0,mood:quiet,viewport:hudViewport,verdict:{mode,progress:1}});
+  const verdict=m.villageFrame({age:0,time:0,reduced:true,restoration:0,mood:quiet,viewport:hudViewport,verdict:{mode,progress:1}});
   assert.equal(verdict.lamps[0].alpha,ordinary.lamps[0].alpha,'HUD-overlapped authored light must keep its ordinary brightness');
   assert.notEqual(verdict.lamps[1].alpha,ordinary.lamps[1].alpha,'clear authored light must still answer the verdict');
   assert.deepEqual(verdict.verdictLights,[verdict.lamps[1]]);
-  if(mode==='celebrate'){assert.deepEqual(verdict.residents.map(resident=>resident.apertureId),['right-hearth']);assert.equal(verdict.verdictStrokes.length,3);}
-  else {assert.equal(verdict.residents.length,0);assert.equal(verdict.verdictStrokes.length,2);}
+  assert.ok(verdict.residents.some(resident=>resident.apertureId==='left-hearth'),'HUD-overlapped aperture must retain its ordinary resident');
+  if(mode==='celebrate'){assert.deepEqual(verdict.verdictResidents.map(resident=>resident.apertureId),['right-hearth']);assert.equal(verdict.verdictStrokes.length,3);}
+  else {assert.equal(verdict.verdictResidents.length,0);assert.equal(verdict.verdictStrokes.length,2);}
  }
 });
 

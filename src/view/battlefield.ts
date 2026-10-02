@@ -358,7 +358,7 @@ export function mountBattlefield(element:HTMLElement,game:GamePort,onFrame:()=>v
     if(frame.bird)for(const shape of frame.bird){g.fillStyle(shape.color,shape.alpha);g.fillPoints(shape.points as Phaser.Types.Math.Vector2Like[],true);}
     const lights=[...frame.lamps,...frame.restorationLights];
     const verdictRegions=[
-     ...frame.residents.flatMap(resident=>resident.panes.map(pane=>pane.points.reduce((bounds,point)=>({left:Math.min(bounds.left,point.x),top:Math.min(bounds.top,point.y),right:Math.max(bounds.right,point.x),bottom:Math.max(bounds.bottom,point.y)}),{left:Infinity,top:Infinity,right:-Infinity,bottom:-Infinity}))),
+     ...frame.verdictResidents.flatMap(resident=>resident.panes.map(pane=>pane.points.reduce((bounds,point)=>({left:Math.min(bounds.left,point.x),top:Math.min(bounds.top,point.y),right:Math.max(bounds.right,point.x),bottom:Math.max(bounds.bottom,point.y)}),{left:Infinity,top:Infinity,right:-Infinity,bottom:-Infinity}))),
      ...frame.verdictStrokes.map(stroke=>({left:Math.min(stroke.from.x,stroke.to.x)-stroke.width,top:Math.min(stroke.from.y,stroke.to.y)-stroke.width,right:Math.max(stroke.from.x,stroke.to.x)+stroke.width,bottom:Math.max(stroke.from.y,stroke.to.y)+stroke.width})),
      ...frame.verdictLights.map(mark=>({left:mark.center.x-mark.rx,top:mark.center.y-mark.ry,right:mark.center.x+mark.rx,bottom:mark.center.y+mark.ry})),
     ];
@@ -367,7 +367,7 @@ export function mountBattlefield(element:HTMLElement,game:GamePort,onFrame:()=>v
      if(!mark){image.setVisible(false);continue;}
      image.setVisible(true).setPosition(mark.center.x,mark.center.y).setDisplaySize(mark.rx*2,mark.ry*2).setTint(mark.color).setAlpha(mark.alpha);
     }
-    if(navigator.webdriver&&villageVerdict)this.game.canvas.dataset.villageVerdict=JSON.stringify({mode:villageVerdict.mode,progress:villageVerdict.progress,witnesses:frame.residents.length,strokes:frame.verdictStrokes.length,lights:lights.length,affectedLights:frame.verdictLights.length,regions:verdictRegions,reduced:this.reduce,paused:game.state.paused});
+    if(navigator.webdriver&&villageVerdict)this.game.canvas.dataset.villageVerdict=JSON.stringify({mode:villageVerdict.mode,progress:villageVerdict.progress,witnesses:frame.verdictResidents.length,strokes:frame.verdictStrokes.length,lights:lights.length,affectedLights:frame.verdictLights.length,regions:verdictRegions,reduced:this.reduce,paused:game.state.paused});
     return;
    }
    if(!storybookArt(game.profile.age)){

@@ -69,6 +69,8 @@ test('the same post-render verdict snapshot proves the village reaction at every
  assert.match(script,/Number\.isInteger\(state\.affectedLights\)&&state\.affectedLights>=0&&state\.affectedLights<=state\.lights/);
  assert.match(script,/assert\.equal\(state\.paused,false\)/);
  assert.match(script,/validateVillageVerdictSnapshot\(capture\.villageVerdict,expected,reduced\)/);
+ assert.match(script,/async function waitForVerdictFrame\(fixture\)/);
+ assert.match(script,/await waitForVerdictFrame\(f\);await verdictWorldShot\(f,`\$\{outcome\}-survivor-verdict-world`\);\s*const capture=await canvasShot/,'full-stage evidence must be captured as soon as the armed post-render frame is ready, before PNG transfer and probes consume the result delay');
  assert.doesNotMatch(script,/state\.elapsed<\.\d+/,'verdict evidence must not race the wall-clock result sheet through a clamped elapsed threshold');
  assert.match(script,/function assertVerdictClearOfHud\(page,state\)/);
  assert.match(script,/const selectors='\.resources \.currency,\.resources \.game-wordmark,\.stage \.eyebrow,\.stage h1,\.stage \.scene-name,\.stage \.battle-select,\.world-tools button,\.battle-meta span,\.battle-meta button,\.battle-skills button'/);
