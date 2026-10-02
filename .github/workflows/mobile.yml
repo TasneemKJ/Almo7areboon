@@ -1,0 +1,42 @@
+name: Mobile reliability
+
+on:
+  push:
+    branches: [main, fix/mobile-reliability-audit]
+  workflow_dispatch:
+
+permissions:
+  contents: read
+
+concurrency:
+  group: mobile-${{ github.ref }}
+  cancel-in-progress: true
+
+jobs:
+  mobile:
+    runs-on: ubuntu-latest
+    timeout-minutes: 15
+    steps:
+      - uses: actions/checkout@v4
+        with:
+          persist-credentials: false
+      - name: Package exact audit source
+        run: |
+          git ls-files -z -- src tests scripts public .github package.json package-lock.json tsconfig.json vite.config.ts index.html .gitignore README.md AGENTS.md | tar --null -T - -czf /tmp/mobile-source.tar.gz
+          git rev-parse HEAD > /tmp/mobile-revision.txt
+          git ls-tree -r HEAD > /tmp/mobile-tree.txt
+      - uses: actions/upload-artifact@v4
+        with:
+          name: mobile-source
+          path: |
+            /tmp/mobile-source.tar.gz
+            /tmp/mobile-revision.txt
+            /tmp/mobile-tree.txt
+          retention-days: 2
+      - uses: actions/setup-node@v4
+        with:
+          node-version: 22
+          cache: npm
+      - run: npm ci
+      - run: npm test
+      - run: npm run build
