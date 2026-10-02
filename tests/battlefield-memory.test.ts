@@ -5,6 +5,7 @@ import {
   BATTLEFIELD_MEMORY_LIFE,
   battlefieldMemoryFrame,
   battlefieldMemoryIntentForHit,
+  battlefieldMemoryRegionClearOf,
   rememberBattlefieldMark,
   stepBattlefieldMemory,
   type BattlefieldMemoryMark,
@@ -69,6 +70,14 @@ test('normal motion fades only during the final four seconds while reduced motio
  assert.equal(reduced.alpha,.26);
  assert.equal(Object.isFrozen(final),true);
  assert.equal(Object.isFrozen(final.lines[0]),true);
+});
+
+test('HUD-covered road regions are excluded without treating adjacent edges as overlap',()=>{
+ const region={left:40,top:100,right:64,bottom:116};
+ assert.equal(battlefieldMemoryRegionClearOf(region,[{left:12,top:90,right:52,bottom:130}]),false);
+ assert.equal(battlefieldMemoryRegionClearOf(region,[{left:64,top:90,right:90,bottom:130}]),true);
+ assert.equal(battlefieldMemoryRegionClearOf(region,[{left:12,top:116,right:52,bottom:130}]),true);
+ assert.equal(battlefieldMemoryRegionClearOf(region,[]),true);
 });
 
 test('malformed numeric input recovers to finite road bounds without mutating the source',()=>{
