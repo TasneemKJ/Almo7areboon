@@ -57,6 +57,8 @@ let audioMix=loadAudioMix();
 updateAudioMix(audioMix);
 let lastUpdate=0,lastSave=0,resultShown='',lastPhase=game.state.phase,resultDue=0,toastTimer=0,focusFrame=0,modalVersion=0;
 let savedWarning=false,pendingImport:Profile|null=null;
+// Each file selection owns its asynchronous completion, even before a dialog changes.
+let importRequest=0;
 // Transient modal context only; the saved receipt remains the outcome authority.
 let evolutionFromResult=false;
 let prestigeOrigin:'result'|'battles'|null=null,prestigeDraft:LegacyChoice|null=null,prestigeExpectedTimeline:number|null=null;
@@ -302,8 +304,12 @@ function closeModal(refresh=true){
   modal=null;modalVersion++;pendingImport=null;window.cancelAnimationFrame(focusFrame);
   $('modal-layer').hidden=true;$('modal-layer').innerHTML='';isolateModal(false);syncPause();
   if(restoreFocus){
-    if(focusBefore?.isConnected&&!focusBefore.hasAttribute('disabled'))focusBefore.focus();
-    else root!.querySelector<HTMLElement>(`[data-tab="${activeTab}"]`)?.focus();
+    const target=focusBefore;
+    if(focusBefore?.isConnected&&!focusBefore.closest('[hidden],[inert]')&&!focusBefore.matches(':disabled')&&focusBefore.getClientRects().length)focusBefore.focus();
+    // A restored result often has BODY as its origin. A connected element can also
+    // be non-focusable; verify that focus actually moved before accepting it.
+    if(!target||document.activeElement!==target||target===document.body||target===document.documentElement)
+      root!.querySelector<HTMLElement>(`.bottom-nav [data-tab="${activeTab}"]`)?.focus();
   }
   if(refresh)update(true);
 }
@@ -534,16 +540,21 @@ lifetime.listen<Event>(root,'change',async e=>{
     }
   }
   if(input.id!=='import-save')return;
+  const request=++importRequest;
   if(session.status!=='active'||!guardAction())return;
   const file=input.files?.[0],version=modalVersion;if(!file)return;
   if(file.size>MAX_SAVE_CHARS){toast('Choose a save file smaller than 100 KB.');input.value='';return;}
   try{
     const decoded=importBackup(await file.text());
-    if(lifetime.disposed||version!==modalVersion||modal!=='settings'||session.status!=='active'||!guardAction())return;
+    if(request!==importRequest||lifetime.disposed||version!==modalVersion||modal!=='settings'||session.status!=='active'||!guardAction())return;
     if(!decoded.ok){toast(decoded.error);input.value='';return;}
     pendingImport=decoded.profile;
     showModal('import',`<h2 id="dialog-title">Replace this save?</h2><p>Import timeline ${pendingImport.timeline}, ${chapterPresentation(pendingImport.age).title}, with ${money(pendingImport.coins)} coins.</p><p>Your current progress in this browser will be replaced. Export it first to keep a separate copy.</p><button class="big-button blue" data-command="confirm-import">REPLACE WITH THIS SAVE</button><button class="big-button secondary" data-command="close">CANCEL</button>`);
-  }catch{toast('The selected file could not be read. Your current game was not changed.');}
+  }catch{
+    if(request!==importRequest||lifetime.disposed||version!==modalVersion||modal!=='settings'||session.status!=='active'||!guardAction())return;
+    input.value='';
+    toast('The selected file could not be read. Your current game was not changed.');
+  }
 });
 lifetime.listen<KeyboardEvent>(document,'keydown',e=>{
   if(modal){
