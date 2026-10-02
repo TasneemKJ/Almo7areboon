@@ -1,0 +1,131 @@
+{
+  "revision": "b10d2a196776be03f9f7d8f59a3b238c0c73acce",
+  "origin": "http://127.0.0.1:34931",
+  "scope": "Real production UI; disclosed prepared victory and file-read-failure fixtures; browser emulation, not physical-device acceptance",
+  "status": "passed",
+  "cases": [
+    {
+      "name": "iteration-1-chromium-320x568",
+      "iteration": 1,
+      "status": "passed",
+      "issues": [],
+      "metrics": {
+        "gems": {
+          "x": 79,
+          "y": 8,
+          "width": 68.03125,
+          "height": 44,
+          "right": 147.03125,
+          "bottom": 52,
+          "reachable": true,
+          "viewportWidth": 320,
+          "viewportHeight": 568
+        },
+        "helpTarget": {
+          "x": 28,
+          "y": 407,
+          "width": 264,
+          "height": 44,
+          "right": 292,
+          "bottom": 451,
+          "reachable": true,
+          "viewportWidth": 320,
+          "viewportHeight": 568
+        }
+      },
+      "screens": [
+        "iteration-1-chromium-320x568-ready.png",
+        "iteration-1-chromium-320x568-quests.png",
+        "iteration-1-chromium-320x568-battle.png",
+        "iteration-1-chromium-320x568-help-target.png"
+      ]
+    },
+    {
+      "name": "iteration-1-chromium-390x844",
+      "iteration": 1,
+      "status": "passed",
+      "issues": [],
+      "metrics": {
+        "gems": {
+          "x": 98,
+          "y": 12,
+          "width": 80.375,
+          "height": 44,
+          "right": 178.375,
+          "bottom": 56,
+          "reachable": true,
+          "viewportWidth": 390,
+          "viewportHeight": 844
+        },
+        "helpTarget": {
+          "x": 40,
+          "y": 782.1875,
+          "width": 310,
+          "height": 44,
+          "right": 350,
+          "bottom": 826.1875,
+          "reachable": true,
+          "viewportWidth": 390,
+          "viewportHeight": 844
+        }
+      },
+      "screens": [
+        "iteration-1-chromium-390x844-ready.png",
+        "iteration-1-chromium-390x844-quests.png",
+        "iteration-1-chromium-390x844-battle.png",
+        "iteration-1-chromium-390x844-help-target.png"
+      ]
+    },
+    {
+      "name": "iteration-1-chromium-1024x768",
+      "iteration": 1,
+      "status": "passed",
+      "issues": [],
+      "metrics": {
+        "gems": {
+          "x": 334,
+          "y": 12,
+          "width": 80.375,
+          "height": 44,
+          "right": 414.375,
+          "bottom": 56,
+          "reachable": true,
+          "viewportWidth": 1024,
+          "viewportHeight": 768
+        },
+        "helpTarget": {
+          "x": 325,
+          "y": 594.390625,
+          "width": 374,
+          "height": 44,
+          "right": 699,
+          "bottom": 638.390625,
+          "reachable": true,
+          "viewportWidth": 1024,
+          "viewportHeight": 768
+        }
+      },
+      "screens": [
+        "iteration-1-chromium-1024x768-ready.png",
+        "iteration-1-chromium-1024x768-quests.png",
+        "iteration-1-chromium-1024x768-battle.png",
+        "iteration-1-chromium-1024x768-help-target.png"
+      ]
+    }
+  ],
+  "pageErrors": [],
+  "screens": [
+    "iteration-1-chromium-320x568-ready.png",
+    "iteration-1-chromium-320x568-quests.png",
+    "iteration-1-chromium-320x568-battle.png",
+    "iteration-1-chromium-320x568-help-target.png",
+    "iteration-1-chromium-390x844-ready.png",
+    "iteration-1-chromium-390x844-quests.png",
+    "iteration-1-chromium-390x844-battle.png",
+    "iteration-1-chromium-390x844-help-target.png",
+    "iteration-1-chromium-1024x768-ready.png",
+    "iteration-1-chromium-1024x768-quests.png",
+    "iteration-1-chromium-1024x768-battle.png",
+    "iteration-1-chromium-1024x768-help-target.png"
+  ]
+}

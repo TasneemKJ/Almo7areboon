@@ -55,3 +55,5 @@ Pre-flight: Iterations 1–2 share only the existing CSS correction layer; itera
 Ruling: Browser screenshots may be retained on the isolated diagnostic branch for inspection because local container/Python access failed. They are not production assets.
 Baseline source: bdc4bf0086122d0ae129cebfb9b5286ef3b80750.
 All tasks initially pending reproduction. A passing baseline is not a reason to invent a defect; record it and select another confirmed issue within the same scope.
+
+Ruling: The gems control already meets 44px and remains unchanged. Iteration 1 also audits the How to play disclosure. Iterations 2–4 were reproduced on all three Chromium viewports. The first touch-extension workflow stopped at a missing shell heredoc terminator before executing any test or changing source; this standalone script removes that setup error.

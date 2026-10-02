@@ -55,6 +55,11 @@ async function run(iteration,engine,width,height){
       await shot(page,item,'ready');
       await page.locator('.resources .gems').click();await page.getByRole('heading',{name:'Quests',exact:true}).waitFor();await shot(page,item,'quests');
       await page.locator('.close-button').click();await page.locator('[data-command="start"]').click();await page.locator('[data-unit="0"]').click();await page.locator('#pause').click();await shot(page,item,'battle');
+      await page.locator('[data-command="settings"]').click();
+      const help=page.locator('.help-box summary');await help.scrollIntoViewIfNeeded();
+      item.metrics.helpTarget=await geometry(help);await shot(page,item,'help-target');
+      await help.click();check(await page.locator('.help-box').evaluate(node=>node.open),'help disclosure must open');
+      check(item.metrics.helpTarget.width>=44&&item.metrics.helpTarget.height>=44,`help target is ${item.metrics.helpTarget.width}x${item.metrics.helpTarget.height}; expected at least 44x44`);
       const r=item.metrics.gems;
       check(r.width>=44&&r.height>=44,`gems target is ${r.width}x${r.height}; expected at least 44x44`);
       check(r.reachable,'gems target must be unobscured');
