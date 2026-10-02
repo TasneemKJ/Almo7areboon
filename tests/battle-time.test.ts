@@ -2,6 +2,7 @@ import test from 'node:test';
 import assert from 'node:assert/strict';
 import { Game } from '../src/game/simulation.ts';
 import { defaultProfile, decodeSave } from '../src/game/save.ts';
+import { chronicleGuidance, chronicleOutcome } from '../src/game/chronicle-combat.ts';
 import { masteryEligibleMask } from '../src/game/mastery.ts';
 import { masteryAttemptText } from '../src/ui/mastery-presentation.ts';
 import { resultsHtml } from '../src/ui/results-screen.ts';
@@ -27,6 +28,7 @@ for (const dt of [1 / 60, 0.1, 0.25]) {
     const receipt = game.profile.pendingVictory;
     assert.ok(receipt && receipt.settlement === 'mastery-v1');
     assert.ok(receipt.newMask & 4);
+    assert.match(chronicleGuidance(game.profile, game.state), /0 seconds left$/);
     assert.match(masteryAttemptText(game.profile, game.state), /Attempt: 1:15/);
     assert.match(resultsHtml(game.profile, game.state), /<dt>Battle time<\/dt><dd>1:15<\/dd>/);
     const before = JSON.stringify(game.profile);
@@ -67,4 +69,19 @@ test('result and mastery clocks agree at accumulated second and minute boundarie
     assert.ok(masteryAttemptText(game.profile, game.state).includes(`Attempt: ${display}`));
     assert.ok(resultsHtml(game.profile, game.state).includes(`<dt>Battle time</dt><dd>${display}</dd>`));
   }
+});
+
+test('a completed lantern displays all eighteen seconds rather than seventeen', () => {
+  const profile = defaultProfile();
+  profile.chronicle!.clears[0] = 1; // An already cleared road unlocks this optional mission.
+  const game = new Game(profile);
+  assert.equal(game.dispatch({ type: 'chronicle-route', route: 'lantern', battle: 0 }), true);
+  const story = game.state.chronicle!;
+  game.state.phase = 'won';
+  game.state.enemyHp = 0;
+  story.landmark.owner = 'player';
+  story.landmark.capture = 3;
+  story.lightSeconds = 18 - 5e-12;
+  assert.equal(chronicleOutcome(game.profile, game.state), 'won');
+  assert.match(chronicleGuidance(game.profile, game.state), /Lantern 18\/18 seconds/);
 });

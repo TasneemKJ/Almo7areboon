@@ -1,22 +1,35 @@
 /* Offline support: remember what the game has loaded so a returning player can start without a connection. */
 const CACHE = 'almo7areboon-runtime-v1';
-// Each deploy adds new hashed bundles; keep only the newest few so the cache cannot grow without limit.
+const SCOPE = new URL(self.registration.scope);
+// Bound old bundles without evicting scripts/styles still required by the cached page.
 const KEEP_BUNDLES = 6;
+const inScope = url => {
+  if (url.origin !== self.location.origin) return false;
+  return url.pathname.startsWith(SCOPE.pathname);
+};
+const shellURLs = html => [...html.matchAll(/(?:src|href)="([^"#?]+\.(?:js|css|webmanifest|svg|png))"/g)]
+  .map(match => new URL(match[1], SCOPE)).filter(inScope).map(url => url.href);
 
 async function trimBundles(cache) {
-  const bundles = (await cache.keys()).filter(request => /\/assets\/[^/]+\.(js|css)$/.test(new URL(request.url).pathname));
-  for (const stale of bundles.slice(0, Math.max(0, bundles.length - KEEP_BUNDLES))) await cache.delete(stale);
+  const bundles = (await cache.keys()).filter(request => {
+    const url = new URL(request.url);
+    return inScope(url) && /\/assets\/[^/]+\.(js|css)$/.test(url.pathname);
+  });
+  if (bundles.length <= KEEP_BUNDLES) return;
+  const page = await cache.match(SCOPE.href);
+  const required = new Set(page ? shellURLs(await page.text()) : []);
+  const stale = bundles.filter(request => !required.has(request.url));
+  for (const request of stale.slice(0, bundles.length - KEEP_BUNDLES)) await cache.delete(request);
 }
 
 // Fetch the page and the scripts and styles it names now, so even the very first visit can be replayed offline.
 async function precache() {
   const cache = await caches.open(CACHE);
-  const page = await fetch('./', { cache: 'reload' });
+  const page = await fetch(SCOPE.href, { cache: 'reload' });
   if (!page.ok) return;
   const html = await page.clone().text();
-  await cache.put('./', page);
-  const urls = [...html.matchAll(/(?:src|href)="([^"#?]+\.(?:js|css|webmanifest|svg|png))"/g)].map(match => new URL(match[1], self.registration.scope).href);
-  await Promise.all(urls.map(url => cache.add(url).catch(() => {})));
+  await cache.put(SCOPE.href, page);
+  await Promise.all(shellURLs(html).map(url => cache.add(url).catch(() => {})));
 }
 
 self.addEventListener('install', event => {
@@ -24,33 +37,48 @@ self.addEventListener('install', event => {
 });
 
 self.addEventListener('activate', event => {
-  event.waitUntil((async () => {
-    for (const key of await caches.keys()) if (key !== CACHE) await caches.delete(key);
-    await self.clients.claim();
-  })());
+  // This build reuses v1. Other apps and newer builds own their own caches; do not delete them.
+  event.waitUntil(self.clients.claim());
 });
 
+async function match(cache, key) {
+  try { return cache ? await cache.match(key) : undefined; }
+  catch { return undefined; }
+}
+
 self.addEventListener('fetch', event => {
-  const request = event.request;
-  if (request.method !== 'GET' || new URL(request.url).origin !== self.location.origin) return;
-  const opened = caches.open(CACHE);
-  const refresh = opened.then(() => fetch(request));
-  // Keep background revalidation alive after a cached response is delivered.
-  // Cache writes/trim do not delay the page or a newly fetched asset.
+  const request = event.request, url = new URL(request.url);
+  if (request.method !== 'GET' || !inScope(url)) return;
+  const navigation = request.mode === 'navigate';
+  // Campaign/query links and index.html must update the same offline entry page.
+  url.search = '';
+  if (navigation && url.pathname === `${SCOPE.pathname}index.html`) url.pathname = SCOPE.pathname;
+  const key = navigation ? url.href : request;
+  // CacheStorage is optional: an unavailable cache must not block a healthy network request.
+  const opened = Promise.resolve().then(() => caches.open(CACHE)).catch(() => null);
+  const refresh = Promise.resolve().then(() => fetch(request));
+  const fallback = async () => {
+    const cache = await opened;
+    return (await match(cache, key)) || (await match(cache, SCOPE.href));
+  };
+  // Keep revalidation alive without making response delivery wait for cache writes or cleanup.
   event.waitUntil(refresh.then(async response => {
     if (response.ok && response.type === 'basic') {
-      const cache = await opened;
-      await cache.put(request, response.clone());
+      // Clone before awaiting storage; the browser may already be consuming the network body.
+      const copy = response.clone(), cache = await opened;
+      if (!cache) return;
+      await cache.put(key, copy);
       await trimBundles(cache);
     }
   }).catch(() => {}));
   event.respondWith((async () => {
-    const cache = await opened;
-    // Pages: prefer the network so updates arrive, but fall back to the last copy offline.
-    // Everything else: answer from the cache at once and refresh it in the background.
-    if (request.mode === 'navigate') return refresh.catch(async () => (await cache.match(request, { ignoreSearch: true })) || (await cache.match('./')) || Response.error());
-    const cached = await cache.match(request);
-    if (cached) { refresh.catch(() => {}); return cached; }
-    return refresh;
+    if (navigation) {
+      try {
+        const response = await refresh;
+        return response.status >= 500 ? (await fallback()) || response : response;
+      } catch { return (await fallback()) || Response.error(); }
+    }
+    const cached = await match(await opened, key);
+    return cached || refresh;
   })());
 });
