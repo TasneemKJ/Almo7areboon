@@ -6,32 +6,89 @@ on:
 permissions:
   contents: read
 jobs:
-  baseline:
+  candidate:
+    if: github.actor != 'github-actions[bot]'
+    runs-on: ubuntu-latest
+    timeout-minutes: 12
+    permissions:
+      contents: write
+    outputs:
+      revision: ${{ steps.commit.outputs.revision }}
+    steps:
+      - uses: actions/checkout@v4
+      - uses: actions/setup-node@v4
+        with:
+          node-version: 22
+          cache: npm
+      - name: Reproduce the controller failures before applying corrections
+        run: |
+          mkdir -p artifacts/expanded-qa
+          npm ci > artifacts/expanded-qa/install.log 2>&1
+          if node --experimental-strip-types --test tests/import-lifecycle.test.ts tests/modal-return-focus.test.ts > artifacts/expanded-qa/controller-red.log 2>&1; then cat artifacts/expanded-qa/controller-red.log; exit 1; fi
+          tail -9 artifacts/expanded-qa/controller-red.log
+          grep -q 'older successful read' artifacts/expanded-qa/controller-red.log
+      - name: Apply the reviewed minimal corrections and check all source tests
+        run: |
+          python3 scripts/qa/apply-corrections.py
+          npm test > artifacts/expanded-qa/source-tests.log 2>&1 || { grep -A25 'not ok' artifacts/expanded-qa/source-tests.log; exit 1; }
+          tail -9 artifacts/expanded-qa/source-tests.log
+          npm run build > artifacts/expanded-qa/build.log 2>&1 || { tail -50 artifacts/expanded-qa/build.log; exit 1; }
+          git diff --check
+      - name: Execute six-era route, progression, save and stress boundaries
+        run: |
+          node --experimental-strip-types scripts/qa/domain-boundaries.ts > artifacts/expanded-qa/domain.log 2>&1 || { cat artifacts/expanded-qa/domain.log; exit 1; }
+          cat artifacts/expanded-qa/domain.log
+          node --experimental-strip-types scripts/qa/stress-domain.ts > artifacts/expanded-qa/stress-domain.log 2>&1 || { cat artifacts/expanded-qa/stress-domain.log; exit 1; }
+          cat artifacts/expanded-qa/stress-domain.log
+      - name: Save the tested candidate on the diagnostic branch only
+        id: commit
+        run: |
+          git config user.name 'github-actions[bot]'
+          git config user.email '41898282+github-actions[bot]@users.noreply.github.com'
+          git add src/ui/continuation.css
+          git commit -m 'fix: keep ordinary dialog dismissal reachable while scrolling'
+          git add src/main.ts
+          git commit -m 'fix: restore usable focus and reject stale file import completions'
+          git push origin HEAD:refs/heads/chore/four-iterations-review
+          echo "revision=$(git rev-parse HEAD)" >> "$GITHUB_OUTPUT"
+          git log -2 --format='%H %s' > artifacts/expanded-qa/candidate-commits.txt
+          git diff HEAD~2 HEAD > artifacts/expanded-qa/candidate.patch
+          tar -czf artifacts/expanded-qa/candidate-source.tar.gz src scripts/qa tests/import-lifecycle.test.ts tests/modal-return-focus.test.ts
+      - uses: actions/upload-artifact@v4
+        if: always()
+        with:
+          name: expanded-candidate-source
+          path: artifacts/expanded-qa/
+          retention-days: 7
+  browser:
+    needs: candidate
     runs-on: ubuntu-latest
     timeout-minutes: 15
     strategy:
       fail-fast: false
-      max-parallel: 2
+      max-parallel: 3
       matrix:
-        suite: [interface, recovery]
+        suite: [interface, recovery, deep]
         engine: [chromium, webkit]
     steps:
       - uses: actions/checkout@v4
         with:
+          ref: ${{ needs.candidate.outputs.revision }}
           persist-credentials: false
       - uses: actions/setup-node@v4
         with:
           node-version: 22
           cache: npm
-      - name: Build production source and install browser
+      - name: Build the exact candidate and install the browser
         run: |
           mkdir -p artifacts/expanded-qa
           npm ci > artifacts/expanded-qa/install.log 2>&1
           node --check scripts/qa/browser-driver.mjs
           node --check scripts/qa/mobile-journeys.mjs
-          npm run build > artifacts/expanded-qa/build.log 2>&1 || { tail -50 artifacts/expanded-qa/build.log; exit 1; }
+          node --check scripts/qa/mobile-deep.mjs
+          npm run build > artifacts/expanded-qa/build.log 2>&1
           npx playwright install --with-deps ${{ matrix.engine }} > artifacts/expanded-qa/browser.log 2>&1
-      - name: Execute the pre-fix browser coverage matrix
+      - name: Run production browser journeys with reports and screenshots
         env:
           QA_SUITE: ${{ matrix.suite }}
           QA_ENGINES: ${{ matrix.engine }}
@@ -39,14 +96,15 @@ jobs:
         run: |
           npm run preview -- --port 4173 > artifacts/expanded-qa/preview.log 2>&1 &
           for i in $(seq 1 30); do curl -fsS http://127.0.0.1:4173/ >/dev/null && break || sleep 1; done
+          script=scripts/qa/mobile-journeys.mjs
+          if [ "$QA_SUITE" = deep ]; then script=scripts/qa/mobile-deep.mjs; fi
           result=0
-          node --experimental-strip-types scripts/qa/mobile-journeys.mjs > artifacts/expanded-qa/${{ matrix.suite }}-${{ matrix.engine }}.log 2>&1 || result=$?
+          node --experimental-strip-types "$script" > artifacts/expanded-qa/${{ matrix.suite }}-${{ matrix.engine }}.log 2>&1 || result=$?
           tail -110 artifacts/expanded-qa/${{ matrix.suite }}-${{ matrix.engine }}.log
-          echo "Baseline exit code: $result"
-          test -f artifacts/expanded-qa/${{ matrix.suite }}-${{ matrix.engine }}/report.json
+          exit $result
       - uses: actions/upload-artifact@v4
         if: always()
         with:
-          name: expanded-baseline-${{ matrix.suite }}-${{ matrix.engine }}
+          name: expanded-candidate-${{ matrix.suite }}-${{ matrix.engine }}
           path: artifacts/expanded-qa/
           retention-days: 7
