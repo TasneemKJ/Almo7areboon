@@ -41,7 +41,7 @@ async function assertVerdictClearOfHud(page,state){
  },state.regions);
  assert.deepEqual(geometry.collisions,[],'village verdict must remain clear of the rendered DOM HUD');return geometry;
 }
-async function verdictWorldShot(fixture,state){assert.equal(await fixture.page.locator('.result-dialog').count(),0,'full-stage verdict screenshot must precede the result sheet');await shot(fixture,state);assert.equal(await fixture.page.locator('.result-dialog').count(),0,'result sheet opened during the full-stage verdict screenshot');}
+async function verdictWorldShot(fixture,state){assert.equal(await fixture.page.locator('.result-dialog').count(),0,'full-stage verdict screenshot must precede the result sheet');const file=`${fixture.name}-${state}.png`;await fixture.page.screenshot({path:`${out}/${file}`,scale:'css'});screens.push(file);assert.equal(await fixture.page.locator('.result-dialog').count(),0,'result sheet opened during the full-stage verdict screenshot');}
 const saved=page=>page.evaluate(()=>localStorage.getItem('almo7areboon.save.v1'));
 async function pauseAtLandmarkPhase(page,phase){
  const deadline=Date.now()+60000;
