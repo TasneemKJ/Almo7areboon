@@ -140,5 +140,5 @@ test('native battle-memory journeys use public actions and prove HUD-safe paused
 test('battlefield memory publishes focused original screenshot evidence',()=>{
  const ci=workflow();
  assert.match(ci,/name: battlefield-memory-review/);
- for(const file of ['320-memory-heavy-battlefield-memory-heavy.png','390-memory-heavy-battlefield-memory-heavy.png','1024-memory-heavy-battlefield-memory-heavy.png','390-memory-reduced-battlefield-memory-meteor.png','report.json'])assert.match(ci,new RegExp(file.replaceAll('.','\\\\.')));
+ for(const file of ['320-memory-heavy-battlefield-memory-heavy.png','390-memory-heavy-battlefield-memory-heavy.png','1024-memory-heavy-battlefield-memory-heavy.png','390-memory-reduced-battlefield-memory-meteor.png','report.json'])assert.ok(ci.includes(file),`focused artifact must include ${file}`);
 });
