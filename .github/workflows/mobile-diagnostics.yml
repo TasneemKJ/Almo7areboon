@@ -1,0 +1,104 @@
+name: Focused mobile diagnostics
+on:
+  push:
+    branches: [chore/mobile-audit-diagnostics]
+permissions:
+  contents: read
+  actions: read
+jobs:
+  diagnose:
+    runs-on: ubuntu-latest
+    timeout-minutes: 15
+    steps:
+      - uses: actions/checkout@v4
+        with:
+          persist-credentials: false
+      - name: Summarize existing exact-head evidence
+        env:
+          GITHUB_TOKEN: ${{ secrets.GITHUB_TOKEN }}
+        run: |
+          mkdir -p qa
+          python3 - <<'PY'
+          import io, json, os, pathlib, urllib.request, zipfile
+          base='https://api.github.com/repos/TasneemKJ/Almo7areboon'
+          def get(path):
+              request=urllib.request.Request(base+path,headers={'Authorization':'Bearer '+os.environ['GITHUB_TOKEN'],'Accept':'application/vnd.github+json'})
+              return urllib.request.urlopen(request).read()
+          for run in [37052463946,37052463915]:
+              jobs=json.loads(get(f'/actions/runs/{run}/jobs'))['jobs']
+              for job in jobs:
+                  print('JOB',json.dumps({k:job.get(k) for k in ['id','name','started_at','completed_at','conclusion']}))
+                  if job['conclusion']!='success':
+                      try:
+                          lines=get(f'/actions/jobs/{job["id"]}/logs').decode('utf-8-sig').splitlines()
+                          for i,line in enumerate(lines):
+                              if 'operation was canceled' in line.lower() or 'exceeded the maximum' in line.lower() or 'TimeoutError' in line:
+                                  print('LOG', '\n'.join(lines[max(0,i-2):i+3]))
+                      except Exception as error: print('LOG_FETCH',type(error).__name__)
+              artifacts=json.loads(get(f'/actions/runs/{run}/artifacts'))['artifacts']
+              for artifact in artifacts:
+                  if artifact['name'] not in ['mobile-evidence','folktale-tactics-review']: continue
+                  archive=zipfile.ZipFile(io.BytesIO(get(f'/actions/artifacts/{artifact["id"]}/zip')))
+                  pictures=[name for name in archive.namelist() if name.endswith('.png')]
+                  print('ARTIFACT',artifact['name'],'PNG_COUNT',len(pictures))
+                  for name in archive.namelist():
+                      if not name.endswith(('report.json','diagnostics.json')): continue
+                      data=json.loads(archive.read(name))
+                      pathlib.Path(f'qa/{run}-{pathlib.PurePosixPath(name).parent.name}-{pathlib.PurePosixPath(name).name}').write_text(json.dumps(data,indent=2))
+                      summary={}
+                      for key,value in data.items():
+                          if isinstance(value,list):
+                              summary[key+'_count']=len(value)
+                              if key in ['errors','pageErrors','assetFailures','failures']: summary[key]=value
+                              elif key in ['cases','scenarios','results']: summary[key]=[{k:item[k] for k in ['name','status','passed','ok','error'] if k in item} if isinstance(item,dict) else item for item in value]
+                          elif isinstance(value,(str,int,float,bool)) or value is None: summary[key]=value
+                      print('REPORT',name,json.dumps(summary)[:18000])
+          PY
+      - uses: actions/setup-node@v4
+        with:
+          node-version: 22
+          cache: npm
+      - name: Build unchanged game
+        run: |
+          npm ci > qa/install.log 2>&1 || { tail -60 qa/install.log; exit 1; }
+          npm run build > qa/build.log 2>&1 || { tail -60 qa/build.log; exit 1; }
+      - name: Install Chromium
+        run: npx playwright install --with-deps chromium > qa/browser-install.log 2>&1
+      - name: Isolate original 1024px cat-rescue sequence with read-only telemetry
+        run: |
+          python3 - <<'PY'
+          from pathlib import Path
+          source=Path('scripts/review-chronicle.mjs').read_text()
+          outer=source.index('\ntry{\n for(const [width,height]')
+          marker="  const p=preparedChronicleProfile();p.speed=1;p.chronicle.discoveries=7;p.chronicle.route='whisper';p.chronicle.expedition=null;"
+          start=source.rfind(' for(const [width,height]',0,source.index(marker))
+          end=source.index("\n {\n  const p=preparedChronicleProfile();p.speed=1;p.chronicle.discoveries=7;p.chronicle.route='whisper';const f=await open('390-cat-reduced'",start)
+          prefix=source[:outer]
+          loop=source[start:end].replace('[[320,568],[390,844],[1024,768]]','[[1024,768]]',1)
+          telemetry='''
+          const telemetry=setInterval(async()=>{
+            for(const context of browser.contexts())for(const page of context.pages())try{
+              const state=await page.evaluate(()=>({phase:document.querySelector('#world')?.dataset.phase,pause:document.querySelector('#pause')?.getAttribute('aria-pressed'),hint:document.querySelector('#deploy-hint')?.textContent,base:document.querySelector('#base-status')?.textContent,cat:document.querySelector('canvas')?.dataset.chronicleCat,rescue:document.querySelector('canvas')?.dataset.chronicleRescue}));
+              console.log('PROBE',JSON.stringify(state));
+            }catch{}
+          },2000);
+          '''
+          tail='''
+          }catch(error){console.error('REPRO_FAILURE',error.stack);process.exitCode=1;for(const context of browser.contexts())for(const page of context.pages())await page.screenshot({path:'qa/cat-failure.png'}).catch(()=>{});await new Promise(resolve=>setTimeout(resolve,30000));}
+          finally{clearInterval(telemetry);console.log('REPRO_CHECKS',JSON.stringify(checks));console.log('REPRO_ERRORS',JSON.stringify(errors));await browser.close();}
+          '''
+          Path('scripts/.mobile-diagnose.mjs').write_text(prefix+telemetry+'\ntry{\n'+loop+tail)
+          PY
+          npm run preview -- --port 4173 > qa/preview.log 2>&1 &
+          for i in $(seq 1 30); do curl -fsS http://127.0.0.1:4173/ >/dev/null && break || sleep 1; done
+          node --experimental-strip-types scripts/.mobile-diagnose.mjs > qa/cat-repro.log 2>&1; result=$?
+          grep -E 'REPRO_|PROBE' qa/cat-repro.log | tail -25
+          exit $result
+      - uses: actions/upload-artifact@v4
+        if: always()
+        with:
+          name: focused-mobile-diagnostics
+          path: |
+            qa/
+            artifacts/chronicle/
+          retention-days: 7
