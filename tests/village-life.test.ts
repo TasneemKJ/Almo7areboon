@@ -8,6 +8,10 @@ async function life(){const m=await import('../src/view/village-life.ts').catch(
 const quiet={mood:'quiet',alarmMix:0,alarmSerial:0,time:0,alarmEnteredAt:null} as const;
 const viewport={placement:{x:0,y:0,scale:1},cssWorldScale:1,visibleSource:[0,0,900,1000] as const,hudSourceBounds:[]};
 const safeMoodInput={phase:'running',hpFraction:1,nearestEnemyX:Infinity,playerBaseHit:false,paused:false} as const;
+test('malformed HUD normalization caps input before allocating mapped geometry',()=>{
+ const source=readFileSync(new URL('../src/view/village-life.ts',import.meta.url),'utf8');
+ assert.match(source,/const hudSourceBounds=input\.viewport\.hudSourceBounds\.slice\(0,32\)\.map\(sourceBounds\)/);
+});
 function advanceTo(state:VillageMoodState,time:number){while(time-state.time>1e-8)state=advanceVillageMood(state,safeMoodInput,Math.min(.05,time-state.time));return state;}
 function hit(state:VillageMoodState){return advanceVillageMood(state,{...safeMoodInput,playerBaseHit:true},0);}
 test('a passage suppressed during alarm stays absent through recovery and repeated alarm entries',async()=>{
@@ -131,4 +135,89 @@ test('restoration frames are finite, immutable and hard bounded for every accept
 test('reduced motion freezes restored warmth and habitation without hiding saved progress',async()=>{
  const m=await life();
  for(let age=0;age<6;age++){const first=m.villageFrame({age,time:0,reduced:true,restoration:7,mood:quiet,viewport}),later=m.villageFrame({age,time:999,reduced:true,restoration:7,mood:quiet,viewport});assert.deepEqual(later,first);assert.equal(first.restorationLights.length,2);assert.equal(first.residents.length,2);}
+});
+
+test('victory brings two measured witnesses home with six upward acknowledgement strokes',async()=>{
+ const m=await life();
+ for(let age=0;age<6;age++){
+  const frame=m.villageFrame({age,time:9,reduced:false,restoration:0,mood:{...quiet,mood:'alarmed',alarmMix:1,alarmEnteredAt:8},viewport,verdict:{mode:'celebrate',progress:1}});
+  assert.equal(frame.residents.length,2);assert.equal(frame.residents.filter((resident:any)=>resident.panes.some((pane:any)=>pane.alpha>.2)).length,2);
+  assert.equal(frame.verdictStrokes.length,6);
+  const windows=m.VILLAGE_PLATES[age].windows;
+  for(const [index,stroke] of frame.verdictStrokes.entries()){
+   const bounds=windows[Math.floor(index/3)].bounds;assert.ok(inside(stroke.from,[bounds[0]-8,bounds[1]-10,bounds[2]+8,bounds[3]+3]));assert.ok(inside(stroke.to,[bounds[0]-8,bounds[1]-10,bounds[2]+8,bounds[3]+3]));
+   assert.ok(stroke.to.y<stroke.from.y,'victory marks rise instead of reading as shutters');assert.ok(stroke.alpha>0&&stroke.alpha<=1);
+  }
+ }
+});
+
+test('defeat clears witnesses and closes both measured apertures with four crossed strokes',async()=>{
+ const m=await life();
+ for(let age=0;age<6;age++){
+  const ordinary=m.villageFrame({age,time:0,reduced:true,restoration:7,mood:quiet,viewport});
+  const frame=m.villageFrame({age,time:0,reduced:true,restoration:7,mood:quiet,viewport,verdict:{mode:'shelter',progress:1}});
+  assert.equal(frame.residents.length,0);assert.equal(frame.verdictStrokes.length,4);assert.equal(frame.lamps.length,ordinary.lamps.length);assert.equal(frame.restorationLights.length,ordinary.restorationLights.length);
+  assert.ok(frame.lamps.every((lamp:any,index:number)=>lamp.alpha<ordinary.lamps[index].alpha));assert.ok(frame.restorationLights.every((lamp:any,index:number)=>lamp.alpha<ordinary.restorationLights[index].alpha));
+  for(const [index,stroke] of frame.verdictStrokes.entries()){
+   const bounds=m.VILLAGE_PLATES[age].windows[Math.floor(index/2)].bounds;assert.ok(inside(stroke.from,bounds)&&inside(stroke.to,bounds));assert.ok(stroke.alpha>0&&stroke.alpha<=1);
+  }
+ }
+});
+
+test('verdict light changes skip measured HUD overlap and report only affected halos',async()=>{
+ const m=await life(),hudViewport={...viewport,hudSourceBounds:[[190,470,215,505] as const,[219,339,255,385] as const]};
+ const ordinary=m.villageFrame({age:0,time:0,reduced:true,restoration:0,mood:quiet,viewport:hudViewport});
+ assert.deepEqual(ordinary.residents.map(resident=>resident.apertureId),['left-hearth']);
+ for(const mode of ['celebrate','shelter'] as const){
+  const verdict=m.villageFrame({age:0,time:0,reduced:true,restoration:0,mood:quiet,viewport:hudViewport,verdict:{mode,progress:1}});
+  assert.equal(verdict.lamps[0].alpha,ordinary.lamps[0].alpha,'HUD-overlapped authored light must keep its ordinary brightness');
+  assert.notEqual(verdict.lamps[1].alpha,ordinary.lamps[1].alpha,'clear authored light must still answer the verdict');
+  assert.deepEqual(verdict.verdictLights,[verdict.lamps[1]]);
+  assert.ok(verdict.residents.some(resident=>resident.apertureId==='left-hearth'),'HUD-overlapped aperture must retain its ordinary resident');
+  if(mode==='celebrate'){assert.deepEqual(verdict.verdictResidents.map(resident=>resident.apertureId),['right-hearth']);assert.equal(verdict.verdictStrokes.length,3);}
+  else {assert.equal(verdict.verdictResidents.length,0);assert.equal(verdict.verdictStrokes.length,2);}
+ }
+});
+
+test('verdict composition stays finite bounded immutable and never duplicates ordinary occupancy',async()=>{
+ const m=await life();
+ for(let age=0;age<6;age++)for(const verdict of [{mode:'celebrate',progress:0},{mode:'celebrate',progress:.5},{mode:'celebrate',progress:1},{mode:'shelter',progress:0},{mode:'shelter',progress:.5},{mode:'shelter',progress:1}] as const){
+  const input:any={age,time:13,reduced:false,restoration:7,mood:{...quiet},viewport:{...viewport,placement:{...viewport.placement},hudSourceBounds:[]},verdict:{...verdict}},before=structuredClone(input),frame=m.villageFrame(input);
+  assert.deepEqual(input,before);assert.ok(frame.residents.length<=2);assert.ok(frame.verdictStrokes.length<=6);assert.ok(frame.lamps.length<=4);assert.ok(frame.restorationLights.length<=2);
+  assert.equal(new Set(frame.residents.map((resident:any)=>resident.apertureId)).size,frame.residents.length);
+  for(const stroke of frame.verdictStrokes)for(const value of [stroke.from.x,stroke.from.y,stroke.to.x,stroke.to.y,stroke.width,stroke.alpha,stroke.color])assert.ok(Number.isFinite(value));
+ }
+});
+
+test('malformed placement and huge time fall back to finite bounded verdict composition',async()=>{
+ const m=await life(),placements=[
+  {x:NaN,y:0,scale:1},{x:0,y:Infinity,scale:1},{x:0,y:0,scale:NaN},{x:0,y:0,scale:0},{x:0,y:0,scale:-1},
+  {x:Number.MAX_VALUE,y:-Number.MAX_VALUE,scale:Number.MAX_VALUE},
+ ];
+ for(let age=0;age<6;age++)for(const placement of placements)for(const verdict of [{mode:'celebrate',progress:1},{mode:'shelter',progress:1}] as const){
+  const input:any={age,time:Number.MAX_VALUE,reduced:false,restoration:7,mood:quiet,viewport:{...viewport,placement:{...placement}},verdict:{...verdict}},before=structuredClone(input),frame=m.villageFrame(input);
+  assert.deepEqual(input,before);assert.ok(frame.residents.length<=2);assert.ok(frame.verdictStrokes.length<=6);assert.ok(frame.lamps.length<=4);assert.ok(frame.restorationLights.length<=2);
+  const polygons=[...frame.residents.flatMap((resident:any)=>resident.panes),...(frame.bird??[])],strokes=[...frame.verdictStrokes,...frame.water],halos=[...frame.lamps,...frame.restorationLights];
+  const values=[...polygons.flatMap((polygon:any)=>[polygon.alpha,...polygon.points.flatMap((point:any)=>[point.x,point.y])]),...strokes.flatMap((stroke:any)=>[stroke.from.x,stroke.from.y,stroke.to.x,stroke.to.y,stroke.width,stroke.alpha]),...halos.flatMap((lamp:any)=>[lamp.center.x,lamp.center.y,lamp.rx,lamp.ry,lamp.alpha])];
+  assert.ok(values.every(value=>Number.isFinite(value)&&Math.abs(value)<=2_000),`unbounded placement output: ${JSON.stringify({placement,values})}`);
+ }
+});
+
+test('malformed cached viewport geometry cannot leak non-finite bird coordinates',async()=>{
+ const m=await life(),malformed=[
+  {skyPath:[NaN,90,660,190]},
+  {skyPath:[250,90,Infinity,190]},
+  {skyPath:[660,190,250,90]},
+  {skyPath:[-Number.MAX_VALUE,90,Number.MAX_VALUE,190]},
+  {visibleSource:[NaN,0,900,1000],skyPath:undefined},
+  {visibleSource:[0,0,Infinity,1000],skyPath:undefined},
+  {hudSourceBounds:[[NaN,0,100,100]],skyPath:undefined},
+  {cssWorldScale:Number.MAX_VALUE,skyPath:undefined},
+ ] as const;
+ for(let age=0;age<6;age++)for(const overrides of malformed){
+  const input:any={age,time:10,reduced:false,restoration:7,mood:quiet,viewport:{...viewport,...overrides,placement:{...viewport.placement}}},before=structuredClone(input),frame=m.villageFrame(input);
+  assert.deepEqual(input,before);
+  const values=(frame.bird??[]).flatMap((polygon:any)=>polygon.points.flatMap((point:any)=>[point.x,point.y]));
+  assert.ok(values.every(value=>Number.isFinite(value)&&Math.abs(value)<=2_000),`unbounded cached viewport output: ${JSON.stringify({age,overrides,values})}`);
+ }
 });

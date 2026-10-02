@@ -48,6 +48,8 @@ test('pause, hidden ownership and reduced motion cannot advance an independent a
 test('result timing and model ownership remain unchanged',()=>{
  const main=readFileSync(new URL('../src/main.ts',import.meta.url),'utf8'),source=battlefield();
  assert.match(main,/resultDue=now\+\(document\.documentElement\.dataset\.motion==='reduced'\?350:1300\)/);
+ assert.match(main,/const reviewHoldingResult=globalThis\.navigator\?\.webdriver&&document\.querySelector\('canvas'\)\?\.dataset\.battlefieldReviewFrameReady===s\.phase;/,'only phase-matched native browser evidence may hold a due result sheet, while non-browser model tests remain inert');
+ assert.match(main,/resultShown!==s\.phase&&now>=resultDue&&!reviewHoldingResult/,'the evidence latch must not alter the production deadline or terminal ownership');
  assert.doesNotMatch(source,/\.dispatch\(/);assert.doesNotMatch(source,/profile\.[A-Za-z_$][\w$]*\s*=/);
 });
 
@@ -57,7 +59,10 @@ test('native evidence uses Phaser post-render readback only under browser automa
  assert.match(source,/Object\.defineProperty\(renderer\.canvas,'battlefieldReviewArm'/);
  assert.match(source,/Object\.defineProperty\(renderer\.canvas,'battlefieldReviewSnapshot'/);
  assert.match(source,/state\.phase!==expected/,'the pre-armed hook must wait for the requested authoritative terminal frame');
- assert.match(source,/state\.elapsed<\.35/,'the review frame must follow the existing 260ms victory flash without approaching the 1.3s result timer');
+ assert.match(source,/villageVerdict\.progress!==1/,'the hook must capture the first complete village response');
+ assert.match(source,/cameras\.main\.flashEffect\.isRunning/,'the evidence frame must wait until the terminal victory flash no longer obscures the village');
+ assert.doesNotMatch(source,/state\.elapsed<\.\d+/,'the hook must not race the wall-clock result sheet through a clamped presentation threshold');
  assert.match(source,/renderer\.renderer\.once\(Phaser\.Renderer\.Events\.POST_RENDER/);
+ assert.match(source,/renderer\.canvas\.dataset\.battlefieldReviewFrameReady=expected;\s*renderer\.renderer\.snapshot\(/,'the native full-stage capture must be released at the clear post-render boundary before PNG encoding');
  assert.match(source,/renderer\.renderer\.snapshot\(/);
 });
