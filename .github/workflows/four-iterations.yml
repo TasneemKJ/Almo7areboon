@@ -16,26 +16,15 @@ jobs:
         with:
           node-version: 22
           cache: npm
-      - name: Extend the passing header audit without changing production code
+      - name: Prepare the read-only touch audit
         run: |
-          python3 - <<'PY'
-          from pathlib import Path
-          p=Path('scripts/review-ui-recovery.mjs');s=p.read_text();old='      const r=item.metrics.gems;'
-          assert s.count(old)==1
-          new='''      await page.locator('[data-command="settings"]').click();
-                const help=page.locator('.help-box summary');await help.scrollIntoViewIfNeeded();
-                item.metrics.helpTarget=await geometry(help);await shot(page,item,'help-target');
-                await help.click();check(await page.locator('.help-box').evaluate(node=>node.open),'help disclosure must open');
-                check(item.metrics.helpTarget.width>=44&&item.metrics.helpTarget.height>=44,`help target is ${item.metrics.helpTarget.width}x${item.metrics.helpTarget.height}; expected at least 44x44`);
-          '''
-          p.write_text(s.replace(old,new+old))
-          plan=Path('docs/superpowers/plans/2026-10-02-four-ui-recovery-iterations.md')
-          plan.write_text(plan.read_text()+'\nRuling: The header gems control already measures 44px and is left unchanged. Extend Iteration 1 to the How to play disclosure within the same touch-target audit. Iterations 2–4 were reproduced on all three Chromium viewports; baseline report retained in qa/four-iterations/baseline.\n')
+          mkdir -p qa/four-iterations
+          python3 scripts/add-help-audit.py
           npm ci > qa/four-iterations/install-touch.log 2>&1
           node --check scripts/review-ui-recovery.mjs
           npm run build > qa/four-iterations/build-touch.log 2>&1
           npx playwright install --with-deps chromium > qa/four-iterations/browser-touch.log 2>&1
-      - name: Capture the additional touch-target baseline
+      - name: Capture the help disclosure before any CSS change
         env:
           UI_REVIEW_OUT: qa/four-iterations/baseline-touch
           UI_ITERATIONS: '1'
