@@ -1,3 +1,4 @@
+import { BATTLE_TIME_EPSILON } from './battle-time.ts';
 import { createChronicle, routeDefinition, timelineVariant, veteranName, type MissionObjective, type RouteId } from './chronicle.ts';
 import type { Profile, BattleState, Unit, GameEvent, Skill } from './types.ts';
 
@@ -215,7 +216,7 @@ export function chronicleOutcome(p:Profile,s:BattleState):'won'|'lost'|null {
   if(s.playerHp<=0)return 'lost';
   const c=s.chronicle;if(!c?.enabled)return s.enemyHp<=0?'won':null;
   if(c.objective==='escort')return c.cart.hp<=0?'lost':c.cart.x>=790?'won':null;
-  if(c.objective==='hold')return s.time>=75?'won':null;
+  if(c.objective==='hold')return s.time>=75-BATTLE_TIME_EPSILON?'won':null;
   if(c.objective==='rescue')return c.rescued&&c.cart.x<=150?'won':null;
   if(c.objective==='light')return s.enemyHp<=0&&c.lightSeconds>=18-1e-9?'won':null;
   if(c.objective==='boss')return c.boss.spawned&&!s.units.some(u=>u.id===c.boss.id&&alive(u))&&s.enemyHp<=0?'won':null;
@@ -235,9 +236,9 @@ export function chronicleGuidance(p:Profile,s:BattleState):string {
     }
   }
   if(c.objective==='escort')return `Flour cart ${Math.round((c.cart.x-210)/580*100)}% · ${Math.ceil(c.cart.hp)}/${Math.ceil(c.cart.maxHp)} health`;
-  if(c.objective==='hold')return `Keep the courtyard safe · ${Math.max(0,Math.ceil(75-s.time))} seconds left`;
+  if(c.objective==='hold')return `Keep the courtyard safe · ${Math.max(0,Math.ceil(75-s.time-BATTLE_TIME_EPSILON))} seconds left`;
   if(c.objective==='rescue')return c.rescued?`Scout returning home · ${Math.round((620-c.cart.x)/470*100)}%`:`Free the scout · ${c.rescueProgress.toFixed(1)}/4 seconds beside the cage`;
-  if(c.objective==='light')return `Lantern ${Math.floor(c.lightSeconds)}/18 seconds · then break the gate`;
+  if(c.objective==='light')return `Lantern ${Math.floor(c.lightSeconds+BATTLE_TIME_EPSILON)}/18 seconds · then break the gate`;
   if(c.objective==='boss')return c.boss.windupUntil>s.time?`Bell ringing in ${Math.ceil(c.boss.windupUntil-s.time)}s · interrupt with a heavy strike`:`Bell Keeper · ${c.boss.interrupts} interrupted ${c.boss.interrupts===1?'ring':'rings'}`;
   if((s.stats.deployedByKind[0]??0)===0)return 'Deploy a defender before ranged troops; defenders protect them.';
   if((s.stats.deployedByKind[1]??0)===0)return 'Send a ranged troop behind a defender; the defender protects it.';
