@@ -59,3 +59,9 @@ The first browser review produced 14 screenshots. Its failed check was an ambigu
 - Timeline variants are authored rule variations and flavor, not three wholly separate novel-length campaigns. Discoveries are safe post-battle interactions, not a hidden-object scavenger game.
 - The existing Phaser vendor chunk still emits a size warning. No bundle-warning suppression or unrelated dependency upgrade is included.
 - Temporary assembly workflows and transport files are removed before PR handoff. The permanent review workflow has read-only repository permissions. This PR does not merge or deploy the game.
+
+## Lantern Cat continuation
+
+The saved **The cat who waited** discovery now has a battlefield consequence on **The missing page** route. A pooled ink-and-pigment cat leads from the home gate toward the real rescue cage, waits beside the unchanged four-second objective, then accompanies the authoritative freed scout home. Paw marks and facing communicate direction without depending on colour. Ordinary scout routes and undiscovered profiles remain unchanged.
+
+This is presentation only: it adds no action, target, hit box, reward, timer, save field, economy, sound or control. Pause freezes the current presentation. Reduced motion uses discrete waiting/home poses without animated gait or view-clock travel. The permanent native review captures lead, watch and home states at 320×568, 390×844 and 1024×768 plus a reduced-motion state; those are Chromium software-rendering fixtures, not physical-device/Safari or retention evidence.

@@ -61,6 +61,21 @@ async function pauseAtWaveArrival(page,intent,onObserved){
  }
  throw new Error(`Timed out pausing at ${intent} wave arrival`);
 }
+async function pauseAtCatMode(page,mode){
+ const deadline=Date.now()+60000;
+ while(Date.now()<deadline){
+  await page.waitForFunction(value=>{const raw=document.querySelector('canvas')?.dataset.chronicleCat;if(!raw)return false;const state=JSON.parse(raw);return state.mode===value&&!state.paused;},mode,{timeout:Math.max(1,deadline-Date.now())});
+  const observed=await page.locator('#pause').evaluate((button,value)=>{const raw=document.querySelector('canvas')?.dataset.chronicleCat;if(!raw)return null;const state=JSON.parse(raw);if(state.mode!==value||state.paused)return null;button.click();return state;},mode);
+  if(!observed)continue;
+  await page.waitForFunction(()=>{const raw=document.querySelector('canvas')?.dataset.chronicleCat;if(!raw)return false;return JSON.parse(raw).paused===true;});
+  const paused=await page.locator('canvas').evaluate(node=>JSON.parse(node.dataset.chronicleCat));
+  assert.equal(paused.mode,mode);assert.equal(paused.paused,true);
+  assert.deepEqual({mode:paused.mode,x:paused.x,gait:paused.gait,tailAngle:paused.tailAngle,paws:paused.paws},{mode:observed.mode,x:observed.x,gait:observed.gait,tailAngle:observed.tailAngle,paws:observed.paws},'public pause control must freeze the observed cat frame');
+  assert.ok(paused.groundDepth<paused.catDepth&&paused.catDepth<paused.endpointDepth);
+  return paused;
+ }
+ throw new Error(`Timed out pausing at cat mode ${mode}`);
+}
 function validateAftermathSnapshot(state,outcome){
  assert.equal(state.phase,outcome);assert.ok(state.elapsed>=0&&state.elapsed<=1.3);
  assert.equal(state.triumph>0,true,'the surviving winning side must answer the verdict');if(outcome==='lost')assert.equal(state.withdraw>0,true,'a living defeated survivor must visibly withdraw');
@@ -169,6 +184,22 @@ try{
   state=await f.page.locator('canvas').evaluate(node=>JSON.parse(node.dataset.chronicleRescue));assert.deepEqual(state.cage,{visible:true,x:279,texture:'chronicle-cage-open-ink-v1'});assert.equal(state.scout.visible,true);assert.ok(state.scout.x<state.cage.x);assert.equal(state.scout.frame,0);assert.equal(state.scout.mode,'painted');assert.match(state.scout.texture,/^army-\d-1-player$/);assert.ok(state.groundDepth<state.cageDepth&&state.groundDepth<state.scoutDepth);
   before=await settledSaveAfterAutosave(f.page);await shot(f,'scout-homecoming');await f.page.waitForTimeout(450);assert.equal(await saved(f.page),before,'paused homecoming presentation must not write progress');await noOverflow(f.page);
   checks.push(`${width}: public controls reach real cage progress; runtime actors remain separate and depth-safe; paused presentation is static and save-inert`);await f.context.close();
+ }
+ for(const [width,height] of [[320,568],[390,844],[1024,768]]){
+  const p=preparedChronicleProfile();p.speed=1;p.chronicle.discoveries=7;p.chronicle.route='whisper';p.chronicle.expedition=null;
+  const f=await open(`${width}-cat`,width,height,p,'no-preference');await f.page.locator('[data-command="start"]').click();
+  let cat=await pauseAtCatMode(f.page,'leading'),before=await settledSaveAfterAutosave(f.page);assert.ok(cat.x>=78&&cat.x<249);await shot(f,'cat-leading');await f.page.waitForTimeout(450);assert.equal(await saved(f.page),before,'paused cat presentation must remain save-inert');
+  await f.page.locator('#pause').click();
+  for(const kind of [0,1,0,2,1,2]){const button=f.page.locator(`[data-unit="${kind}"]`);await f.page.waitForFunction(value=>{const node=document.querySelector(`[data-unit="${value}"]`);return node instanceof HTMLButtonElement&&!node.disabled;},String(kind),{timeout:20000});await button.click();}
+  cat=await pauseAtCatMode(f.page,'watching');assert.equal(cat.x,249);let rescue=await f.page.locator('canvas').evaluate(node=>JSON.parse(node.dataset.chronicleRescue));assert.equal(rescue.cage.texture,'chronicle-cage-ink-v1');assert.equal(rescue.scout.visible,false);await shot(f,'cat-watching');
+  await f.page.locator('#pause').click();await f.page.waitForFunction(()=>{const match=document.querySelector('#deploy-hint')?.textContent?.match(/Scout returning home · (\d+)%/);return match&&Number(match[1])>=10;},null,{timeout:30000});
+  cat=await pauseAtCatMode(f.page,'home');rescue=await f.page.locator('canvas').evaluate(node=>JSON.parse(node.dataset.chronicleRescue));assert.ok(cat.mode==='home'&&cat.x<rescue.scout.x);assert.equal(rescue.cage.texture,'chronicle-cage-open-ink-v1');await shot(f,'cat-home');await noOverflow(f.page);
+  checks.push(`${width}: discovered missing-page cat leads, watches the real cage and accompanies the publicly rescued scout home without save or input ownership`);await f.context.close();
+ }
+ {
+  const p=preparedChronicleProfile();p.speed=1;p.chronicle.discoveries=7;p.chronicle.route='whisper';const f=await open('390-cat-reduced',390,844,p);await f.page.locator('[data-command="start"]').click();
+  const cat=await pauseAtCatMode(f.page,'watching');assert.deepEqual({x:cat.x,gait:cat.gait,paws:cat.paws,reduced:cat.reduced},{x:249,gait:0,paws:0,reduced:true});await shot(f,'cat-reduced-watch');
+  checks.push('390: reduced-motion cat uses a fixed watching pose with no presentation travel or gait');await f.context.close();
  }
  {
   const p=simulateChronicle('escort').profile;p.chronicle.discoveries=0;const f=await open('390-discovery',390,844,p);await f.page.locator('.result-dialog').waitFor();await f.page.locator('.story-discoveries summary').click();
