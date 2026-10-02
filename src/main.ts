@@ -290,7 +290,7 @@ function showModal(id:string,html:string,focusCommand?:string){
     const storyMatch=storyAction?Array.from(layer.querySelectorAll<HTMLElement>('[data-story-route],[data-story-captain],[data-story-tale],[data-story-preparation],[data-story-discovery],[data-story-provision]')).find(element=>JSON.stringify(chronicleActionFromData(element.dataset))===JSON.stringify(storyAction)):storyPage!==undefined?Array.from(layer.querySelectorAll<HTMLElement>('[data-story-page]')).find(element=>element.dataset.storyPage===storyPage):null;
     const storyPrevious=storyMatch&&!storyMatch.matches(':disabled,[aria-disabled="true"]')?storyMatch:null;
     const dialog=layer.querySelector<HTMLElement>('.dialog');if(previousScroll!==null&&previousScroll!==undefined&&dialog)dialog.scrollTop=previousScroll;
-    (requested??previous??storyPrevious??layer.querySelector<HTMLElement>('[data-initial-focus]')??modalFocusables(layer)[0]??dialog)?.focus();
+    (requested??previous??storyPrevious??(replacing?null:layer.querySelector<HTMLElement>('[data-initial-focus]'))??modalFocusables(layer)[0]??dialog)?.focus();
   });
 }
 function closeModal(refresh=true){
