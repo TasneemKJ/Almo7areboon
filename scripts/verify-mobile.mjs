@@ -57,6 +57,10 @@ async function run(engine,width,height,temporary=false,insets=null){
   await page.locator('[data-command="start"]').tap();
   await page.locator('[data-unit="0"]').tap();
   item.screens.push(await capture(page,name,'running'));
+  await page.locator('[data-command="story-rally"]').tap();
+  await page.waitForFunction(()=>document.querySelector('#story-rally')?.getAttribute('aria-pressed')==='true');
+  await page.locator('[data-command="story-rally"]').tap();
+  await page.waitForFunction(()=>document.querySelector('#story-rally')?.getAttribute('aria-pressed')==='false');
   await page.locator('[data-command="pause"]').tap();
   await page.waitForFunction(()=>document.querySelector('#pause')?.getAttribute('aria-pressed')==='true');
   item.screens.push(await capture(page,name,'battle'));
@@ -114,7 +118,7 @@ try{
  for(const engine of (process.env.MOBILE_ENGINES??'chromium').split(',')){
   const driver=engine==='webkit'?webkit:chromium;
   browser=await driver.launch({headless:true,...(engine==='chromium'&&process.env.CHROMIUM_PATH?{executablePath:process.env.CHROMIUM_PATH}:{})});report.browsers[engine]=browser.version();
-  for(const [w,h] of [[320,568],[360,640],[390,844],[430,932],[390,550],[844,390]])await run(engine,w,h);
+  for(const [w,h] of [[320,568],[351,640],[360,640],[361,640],[390,844],[430,932],[390,550],[844,390]])await run(engine,w,h);
   await run(engine,320,568,true);await run(engine,390,550,true);
   if(engine==='chromium'){await run(engine,390,844,false,{top:44,bottom:34,left:0,right:0});await run(engine,390,550,true,{top:44,bottom:34,left:0,right:0});}
   await browser.close();browser=null;

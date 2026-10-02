@@ -70,4 +70,4 @@
 @media(forced-colors:active){.chronicle-dialog,.story-route,.story-house,.story-rally,.story-choices button{border:1px solid ButtonText!important;background:Canvas!important;color:CanvasText!important}.story-route.selected,.story-choices .chosen{outline:3px solid Highlight}.story-chapter-name{background:Canvas;color:CanvasText;text-shadow:none}.story-illustration{background:Canvas}}
 
 /* Six chapter choices wrap rather than shrink below a finger-sized target. */
-@media(max-width:350px){.story-chapters{display:grid;grid-template-columns:repeat(3,minmax(44px,1fr));}}
+@media(max-width:374px){.story-chapters{display:grid;grid-template-columns:repeat(3,minmax(44px,1fr));}}
