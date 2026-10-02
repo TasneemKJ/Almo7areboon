@@ -31,7 +31,9 @@ test('memory reuses the existing ambience plane behind actors without burying co
  assert.match(code,/drawAttackCues[\s\S]+groundEffectLayer\(this\.groundFx,this\.fx,cue\.lane\)/,'actor-attached combat cues retain their lane depth');
  assert.match(code,/battlefieldMemoryRegionClearOf\(region,this\.battlefieldHudBounds\)/,'HUD-covered scars must not paint');
  assert.match(code,/cacheBattlefieldHudBounds\(\)/);
- assert.match(code,/private drawBattlefieldMemory\(\):void \{\n\s*this\.cacheBattlefieldHudBounds\(\)/,'HUD geometry must be refreshed while marks are visible because the wave HUD is hidden at renderer creation');
+ const draw=code.slice(code.indexOf('private drawBattlefieldMemory():void'),code.indexOf('private event(e:GameEvent)'));
+ assert.ok(draw.indexOf('if(!battlefieldMemoryNeedsHudMeasurement(this.battlefieldMemory))')>=0,'empty memory must leave before DOM measurement');
+ assert.ok(draw.indexOf('if(!battlefieldMemoryNeedsHudMeasurement(this.battlefieldMemory))')<draw.indexOf('this.cacheBattlefieldHudBounds()'),'HUD geometry refresh is allowed only after visible memory is confirmed');
  assert.match(code,/ages:/);
  assert.match(code,/alphas:/);
  assert.match(code,/this\.battlefieldMemory=stepBattlefieldMemory\(this\.battlefieldMemory,dt,game\.state\.paused\)/);

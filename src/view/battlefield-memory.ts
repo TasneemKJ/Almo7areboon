@@ -43,6 +43,10 @@ export type BattlefieldMemoryFrame=Readonly<{
 
 export type BattlefieldMemoryRegion=Readonly<{left:number;top:number;right:number;bottom:number}>;
 
+export function battlefieldMemoryNeedsHudMeasurement(marks:readonly BattlefieldMemoryMark[]):boolean {
+ return marks.length>0;
+}
+
 const finite=(value:number,fallback:number)=>Number.isFinite(value)?value:fallback;
 const clamp=(value:number,min:number,max:number)=>Math.max(min,Math.min(max,value));
 const point=(x:number,y:number)=>Object.freeze({x,y});

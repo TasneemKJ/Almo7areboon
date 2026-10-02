@@ -25,7 +25,7 @@ import {waveArrivalForPort} from './wave-arrival.ts';
 import {paintWaveArrival,waveArrivalRenderPlan} from './wave-arrival-paint.ts';
 import {battleAftermathPose} from './battle-aftermath.ts';
 import {villageVerdictFrame} from './village-verdict.ts';
-import {BATTLEFIELD_MEMORY_CAP,battlefieldMemoryFrame,battlefieldMemoryIntentForHit,battlefieldMemoryRegionClearOf,rememberBattlefieldMark,stepBattlefieldMemory,type BattlefieldMemoryInput,type BattlefieldMemoryMark,type BattlefieldMemoryRegion} from './battlefield-memory.ts';
+import {BATTLEFIELD_MEMORY_CAP,battlefieldMemoryFrame,battlefieldMemoryIntentForHit,battlefieldMemoryNeedsHudMeasurement,battlefieldMemoryRegionClearOf,rememberBattlefieldMark,stepBattlefieldMemory,type BattlefieldMemoryInput,type BattlefieldMemoryMark,type BattlefieldMemoryRegion} from './battlefield-memory.ts';
 import {TROOP_FRAME} from './unit-illustrations.ts';
 import {compactNumber} from '../ui/battle-hud.ts';
 import {battleResolution} from './render-resolution.ts';
@@ -606,6 +606,7 @@ export function mountBattlefield(element:HTMLElement,game:GamePort,onFrame:()=>v
    this.battlefieldMemory=rememberBattlefieldMark(this.battlefieldMemory,input);
   }
   private drawBattlefieldMemory():void {
+   if(!battlefieldMemoryNeedsHudMeasurement(this.battlefieldMemory)){if(navigator.webdriver)delete this.game.canvas.dataset.battlefieldMemory;return;}
    this.cacheBattlefieldHudBounds();
    const regions:BattlefieldMemoryRegion[]=[],kinds:BattlefieldMemoryMark['kind'][]=[],ages:number[]=[],alphas:number[]=[];
    for(const mark of this.battlefieldMemory){

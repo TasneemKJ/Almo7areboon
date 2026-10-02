@@ -5,6 +5,7 @@ import {
   BATTLEFIELD_MEMORY_LIFE,
   battlefieldMemoryFrame,
   battlefieldMemoryIntentForHit,
+  battlefieldMemoryNeedsHudMeasurement,
   battlefieldMemoryRegionClearOf,
   rememberBattlefieldMark,
   stepBattlefieldMemory,
@@ -13,6 +14,11 @@ import {
 
 const heavy=(x=180,lane=1,side:'player'|'enemy'='player')=>
   rememberBattlefieldMark([], {kind:'heavy',x,lane,side});
+
+test('HUD geometry is measured only while battlefield memory is visible',()=>{
+ assert.equal(battlefieldMemoryNeedsHudMeasurement([]),false);
+ assert.equal(battlefieldMemoryNeedsHudMeasurement(heavy()),true);
+});
 
 test('a truthful impact creates one finite immutable fourteen-second road mark',()=>{
  const marks=heavy();
