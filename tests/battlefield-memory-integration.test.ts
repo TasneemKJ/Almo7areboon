@@ -41,6 +41,7 @@ test('memory reuses the existing ambience plane behind actors without burying co
  assert.match(code,/delete this\.game\.canvas\.dataset\.battlefieldMemory/);
  assert.match(code,/this\.battlefieldMemory=battlefieldMemoryAfterReset\(this\.battlefieldMemory,reason,this\.bolts\.flatMap\(b=>b\.memory\?\[b\.memory\]:\[\]\)\)/,'motion reset must commit accepted in-flight impact memory before clearing bolts');
  assert.match(code,/dataset\.battlefieldMemoryPending=JSON\.stringify\(pending\)/,'native evidence must expose the real in-flight interval');
+ assert.match(code,/dataset\.battlefieldEnemyViews=String/,'native evidence must wait for a truthful current Meteor target');
  assert.match(code,/if\(reduced&&!this\.reduce\)this\.resetEffects\('motion'\)/,'entering reduced motion must preserve active road memory');
  const allocations=code.match(/this\.add\.graphics\(\)/g)??[];
  assert.equal(allocations.length,12,'battlefield memory must not allocate another scene-lifetime graphics object');

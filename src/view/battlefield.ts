@@ -338,6 +338,7 @@ export function mountBattlefield(element:HTMLElement,game:GamePort,onFrame:()=>v
     else {if(view.body instanceof Phaser.GameObjects.Image)view.body.clearTint();this.fallen.add(view.body,view.side);}
     this.units.delete(id);
    }
+   if(navigator.webdriver)this.game.canvas.dataset.battlefieldEnemyViews=String([...this.units.values()].filter(view=>view.side==='enemy').length);
    for(let i=0;i<this.idle.length;i++){
     const actor=this.idle[i],side=i===0?'player':'enemy',x=i===0?119:331,y=groundY+15;
     actor.setVisible(game.state.phase==='ready');
