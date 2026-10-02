@@ -16,10 +16,7 @@ async function shot(fixture,state){const file=`${fixture.name}-${state}.png`;awa
 async function armCanvasShot(fixture,expected){await fixture.page.locator('canvas').evaluate((node,phase)=>{
  if(typeof node.battlefieldReviewArm!=='function'||!node.battlefieldReviewArm(phase))throw new Error('Phaser post-render snapshot could not be armed');
 },expected);}
-async function waitForVerdictFrame(fixture){await fixture.page.locator('canvas').evaluate(node=>new Promise((resolve,reject)=>{
- if(typeof node.battlefieldReviewSnapshot!=='function'){reject(new Error('Phaser post-render snapshot is unavailable'));return;}
- node.battlefieldReviewSnapshot(()=>resolve(true));
-}));}
+async function waitForVerdictFrame(fixture,expected){await fixture.page.waitForFunction(phase=>document.querySelector('canvas')?.dataset.battlefieldReviewFrameReady===phase,expected);}
 async function canvasShot(fixture,state,expected,reduced=false){
  const capture=await fixture.page.locator('canvas').evaluate((node,phase)=>new Promise((resolve,reject)=>{
   if(typeof node.battlefieldReviewSnapshot!=='function'){reject(new Error('Phaser post-render snapshot is unavailable'));return;}
@@ -152,7 +149,7 @@ try{
   const p=preparedChronicleProfile();p.motion='system';p.speed=2;p.age=0;p.enemyAge=0;p.chronicle.route='road';p.chronicle.expedition=null;
   if(outcome==='lost'){p.baseLevel=0;p.foodLevel=0;p.unlocked=[true,true,true];}
  const f=await open(name,width,height,p,'no-preference');await armCanvasShot(f,outcome);await reachNaturalOutcome(f.page,outcome);
-  await waitForVerdictFrame(f);await verdictWorldShot(f,`${outcome}-survivor-verdict-world`);
+  await waitForVerdictFrame(f,outcome);await verdictWorldShot(f,`${outcome}-survivor-verdict-world`);
   const capture=await canvasShot(f,`${outcome}-survivor-verdict`,outcome);await assertVerdictClearOfHud(f.page,capture.villageVerdict);await noOverflow(f.page);
   await f.page.locator('.result-dialog').waitFor({timeout:2500});const afterSettlement=await saved(f.page);await f.page.waitForTimeout(450);assert.equal(await saved(f.page),afterSettlement,'settled verdict presentation must remain save-inert');
   checks.push(`${width}: public controls reach a natural ${outcome}; same-frame canvas and full-stage HUD evidence precede the unchanged result sheet and remain save-inert`);await f.context.close();
