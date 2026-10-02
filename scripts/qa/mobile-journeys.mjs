@@ -16,9 +16,9 @@ for(const engine of engines){
     try{
      for(const screen of ['ready','evolution','cards','skills','settings','quests','battles','chronicle']){
       await run(`${tag}-${screen}`,'screen-navigation-'+screen,meta,async c=>{
-       await page.locator('.bottom-nav [data-tab="battle"]').click();
-       if(screen==='evolution'||screen==='cards'||screen==='skills')await page.locator(`.bottom-nav [data-tab="${screen}"]`).click();
-       else if(screen!=='ready')await page.locator(screen==='battles'?'#battle-select':screen==='chronicle'?'.story-open':screen==='quests'?'.resources .gems':'[data-command="settings"]').click();
+       await page.locator('.bottom-nav [data-tab="battle"]').tap();
+       if(screen==='evolution'||screen==='cards'||screen==='skills')await page.locator(`.bottom-nav [data-tab="${screen}"]`).tap();
+       else if(screen!=='ready')await page.locator(screen==='battles'?'#battle-select':screen==='chronicle'?'.story-open':screen==='quests'?'.resources .gems':'[data-command="settings"]').tap();
        c.metrics.top=await inventory(page);
        if(snap(viewport))await shot(page,'top');
        assert.equal(c.metrics.top.overflow,false,'horizontal viewport overflow');
@@ -37,14 +37,14 @@ for(const engine of engines){
        }
        assert.deepEqual(small,[],'visible interactive targets below the game 44px minimum');
       });
-      if(await page.locator('.close-button').count())await page.locator('.close-button').click();
+      if(await page.locator('.close-button').count())await page.locator('.close-button').tap();
      }
      await run(`${tag}-paused-menu-return`,'pause-preserved-through-all-tabs-and-dialogs',meta,async c=>{
-      await page.locator('.bottom-nav [data-tab="battle"]').click();await page.locator('[data-command="start"]').click();
-      await page.locator('[data-unit="0"]').click();await page.locator('#pause').click();
+      await page.locator('.bottom-nav [data-tab="battle"]').tap();await page.locator('[data-command="start"]').tap();
+      await page.locator('[data-unit="0"]').tap();await page.locator('#pause').tap();
       const before=await page.locator('#food-count').textContent();
-      for(const tab of ['evolution','cards','skills','battle'])await page.locator(`.bottom-nav [data-tab="${tab}"]`).click();
-      for(const menu of ['settings','quests']){await page.locator(menu==='settings'?'[data-command="settings"]':'.resources .gems').click();await page.keyboard.press('Escape');}
+      for(const tab of ['evolution','cards','skills','battle'])await page.locator(`.bottom-nav [data-tab="${tab}"]`).tap();
+      for(const menu of ['settings','quests']){await page.locator(menu==='settings'?'[data-command="settings"]':'.resources .gems').tap();await page.keyboard.press('Escape');}
       assert.equal(await page.locator('#pause').getAttribute('aria-pressed'),'true');
       assert.equal(await page.locator('#food-count').textContent(),before);
       if(snap(viewport))await shot(page,'paused-return');c.metrics=await inventory(page);
@@ -57,10 +57,10 @@ for(const engine of engines){
       assert.equal(await page.locator('#pause').getAttribute('aria-pressed'),'true');
      });
      await run(`${tag}-retreat-retry`,'retreat-and-retry-after-mobile-menu-cycle',meta,async c=>{
-      await page.locator('[data-command="settings"]').click();await page.locator('[data-command="retreat"]').click();
+      await page.locator('[data-command="settings"]').tap();await page.locator('[data-command="retreat"]').tap();
       await page.locator('.result-dialog').waitFor();if(snap(viewport))await shot(page,'regroup');
       const before=await save(page);assert.equal(before.pendingVictory,null);
-      await page.locator('[data-command="retry"]').click();await page.locator('[data-command="start"]').waitFor();
+      await page.locator('[data-command="retry"]').tap();await page.locator('[data-command="start"]').waitFor();
       const after=await save(page);assert.equal(after.coins,before.coins);assert.equal(after.gems,before.gems);
       c.metrics=await inventory(page);assert.equal(c.metrics.overflow,false);
      });
@@ -72,7 +72,7 @@ for(const engine of engines){
      const f=await open(browser,viewport,g.profile);
      try{
       await f.page.locator('.result-dialog').waitFor();await shot(f.page,'restored-victory');
-      await f.page.locator('[data-command="retry"]').click();await f.page.locator('[data-command="start"]').waitFor();await shot(f.page,'replayed');
+      await f.page.locator('[data-command="retry"]').tap();await f.page.locator('[data-command="start"]').waitFor();await shot(f.page,'replayed');
       c.metrics.focus=await f.page.evaluate(()=>({tag:document.activeElement?.tagName,id:document.activeElement?.id}));
       assert.ok(await usableFocus(f.page),'replay must restore visible usable focus');
       const before=await save(f.page);await f.page.reload({waitUntil:'networkidle'});await f.page.locator('[data-command="start"]').waitFor();
@@ -83,7 +83,7 @@ for(const engine of engines){
      await run(`${tag}-import-${kind}`,'file-import-'+kind,meta,async c=>{
       const f=await open(browser,viewport),page=f.page;
       try{
-       await page.locator('[data-command="settings"]').click();const before=await save(page);await shot(page,'before');
+       await page.locator('[data-command="settings"]').tap();const before=await save(page);await shot(page,'before');
        await page.evaluate(()=>{window.__realFileText=File.prototype.text;window.__fileReads=[];File.prototype.text=function(){return new Promise((resolve,reject)=>window.__fileReads.push({name:this.name,resolve,reject}));};});
        const file=name=>({name,mimeType:'application/json',buffer:Buffer.from(JSON.stringify(defaultProfile()))});
        await page.locator('#import-save').setInputFiles(file('first.json'));
@@ -93,7 +93,7 @@ for(const engine of engines){
         c.metrics.value=await page.locator('#import-save').inputValue();await shot(page,'read-error');
         assert.equal(c.metrics.value,'','clear failed input so the same file can be selected again');
        }else if(kind==='dismissed'){
-        await page.locator('.close-button').click();await page.locator('.bottom-nav [data-tab="skills"]').click();
+        await page.locator('.close-button').tap();await page.locator('.bottom-nav [data-tab="skills"]').tap();
         await page.evaluate(()=>window.__fileReads[0].reject(Error('Disclosed late read failure')));await settle(page);
         c.metrics.toast=await page.locator('#toast').evaluate(e=>({visible:e.classList.contains('visible'),text:e.textContent}));await shot(page,'dismissed');
         assert.equal(c.metrics.toast.visible,false,'dismissed import cannot notify a later screen');
@@ -106,7 +106,7 @@ for(const engine of engines){
         await page.locator('[data-command="confirm-import"]').waitFor();
         c.metrics.confirmation=await page.locator('.dialog').innerText();await shot(page,'latest-read');
         assert.match(c.metrics.confirmation,/222/);assert.doesNotMatch(c.metrics.confirmation,/111/);
-        await page.locator('[data-command="close"]').click();
+        await page.getByRole('button',{name:'CANCEL',exact:true}).tap();
        }
        assert.deepEqual(await save(page),before,'unconfirmed or failed imports cannot change progress');
       }finally{await f.context.close();}

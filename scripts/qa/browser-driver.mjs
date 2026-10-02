@@ -7,7 +7,7 @@ export {assert,defaultProfile,SAVE_KEY,BACKUP_KEY};
 export const origin=process.env.QA_URL??'http://127.0.0.1:4173';
 export const out=process.env.QA_OUT??'artifacts/expanded-qa/browser';
 mkdirSync(out,{recursive:true});
-export const report={revision:process.env.QA_REVISION??execFileSync('git',['rev-parse','HEAD'],{encoding:'utf8'}).trim(),started:new Date().toISOString(),scope:'Production browser UI; prepared saves and injected faults are recorded per case; not physical-device acceptance',cases:[],screens:[],errors:[],browsers:{}};
+export const report={revision:process.env.QA_REVISION??execFileSync('git',['rev-parse','HEAD'],{encoding:'utf8'}).trim(),started:new Date().toISOString(),scope:'Production browser UI; prepared saves and injected faults are recorded per case; not physical-device acceptance',cases:[],screens:[],errors:[],consoleErrors:[],assetFailures:[],browsers:{}};
 let current;
 export async function launch(engine='chromium'){
  const driver={chromium,webkit,firefox}[engine];assert.ok(driver);
@@ -26,6 +26,8 @@ export async function open(browser,viewport={width:390,height:844},profile=defau
  if(opts.init)await context.addInitScript(opts.init);
  const page=await context.newPage();
  page.on('pageerror',error=>{report.errors.push({case:current?.id,message:String(error)});});
+ page.on('console',message=>{if(message.type()==='error')report.consoleErrors.push({case:current?.id,message:message.text()});});
+ page.on('response',response=>{if(/\/(art|assets)\//.test(response.url())&&!response.ok())report.assetFailures.push({case:current?.id,status:response.status(),url:response.url()});});
  await page.goto(origin,{waitUntil:'networkidle'});
  await page.waitForFunction(()=>document.querySelector('canvas')?.width>0&&['active','temporary'].includes(document.querySelector('#app')?.dataset.saveSession));
  return {page,context};
@@ -39,7 +41,7 @@ export async function shot(page,label){
 }
 export async function run(id,behavior,meta,fn){
  current={id,behavior,...meta,status:'failed',screens:[],metrics:{}};report.cases.push(current);
- try{await fn(current);current.status='passed';}
+ try{await fn(current);current.status=current.metrics.limit?'not-supported':'passed';}
  catch(error){current.error=error.stack??String(error);}
  console.log(JSON.stringify({id,status:current.status,error:current.error?.split('\n')[0]}));
  return current;
@@ -58,8 +60,9 @@ export function finish(){
  report.finished=new Date().toISOString();
  report.distinctBehaviors=[...new Set(report.cases.map(c=>c.behavior))];
  report.passed=report.cases.filter(c=>c.status==='passed').length;
- report.failed=report.cases.length-report.passed;
- report.status=report.failed===0&&report.errors.length===0?'passed':'failed';
+ report.failed=report.cases.filter(c=>c.status==='failed').length;
+ report.unsupported=report.cases.filter(c=>c.status==='not-supported').map(c=>({id:c.id,reason:c.metrics.limit}));
+ report.status=report.failed===0&&report.errors.length===0&&report.consoleErrors.length===0&&report.assetFailures.length===0?'passed':'failed';
  writeFileSync(`${out}/report.json`,JSON.stringify(report,null,2));
  console.log('SUMMARY',JSON.stringify({status:report.status,behaviors:report.distinctBehaviors.length,executions:report.cases.length,passed:report.passed,errors:report.errors.length,screens:report.screens.length}));
  if(report.status!=='passed')process.exitCode=1;
