@@ -218,7 +218,8 @@ try{
   await f.page.locator('#pause').click();
   for(const kind of [0,1,0,2,1,2]){const button=f.page.locator(`[data-unit="${kind}"]`);await f.page.waitForFunction(value=>{const node=document.querySelector(`[data-unit="${value}"]`);return node instanceof HTMLButtonElement&&!node.disabled;},String(kind),{timeout:20000});await button.click();}
   cat=await pauseAtCatMode(f.page,'watching');assert.equal(cat.x,249);let rescue=await f.page.locator('canvas').evaluate(node=>JSON.parse(node.dataset.chronicleRescue));assert.equal(rescue.cage.texture,'chronicle-cage-ink-v1');assert.equal(rescue.scout.visible,false);await shot(f,'cat-watching');
-  await f.page.locator('#pause').click();await f.page.waitForFunction(()=>{const match=document.querySelector('#deploy-hint')?.textContent?.match(/Scout returning home · (\d+)%/);return match&&Number(match[1])>=10;},null,{timeout:30000});
+  // Match the other route waits: software rendering can take over 30 wall-clock seconds for this natural rescue.
+  await f.page.locator('#pause').click();await f.page.waitForFunction(()=>{const match=document.querySelector('#deploy-hint')?.textContent?.match(/Scout returning home · (\d+)%/);return match&&Number(match[1])>=10;},null,{timeout:60000});
   cat=await pauseAtCatMode(f.page,'home');rescue=await f.page.locator('canvas').evaluate(node=>JSON.parse(node.dataset.chronicleRescue));assert.ok(cat.mode==='home'&&cat.x<rescue.scout.x);assert.equal(rescue.cage.texture,'chronicle-cage-open-ink-v1');await shot(f,'cat-home');await noOverflow(f.page);
   checks.push(`${width}: discovered missing-page cat leads, watches the real cage and accompanies the publicly rescued scout home without save or input ownership`);await f.context.close();
  }
