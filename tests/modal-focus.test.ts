@@ -32,3 +32,17 @@ test('rerendering after finding a discovery moves focus to an enabled control',(
  runInNewContext(code,context);context.showModal('result','<button data-story-discovery="door" disabled>Door mark found</button>');
  assert.equal(dialog.scrollTop,486);assert.equal(document.activeElement,close);
 });
+
+test('a fresh result dialog focuses its outcome heading before below-the-fold actions',()=>{
+ const document:any={activeElement:null};
+ const heading:any={id:'dialog-title',dataset:{initialFocus:''},focus(){document.activeElement=this;}};
+ const action:any={dataset:{command:'review-battlefield'},focus(){document.activeElement=this;}};
+ const dialog:any={scrollTop:0,focus(){document.activeElement=this;}};
+ const layer:any={hidden:true,innerHTML:'',querySelector(selector:string){return selector==='.dialog'?dialog:selector==='[data-initial-focus]'?heading:null;},querySelectorAll(selector:string){return selector==='[data-command]'?[action]:[];}};
+ const context:any={modal:null,modalVersion:0,focusFrame:0,focusBefore:null,document,lifetime:{disposed:false},playable:()=>true,$:()=>layer,icon:()=>'',isolateModal(){},syncPause(){},modalFocusables:()=>[action],chronicleActionFromData,window:{cancelAnimationFrame(){}},requestAnimationFrame(callback:()=>void){callback();return 1;}};
+ runInNewContext(code,context);context.showModal('result','<h2 id="dialog-title" tabindex="-1" data-initial-focus>Victory</h2><button data-command="review-battlefield">Look around</button>');
+ assert.equal(document.activeElement,heading,'opening results must announce the outcome, not scroll to a lower action');
+ // A deliberate return from a confirmation still restores the initiating control.
+ context.showModal('result','', 'review-battlefield');
+ assert.equal(document.activeElement,action);
+});

@@ -120,6 +120,9 @@ try {
     await run('watch-seal-reload', browser, { viewport: { width: 320, height: 568 }, profile: game.profile }, async page => {
       await page.goto(origin, { waitUntil: 'networkidle' }); await active(page);
       await page.getByRole('heading', { name: 'VICTORY!', exact: true }).waitFor();
+      await page.waitForFunction(() => document.activeElement?.id === 'dialog-title');
+      const heading = await page.locator('#dialog-title').boundingBox();
+      assert.ok(heading && heading.y >= 0 && heading.y + heading.height <= 568, 'the outcome heading must be visible when results open');
       assert.equal(await page.locator('.battle-statistics dd').first().innerText(), '1:15');
       assert.ok(await page.getByRole('img', { name: 'Before the Embers Fade: earned', exact: true }).isVisible());
       await page.screenshot({ path: `${output}/watch-seal-reload.png`, fullPage: true });
