@@ -9,7 +9,7 @@ async function effects(){
  return m;
 }
 
-test('ground effects stay beneath every same-lane actor rank while nearer planes remain nearer',async()=>{
+test('source-attached combat cues stay above their same-lane actors while nearer planes remain nearer',async()=>{
  const m=await effects(),ground=280;
  const objects=[
   {name:'base',depth:292},{name:'base damage',depth:292.1},
@@ -19,11 +19,11 @@ test('ground effects stay beneath every same-lane actor rank while nearer planes
   ...[0,1,2].map(lane=>({name:['rear effect','middle effect','front effect'][lane],depth:m.groundEffectDepth(ground,lane,12)})),
  ];
  assert.deepEqual(objects.sort((a,b)=>a.depth-b.depth).map(object=>object.name),[
-  'rear effect','rear troop','middle effect','middle troop','base','base damage','front effect','front troop',
+  'rear troop','rear effect','base','base damage','middle troop','middle effect','front troop','front effect',
  ]);
  for(const lane of [0,1,2])for(let id=0;id<5;id++)assert.ok(
-  m.groundEffectDepth(ground,lane,12)<actorRenderDepth(ground,lane,12,id),
-  `lane ${lane} ground effects must stay below actor stagger ${id}`,
+  m.groundEffectDepth(ground,lane,12)>actorRenderDepth(ground,lane,12,id),
+  `lane ${lane} source cues must stay above actor stagger ${id}`,
  );
  // Resizing changes ground placement, never the relation between the three lanes.
  for(const lane of [0,1,2])assert.equal(m.groundEffectDepth(400,lane,12)-m.groundEffectDepth(280,lane,12),120);
