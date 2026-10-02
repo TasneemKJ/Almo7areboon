@@ -1,5 +1,6 @@
 import test from 'node:test';
 import assert from 'node:assert/strict';
+import {readFileSync} from 'node:fs';
 import {baseSvg} from '../src/view/world-illustrations.ts';
 
 async function projectiles() {
