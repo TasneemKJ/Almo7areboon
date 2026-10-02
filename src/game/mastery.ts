@@ -1,3 +1,4 @@
+import { BATTLE_TIME_EPSILON } from './battle-time.ts';
 import { eraEconomyScale } from './data.ts';
 import type { BattleState, ChapterMasteryRecord, MasteryProgress, Profile } from './types.ts';
 
@@ -52,7 +53,8 @@ export function masteryObjectiveProgress(chapter: number, state: BattleState): O
 export function masteryEligibleMask(chapter: number, state: BattleState): number {
   if (!validChapter(chapter) || state.phase !== 'won') return 0;
   const objective = masteryObjectiveProgress(chapter,state);
-  const achieved = objective.comparison === 'at-most' ? objective.value <= objective.target : objective.value >= objective.target;
+  const tolerance = objective.unit === 'seconds' ? BATTLE_TIME_EPSILON : 0;
+  const achieved = objective.comparison === 'at-most' ? objective.value <= objective.target + tolerance : objective.value >= objective.target - tolerance;
   return 1 | (state.stats.gateDamageTaken === 0 ? 2 : 0) | (achieved ? 4 : 0);
 }
 export function masteryReward(chapter: number, mask: number): { coins: number; gems: number } {

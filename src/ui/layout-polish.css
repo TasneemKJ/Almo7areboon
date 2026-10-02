@@ -1,0 +1,51 @@
+/* Four-pass visual polish: hierarchy first, no new gameplay chrome. */
+.ready .big-button { width:min(218px,calc(100% - 48px)); max-width:218px; }
+.ready-title { opacity:.9; }
+.deployment { padding-inline:16px; }
+.unit-cards { gap:9px; }
+.deploy-hint { max-width:360px; margin-inline:auto; line-height:1.35; }
+
+@media (min-width:900px) {
+ .game-shell { max-width:560px; }
+ .resources { left:16px; }
+ .world-tools { right:16px; }
+ .stage { left:18px; right:18px; }
+ .deployment,.upgrades { padding-inline:18px; }
+ .unit-cards { gap:12px; }
+ .dialog { max-width:420px; }
+}
+
+.dialog>p { max-width:34rem; margin-inline:auto; line-height:1.65; }
+.setting-row { margin:7px 0; padding-inline:12px; }
+.audio-volume { margin:10px 2px 14px; }
+.backup-actions { margin-block:15px; gap:8px; }
+.help-box { margin-top:4px; border-top:1px solid var(--paper-edge); }
+.help-box summary { padding-inline:2px; }
+
+.result-dialog { scroll-padding-block:18px; }
+.result-dialog>.eyebrow { margin-top:2px; }
+.result-dialog .reward { margin-block:14px; }
+.result-dialog .battle-statistics { margin-block:12px; }
+.session-actions { margin-top:16px; }
+
+@media (max-width:360px) {
+ .deployment { padding-inline:10px; }
+ .unit-cards { gap:6px; }
+ .ready .big-button { width:calc(100% - 44px); max-width:196px; }
+ .dialog { padding-inline:15px; }
+ .result-dialog { scroll-padding-block:14px; }
+ .result-dialog h2 { line-height:1.05; }
+ .result-dialog .reward { margin-block:10px; }
+ .result-mastery { margin-block:9px; }
+ .battle-statistics { margin-block:9px; }
+ .setting-row { margin:6px 0; }
+ .backup-actions { grid-template-columns:1fr; }
+ .backup-actions [data-command="reset"] { grid-column:auto; }
+}
+
+@media (max-height:700px) {
+ .deployment { padding-inline:12px; }
+ .ready .big-button { max-width:190px; }
+ .dialog>p { line-height:1.5; }
+ .result-dialog .reward,.result-mastery,.battle-statistics { margin-block:8px; }
+}
