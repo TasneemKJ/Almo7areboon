@@ -62,3 +62,26 @@ test('portrait slot source contract: labels and pricing reserve separate space f
  assert.match(css,/height:\s*calc\(100% - var\(--portrait-top\) - var\(--portrait-bottom\)\)/);
  assert.match(css,/\.battle-select:disabled\s*\{[^}]*visibility:\s*hidden/);
 });
+
+
+test('the four-pass layout polish layer is loaded after readability',()=>{
+ const main=readFileSync(new URL('../src/main.ts',import.meta.url),'utf8');
+ assert.match(main,/import '\.\/ui\/layout-polish\.css';/);
+ assert.ok(main.indexOf('layout-polish.css')>main.indexOf('readability.css'));
+});
+test('desktop composition widens deliberately without becoming dashboard-wide',()=>{
+ const css=readFileSync(new URL('../src/ui/layout-polish.css',import.meta.url),'utf8');
+ assert.match(css,/@media\s*\(min-width:900px\)/);
+ assert.match(css,/\.game-shell\s*\{[^}]*max-width:\s*560px/s);
+});
+test('small phones reserve breathing room for primary and result actions',()=>{
+ const css=readFileSync(new URL('../src/ui/layout-polish.css',import.meta.url),'utf8');
+ assert.match(css,/@media\s*\(max-width:360px\)/);
+ assert.match(css,/\.ready \.big-button\s*\{[^}]*max-width:/s);
+ assert.match(css,/\.result-dialog\s*\{[^}]*scroll-padding-block:/s);
+});
+test('settings and dialogs use a calmer readable rhythm',()=>{
+ const css=readFileSync(new URL('../src/ui/layout-polish.css',import.meta.url),'utf8');
+ assert.match(css,/\.setting-row\s*\{[^}]*margin:/s);
+ assert.match(css,/\.dialog>p\s*\{[^}]*max-width:/s);
+});
