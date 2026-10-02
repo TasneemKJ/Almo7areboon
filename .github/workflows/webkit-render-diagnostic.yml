@@ -14,6 +14,7 @@ jobs:
         with: {node-version: 22, cache: npm}
       - run: npm ci
       - run: npm run build
+      - run: node --check scripts/qa/webkit-framebuffer-diagnostic.mjs
       - run: npx playwright install --with-deps webkit
       - run: |
           mkdir -p artifacts/webkit-render-diagnostic
