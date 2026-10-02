@@ -22,8 +22,9 @@ jobs:
           import io, json, os, pathlib, urllib.request, zipfile
           base='https://api.github.com/repos/TasneemKJ/Almo7areboon'
           def get(path):
-              request=urllib.request.Request(base+path,headers={'Authorization':'Bearer '+os.environ['GITHUB_TOKEN'],'Accept':'application/vnd.github+json'})
-              return urllib.request.urlopen(request).read()
+              request=urllib.request.Request(base+path,headers={'Accept':'application/vnd.github+json'})
+              request.add_unredirected_header('Authorization','Bearer '+os.environ['GITHUB_TOKEN'])
+              return urllib.request.urlopen(request,timeout=60).read()
           for run in [37052463946,37052463915]:
               jobs=json.loads(get(f'/actions/runs/{run}/jobs'))['jobs']
               for job in jobs:
@@ -39,8 +40,7 @@ jobs:
               for artifact in artifacts:
                   if artifact['name'] not in ['mobile-evidence','folktale-tactics-review']: continue
                   archive=zipfile.ZipFile(io.BytesIO(get(f'/actions/artifacts/{artifact["id"]}/zip')))
-                  pictures=[name for name in archive.namelist() if name.endswith('.png')]
-                  print('ARTIFACT',artifact['name'],'PNG_COUNT',len(pictures))
+                  print('ARTIFACT',artifact['name'],'PNG_COUNT',sum(name.endswith('.png') for name in archive.namelist()))
                   for name in archive.namelist():
                       if not name.endswith(('report.json','diagnostics.json')): continue
                       data=json.loads(archive.read(name))
@@ -65,6 +65,8 @@ jobs:
       - name: Install Chromium
         run: npx playwright install --with-deps chromium > qa/browser-install.log 2>&1
       - name: Isolate original 1024px cat-rescue sequence with read-only telemetry
+        id: cat
+        continue-on-error: true
         run: |
           python3 - <<'PY'
           from pathlib import Path
@@ -91,8 +93,28 @@ jobs:
           PY
           npm run preview -- --port 4173 > qa/preview.log 2>&1 &
           for i in $(seq 1 30); do curl -fsS http://127.0.0.1:4173/ >/dev/null && break || sleep 1; done
-          node --experimental-strip-types scripts/.mobile-diagnose.mjs > qa/cat-repro.log 2>&1; result=$?
-          grep -E 'REPRO_|PROBE' qa/cat-repro.log | tail -25
+          result=0
+          node --experimental-strip-types scripts/.mobile-diagnose.mjs > qa/cat-repro.log 2>&1 || result=$?
+          grep -E 'REPRO_|PROBE' qa/cat-repro.log | tail -25 || true
+          exit $result
+      - name: Diagnose offline-worker startup without an unbounded wait
+        id: offline
+        continue-on-error: true
+        run: |
+          python3 - <<'PY'
+          from pathlib import Path
+          source=Path('scripts/capture-offline-game-review.mjs').read_text()
+          marker='page = await context.newPage();'
+          assert source.count(marker)==1
+          source=source.replace(marker,marker+"\n    const cdp=await context.newCDPSession(page);cdp.on('ServiceWorker.workerErrorReported',info=>console.log('SW_ERROR',JSON.stringify(info)));cdp.on('ServiceWorker.workerVersionUpdated',info=>console.log('SW_VERSION',JSON.stringify(info)));await cdp.send('ServiceWorker.enable');")
+          marker='await page.evaluate(() => navigator.serviceWorker.ready);'
+          assert source.count(marker)==1
+          source=source.replace(marker,"await page.waitForFunction(async () => (await navigator.serviceWorker.getRegistration())?.active?.state === 'activated', null, {timeout:30000});")
+          Path('scripts/.offline-diagnose.mjs').write_text(source)
+          PY
+          result=0
+          timeout 150s node --experimental-strip-types scripts/.offline-diagnose.mjs > qa/offline-repro.log 2>&1 || result=$?
+          tail -35 qa/offline-repro.log
           exit $result
       - uses: actions/upload-artifact@v4
         if: always()
@@ -101,4 +123,13 @@ jobs:
           path: |
             qa/
             artifacts/chronicle/
+            artifacts/browser-review/offline-game/
           retention-days: 7
+      - name: Report reproduction outcomes
+        if: always()
+        env:
+          CAT: ${{ steps.cat.outcome }}
+          OFFLINE: ${{ steps.offline.outcome }}
+        run: |
+          echo "Cat reproduction: $CAT; offline reproduction: $OFFLINE"
+          test "$CAT" = success && test "$OFFLINE" = success
