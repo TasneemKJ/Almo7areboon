@@ -19,7 +19,7 @@ test('source-attached combat cues stay above their same-lane actors while nearer
   ...[0,1,2].map(lane=>({name:['rear effect','middle effect','front effect'][lane],depth:m.groundEffectDepth(ground,lane,12)})),
  ];
  assert.deepEqual(objects.sort((a,b)=>a.depth-b.depth).map(object=>object.name),[
-  'rear troop','rear effect','base','base damage','middle troop','middle effect','front troop','front effect',
+  'rear troop','rear effect','middle troop','base','base damage','middle effect','front troop','front effect',
  ]);
  for(const lane of [0,1,2])for(let id=0;id<5;id++)assert.ok(
   m.groundEffectDepth(ground,lane,12)>actorRenderDepth(ground,lane,12,id),

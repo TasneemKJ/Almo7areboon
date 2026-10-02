@@ -41,6 +41,8 @@ export type BattlefieldMemoryFrame=Readonly<{
  region:Readonly<{left:number;top:number;right:number;bottom:number}>;
 }>;
 
+export type BattlefieldMemoryRegion=Readonly<{left:number;top:number;right:number;bottom:number}>;
+
 const finite=(value:number,fallback:number)=>Number.isFinite(value)?value:fallback;
 const clamp=(value:number,min:number,max:number)=>Math.max(min,Math.min(max,value));
 const point=(x:number,y:number)=>Object.freeze({x,y});
@@ -92,4 +94,12 @@ export function battlefieldMemoryFrame(mark:BattlefieldMemoryMark,reduced=false)
  }
  const frame={alpha,lines:Object.freeze(lines),ellipses:Object.freeze(ellipses),region:Object.freeze({left:x-12,top:-8,right:x+12,bottom:8})};
  return Object.freeze(frame);
+}
+
+/** Road scars remain presentation-only and are omitted when DOM controls cover their readable shape. */
+export function battlefieldMemoryRegionClearOf(
+ region:BattlefieldMemoryRegion,
+ hudBounds:readonly BattlefieldMemoryRegion[],
+):boolean {
+ return !hudBounds.some(hud=>region.left<hud.right&&region.right>hud.left&&region.top<hud.bottom&&region.bottom>hud.top);
 }

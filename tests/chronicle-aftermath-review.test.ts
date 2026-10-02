@@ -93,13 +93,18 @@ test('aftermath scenarios include full-motion coverage plus a native stable redu
  assert.match(script,/assert\.deepEqual\(settled,capture\.villageVerdict,'reduced-motion verdict must remain complete and static'\)/);
 });
 
-test('native battle-memory journeys use public heavy and Meteor actions and prove bounded paused road scars',()=>{
+test('native battle-memory journeys use public actions and prove HUD-safe paused and reduced road scars',()=>{
  const script=source();
- assert.match(script,/function validateBattlefieldMemory\(state,kind,reduced=false\)/);
+ assert.match(script,/function validateBattlefieldMemory\(state,kind,reduced=false,paused=true\)/);
  assert.match(script,/state\.count>=1&&state\.count<=state\.cap/);
  assert.match(script,/assert\.equal\(state\.cap,6\)/);
  assert.match(script,/assert\.ok\(state\.kinds\.includes\(kind\)\)/);
+ assert.match(script,/state\.ages\.length,state\.count/);
+ assert.match(script,/state\.alphas\.length,state\.count/);
  assert.match(script,/async function pauseAtBattlefieldMemory\(page,kind\)/);
+ assert.match(script,/async function observeReducedBattlefieldMemory\(page,kind\)/);
+ assert.match(script,/state\.ages\.some\(age=>age>=10\.25\)/,'reduced evidence must cross the normal-motion fade boundary while active');
+ assert.match(script,/state\.alphas\.every\(alpha=>alpha===\.26\)/);
  assert.match(script,/JSON\.parse\(node\.dataset\.battlefieldMemory\)/);
  assert.match(script,/button\.click\(\)/,'the real public pause button must own the frozen evidence state');
  assert.match(script,/assert\.deepEqual\(paused,observed,'public pause must freeze battlefield memory'\)/);
@@ -111,6 +116,8 @@ test('native battle-memory journeys use public heavy and Meteor actions and prov
  assert.match(script,/shot\(f,'battlefield-memory-heavy'\)/);
  assert.match(script,/open\('390-memory-reduced',390,844,p,'reduce'\)/);
  assert.match(script,/getByRole\('button',\{name:\/Meteor\/i\}\)\.click\(\)/);
+ assert.match(script,/observeReducedBattlefieldMemory\(f\.page,'meteor'\)/);
  assert.match(script,/shot\(f,'battlefield-memory-meteor'\)/);
  assert.match(script,/assert\.deepEqual\(still,state,'reduced-motion battlefield memory must remain static'\)/);
+ assert.match(script,/waitForFunction\(\(\)=>!document\.querySelector\('canvas'\)\?\.dataset\.battlefieldMemory/,'the native journey must prove active-time expiry after the paused check');
 });

@@ -25,7 +25,7 @@ import {waveArrivalForPort} from './wave-arrival.ts';
 import {paintWaveArrival,waveArrivalRenderPlan} from './wave-arrival-paint.ts';
 import {battleAftermathPose} from './battle-aftermath.ts';
 import {villageVerdictFrame} from './village-verdict.ts';
-import {BATTLEFIELD_MEMORY_CAP,battlefieldMemoryFrame,battlefieldMemoryIntentForHit,rememberBattlefieldMark,stepBattlefieldMemory,type BattlefieldMemoryInput,type BattlefieldMemoryMark} from './battlefield-memory.ts';
+import {BATTLEFIELD_MEMORY_CAP,battlefieldMemoryFrame,battlefieldMemoryIntentForHit,battlefieldMemoryRegionClearOf,rememberBattlefieldMark,stepBattlefieldMemory,type BattlefieldMemoryInput,type BattlefieldMemoryMark,type BattlefieldMemoryRegion} from './battlefield-memory.ts';
 import {TROOP_FRAME} from './unit-illustrations.ts';
 import {compactNumber} from '../ui/battle-hud.ts';
 import {battleResolution} from './render-resolution.ts';
@@ -90,6 +90,7 @@ export function mountBattlefield(element:HTMLElement,game:GamePort,onFrame:()=>v
   private attackCues:AttackCue[]=[];
   private impactCues:ImpactCue[]=[];
   private battlefieldMemory:readonly BattlefieldMemoryMark[]=[];
+  private battlefieldHudBounds:BattlefieldMemoryRegion[]=[];
   private floaters:Floater[]=[];
   private layout=arenaLayout(450,430);
   private ages='';
@@ -168,6 +169,16 @@ export function mountBattlefield(element:HTMLElement,game:GamePort,onFrame:()=>v
    }
    const viewport:VillageViewport={placement,cssWorldScale,visibleSource,hudSourceBounds};
    viewport.skyPath=villageSkyPath(game.profile.age,viewport);this.villageViewport=viewport;
+   this.cacheBattlefieldHudBounds();
+  }
+  private cacheBattlefieldHudBounds():void {
+   const shell=element.closest<HTMLElement>('.game-shell'),canvas=this.game.canvas.getBoundingClientRect(),bounds:BattlefieldMemoryRegion[]=[];
+   if(shell)for(const node of Array.from(shell.querySelectorAll<HTMLElement>('.resources .currency,.resources .game-wordmark,.stage .eyebrow,.stage h1,.stage .scene-name,.stage .battle-select,.world-tools button,.battle-meta span,.battle-meta button,.battle-skills button'))){
+    const rect=node.getBoundingClientRect(),style=getComputedStyle(node);if(style.display==='none'||style.visibility==='hidden'||!rect.width||!rect.height)continue;
+    const left=Math.max(canvas.left,rect.left),top=Math.max(canvas.top,rect.top),right=Math.min(canvas.right,rect.right),bottom=Math.min(canvas.bottom,rect.bottom);
+    if(left<right&&top<bottom)bounds.push({left:(left-canvas.left)*450/Math.max(1,canvas.width),top:(top-canvas.top)*this.layout.height/Math.max(1,canvas.height),right:(right-canvas.left)*450/Math.max(1,canvas.width),bottom:(bottom-canvas.top)*this.layout.height/Math.max(1,canvas.height)});
+   }
+   this.battlefieldHudBounds=bounds;
   }
   private initVillageLights():void {
    const key=ensureVillageLight(this.textures);
@@ -595,14 +606,16 @@ export function mountBattlefield(element:HTMLElement,game:GamePort,onFrame:()=>v
    this.battlefieldMemory=rememberBattlefieldMark(this.battlefieldMemory,input);
   }
   private drawBattlefieldMemory():void {
-   const regions:{left:number;top:number;right:number;bottom:number}[]=[];
+   const regions:BattlefieldMemoryRegion[]=[],kinds:BattlefieldMemoryMark['kind'][]=[],ages:number[]=[],alphas:number[]=[];
    for(const mark of this.battlefieldMemory){
-    const frame=battlefieldMemoryFrame(mark,this.reduce),y=this.yAt(mark.lane)+4,layer=groundEffectLayer(this.groundFx,this.fx,mark.lane);
+    const frame=battlefieldMemoryFrame(mark,this.reduce),y=this.yAt(mark.lane)+4,layer=this.ambience;
+    const region={left:frame.region.left,top:y+frame.region.top,right:frame.region.right,bottom:y+frame.region.bottom};
+    if(!battlefieldMemoryRegionClearOf(region,this.battlefieldHudBounds))continue;
     for(const stroke of frame.lines){layer.lineStyle(stroke.width,stroke.color,frame.alpha);layer.lineBetween(stroke.from.x,y+stroke.from.y,stroke.to.x,y+stroke.to.y);}
     for(const ellipse of frame.ellipses){layer.fillStyle(ellipse.color,frame.alpha*.14);layer.fillEllipse(ellipse.x,y+ellipse.y,ellipse.width,ellipse.height);layer.lineStyle(ellipse.lineWidth,ellipse.color,frame.alpha);layer.strokeEllipse(ellipse.x,y+ellipse.y,ellipse.width,ellipse.height);}
-    regions.push({left:frame.region.left,top:y+frame.region.top,right:frame.region.right,bottom:y+frame.region.bottom});
+    regions.push(region);kinds.push(mark.kind);ages.push(mark.age);alphas.push(frame.alpha);
    }
-   if(navigator.webdriver&&this.battlefieldMemory.length)this.game.canvas.dataset.battlefieldMemory=JSON.stringify({count:this.battlefieldMemory.length,cap:BATTLEFIELD_MEMORY_CAP,kinds:this.battlefieldMemory.map(mark=>mark.kind),regions,reduced:this.reduce,paused:game.state.paused});
+   if(navigator.webdriver&&regions.length)this.game.canvas.dataset.battlefieldMemory=JSON.stringify({count:regions.length,total:this.battlefieldMemory.length,cap:BATTLEFIELD_MEMORY_CAP,kinds,regions,ages,alphas,reduced:this.reduce,paused:game.state.paused});
    else if(navigator.webdriver)delete this.game.canvas.dataset.battlefieldMemory;
   }
   private event(e:GameEvent):void {

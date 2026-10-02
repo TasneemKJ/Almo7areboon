@@ -2,7 +2,7 @@
 
 **Goal:** Make resolved heavy and Meteor impacts leave short-lived, depth-safe road scars without changing gameplay.
 
-**Architecture:** Add one pure immutable memory model. The existing battlefield event adapter creates truthful intents, existing projectile timing owns ranged landings, and the three existing `groundFx` layers paint the result. Extend the permanent Chronicle browser review with public-action heavy and Meteor journeys.
+**Architecture:** Add one pure immutable memory model. The existing battlefield event adapter creates truthful intents, existing projectile timing owns ranged landings, and the existing ambience underlay paints HUD-clear marks behind actors without taking over the lane-sorted combat-cue layers. Extend the permanent Chronicle browser review with public-action heavy and Meteor journeys.
 
 **Tech stack:** TypeScript, Phaser 3, Node test runner, Vite, Playwright in GitHub Actions.
 
@@ -10,7 +10,7 @@
 
 - Preserve saves, rewards, economy, damage, target choice, skill rules, input/pause ownership and audio.
 - At most six marks; nearby equivalent marks refresh; fourteen active seconds.
-- Reuse the three existing ground graphics and actor depth sort; allocate no scene-lifetime graphics or textures.
+- Reuse the existing ambience graphics for marks and the three lane-sorted ground graphics for source-attached combat cues; allocate no scene-lifetime graphics or textures.
 - Reduced motion is static. Pause and hidden ownership do not age marks.
 - Native Chromium runs only in GitHub Actions.
 
@@ -22,8 +22,9 @@
 - [x] Wire the model through the existing renderer and return focused tests/build to green.
 - [x] Write failing native-review contracts for 320/390/1024 heavy impacts and reduced-motion Meteor.
 - [x] Extend the existing GitHub-only Chronicle review harness through public controls.
-- [x] Run all 858 source tests and production build on the local branch tree.
-- [ ] Reconcile active PR #137, push this branch and open the next PR.
+- [x] Run the original 858 source tests and production build on the pre-reconciliation branch tree.
+- [x] Reconcile merged PR #137 without path overlap, update the branch by a true merge commit and open PR #138.
+- [x] Obtain independent code review and bug audit; reproduce supported findings with failing tests and fix actor-cue depth, HUD overlap and reduced-motion evidence.
+- [x] Prove reduced-motion marks remain at constant alpha past the normal fade boundary, freeze under public pause and expire when active time resumes.
 - [ ] Run required GitHub Actions workflows and inspect every original current-build screenshot and completed job log.
-- [ ] Obtain independent code review and bug audit; fix supported findings tests-first.
 - [ ] Verify the exact reviewed head/tree, merge, and independently verify merged source and Vercel production.
