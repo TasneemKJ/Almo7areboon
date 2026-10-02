@@ -3,6 +3,7 @@ import assert from 'node:assert/strict';
 import {
   BATTLEFIELD_MEMORY_CAP,
   BATTLEFIELD_MEMORY_LIFE,
+  battlefieldMemoryAfterReset,
   battlefieldMemoryFrame,
   battlefieldMemoryIntentForHit,
   battlefieldMemoryNeedsHudMeasurement,
@@ -18,6 +19,12 @@ const heavy=(x=180,lane=1,side:'player'|'enemy'='player')=>
 test('HUD geometry is measured only while battlefield memory is visible',()=>{
  assert.equal(battlefieldMemoryNeedsHudMeasurement([]),false);
  assert.equal(battlefieldMemoryNeedsHudMeasurement(heavy()),true);
+});
+
+test('motion-mode resets preserve live marks while scene resets clear them',()=>{
+ const marks=heavy();
+ assert.equal(battlefieldMemoryAfterReset(marks,'motion'),marks);
+ assert.deepEqual(battlefieldMemoryAfterReset(marks,'scene'),[]);
 });
 
 test('a truthful impact creates one finite immutable fourteen-second road mark',()=>{

@@ -119,5 +119,9 @@ test('native battle-memory journeys use public actions and prove HUD-safe paused
  assert.match(script,/observeReducedBattlefieldMemory\(f\.page,'meteor'\)/);
  assert.match(script,/shot\(f,'battlefield-memory-meteor'\)/);
  assert.match(script,/assert\.deepEqual\(still,state,'reduced-motion battlefield memory must remain static'\)/);
+ assert.match(script,/page\.emulateMedia\(\{reducedMotion:'reduce'\}\)/,'the native journey must preserve a live mark while system motion becomes reduced');
+ assert.match(script,/page\.emulateMedia\(\{reducedMotion:'no-preference'\}\)/,'the native journey must preserve the same mark when system motion resumes');
+ assert.match(script,/page\.setViewportSize\(\{width:1000,height:760\}\)/,'resize cleanup must execute in native Chromium');
+ assert.match(script,/normal-motion Meteor memory must wait for its projectile to land/);
  assert.match(script,/waitForFunction\(\(\)=>!document\.querySelector\('canvas'\)\?\.dataset\.battlefieldMemory/,'the native journey must prove active-time expiry after the paused check');
 });

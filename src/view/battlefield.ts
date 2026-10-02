@@ -25,7 +25,7 @@ import {waveArrivalForPort} from './wave-arrival.ts';
 import {paintWaveArrival,waveArrivalRenderPlan} from './wave-arrival-paint.ts';
 import {battleAftermathPose} from './battle-aftermath.ts';
 import {villageVerdictFrame} from './village-verdict.ts';
-import {BATTLEFIELD_MEMORY_CAP,battlefieldMemoryFrame,battlefieldMemoryIntentForHit,battlefieldMemoryNeedsHudMeasurement,battlefieldMemoryRegionClearOf,rememberBattlefieldMark,stepBattlefieldMemory,type BattlefieldMemoryInput,type BattlefieldMemoryMark,type BattlefieldMemoryRegion} from './battlefield-memory.ts';
+import {BATTLEFIELD_MEMORY_CAP,battlefieldMemoryAfterReset,battlefieldMemoryFrame,battlefieldMemoryIntentForHit,battlefieldMemoryNeedsHudMeasurement,battlefieldMemoryRegionClearOf,rememberBattlefieldMark,stepBattlefieldMemory,type BattlefieldMemoryInput,type BattlefieldMemoryMark,type BattlefieldMemoryRegion} from './battlefield-memory.ts';
 import {TROOP_FRAME} from './unit-illustrations.ts';
 import {compactNumber} from '../ui/battle-hud.ts';
 import {battleResolution} from './render-resolution.ts';
@@ -694,7 +694,7 @@ export function mountBattlefield(element:HTMLElement,game:GamePort,onFrame:()=>v
    for(const f of this.floaters){f.life-=dt;const progress=1-f.life/f.max;f.text.setY(f.startY-(this.reduce?0:progress*22)).setAlpha(Math.max(0,Math.min(1,f.life/f.max*2)));if(f.life<=0)f.text.destroy();}
    this.floaters=this.floaters.filter(f=>f.life>0);
   }
-  private resetEffects():void {this.baseHit={player:0,enemy:0};this.battlefieldMemory=[];delete this.game.canvas.dataset.battlefieldMemory;for(const g of this.groundFx)g.clear();this.attackCues=[];this.impactCues=[];this.fallen.clear();for(const f of this.floaters)f.text.destroy();this.floaters=[];this.sparks=[];this.bolts=[];this.rings=[];this.flares=[];this.glow?.clear();}
+  private resetEffects(reason:'motion'|'scene'='scene'):void {this.baseHit={player:0,enemy:0};this.battlefieldMemory=battlefieldMemoryAfterReset(this.battlefieldMemory,reason);delete this.game.canvas.dataset.battlefieldMemory;for(const g of this.groundFx)g.clear();this.attackCues=[];this.impactCues=[];this.fallen.clear();for(const f of this.floaters)f.text.destroy();this.floaters=[];this.sparks=[];this.bolts=[];this.rings=[];this.flares=[];this.glow?.clear();}
   update(_time:number,delta:number):void {
    if(disposed||!this.world)return;
    const dt=Math.min(.05,Math.max(0,delta/1000));game.step(dt);
@@ -702,7 +702,7 @@ export function mountBattlefield(element:HTMLElement,game:GamePort,onFrame:()=>v
    if(options.isVisible&&!options.isVisible()){onFrame();return;}
    if(this.lastState!==game.state){this.lastState=game.state;this.aftermath=null;delete this.game.canvas.dataset.battleAftermath;delete this.game.canvas.dataset.villageVerdict;this.resetEffects();for(const view of this.units.values())view.body.destroy();this.units.clear();}
    const reduced=reducedMotion(game.profile.motion,motionQuery.matches);
-   if(reduced&&!this.reduce)this.resetEffects();this.reduce=reduced;
+   if(reduced&&!this.reduce)this.resetEffects('motion');this.reduce=reduced;
    if(!game.state.paused&&!this.reduce)this.clock+=dt;
    this.syncEra();for(const event of events)this.event(event);
    this.drawAtmosphere();this.drawBaseDamage();this.drawArmy();this.healthBars();this.effects(game.state.paused?0:dt);onFrame();

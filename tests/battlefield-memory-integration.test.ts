@@ -39,7 +39,8 @@ test('memory reuses the existing ambience plane behind actors without burying co
  assert.match(code,/this\.battlefieldMemory=stepBattlefieldMemory\(this\.battlefieldMemory,dt,game\.state\.paused\)/);
  assert.match(code,/dataset\.battlefieldMemory=JSON\.stringify/);
  assert.match(code,/delete this\.game\.canvas\.dataset\.battlefieldMemory/);
- assert.match(code,/this\.battlefieldMemory=\[\]/);
+ assert.match(code,/this\.battlefieldMemory=battlefieldMemoryAfterReset\(this\.battlefieldMemory,reason\)/);
+ assert.match(code,/if\(reduced&&!this\.reduce\)this\.resetEffects\('motion'\)/,'entering reduced motion must preserve active road memory');
  const allocations=code.match(/this\.add\.graphics\(\)/g)??[];
  assert.equal(allocations.length,12,'battlefield memory must not allocate another scene-lifetime graphics object');
 });
