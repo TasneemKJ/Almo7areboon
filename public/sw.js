@@ -22,11 +22,7 @@ async function trimBundles(cache) {
   for (const request of stale.slice(0, bundles.length - KEEP_BUNDLES)) await cache.delete(request);
 }
 
-// Fetch the page and the scripts and styles it names now, so even the very first visit can be replayed offline.
-async function precache() {
-  const cache = await caches.open(CACHE);
-  const page = await fetch(SCOPE.href, { cache: 'reload' });
-  if (!page.ok) throw new Error(`Unable to cache ${SCOPE.href}`);
+async function cacheShell(cache, page) {
   const html = await page.clone().text();
   const assets = await Promise.all(shellURLs(html).map(async url => {
     const response = await fetch(url, { cache: 'reload' });
@@ -36,6 +32,14 @@ async function precache() {
   // Commit the page last: a failed update leaves the previous complete shell bootable.
   for (const [url, response] of assets) await cache.put(url, response);
   await cache.put(SCOPE.href, page);
+}
+
+// Fetch the page and the scripts and styles it names now, so even the very first visit can be replayed offline.
+async function precache() {
+  const cache = await caches.open(CACHE);
+  const page = await fetch(SCOPE.href, { cache: 'reload' });
+  if (!page.ok) throw new Error(`Unable to cache ${SCOPE.href}`);
+  await cacheShell(cache, page);
 }
 
 self.addEventListener('install', event => {
@@ -73,7 +77,8 @@ self.addEventListener('fetch', event => {
       // Clone before awaiting storage; the browser may already be consuming the network body.
       const copy = response.clone(), cache = await opened;
       if (!cache) return;
-      await cache.put(key, copy);
+      if (navigation) await cacheShell(cache, copy);
+      else await cache.put(key, copy);
       await trimBundles(cache);
     }
   }).catch(() => {}));

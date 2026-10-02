@@ -8,7 +8,7 @@ const deferred=()=>{let resolve!:(value?:any)=>void,reject!:(reason?:any)=>void;
 function worker({cached=true,mode='cors',url='https://game.test/art/a.webp',method='GET'}={}){
  const network=deferred(),write=deferred(),trim=deferred(),lifetimes:Promise<any>[]=[];
  const handlers:Record<string,Function>={},request={url,method,mode};let response:Promise<any>|undefined,putStarted=false,trimStarted=false,fetches=0;
- const fresh={ok:true,type:'basic',clone(){return this;}},old={name:'cached'};
+ const fresh={ok:true,type:'basic',clone(){return this;},async text(){return '';}},old={name:'cached'};
  const cache={match:async()=>cached?old:undefined,put:()=>{putStarted=true;return write.promise;},keys:()=>{trimStarted=true;return trim.promise;},delete:async()=>true};
  runInNewContext(source,{URL,Response:{error:()=>({name:'error'})},caches:{open:async()=>cache},fetch:()=>{fetches++;return network.promise;},self:{location:{origin:'https://game.test'},registration:{scope:'https://game.test/'},addEventListener:(name:string,fn:Function)=>handlers[name]=fn}});
  handlers.fetch({request,respondWith:(p:Promise<any>)=>response=p,waitUntil:(p:Promise<any>)=>lifetimes.push(p)});
@@ -117,6 +117,16 @@ test('a failed install asset keeps the last complete offline shell and does not 
  await assert.rejects(fixture.install(),/asset unavailable/);
  assert.equal(fixture.skipped,false);
  assert.match(await (await fixture.cache.match('./'))!.text(),/old\.js/);
+ assert.equal(await fixture.cache.match('./assets/new.js'),undefined);
+});
+
+test('a failed navigation refresh cannot replace the last complete offline shell',async()=>{
+ const fixture=cacheFixture({shell:'<script src="./assets/new.js"></script>',failAsset:'/assets/new.js'});
+ await fixture.cache.put('./',fixture.basic('<script src="./assets/old.js"></script>'));
+ await fixture.cache.put('./assets/old.js',fixture.basic('old bundle'));
+ assert.match(await (await fixture.request())!.text(),/new\.js/,'healthy navigation remains immediate');
+ assert.match(await (await fixture.cache.match('./'))!.text(),/old\.js/,'failed background refresh must retain the bootable shell');
+ assert.ok(await fixture.cache.match('./assets/old.js'));
  assert.equal(await fixture.cache.match('./assets/new.js'),undefined);
 });
 
