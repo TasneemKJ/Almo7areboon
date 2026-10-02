@@ -3,6 +3,7 @@ import assert from 'node:assert/strict';
 import {readFileSync} from 'node:fs';
 
 const source=()=>readFileSync(new URL('../scripts/review-chronicle.mjs',import.meta.url),'utf8');
+const workflow=()=>readFileSync(new URL('../.github/workflows/chronicle-review.yml',import.meta.url),'utf8');
 
 test('native journey reaches fresh outcomes through public controls only',()=>{
  const script=source();
@@ -134,4 +135,10 @@ test('native battle-memory journeys use public actions and prove HUD-safe paused
  assert.match(script,/the publicly paused in-flight mark must survive reduced-to-system without aging/);
  assert.match(script,/entering reduced motion during an observed Meteor flight commits its accepted target memory before clearing animation/);
  assert.match(script,/waitForFunction\(\(\)=>!document\.querySelector\('canvas'\)\?\.dataset\.battlefieldMemory/,'the native journey must prove active-time expiry after the paused check');
+});
+
+test('battlefield memory publishes focused original screenshot evidence',()=>{
+ const ci=workflow();
+ assert.match(ci,/name: battlefield-memory-review/);
+ for(const file of ['320-memory-heavy-battlefield-memory-heavy.png','390-memory-heavy-battlefield-memory-heavy.png','1024-memory-heavy-battlefield-memory-heavy.png','390-memory-reduced-battlefield-memory-meteor.png','report.json'])assert.match(ci,new RegExp(file.replaceAll('.','\\\\.')));
 });
