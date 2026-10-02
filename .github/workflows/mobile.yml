@@ -3,13 +3,14 @@ name: Mobile reliability
 on:
   push:
     branches: [main, fix/mobile-reliability-audit]
+  pull_request:
   workflow_dispatch:
 
 permissions:
   contents: read
 
 concurrency:
-  group: mobile-${{ github.ref }}
+  group: mobile-${{ github.event_name }}-${{ github.ref }}
   cancel-in-progress: true
 
 jobs:
@@ -40,14 +41,24 @@ jobs:
       - run: npm ci
       - run: npm test
       - run: npm run build
-      - run: npx playwright install --with-deps chromium
+      - run: npx playwright install --with-deps chromium webkit
       - name: Touch, short-screen and recovery regressions
         env:
           MOBILE_ASSERT: '1'
+          MOBILE_ENGINES: chromium,webkit
         run: node --experimental-strip-types scripts/verify-mobile.mjs
+      - name: Save ownership and recovery regressions
+        if: ${{ !cancelled() }}
+        run: npm run review:save-sessions
+      - name: Offline return and deployment
+        if: ${{ !cancelled() }}
+        run: node --experimental-strip-types scripts/capture-offline-game-review.mjs
       - uses: actions/upload-artifact@v4
         if: always()
         with:
           name: mobile-evidence
-          path: artifacts/mobile/
+          path: |
+            artifacts/mobile/
+            artifacts/save-session-review/
+            artifacts/browser-review/offline-game/
           retention-days: 7

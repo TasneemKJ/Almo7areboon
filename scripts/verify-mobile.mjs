@@ -3,6 +3,7 @@ import {createServer} from 'node:http';
 import {readFileSync,writeFileSync,mkdirSync} from 'node:fs';
 import {resolve,extname,sep} from 'node:path';
 import {chromium,webkit} from 'playwright';
+import {execFileSync} from 'node:child_process';
 import {defaultProfile,SAVE_KEY,BACKUP_KEY} from '../src/game/save.ts';
 
 const out=process.env.MOBILE_OUT??'artifacts/mobile';
@@ -17,7 +18,7 @@ const server=createServer((req,res)=>{
 });
 await new Promise(resolve=>server.listen(0,'127.0.0.1',resolve));
 const origin=`http://127.0.0.1:${server.address().port}`;
-const report={status:'failed',cases:[],errors:[],browsers:{}};
+const report={revision:execFileSync('git',['rev-parse','HEAD'],{encoding:'utf8'}).trim(),status:'failed',cases:[],errors:[],browsers:{}};
 let browser;
 async function capture(page,name,phase){
  const data=await page.evaluate(()=>{
@@ -52,7 +53,6 @@ async function run(engine,width,height,temporary=false,insets=null){
   item.screens.push(await capture(page,name,'storybook'));
   await page.locator('.dialog').evaluate(el=>el.scrollTop=400);
   item.screens.push(await capture(page,name,'storybook-scroll'));
-  await page.locator('.dialog').evaluate(el=>el.scrollTop=0);
   await page.locator('.close-button').tap();
   await page.locator('[data-command="start"]').tap();
   await page.locator('[data-unit="0"]').tap();
@@ -68,17 +68,36 @@ async function run(engine,width,height,temporary=false,insets=null){
   item.screens.push(await capture(page,name,'cards'));
   await page.locator('[data-tab="battle"]').tap();
   assert.equal(await page.locator('#pause').getAttribute('aria-pressed'),'true','returning to battle preserves manual pause');
+  if(height>=540&&!insets){
+   const before=await page.evaluate(key=>localStorage.getItem(key),SAVE_KEY);
+   await page.setViewportSize({width:height,height:width});
+   await page.waitForFunction(()=>document.querySelector('#world canvas')?.width>0);
+   item.screens.push(await capture(page,name,'rotated'));
+   await page.setViewportSize({width,height});
+   assert.equal(await page.locator('#pause').getAttribute('aria-pressed'),'true','rotation preserves manual pause');
+   assert.equal(await page.evaluate(key=>localStorage.getItem(key),SAVE_KEY),before,'rotation cannot change saved progress');
+  }
+  await page.locator('[data-command="settings"]').tap();
+  await page.locator('[data-command="retreat"]').tap();
+  await page.getByRole('heading',{name:'REGROUP',exact:true}).waitFor();
+  item.screens.push(await capture(page,name,'regroup'));
+  await page.locator('[data-command="retry"]').tap();
+  await page.waitForFunction(()=>document.querySelector('#world')?.dataset.phase==='ready');
+  item.screens.push(await capture(page,name,'retry'));
+
   if(process.env.MOBILE_ASSERT==='1'){
    const check=(ok,message)=>{if(!ok)item.issues.push(message);};
    for(const screen of item.screens){
-    const prefix=`${name}/${screen.phase}`,top=insets?.top??0,bottom=height-(insets?.bottom??0);
-    check(screen.scrollWidth<=width,`${prefix}: horizontal overflow`);
-    const dialog=screen.regions['.dialog'];if(dialog)check(dialog.x>=0&&dialog.right<=width,`${prefix}: dialog overflows`);
-    if(height>=540&&!dialog){for(const c of screen.controls.filter(c=>['battle','evolution','cards','skills'].includes(c.command)))check(c.y>=top&&c.bottom<=bottom&&c.reachable,`${prefix}: navigation ${c.command} is obscured`);}
+    const prefix=`${name}/${screen.phase}`,top=insets?.top??0,bottom=screen.height-(insets?.bottom??0);
+    check(screen.scrollWidth<=screen.width,`${prefix}: horizontal overflow`);
+    const dialog=screen.regions['.dialog'];if(dialog)check(dialog.x>=0&&dialog.right<=screen.width,`${prefix}: dialog overflows`);
+    if(screen.height>=540&&!dialog){for(const c of screen.controls.filter(c=>['battle','evolution','cards','skills'].includes(c.command)))check(c.y>=top&&c.bottom<=bottom&&c.reachable,`${prefix}: navigation ${c.command} is obscured`);}
     for(const c of screen.controls.filter(c=>!c.disabled&&(c.command==='story-rally'||c.command.startsWith('story-page-'))))check(c.width>=44&&c.height>=44,`${prefix}: ${c.command} target is ${c.width}x${c.height}, below 44x44`);
-    if(screen.phase==='ready'){
-     const a=screen.controls.find(c=>c.command==='battles'),b=screen.controls.find(c=>c.command==='start');
-     if(a&&b)check(Math.min(a.bottom,b.bottom)-Math.max(a.y,b.y)<=0,`${prefix}: chapter selection overlaps Battle`);
+    if(screen.phase==='ready'||screen.phase==='retry'){
+     const a=screen.controls.find(c=>c.command==='battles');
+     for(const b of screen.controls.filter(c=>c.command==='start'||c.command==='chronicle')){
+      if(a)check(Math.min(a.bottom,b.bottom)-Math.max(a.y,b.y)<=0,`${prefix}: chapter selection overlaps ${b.command}`);
+     }
     }
     if(screen.phase.startsWith('storybook')){
      const close=screen.controls.find(c=>c.dismiss);

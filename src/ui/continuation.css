@@ -102,3 +102,35 @@
 
 .buy-button:focus-visible,.nav-item:focus-visible { outline:3px solid #edb755; outline-offset:-3px; }
 @media(forced-colors:active) { .buy-button:focus-visible,.nav-item:focus-visible,.audio-volume input:focus-visible { outline-color:Highlight; } }
+
+/* A short phone or a home-indicator inset must not make the two ready controls
+   occupy the chapter selector's hit area. Keep both bands in normal grid flow;
+   only the battlefield/deployment region scrolls when their minimums cannot fit. */
+.battle-view { overflow-y:auto; overscroll-behavior:contain; }
+.world[data-phase="ready"] {
+ display:grid;
+ grid-template-rows:auto minmax(8px,1fr) auto;
+ min-height:min-content;
+}
+.world[data-phase="ready"] .stage {
+ position:relative; inset:auto; grid-row:1;
+ margin:calc(72px + env(safe-area-inset-top,0px)) 10px 0;
+}
+.world[data-phase="ready"] .ready {
+ position:relative; inset:auto; grid-row:3;
+ margin:8px 0 13px;
+}
+@media(max-height:700px) {
+ .world[data-phase="ready"] .stage { margin-top:calc(60px + env(safe-area-inset-top,0px)); }
+ .world[data-phase="ready"] .ready { margin-bottom:12px; }
+}
+/* The modal's content box, including its dismiss control, stays out of notches
+   and home indicators in both portrait and the short landscape fallback. */
+.modal-layer {
+ --modal-gutter:17px;
+ padding:max(var(--modal-gutter),env(safe-area-inset-top,0px))
+         max(var(--modal-gutter),env(safe-area-inset-right,0px))
+         max(var(--modal-gutter),env(safe-area-inset-bottom,0px))
+         max(var(--modal-gutter),env(safe-area-inset-left,0px));
+}
+@media(max-width:360px) { .modal-layer { --modal-gutter:12px; } }

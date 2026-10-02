@@ -2,12 +2,12 @@
 :root{--story-ink:#28383c;--story-paper:#dbc89d;--story-teal:#34534f;}
 .chronicle-command-row{display:flex;gap:9px;align-items:center;padding:0 10px 5px;min-height:42px;}
 .chronicle-command-row .deploy-hint{flex:1;min-width:0;margin:2px 0;line-height:1.3;}
-.story-rally{flex:0 0 auto;min-width:76px;min-height:40px;padding:8px 11px;border:1px solid #b39d72;border-radius:16px 12px 17px 10px;background:#35514f;color:#f4dfb4;font-family:Georgia,serif;font-size:14px;font-weight:bold;}
+.story-rally{flex:0 0 auto;min-width:76px;min-height:44px;padding:8px 11px;border:1px solid #b39d72;border-radius:16px 12px 17px 10px;background:#35514f;color:#f4dfb4;font-family:Georgia,serif;font-size:14px;font-weight:bold;}
 .story-rally[aria-pressed="true"]{background:#d4bb82;color:#28383c;box-shadow:inset 0 0 0 2px #f2dfb633;}
 .story-rally:disabled{opacity:.65;}
 .story-open{border:1px solid #c1af82;border-radius:14px 10px;background:#253e3b;color:#eadbb4;padding:10px 15px;min-height:44px;font-family:Georgia,serif;}
 .chronicle-dialog{width:min(650px,96vw);padding:0!important;overflow-y:auto;color:var(--story-ink);background:var(--story-paper)!important;border:2px solid #b39a6e!important;border-radius:24px 18px 20px 13px!important;}
-.chronicle-dialog>.modal-close{position:sticky;top:10px;float:right;margin:10px 10px -54px 0;z-index:2;background:#263e3c;color:#f5dfb0;border-radius:12px;}
+.chronicle-dialog>.close-button{position:sticky;top:10px;float:right;margin:10px 10px -54px 0;z-index:2;background:#263e3c;color:#f5dfb0;border-radius:12px;}
 .chronicle-book{padding:22px 14px 18px;background:repeating-linear-gradient(95deg,transparent 0 16px,#fff4d106 16px 18px);font-size:14px;line-height:1.5;}
 .story-heading{padding-right:40px;}
 .story-heading .eyebrow{color:#5f583e;font-size:10px;letter-spacing:1.1px;}
@@ -68,3 +68,6 @@
 @media(max-width:350px){.story-route{padding:9px 7px;}.story-route strong{font-size:15px}.story-route span{font-size:11px}.story-houses{gap:6px}.story-house{padding-left:4px;padding-right:4px}.chronicle-command-row .deploy-hint{font-size:11px}.story-rally{min-width:67px;font-size:12px}.story-illustration{height:170px;}}
 @media(prefers-reduced-motion:reduce){.story-route{transition:none!important}.story-map-lantern{animation:none!important}}
 @media(forced-colors:active){.chronicle-dialog,.story-route,.story-house,.story-rally,.story-choices button{border:1px solid ButtonText!important;background:Canvas!important;color:CanvasText!important}.story-route.selected,.story-choices .chosen{outline:3px solid Highlight}.story-chapter-name{background:Canvas;color:CanvasText;text-shadow:none}.story-illustration{background:Canvas}}
+
+/* Six chapter choices wrap rather than shrink below a finger-sized target. */
+@media(max-width:350px){.story-chapters{display:grid;grid-template-columns:repeat(3,minmax(44px,1fr));}}
