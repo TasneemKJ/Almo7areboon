@@ -31,7 +31,7 @@ These references guide the principle only. The treatment remains original ink-an
 
 `villageFrame(input)` consumes that optional verdict. A win replaces ordinary occupancy with at most two returning witness silhouettes and at most six upward acknowledgement strokes. A loss returns no silhouettes, paints exactly four crossed-shutter strokes, and attenuates—but never mutates—authored/restoration light descriptions. All geometry derives from `VILLAGE_PLATES` and remains within the existing fixed pools.
 
-The webdriver-only canvas diagnostic reports mode, progress, witness count, stroke count, light count, pause and reduced-motion state. It is absent in ready/running play and cleared on scene shutdown.
+The webdriver-only canvas diagnostic reports mode, progress, witness count, stroke count, light count, pause and reduced-motion state. Its measured regions cover every witness polygon, verdict stroke and verdict-affected light separately, avoiding both empty-space union collisions and missed witness/halo extents. It is absent in ready/running play and cleared on scene shutdown. Native victory capture waits for the existing camera flash to finish so the evidence shows the reaction, while the reaction itself is still complete on the first terminal frame.
 
 ## Acceptance
 
@@ -41,4 +41,4 @@ The webdriver-only canvas diagnostic reports mode, progress, witness count, stro
 4. The verdict does not change existing running-only pause ownership; reduced motion uses a stable complete composition.
 5. Malformed time, phase, restoration and geometry inputs remain finite, immutable and bounded.
 6. The renderer allocates no new scene-lifetime object pool and clears diagnostics on retry, identity replacement and shutdown.
-7. Native 320/390/1024 same-frame canvas and full-stage screenshots show the response before the unchanged result sheet; measured DOM rectangles establish HUD clearance, and a separate reduced-motion journey establishes a stable complete composition.
+7. Native 320/390/1024 same-frame canvas and full-stage screenshots show the response after any terminal camera flash and before the unchanged result sheet; per-primitive DOM rectangles establish HUD clearance, and a separate reduced-motion journey establishes a stable complete composition.

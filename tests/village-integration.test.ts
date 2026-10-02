@@ -35,8 +35,10 @@ test('battlefield derives the village verdict from authoritative aftermath witho
 test('verdict response reuses ambience and light pools, exposes webdriver evidence, and clears with the battle',()=>{
  const source=readFileSync(new URL('../src/view/battlefield.ts',import.meta.url),'utf8');
  assert.match(source,/for\(const stroke of frame\.verdictStrokes\)\{g\.lineStyle\(stroke\.width,stroke\.color,stroke\.alpha\);g\.lineBetween\(stroke\.from\.x,stroke\.from\.y,stroke\.to\.x,stroke\.to\.y\);\}/);
- assert.match(source,/const verdictBounds=frame\.verdictStrokes\.reduce/);
- assert.match(source,/if\(navigator\.webdriver&&villageVerdict\)this\.game\.canvas\.dataset\.villageVerdict=JSON\.stringify\(\{mode:villageVerdict\.mode,progress:villageVerdict\.progress,witnesses:frame\.residents\.length,strokes:frame\.verdictStrokes\.length,lights:lights\.length,bounds:verdictBounds,reduced:this\.reduce,paused:game\.state\.paused\}\)/);
+ assert.match(source,/const verdictRegions=/);
+ assert.match(source,/frame\.residents\.flatMap/,'webdriver geometry must include the witnesses, not only the strokes');
+ assert.match(source,/lights\.map/,'webdriver geometry must include every verdict-affected halo');
+ assert.match(source,/if\(navigator\.webdriver&&villageVerdict\)this\.game\.canvas\.dataset\.villageVerdict=JSON\.stringify\(\{mode:villageVerdict\.mode,progress:villageVerdict\.progress,witnesses:frame\.residents\.length,strokes:frame\.verdictStrokes\.length,lights:lights\.length,regions:verdictRegions,reduced:this\.reduce,paused:game\.state\.paused\}\)/);
  assert.match(source,/delete this\.game\.canvas\.dataset\.villageVerdict/);
  assert.match(source,/while\(this\.stageLight\.length<6\)/);
  assert.doesNotMatch(source,/villageVerdict[^\n]*this\.add\.(?:graphics|image|container)/);

@@ -81,6 +81,12 @@ const safePlacement=(placement:VillageViewport['placement']):VillageViewport['pl
  const valid=Number.isFinite(placement.x)&&Number.isFinite(placement.y)&&Number.isFinite(placement.scale)&&Math.abs(placement.x)<=2_048&&Math.abs(placement.y)<=2_048&&placement.scale>0&&placement.scale<=4;
  return valid?placement:{x:0,y:0,scale:1};
 };
+const safeCssWorldScale=(scale:number)=>Number.isFinite(scale)&&scale>0&&scale<=4?scale:1;
+const sourceBounds=(value:unknown):Bounds|null=>{
+ if(!Array.isArray(value)||value.length!==4||!value.every(Number.isFinite))return null;
+ const [l,t,r,b]=value as number[];
+ return l>=0&&t>=0&&r<=900&&b<=1000&&l<r&&t<b?[l,t,r,b]:null;
+};
 
 // A single rounded outline, triangulated once. Joined head/neck/shoulders, no face or eye dots.
 const residentOutline:Point[]=[];
@@ -110,14 +116,14 @@ const BIRDS=freeze([
 
 /** Cache this on layout/resize; complete bird extents use the same crop as the painting. */
 export function villageSkyPath(age:number,viewport:VillageViewport):Bounds|null {
- const plate=VILLAGE_PLATES[Number.isInteger(age)&&age>=0&&age<6?age:0],s=viewport.placement.scale*viewport.cssWorldScale;
+ const plate=VILLAGE_PLATES[Number.isInteger(age)&&age>=0&&age<6?age:0],placement=safePlacement(viewport.placement),s=placement.scale*safeCssWorldScale(viewport.cssWorldScale);
  if(!(s>0)||42*s<8)return null;
- const sky=plate.sky,crop=viewport.visibleSource;
+ const sky=plate.sky,crop=sourceBounds(viewport.visibleSource)??[0,0,900,1000] as const;
  const region:Bounds=[Math.max(sky[0],crop[0]),Math.max(sky[1],crop[1]),Math.min(sky[2],crop[2]),Math.min(sky[3],crop[3])];
  if(region[0]>=region[2]||region[1]>=region[3])return null;
  let free:Bounds[]=[region];
  const padding=4/s;
- for(const hud of viewport.hudSourceBounds.slice(0,32))free=free.flatMap(part=>subtract(part,[hud[0]-padding,hud[1]-padding,hud[2]+padding,hud[3]+padding]));
+ for(const hud of viewport.hudSourceBounds.slice(0,32).map(sourceBounds).filter((value):value is Bounds=>value!==null))free=free.flatMap(part=>subtract(part,[hud[0]-padding,hud[1]-padding,hud[2]+padding,hud[3]+padding]));
  return free.filter(part=>part[2]-part[0]>=142&&part[3]-part[1]>=20).sort((a,b)=>(b[2]-b[0])-(a[2]-a[0]))[0]??null;
 }
 
@@ -131,6 +137,7 @@ export function villageFrame(input:VillageFrameInput):VillageFrame {
  // Reduced motion uses discrete visual states; the shared long ramp remains intact for audio.
  const mix=input.reduced?(input.mood.mood==='alarmed'?1:0):sharedMix;
  const placement=safePlacement(input.viewport.placement);
+ const cssWorldScale=safeCssWorldScale(input.viewport.cssWorldScale);
  const project=(p:Point):Point=>({x:placement.x+p.x*placement.scale,y:placement.y+p.y*placement.scale});
  const paint=(points:readonly Point[],alpha:number):PaintedPolygon=>({points:points.map(project),color:INK,alpha});
  const residents:VillageFrame['residents'][number][]=[];
@@ -149,7 +156,7 @@ export function villageFrame(input:VillageFrameInput):VillageFrame {
     for(const pane of room.panes){const clipped=clip(shape,pane);if(clipped.length>=3)panes.push(paint(clipped,alpha));}
    }
   }else if(!verdict&&returning&&(courtyard||occupied&&index===(input.reduced?0:visit%2))){
-   const [l,t,r,b]=room.bounds,w=r-l,h=b-t,small=w*placement.scale*input.viewport.cssWorldScale<6||h*placement.scale*input.viewport.cssWorldScale<8;
+   const [l,t,r,b]=room.bounds,w=r-l,h=b-t,small=w*placement.scale*cssWorldScale<6||h*placement.scale*cssWorldScale<8;
    const envelope=input.reduced||courtyard?1:Math.min(1,phase/.7,(duration-phase)/.7);
    const warmth=!input.reduced&&input.mood.mood==='recovering'?1-sharedMix/.375:1;
    const alpha=(room.dark?.28:.40)*Math.max(0,envelope)*warmth;
@@ -195,7 +202,8 @@ export function villageFrame(input:VillageFrameInput):VillageFrame {
   const startedDuringCurrentAlarm=input.mood.mood==='alarmed'&&input.mood.alarmEnteredAt!==null&&start+1e-9>=input.mood.alarmEnteredAt;
   const startedDuringClosedAlarm=input.mood.alarmHistory?.some(alarm=>start+1e-9>=alarm.enteredAt&&start<alarm.endedAt-1e-9)??false;
   if(cycle>=0&&progress>=0&&progress<=1&&!startedDuringCurrentAlarm&&!startedDuringClosedAlarm){
-   const path=input.viewport.skyPath===undefined?villageSkyPath(age,input.viewport):input.viewport.skyPath;
+   const cached=input.viewport.skyPath===null?null:sourceBounds(input.viewport.skyPath);
+   const path=input.viewport.skyPath===null?null:cached??villageSkyPath(age,{...input.viewport,placement,cssWorldScale,visibleSource:sourceBounds(input.viewport.visibleSource)??[0,0,900,1000],hudSourceBounds:input.viewport.hudSourceBounds.map(sourceBounds).filter((value):value is Bounds=>value!==null),skyPath:undefined});
    if(path){const x=path[0]+21+(path[2]-path[0]-42)*progress,y=(path[1]+path[3])/2;const pose=Math.min(2,Math.floor(progress*3));bird=BIRDS[pose].map(triangle=>paint(triangle.map(p=>({x:x+p.x,y:y+p.y})),.54));}
   }
  }

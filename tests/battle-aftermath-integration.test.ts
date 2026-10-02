@@ -58,6 +58,7 @@ test('native evidence uses Phaser post-render readback only under browser automa
  assert.match(source,/Object\.defineProperty\(renderer\.canvas,'battlefieldReviewSnapshot'/);
  assert.match(source,/state\.phase!==expected/,'the pre-armed hook must wait for the requested authoritative terminal frame');
  assert.match(source,/villageVerdict\.progress!==1/,'the hook must capture the first complete village response');
+ assert.match(source,/cameras\.main\.flashEffect\.isRunning/,'the evidence frame must wait until the terminal victory flash no longer obscures the village');
  assert.doesNotMatch(source,/state\.elapsed<\.\d+/,'the hook must not race the wall-clock result sheet through a clamped presentation threshold');
  assert.match(source,/renderer\.renderer\.once\(Phaser\.Renderer\.Events\.POST_RENDER/);
  assert.match(source,/renderer\.renderer\.snapshot\(/);

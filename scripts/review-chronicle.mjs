@@ -32,12 +32,12 @@ async function canvasShot(fixture,state,expected,reduced=false){
 }
 async function noOverflow(page){assert.ok(await page.evaluate(()=>document.documentElement.scrollWidth<=innerWidth+1),'root must not overflow horizontally');}
 async function assertVerdictClearOfHud(page,state){
- const geometry=await page.locator('canvas').evaluate((node,bounds)=>{
-  const canvas=node.getBoundingClientRect(),scale=canvas.width/450,box={left:canvas.left+bounds.left*scale,top:canvas.top+bounds.top*scale,right:canvas.left+bounds.right*scale,bottom:canvas.top+bounds.bottom*scale};
+ const geometry=await page.locator('canvas').evaluate((node,regions)=>{
+  const canvas=node.getBoundingClientRect(),scale=canvas.width/450,boxes=regions.map(bounds=>({left:canvas.left+bounds.left*scale,top:canvas.top+bounds.top*scale,right:canvas.left+bounds.right*scale,bottom:canvas.top+bounds.bottom*scale}));
   const selectors='.resources .currency,.resources .game-wordmark,.stage .eyebrow,.stage h1,.stage .scene-name,.stage .battle-select,.world-tools button,.battle-meta span,.battle-meta button,.battle-skills button';
-  const collisions=[];for(const hud of document.querySelectorAll(selectors)){const style=getComputedStyle(hud),rect=hud.getBoundingClientRect();if(style.display==='none'||style.visibility==='hidden'||!rect.width||!rect.height)continue;if(box.left<rect.right&&box.right>rect.left&&box.top<rect.bottom&&box.bottom>rect.top)collisions.push(hud instanceof HTMLElement?hud.id||hud.className||hud.tagName:hud.nodeName);}
-  return {box,collisions};
- },state.bounds);
+  const collisions=[];for(const hud of document.querySelectorAll(selectors)){const style=getComputedStyle(hud),rect=hud.getBoundingClientRect();if(style.display==='none'||style.visibility==='hidden'||!rect.width||!rect.height)continue;if(boxes.some(box=>box.left<rect.right&&box.right>rect.left&&box.top<rect.bottom&&box.bottom>rect.top))collisions.push(hud instanceof HTMLElement?hud.id||hud.className||hud.tagName:hud.nodeName);}
+  return {boxes,collisions};
+ },state.regions);
  assert.deepEqual(geometry.collisions,[],'village verdict must remain clear of the rendered DOM HUD');return geometry;
 }
 async function verdictWorldShot(fixture,state){assert.equal(await fixture.page.locator('.result-dialog').count(),0,'full-stage verdict screenshot must precede the result sheet');await shot(fixture,state);assert.equal(await fixture.page.locator('.result-dialog').count(),0,'result sheet opened during the full-stage verdict screenshot');}
@@ -95,7 +95,7 @@ function validateAftermathSnapshot(state,outcome,reduced=false){
 function validateVillageVerdictSnapshot(state,outcome,reduced=false){
  assert.equal(state.mode,outcome==='won'?'celebrate':'shelter');assert.equal(state.progress,1);
  assert.equal(state.witnesses,outcome==='won'?2:0);assert.equal(state.strokes,outcome==='won'?6:4);
- assert.ok(Number.isInteger(state.lights)&&state.lights>=2&&state.lights<=6);for(const value of Object.values(state.bounds))assert.ok(Number.isFinite(value));assert.ok(state.bounds.left<state.bounds.right&&state.bounds.top<state.bounds.bottom);assert.equal(state.reduced,reduced);assert.equal(state.paused,false);
+ assert.ok(Number.isInteger(state.lights)&&state.lights>=2&&state.lights<=6);assert.ok(Array.isArray(state.regions)&&state.regions.length>=state.strokes+state.lights);for(const bounds of state.regions){for(const value of Object.values(bounds))assert.ok(Number.isFinite(value));assert.ok(bounds.left<bounds.right&&bounds.top<bounds.bottom);}assert.equal(state.reduced,reduced);assert.equal(state.paused,false);
 }
 async function clickEnabled(page,locator){
  if(await page.locator('#world').getAttribute('data-phase')!=='running'||!await locator.isEnabled())return false;

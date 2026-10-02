@@ -45,7 +45,7 @@
 - [ ] **Step 3:** Run `node --experimental-strip-types --test tests/village-verdict.test.ts tests/village-life.test.ts` and confirm failure is the missing contract.
 - [ ] **Step 4:** Implement the minimal pure model and measured composition.
 - [ ] **Step 5:** Re-run the focused tests and confirm they pass.
-- [ ] **Step 6:** Commit the pure slice.
+- [x] **Step 6:** Commit the pure slice.
 
 ### Task 2: Existing renderer ownership and diagnostics
 
@@ -55,13 +55,13 @@
 
 **Interfaces:**
 - Consumes: the existing authoritative `this.aftermath`, pause-aware `this.clock`, `VillageFrame.verdictStrokes`, residents and lights.
-- Produces: existing-layer drawing plus webdriver-only `dataset.villageVerdict` with bounded summary fields.
+- Produces: existing-layer drawing plus webdriver-only `dataset.villageVerdict` with bounded per-witness, per-stroke and per-halo evidence regions.
 
-- [ ] **Step 1:** Write failing source/integration tests for authoritative aftermath ownership, pause-aware elapsed time, existing ambience/light pools, diagnostics gating and reset/shutdown cleanup.
-- [ ] **Step 2:** Run `node --experimental-strip-types --test tests/village-verdict.test.ts tests/village-life.test.ts tests/village-integration.test.ts tests/battle-aftermath-integration.test.ts` and confirm the renderer contract fails.
-- [ ] **Step 3:** Wire the verdict through `drawAtmosphere`, paint strokes on ambience, summarize only under webdriver, and clear every lifecycle boundary.
-- [ ] **Step 4:** Re-run focused tests, all source tests and `npm run build`.
-- [ ] **Step 5:** Commit the renderer slice.
+- [x] **Step 1:** Write failing source/integration tests for authoritative aftermath ownership, pause-aware elapsed time, existing ambience/light pools, diagnostics gating and reset/shutdown cleanup.
+- [x] **Step 2:** Run `node --experimental-strip-types --test tests/village-verdict.test.ts tests/village-life.test.ts tests/village-integration.test.ts tests/battle-aftermath-integration.test.ts` and confirm the renderer contract fails.
+- [x] **Step 3:** Wire the verdict through `drawAtmosphere`, paint strokes on ambience, summarize only under webdriver, and clear every lifecycle boundary.
+- [x] **Step 4:** Re-run focused tests, all source tests and `npm run build`.
+- [x] **Step 5:** Commit the renderer slice.
 
 ### Task 3: Native evidence and release gate
 
@@ -72,12 +72,12 @@
 
 **Interfaces:**
 - Consumes: existing natural win/loss public-action fixtures and Phaser post-render snapshots.
-- Produces: validated village-verdict diagnostics and original pre-result screenshots at 320, 390 and 1024.
+- Produces: validated per-primitive village-verdict diagnostics and original post-flash/pre-result screenshots at 320, 390 and 1024.
 
 - [x] **Step 1:** Write failing harness-contract tests requiring the new diagnostic, exact outcome mode, bounded marks/lights, full-stage HUD evidence and a stable native reduced-motion comparison. Terminal verdicts intentionally preserve the existing running-only pause owner.
-- [ ] **Step 2:** Run the focused harness test and confirm it fails for missing evidence.
-- [ ] **Step 3:** Extend the existing survivor-verdict capture instead of creating another browser journey; document the bounded continuation.
-- [ ] **Step 4:** Re-run focused tests, all source tests and production build.
+- [x] **Step 2:** Run the focused harness test and confirm it fails for missing evidence.
+- [x] **Step 3:** Extend the existing survivor-verdict capture instead of creating another browser journey; document the bounded continuation.
+- [x] **Step 4:** Re-run focused tests, all source tests and production build.
 - [ ] **Step 5:** Commit, push, open a PR, run both GitHub Actions workflows, inspect every original screenshot and completed job log, obtain independent code and bug review, fix supported findings tests-first, verify exact head/tree, merge and independently verify production.
 
 ## Evidence Boundaries

@@ -32,6 +32,8 @@ test('victory and defeat tableaux are captured before the unchanged result sheet
  assert.match(script,/await armCanvasShot\(f,outcome\);await reachNaturalOutcome\(f\.page,outcome\);/);
  assert.match(script,/await canvasShot\(f,`\$\{outcome\}-survivor-verdict`,outcome\)/);
  assert.match(script,/await assertVerdictClearOfHud\(f\.page,capture\.villageVerdict\)/);
+ assert.match(script,/regions\.map/,'HUD evidence must test each changed primitive rather than one empty-space-spanning union');
+ assert.match(script,/\},state\.regions\)/);
  assert.match(script,/await verdictWorldShot\(f,`\$\{outcome\}-survivor-verdict-world`\)/);
  assert.match(script,/await f\.page\.locator\('\.result-dialog'\)\.waitFor\(\{timeout:2500\}\)/);
 });

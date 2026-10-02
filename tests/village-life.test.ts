@@ -183,3 +183,22 @@ test('malformed placement and huge time fall back to finite bounded verdict comp
   assert.ok(values.every(value=>Number.isFinite(value)&&Math.abs(value)<=2_000),`unbounded placement output: ${JSON.stringify({placement,values})}`);
  }
 });
+
+test('malformed cached viewport geometry cannot leak non-finite bird coordinates',async()=>{
+ const m=await life(),malformed=[
+  {skyPath:[NaN,90,660,190]},
+  {skyPath:[250,90,Infinity,190]},
+  {skyPath:[660,190,250,90]},
+  {skyPath:[-Number.MAX_VALUE,90,Number.MAX_VALUE,190]},
+  {visibleSource:[NaN,0,900,1000],skyPath:undefined},
+  {visibleSource:[0,0,Infinity,1000],skyPath:undefined},
+  {hudSourceBounds:[[NaN,0,100,100]],skyPath:undefined},
+  {cssWorldScale:Number.MAX_VALUE,skyPath:undefined},
+ ] as const;
+ for(let age=0;age<6;age++)for(const overrides of malformed){
+  const input:any={age,time:10,reduced:false,restoration:7,mood:quiet,viewport:{...viewport,...overrides,placement:{...viewport.placement}}},before=structuredClone(input),frame=m.villageFrame(input);
+  assert.deepEqual(input,before);
+  const values=(frame.bird??[]).flatMap((polygon:any)=>polygon.points.flatMap((point:any)=>[point.x,point.y]));
+  assert.ok(values.every(value=>Number.isFinite(value)&&Math.abs(value)<=2_000),`unbounded cached viewport output: ${JSON.stringify({age,overrides,values})}`);
+ }
+});
