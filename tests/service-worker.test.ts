@@ -130,6 +130,14 @@ test('a failed navigation refresh cannot replace the last complete offline shell
  assert.equal(await fixture.cache.match('./assets/new.js'),undefined);
 });
 
+test('a non-entry navigation cannot replace the cached game shell',async()=>{
+ const fixture=cacheFixture();
+ await fixture.cache.put('./',fixture.basic('<script src="./assets/game.js"></script>'));
+ await fixture.request('https://game.test/icon.svg','navigate');
+ assert.match(await (await fixture.cache.match('./'))!.text(),/game\.js/);
+ assert.equal(await (await fixture.cache.match('./icon.svg'))!.text(),'network response');
+});
+
 for (const mode of ['navigate', 'cors']) {
   for (const failure of ['failOpen', 'failMatch'] as const) {
     test(`${mode} still reaches the network when ${failure} is unavailable`, async () => {

@@ -64,6 +64,7 @@ self.addEventListener('fetch', event => {
   url.search = '';
   if (navigation && url.pathname === `${SCOPE.pathname}index.html`) url.pathname = SCOPE.pathname;
   const key = navigation ? url.href : request;
+  const entryNavigation = navigation && url.href === SCOPE.href;
   // CacheStorage is optional: an unavailable cache must not block a healthy network request.
   const opened = Promise.resolve().then(() => caches.open(CACHE)).catch(() => null);
   const refresh = Promise.resolve().then(() => fetch(request));
@@ -77,7 +78,7 @@ self.addEventListener('fetch', event => {
       // Clone before awaiting storage; the browser may already be consuming the network body.
       const copy = response.clone(), cache = await opened;
       if (!cache) return;
-      if (navigation) await cacheShell(cache, copy);
+      if (entryNavigation) await cacheShell(cache, copy);
       else await cache.put(key, copy);
       await trimBundles(cache);
     }
