@@ -23,11 +23,16 @@ test('accepted Meteor lands only on real current enemy views and survives reduce
  assert.match(code,/memory:targets\.length\?memory:undefined/,'the no-target fallback meteor must not leave a false scar');
 });
 
-test('memory reuses the three ground layers and clears every renderer lifecycle boundary',()=>{
+test('memory reuses the existing ambience plane behind actors without burying combat cues',()=>{
  const code=source();
  assert.match(code,/private battlefieldMemory:readonly BattlefieldMemoryMark\[\]=\[\]/);
  assert.match(code,/battlefieldMemoryFrame\(mark,this\.reduce\)/);
- assert.match(code,/groundEffectLayer\(this\.groundFx,this\.fx,mark\.lane\)/);
+ assert.match(code,/layer=this\.ambience/,'road scars belong on the existing actor-underlay, not the source-cue lane pool');
+ assert.match(code,/drawAttackCues[\s\S]+groundEffectLayer\(this\.groundFx,this\.fx,cue\.lane\)/,'actor-attached combat cues retain their lane depth');
+ assert.match(code,/battlefieldMemoryRegionClearOf\(region,this\.battlefieldHudBounds\)/,'HUD-covered scars must not paint');
+ assert.match(code,/cacheBattlefieldHudBounds\(\)/);
+ assert.match(code,/ages:/);
+ assert.match(code,/alphas:/);
  assert.match(code,/this\.battlefieldMemory=stepBattlefieldMemory\(this\.battlefieldMemory,dt,game\.state\.paused\)/);
  assert.match(code,/dataset\.battlefieldMemory=JSON\.stringify/);
  assert.match(code,/delete this\.game\.canvas\.dataset\.battlefieldMemory/);
