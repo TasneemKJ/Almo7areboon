@@ -1,0 +1,57 @@
+name: Four UI recovery iterations
+on:
+  push:
+    branches: [chore/four-iterations-review]
+    paths:
+      - '.github/workflows/four-iterations.yml'
+      - 'scripts/review-ui-recovery.mjs'
+      - 'scripts/apply-ui-iteration.py'
+permissions:
+  contents: write
+concurrency:
+  group: four-ui-iterations
+  cancel-in-progress: false
+jobs:
+  review:
+    runs-on: ubuntu-latest
+    timeout-minutes: 10
+    steps:
+      - uses: actions/checkout@v4
+      - uses: actions/setup-node@v4
+        with:
+          node-version: 22
+          cache: npm
+      - name: Build exact production source
+        run: |
+          mkdir -p qa/four-iterations
+          find src scripts tests -name AGENTS.md -print
+          git rev-parse HEAD
+          npm ci > qa/four-iterations/install.log 2>&1
+          node --check scripts/review-ui-recovery.mjs
+          npm run build > qa/four-iterations/build.log 2>&1 || { tail -50 qa/four-iterations/build.log; exit 1; }
+          npx playwright install --with-deps chromium > qa/four-iterations/browser.log 2>&1
+      - name: Capture pre-fix behavior through the production UI
+        env:
+          UI_REVIEW_OUT: qa/four-iterations/baseline
+        run: |
+          result=0
+          node --experimental-strip-types scripts/review-ui-recovery.mjs > qa/four-iterations/baseline.log 2>&1 || result=$?
+          cat qa/four-iterations/baseline.log
+          echo "Baseline browser exit code: $result"
+          test -f qa/four-iterations/baseline/report.json
+      - name: Retain inspectable baseline evidence on this diagnostic branch only
+        if: always()
+        run: |
+          git config user.name 'github-actions[bot]'
+          git config user.email '41898282+github-actions[bot]@users.noreply.github.com'
+          git add -f qa/four-iterations
+          if ! git diff --cached --quiet; then
+            git commit -m 'test: retain four-pass baseline screenshots and diagnostics'
+            git push origin HEAD:refs/heads/chore/four-iterations-review
+          fi
+      - uses: actions/upload-artifact@v4
+        if: always()
+        with:
+          name: four-iterations-baseline
+          path: qa/four-iterations/
+          retention-days: 7
