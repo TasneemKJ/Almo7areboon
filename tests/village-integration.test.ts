@@ -25,18 +25,18 @@ test('battlefield owns restored life through one saved mask and a fixed six-ligh
  assert.match(source,/mark=lights\[i\]/);
  assert.match(layeringReview,/v\.pools,\{lights:6,stars:0,clouds:0,mist:0\}/);
 });
-test('battlefield derives the village verdict from the authoritative aftermath and pause-aware clock',()=>{
+test('battlefield derives the village verdict from authoritative aftermath without a new timing owner',()=>{
  const source=readFileSync(new URL('../src/view/battlefield.ts',import.meta.url),'utf8');
  assert.match(source,/import \{villageVerdictFrame\} from '\.\/village-verdict\.ts';/);
  assert.match(source,/const villageVerdict=this\.aftermath\?\.phase===game\.state\.phase\?villageVerdictFrame\(\{phase:this\.aftermath\.phase,elapsed:Math\.max\(0,this\.clock-this\.aftermath\.at\),reduced:this\.reduce\}\):null;/);
  assert.match(source,/villageFrame\(\{[^}]*verdict:villageVerdict/s);
- assert.match(source,/if\(!game\.state\.paused&&!this\.reduce\)this\.clock\+=dt/);
  assert.doesNotMatch(source,/setTimeout\([^)]*villageVerdict|Date\.now\(\)[^;]*villageVerdict/);
 });
 test('verdict response reuses ambience and light pools, exposes webdriver evidence, and clears with the battle',()=>{
  const source=readFileSync(new URL('../src/view/battlefield.ts',import.meta.url),'utf8');
  assert.match(source,/for\(const stroke of frame\.verdictStrokes\)\{g\.lineStyle\(stroke\.width,stroke\.color,stroke\.alpha\);g\.lineBetween\(stroke\.from\.x,stroke\.from\.y,stroke\.to\.x,stroke\.to\.y\);\}/);
- assert.match(source,/if\(navigator\.webdriver&&villageVerdict\)this\.game\.canvas\.dataset\.villageVerdict=JSON\.stringify\(\{mode:villageVerdict\.mode,progress:villageVerdict\.progress,witnesses:frame\.residents\.length,strokes:frame\.verdictStrokes\.length,lights:lights\.length,reduced:this\.reduce,paused:game\.state\.paused\}\)/);
+ assert.match(source,/const verdictBounds=frame\.verdictStrokes\.reduce/);
+ assert.match(source,/if\(navigator\.webdriver&&villageVerdict\)this\.game\.canvas\.dataset\.villageVerdict=JSON\.stringify\(\{mode:villageVerdict\.mode,progress:villageVerdict\.progress,witnesses:frame\.residents\.length,strokes:frame\.verdictStrokes\.length,lights:lights\.length,bounds:verdictBounds,reduced:this\.reduce,paused:game\.state\.paused\}\)/);
  assert.match(source,/delete this\.game\.canvas\.dataset\.villageVerdict/);
  assert.match(source,/while\(this\.stageLight\.length<6\)/);
  assert.doesNotMatch(source,/villageVerdict[^\n]*this\.add\.(?:graphics|image|container)/);

@@ -169,3 +169,17 @@ test('verdict composition stays finite bounded immutable and never duplicates or
   for(const stroke of frame.verdictStrokes)for(const value of [stroke.from.x,stroke.from.y,stroke.to.x,stroke.to.y,stroke.width,stroke.alpha,stroke.color])assert.ok(Number.isFinite(value));
  }
 });
+
+test('malformed placement and huge time fall back to finite bounded verdict composition',async()=>{
+ const m=await life(),placements=[
+  {x:NaN,y:0,scale:1},{x:0,y:Infinity,scale:1},{x:0,y:0,scale:NaN},{x:0,y:0,scale:0},{x:0,y:0,scale:-1},
+  {x:Number.MAX_VALUE,y:-Number.MAX_VALUE,scale:Number.MAX_VALUE},
+ ];
+ for(let age=0;age<6;age++)for(const placement of placements)for(const verdict of [{mode:'celebrate',progress:1},{mode:'shelter',progress:1}] as const){
+  const input:any={age,time:Number.MAX_VALUE,reduced:false,restoration:7,mood:quiet,viewport:{...viewport,placement:{...placement}},verdict:{...verdict}},before=structuredClone(input),frame=m.villageFrame(input);
+  assert.deepEqual(input,before);assert.ok(frame.residents.length<=2);assert.ok(frame.verdictStrokes.length<=6);assert.ok(frame.lamps.length<=4);assert.ok(frame.restorationLights.length<=2);
+  const polygons=[...frame.residents.flatMap((resident:any)=>resident.panes),...(frame.bird??[])],strokes=[...frame.verdictStrokes,...frame.water],halos=[...frame.lamps,...frame.restorationLights];
+  const values=[...polygons.flatMap((polygon:any)=>[polygon.alpha,...polygon.points.flatMap((point:any)=>[point.x,point.y])]),...strokes.flatMap((stroke:any)=>[stroke.from.x,stroke.from.y,stroke.to.x,stroke.to.y,stroke.width,stroke.alpha]),...halos.flatMap((lamp:any)=>[lamp.center.x,lamp.center.y,lamp.rx,lamp.ry,lamp.alpha])];
+  assert.ok(values.every(value=>Number.isFinite(value)&&Math.abs(value)<=2_000),`unbounded placement output: ${JSON.stringify({placement,values})}`);
+ }
+});

@@ -18,10 +18,9 @@ test('only authoritative terminal phases produce a village verdict',async()=>{
  for(const phase of ['victory','defeat','',null,3])assert.equal(m.villageVerdictFrame({phase,elapsed:.6,reduced:false} as any),null);
 });
 
-test('the verdict settles over six tenths of a presentation second',async()=>{
+test('the verdict is complete on the first authoritative terminal frame',async()=>{
  const m=await subject(),frame=(elapsed:number)=>{const value=m.villageVerdictFrame({phase:'won',elapsed,reduced:false});assert.ok(value);return value;};
- assert.equal(frame(0).progress,0);assert.equal(frame(.15).progress,.25);assert.equal(frame(.3).progress,.5);
- assert.equal(frame(.599).progress,.599/.6);assert.equal(frame(.6).progress,1);assert.equal(frame(99).progress,1);
+ for(const elapsed of [0,.001,.075,.15,.3,.35,99])assert.equal(frame(elapsed).progress,1);
 });
 
 test('reduced motion uses the complete static verdict while malformed time fails finite',async()=>{
@@ -31,7 +30,7 @@ test('reduced motion uses the complete static verdict while malformed time fails
   assert.ok(reduced);
   assert.equal(reduced.progress,1);
   for(const elapsed of [NaN,Infinity,-Infinity,-4]){
-   const frame=m.villageVerdictFrame({phase,elapsed,reduced:false});assert.ok(frame);assert.equal(frame.progress,0);assert.ok(Number.isFinite(frame.progress));
+   const frame=m.villageVerdictFrame({phase,elapsed,reduced:false});assert.ok(frame);assert.equal(frame.progress,1);assert.ok(Number.isFinite(frame.progress));
   }
  }
 });

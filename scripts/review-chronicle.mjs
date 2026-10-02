@@ -16,7 +16,7 @@ async function shot(fixture,state){const file=`${fixture.name}-${state}.png`;awa
 async function armCanvasShot(fixture,expected){await fixture.page.locator('canvas').evaluate((node,phase)=>{
  if(typeof node.battlefieldReviewArm!=='function'||!node.battlefieldReviewArm(phase))throw new Error('Phaser post-render snapshot could not be armed');
 },expected);}
-async function canvasShot(fixture,state,expected){
+async function canvasShot(fixture,state,expected,reduced=false){
  const capture=await fixture.page.locator('canvas').evaluate((node,phase)=>new Promise((resolve,reject)=>{
   if(typeof node.battlefieldReviewSnapshot!=='function'){reject(new Error('Phaser post-render snapshot is unavailable'));return;}
   node.battlefieldReviewSnapshot(({image,resultOpen,aftermath,villageVerdict})=>{
@@ -26,11 +26,21 @@ async function canvasShot(fixture,state,expected){
    resolve({encoded:image.src.split(',')[1],width:image.naturalWidth,height:image.naturalHeight,resultOpen,aftermath,villageVerdict,opaque,colors:colors.size,phase});
   });
  }),expected);
- assert.equal(capture.resultOpen,false,'survivor verdict snapshot must precede the result sheet');validateAftermathSnapshot(capture.aftermath,expected);validateVillageVerdictSnapshot(capture.villageVerdict,expected);assert.ok(capture.opaque>512&&capture.colors>32,`snapshot pixels are blank or uniform: ${JSON.stringify({opaque:capture.opaque,colors:capture.colors})}`);
+ assert.equal(capture.resultOpen,false,'survivor verdict snapshot must precede the result sheet');validateAftermathSnapshot(capture.aftermath,expected,reduced);validateVillageVerdictSnapshot(capture.villageVerdict,expected,reduced);assert.ok(capture.opaque>512&&capture.colors>32,`snapshot pixels are blank or uniform: ${JSON.stringify({opaque:capture.opaque,colors:capture.colors})}`);
  const bytes=Buffer.from(capture.encoded,'base64');assert.deepEqual([...bytes.subarray(0,8)],[137,80,78,71,13,10,26,10]);assert.equal(bytes.readUInt32BE(16),capture.width);assert.equal(bytes.readUInt32BE(20),capture.height);
- const file=`${fixture.name}-${state}.png`;await writeFile(`${out}/${file}`,bytes);screens.push(file);return capture.aftermath;
+ const file=`${fixture.name}-${state}.png`;await writeFile(`${out}/${file}`,bytes);screens.push(file);return capture;
 }
 async function noOverflow(page){assert.ok(await page.evaluate(()=>document.documentElement.scrollWidth<=innerWidth+1),'root must not overflow horizontally');}
+async function assertVerdictClearOfHud(page,state){
+ const geometry=await page.locator('canvas').evaluate((node,bounds)=>{
+  const canvas=node.getBoundingClientRect(),scale=canvas.width/450,box={left:canvas.left+bounds.left*scale,top:canvas.top+bounds.top*scale,right:canvas.left+bounds.right*scale,bottom:canvas.top+bounds.bottom*scale};
+  const selectors='.resources .currency,.resources .game-wordmark,.stage .eyebrow,.stage h1,.stage .scene-name,.stage .battle-select,.world-tools button,.battle-meta span,.battle-meta button,.battle-skills button';
+  const collisions=[];for(const hud of document.querySelectorAll(selectors)){const style=getComputedStyle(hud),rect=hud.getBoundingClientRect();if(style.display==='none'||style.visibility==='hidden'||!rect.width||!rect.height)continue;if(box.left<rect.right&&box.right>rect.left&&box.top<rect.bottom&&box.bottom>rect.top)collisions.push(hud instanceof HTMLElement?hud.id||hud.className||hud.tagName:hud.nodeName);}
+  return {box,collisions};
+ },state.bounds);
+ assert.deepEqual(geometry.collisions,[],'village verdict must remain clear of the rendered DOM HUD');return geometry;
+}
+async function verdictWorldShot(fixture,state){assert.equal(await fixture.page.locator('.result-dialog').count(),0,'full-stage verdict screenshot must precede the result sheet');await shot(fixture,state);assert.equal(await fixture.page.locator('.result-dialog').count(),0,'result sheet opened during the full-stage verdict screenshot');}
 const saved=page=>page.evaluate(()=>localStorage.getItem('almo7areboon.save.v1'));
 async function pauseAtLandmarkPhase(page,phase){
  const deadline=Date.now()+60000;
@@ -76,16 +86,16 @@ async function pauseAtCatMode(page,mode){
  }
  throw new Error(`Timed out pausing at cat mode ${mode}`);
 }
-function validateAftermathSnapshot(state,outcome){
+function validateAftermathSnapshot(state,outcome,reduced=false){
  assert.equal(state.phase,outcome);assert.ok(state.elapsed>=0&&state.elapsed<=1.3);
  assert.equal(state.triumph>0,true,'the surviving winning side must answer the verdict');if(outcome==='lost')assert.equal(state.withdraw>0,true,'a living defeated survivor must visibly withdraw');
  assert.equal(Array.isArray(state.roles),true);assert.equal(state.roles.length,3);assert.equal(state.roles.every(value=>Number.isInteger(value)&&value>=0),true);
- assert.ok(state.maxForward>=0&&state.maxForward<=4);assert.ok(state.maxLift>=0&&state.maxLift<=4);assert.ok(state.maxAngle>=0&&state.maxAngle<=4);assert.equal(state.reduced,false);
+ assert.ok(state.maxForward>=0&&state.maxForward<=4);assert.ok(state.maxLift>=0&&state.maxLift<=4);assert.ok(state.maxAngle>=0&&state.maxAngle<=4);assert.equal(state.reduced,reduced);
 }
-function validateVillageVerdictSnapshot(state,outcome){
+function validateVillageVerdictSnapshot(state,outcome,reduced=false){
  assert.equal(state.mode,outcome==='won'?'celebrate':'shelter');assert.equal(state.progress,1);
  assert.equal(state.witnesses,outcome==='won'?2:0);assert.equal(state.strokes,outcome==='won'?6:4);
- assert.ok(Number.isInteger(state.lights)&&state.lights>=2&&state.lights<=6);assert.equal(state.reduced,false);assert.equal(state.paused,false);
+ assert.ok(Number.isInteger(state.lights)&&state.lights>=2&&state.lights<=6);for(const value of Object.values(state.bounds))assert.ok(Number.isFinite(value));assert.ok(state.bounds.left<state.bounds.right&&state.bounds.top<state.bounds.bottom);assert.equal(state.reduced,reduced);assert.equal(state.paused,false);
 }
 async function clickEnabled(page,locator){
  if(await page.locator('#world').getAttribute('data-phase')!=='running'||!await locator.isEnabled())return false;
@@ -137,10 +147,17 @@ try{
  for(const [name,width,height,outcome] of [['320-aftermath-loss',320,568,'lost'],['390-aftermath-win',390,844,'won'],['1024-aftermath-win',1024,768,'won']]){
   const p=preparedChronicleProfile();p.motion='system';p.speed=2;p.age=0;p.enemyAge=0;p.chronicle.route='road';p.chronicle.expedition=null;
   if(outcome==='lost'){p.baseLevel=0;p.foodLevel=0;p.unlocked=[true,true,true];}
-  const f=await open(name,width,height,p,'no-preference');await armCanvasShot(f,outcome);await reachNaturalOutcome(f.page,outcome);
-  await canvasShot(f,`${outcome}-survivor-verdict`,outcome);await noOverflow(f.page);
+ const f=await open(name,width,height,p,'no-preference');await armCanvasShot(f,outcome);await reachNaturalOutcome(f.page,outcome);
+  const capture=await canvasShot(f,`${outcome}-survivor-verdict`,outcome);await assertVerdictClearOfHud(f.page,capture.villageVerdict);await verdictWorldShot(f,`${outcome}-survivor-verdict-world`);await noOverflow(f.page);
   await f.page.locator('.result-dialog').waitFor({timeout:2500});const afterSettlement=await saved(f.page);await f.page.waitForTimeout(450);assert.equal(await saved(f.page),afterSettlement,'settled verdict presentation must remain save-inert');
-  checks.push(`${width}: public controls reach a natural ${outcome}; bounded survivor verdict precedes the unchanged result sheet and remains save-inert`);await f.context.close();
+  checks.push(`${width}: public controls reach a natural ${outcome}; same-frame canvas and full-stage HUD evidence precede the unchanged result sheet and remain save-inert`);await f.context.close();
+ }
+ for(const [name,width,height,outcome,reducedMotion] of [['390-aftermath-reduced',390,844,'won','reduce']]){
+  const p=preparedChronicleProfile();p.motion='system';p.speed=2;p.age=0;p.enemyAge=0;p.chronicle.route='road';p.chronicle.expedition=null;
+  const f=await open(name,width,height,p,reducedMotion);await armCanvasShot(f,outcome);await reachNaturalOutcome(f.page,outcome);
+  const capture=await canvasShot(f,`${outcome}-survivor-verdict`,outcome,true);await assertVerdictClearOfHud(f.page,capture.villageVerdict);await noOverflow(f.page);
+  await f.page.locator('.result-dialog').waitFor({timeout:2500});await f.page.waitForTimeout(450);const settled=await f.page.locator('canvas').evaluate(node=>JSON.parse(node.dataset.villageVerdict));assert.deepEqual(settled,capture.villageVerdict,'reduced-motion verdict must remain complete and static');
+  checks.push('390: reduced motion renders the complete stable village verdict through the same natural public-control win');await f.context.close();
  }
  {
   const p=preparedChronicleProfile();p.sound=true;const f=await open('390-company',390,844,p);

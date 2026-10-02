@@ -40,7 +40,7 @@
 - Consumes: `Phase`, `elapsed`, `reduced`, optional `VillageFrameInput.verdict`.
 - Produces: `villageVerdictFrame(input): Readonly<VillageVerdictFrame>|null`; `VillageFrame.verdictStrokes`; verdict-aware residents and light descriptions.
 
-- [ ] **Step 1:** Write failing model tests for terminal-only truth, exact 0/0.6 progress boundaries, reduced-motion completion, malformed/huge time, immutability and non-mutation.
+- [x] **Step 1:** Write failing model tests for terminal-only truth, first-frame completion, reduced-motion completion, malformed/huge time, immutability and non-mutation.
 - [ ] **Step 2:** Write failing village tests for two victory witnesses/six rays, zero loss witnesses/four shutter strokes, measured finite bounds, bit-mask preservation, no duplicate occupancy and hard output caps.
 - [ ] **Step 3:** Run `node --experimental-strip-types --test tests/village-verdict.test.ts tests/village-life.test.ts` and confirm failure is the missing contract.
 - [ ] **Step 4:** Implement the minimal pure model and measured composition.
@@ -74,7 +74,7 @@
 - Consumes: existing natural win/loss public-action fixtures and Phaser post-render snapshots.
 - Produces: validated village-verdict diagnostics and original pre-result screenshots at 320, 390 and 1024.
 
-- [ ] **Step 1:** Write failing harness-contract tests requiring the new diagnostic, exact outcome mode, bounded progress/marks/lights and save-inert public pause comparison.
+- [x] **Step 1:** Write failing harness-contract tests requiring the new diagnostic, exact outcome mode, bounded marks/lights, full-stage HUD evidence and a stable native reduced-motion comparison. Terminal verdicts intentionally preserve the existing running-only pause owner.
 - [ ] **Step 2:** Run the focused harness test and confirm it fails for missing evidence.
 - [ ] **Step 3:** Extend the existing survivor-verdict capture instead of creating another browser journey; document the bounded continuation.
 - [ ] **Step 4:** Re-run focused tests, all source tests and production build.

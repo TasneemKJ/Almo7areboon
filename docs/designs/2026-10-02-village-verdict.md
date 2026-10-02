@@ -12,7 +12,7 @@ These references guide the principle only. The treatment remains original ink-an
 ## IDEAL
 
 - **Intent:** Make a won or lost battle feel consequential to the home behind the army, not only to the surviving troops in front of it.
-- **Design:** A pure verdict model derives a bounded `celebrate` or `shelter` response from the real terminal phase and the renderer's existing pause-aware aftermath clock. Victory returns silhouettes to both registered windows and adds short upward acknowledgement strokes; defeat clears silhouettes, crosses the same windows with shutter strokes, and dims only procedural light overlays. Both outcomes remain readable by shape rather than colour alone.
+- **Design:** A pure verdict model derives a bounded `celebrate` or `shelter` response from the real terminal phase. It is complete on the first authoritative terminal frame, so a slow renderer cannot let the unchanged wall-clock result sheet cover an unfinished reaction. Victory returns silhouettes to both registered windows and adds short upward acknowledgement strokes; defeat clears silhouettes, crosses the same windows with shutter strokes, and dims only procedural light overlays. Both outcomes remain readable by shape rather than colour alone.
 - **Evidence:** Tests first for truth, timing, malformed inputs, bounds, immutability and reset; renderer/source integration tests; all source tests and production build; native Chromium at 320, 390 and 1024 in GitHub Actions; inspection of original current-build screenshots.
 - **Avoid:** No save field, reward, battle timing, result timing, dialog, input, economy, balance, target, audio cue, new texture, new game object or permanent restoration change.
 - **Limits:** Automated software-rendered Chromium and source tests do not establish physical-device/Safari acceptance, subjective atmosphere quality, organic comprehension, retention or low-end performance.
@@ -21,13 +21,13 @@ These references guide the principle only. The treatment remains original ink-an
 
 - **Who:** Every player reaching a real win or loss, including reduced-motion users and profiles with or without Chronicle restoration.
 - **What:** A transient, presentation-only village verdict using the two measured chapter apertures, the existing ambience graphics layer and the existing six pooled light quads.
-- **When:** During the established pre-result survivor tableau. The response settles over at most 0.6 presentation seconds, freezes with the same pause-aware clock, and disappears immediately when a new ready battle identity replaces the terminal state.
+- **When:** On the first authoritative terminal frame of the established pre-result survivor tableau. It disappears immediately when a new ready battle identity replaces the terminal state. Terminal phases do not acquire a new pause owner; the existing running-only pause and unchanged result delay remain authoritative.
 - **Where:** Inside and immediately around the actual registered village windows, behind bases and troops and outside HUD/control surfaces.
 - **Why:** The settlement is the thing being defended. Letting it visibly answer the outcome closes a current world-state contradiction and adds life without adding interface complexity.
 
 ## Contract
 
-`villageVerdictFrame(input)` accepts the authoritative phase, a presentation elapsed time and reduced-motion state. It returns `null` outside `won`/`lost`; otherwise it returns an immutable finite mode and 0–1 progress. Reduced motion uses the final static composition. Malformed time fails to zero rather than manufacturing completion.
+`villageVerdictFrame(input)` accepts the authoritative phase plus the shared presentation inputs. It returns `null` outside `won`/`lost`; otherwise it returns an immutable complete mode on the first terminal frame. Reduced motion uses the same stable complete composition. The elapsed field remains accepted at the renderer seam but cannot delay or manufacture an outcome.
 
 `villageFrame(input)` consumes that optional verdict. A win replaces ordinary occupancy with at most two returning witness silhouettes and at most six upward acknowledgement strokes. A loss returns no silhouettes, paints exactly four crossed-shutter strokes, and attenuates—but never mutates—authored/restoration light descriptions. All geometry derives from `VILLAGE_PLATES` and remains within the existing fixed pools.
 
@@ -38,7 +38,7 @@ The webdriver-only canvas diagnostic reports mode, progress, witness count, stro
 1. Only real `won` and `lost` phases produce a village verdict.
 2. A win produces two measured witnesses plus distinct upward strokes; a loss produces no witnesses plus crossed shutter strokes.
 3. Result reaction cannot change battle state, profile, storage, rewards, result delay or restoration.
-4. Pause freezes the already-observed verdict composition; reduced motion uses a stable complete composition.
+4. The verdict does not change existing running-only pause ownership; reduced motion uses a stable complete composition.
 5. Malformed time, phase, restoration and geometry inputs remain finite, immutable and bounded.
 6. The renderer allocates no new scene-lifetime object pool and clears diagnostics on retry, identity replacement and shutdown.
-7. Native 320/390/1024 screenshots show the response before the unchanged result sheet without HUD collision or incorrect depth.
+7. Native 320/390/1024 same-frame canvas and full-stage screenshots show the response before the unchanged result sheet; measured DOM rectangles establish HUD clearance, and a separate reduced-motion journey establishes a stable complete composition.

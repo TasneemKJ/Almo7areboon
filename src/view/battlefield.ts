@@ -357,12 +357,13 @@ export function mountBattlefield(element:HTMLElement,game:GamePort,onFrame:()=>v
     for(const mark of frame.water){g.lineStyle(mark.width,mark.color,mark.alpha);g.lineBetween(mark.from.x,mark.from.y,mark.to.x,mark.to.y);}
     if(frame.bird)for(const shape of frame.bird){g.fillStyle(shape.color,shape.alpha);g.fillPoints(shape.points as Phaser.Types.Math.Vector2Like[],true);}
     const lights=[...frame.lamps,...frame.restorationLights];
+    const verdictBounds=frame.verdictStrokes.reduce((bounds,stroke)=>({left:Math.min(bounds.left,stroke.from.x-stroke.width,stroke.to.x-stroke.width),top:Math.min(bounds.top,stroke.from.y-stroke.width,stroke.to.y-stroke.width),right:Math.max(bounds.right,stroke.from.x+stroke.width,stroke.to.x+stroke.width),bottom:Math.max(bounds.bottom,stroke.from.y+stroke.width,stroke.to.y+stroke.width)}),{left:Infinity,top:Infinity,right:-Infinity,bottom:-Infinity});
     for(let i=0;i<this.stageLight.length;i++){
      const image=this.stageLight.getAt(i) as Phaser.GameObjects.Image,mark=lights[i];
      if(!mark){image.setVisible(false);continue;}
      image.setVisible(true).setPosition(mark.center.x,mark.center.y).setDisplaySize(mark.rx*2,mark.ry*2).setTint(mark.color).setAlpha(mark.alpha);
     }
-    if(navigator.webdriver&&villageVerdict)this.game.canvas.dataset.villageVerdict=JSON.stringify({mode:villageVerdict.mode,progress:villageVerdict.progress,witnesses:frame.residents.length,strokes:frame.verdictStrokes.length,lights:lights.length,reduced:this.reduce,paused:game.state.paused});
+    if(navigator.webdriver&&villageVerdict)this.game.canvas.dataset.villageVerdict=JSON.stringify({mode:villageVerdict.mode,progress:villageVerdict.progress,witnesses:frame.residents.length,strokes:frame.verdictStrokes.length,lights:lights.length,bounds:verdictBounds,reduced:this.reduce,paused:game.state.paused});
     return;
    }
    if(!storybookArt(game.profile.age)){
@@ -683,8 +684,8 @@ export function mountBattlefield(element:HTMLElement,game:GamePort,onFrame:()=>v
    if(reviewArmed||expected!=='won'&&expected!=='lost')return false;reviewArmed=true;
    const waitForOutcome=()=>renderer.renderer.once(Phaser.Renderer.Events.POST_RENDER,()=>{
     const raw=renderer.canvas.dataset.battleAftermath;let state:{phase?:unknown;elapsed?:unknown}|null=null;try{state=raw?JSON.parse(raw) as {phase?:unknown;elapsed?:unknown}:null;}catch{state=null;}
-    const verdictRaw=renderer.canvas.dataset.villageVerdict;let villageVerdict:unknown=null;try{villageVerdict=verdictRaw?JSON.parse(verdictRaw):null;}catch{villageVerdict=null;}
-    if(!state||state.phase!==expected||typeof state.elapsed!=='number'||state.elapsed<.65||!villageVerdict){waitForOutcome();return;}
+    const verdictRaw=renderer.canvas.dataset.villageVerdict;let villageVerdict:{progress?:unknown}|null=null;try{villageVerdict=verdictRaw?JSON.parse(verdictRaw) as {progress?:unknown}:null;}catch{villageVerdict=null;}
+    if(!state||state.phase!==expected||typeof state.elapsed!=='number'||!villageVerdict||villageVerdict.progress!==1){waitForOutcome();return;}
     const frame={resultOpen:document.querySelector('.result-dialog')!==null,aftermath:state,villageVerdict};
     renderer.renderer.snapshot(image=>{reviewResult={...frame,image:image instanceof HTMLImageElement?image:null};reviewWaiter?.(reviewResult);reviewWaiter=null;},'image/png');
    });
