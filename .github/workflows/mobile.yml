@@ -40,3 +40,14 @@ jobs:
       - run: npm ci
       - run: npm test
       - run: npm run build
+      - run: npx playwright install --with-deps chromium
+      - name: Touch, short-screen and recovery regressions
+        env:
+          MOBILE_ASSERT: '1'
+        run: node --experimental-strip-types scripts/verify-mobile.mjs
+      - uses: actions/upload-artifact@v4
+        if: always()
+        with:
+          name: mobile-evidence
+          path: artifacts/mobile/
+          retention-days: 7
