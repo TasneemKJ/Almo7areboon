@@ -7,7 +7,7 @@ permissions:
 jobs:
   diagnose:
     runs-on: ubuntu-latest
-    timeout-minutes: 5
+    timeout-minutes: 8
     steps:
       - uses: actions/checkout@v4
         with:
@@ -16,38 +16,30 @@ jobs:
         with:
           node-version: 22
           cache: npm
-      - name: Build unchanged game
+      - name: Test candidate network cache policy
         run: |
           mkdir -p qa
-          npm ci > qa/install.log 2>&1
-          npm run build > qa/build.log 2>&1
-          npx playwright install --with-deps chromium > qa/browser-install.log 2>&1
-      - name: Trace worker promises without changing their order
-        run: |
           python3 - <<'PY'
           from pathlib import Path
-          path=Path('dist/sw.js');source=path.read_text()
-          source="const trace=(...values)=>{(self.__mobileTrace??=[]).push(values);};\n"+source
-          changes={
-           'const html = await page.clone().text();':"trace('html-start'); const html = await page.clone().text(); trace('html-done',shellURLs(html));",
-           "response ||= await fetch(url, { cache: 'reload' });":"trace('asset-fetch-start',url,!!response); response ||= await fetch(url, { cache: 'reload' }); trace('asset-headers',url,response.status);",
-           'for (const [url, response] of assets) await cache.put(url, response);':"for (const [url,response] of assets){trace('asset-put-start',url);await cache.put(url,response);trace('asset-put-done',url);}",
-           'await cache.put(SCOPE.href, page);':"trace('page-put-start');await cache.put(SCOPE.href,page);trace('page-put-done');",
-           "const page = await fetch(SCOPE.href, { cache: 'reload' });":"trace('page-fetch-start');const page = await fetch(SCOPE.href,{cache:'reload'});trace('page-headers',page.status);",
-          }
-          for old,new in changes.items():
-              assert source.count(old)==1,old
-              source=source.replace(old,new)
-          path.write_text(source)
+          path=Path('public/sw.js');source=path.read_text()
+          old="response ||= await fetch(url, { cache: 'reload' });"
+          assert source.count(old)==1
+          path.write_text(source.replace(old,"response ||= await fetch(url, { cache: 'no-store' });"))
           path=Path('scripts/capture-offline-game-review.mjs');source=path.read_text()
-          source=source.replace('await page.evaluate(() => navigator.serviceWorker.ready);',"await page.waitForFunction(() => !!navigator.serviceWorker.controller,null,{timeout:30000});")
-          marker="diagnostics.cases.push({ name, status: 'failed', error: error.stack });"
-          assert source.count(marker)==1
-          source=source.replace(marker,"for(const worker of context.serviceWorkers()) console.log('WORKER_TRACE',JSON.stringify(await worker.evaluate(()=>self.__mobileTrace??[]).catch(error=>({error:String(error)})))); "+marker)
+          old='await page.evaluate(() => navigator.serviceWorker.ready);'
+          assert source.count(old)==1
+          source=source.replace(old,"await page.waitForFunction(() => !!navigator.serviceWorker.controller,null,{timeout:30000});")
           Path('scripts/.offline-diagnose.mjs').write_text(source)
           PY
+          npm ci > qa/install.log 2>&1
+          npm test > qa/tests.log 2>&1 || { tail -80 qa/tests.log; exit 1; }
+          tail -8 qa/tests.log
+          npm run build > qa/build.log 2>&1
+          npx playwright install --with-deps chromium > qa/browser-install.log 2>&1
+      - name: Offline install and actual return at 320px and 390px
+        run: |
           result=0
-          timeout 100s node --experimental-strip-types scripts/.offline-diagnose.mjs > qa/offline-repro.log 2>&1 || result=$?
+          timeout 150s node --experimental-strip-types scripts/.offline-diagnose.mjs > qa/offline-repro.log 2>&1 || result=$?
           cat qa/offline-repro.log
           exit $result
       - uses: actions/upload-artifact@v4
