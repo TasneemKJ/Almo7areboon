@@ -20,44 +20,40 @@ jobs:
         with:
           node-version: 22
           cache: npm
-      - name: Reproduce the controller failures before applying corrections
+      - name: Apply screenshot and target-size corrections; refine test observations
         run: |
           mkdir -p artifacts/expanded-qa
+          python3 scripts/qa/refine-browser-audit.py
+          python3 scripts/qa/refine-dismiss-header.py
+          python3 scripts/qa/refine-legacy-targets.py
+          python3 scripts/qa/observe-assets.py
           npm ci > artifacts/expanded-qa/install.log 2>&1
-          if node --experimental-strip-types --test tests/import-lifecycle.test.ts tests/modal-return-focus.test.ts > artifacts/expanded-qa/controller-red.log 2>&1; then cat artifacts/expanded-qa/controller-red.log; exit 1; fi
-          tail -9 artifacts/expanded-qa/controller-red.log
-          grep -q 'older successful read' artifacts/expanded-qa/controller-red.log
-      - name: Apply the reviewed minimal corrections and check all source tests
-        run: |
-          python3 scripts/qa/apply-corrections.py
           npm test > artifacts/expanded-qa/source-tests.log 2>&1 || { grep -A25 'not ok' artifacts/expanded-qa/source-tests.log; exit 1; }
           tail -9 artifacts/expanded-qa/source-tests.log
           npm run build > artifacts/expanded-qa/build.log 2>&1 || { tail -50 artifacts/expanded-qa/build.log; exit 1; }
+          for script in scripts/qa/*.mjs; do node --check "$script"; done
           git diff --check
-      - name: Execute six-era route, progression, save and stress boundaries
+      - name: Recheck deterministic progression and storage invariants
         run: |
           node --experimental-strip-types scripts/qa/domain-boundaries.ts > artifacts/expanded-qa/domain.log 2>&1 || { cat artifacts/expanded-qa/domain.log; exit 1; }
-          cat artifacts/expanded-qa/domain.log
           node --experimental-strip-types scripts/qa/stress-domain.ts > artifacts/expanded-qa/stress-domain.log 2>&1 || { cat artifacts/expanded-qa/stress-domain.log; exit 1; }
-          cat artifacts/expanded-qa/stress-domain.log
-      - name: Save the tested candidate on the diagnostic branch only
+          cat artifacts/expanded-qa/domain.log artifacts/expanded-qa/stress-domain.log
+      - name: Save the checked candidate on the diagnostic branch only
         id: commit
         run: |
           git config user.name 'github-actions[bot]'
           git config user.email '41898282+github-actions[bot]@users.noreply.github.com'
-          git add src/ui/continuation.css
-          git commit -m 'fix: keep ordinary dialog dismissal reachable while scrolling'
-          git add src/main.ts
-          git commit -m 'fix: restore usable focus and reject stale file import completions'
+          git add src/main.ts src/ui/continuation.css scripts/qa/browser-driver.mjs scripts/qa/mobile-journeys.mjs scripts/qa/mobile-deep.mjs
+          git commit -m 'fix: separate scrolling dismissal and enlarge legacy touch targets'
           git push origin HEAD:refs/heads/chore/four-iterations-review
           echo "revision=$(git rev-parse HEAD)" >> "$GITHUB_OUTPUT"
-          git log -2 --format='%H %s' > artifacts/expanded-qa/candidate-commits.txt
-          git diff HEAD~2 HEAD > artifacts/expanded-qa/candidate.patch
+          git rev-parse HEAD > artifacts/expanded-qa/candidate-revision.txt
+          git diff HEAD~1 HEAD > artifacts/expanded-qa/candidate.patch
           tar -czf artifacts/expanded-qa/candidate-source.tar.gz src scripts/qa tests/import-lifecycle.test.ts tests/modal-return-focus.test.ts
       - uses: actions/upload-artifact@v4
         if: always()
         with:
-          name: expanded-candidate-source
+          name: expanded-refined-source
           path: artifacts/expanded-qa/
           retention-days: 7
   browser:
@@ -66,9 +62,9 @@ jobs:
     timeout-minutes: 15
     strategy:
       fail-fast: false
-      max-parallel: 3
+      max-parallel: 4
       matrix:
-        suite: [interface, recovery, deep]
+        suite: [interface, recovery, deep, render]
         engine: [chromium, webkit]
     steps:
       - uses: actions/checkout@v4
@@ -79,16 +75,13 @@ jobs:
         with:
           node-version: 22
           cache: npm
-      - name: Build the exact candidate and install the browser
+      - name: Build exact candidate and install browser
         run: |
           mkdir -p artifacts/expanded-qa
           npm ci > artifacts/expanded-qa/install.log 2>&1
-          node --check scripts/qa/browser-driver.mjs
-          node --check scripts/qa/mobile-journeys.mjs
-          node --check scripts/qa/mobile-deep.mjs
           npm run build > artifacts/expanded-qa/build.log 2>&1
           npx playwright install --with-deps ${{ matrix.engine }} > artifacts/expanded-qa/browser.log 2>&1
-      - name: Run production browser journeys with reports and screenshots
+      - name: Execute touch journeys and painted-frame recovery checks
         env:
           QA_SUITE: ${{ matrix.suite }}
           QA_ENGINES: ${{ matrix.engine }}
@@ -98,6 +91,7 @@ jobs:
           for i in $(seq 1 30); do curl -fsS http://127.0.0.1:4173/ >/dev/null && break || sleep 1; done
           script=scripts/qa/mobile-journeys.mjs
           if [ "$QA_SUITE" = deep ]; then script=scripts/qa/mobile-deep.mjs; fi
+          if [ "$QA_SUITE" = render ]; then script=scripts/qa/render-recovery-probe.mjs; fi
           result=0
           node --experimental-strip-types "$script" > artifacts/expanded-qa/${{ matrix.suite }}-${{ matrix.engine }}.log 2>&1 || result=$?
           tail -110 artifacts/expanded-qa/${{ matrix.suite }}-${{ matrix.engine }}.log
@@ -105,6 +99,50 @@ jobs:
       - uses: actions/upload-artifact@v4
         if: always()
         with:
-          name: expanded-candidate-${{ matrix.suite }}-${{ matrix.engine }}
+          name: expanded-refined-${{ matrix.suite }}-${{ matrix.engine }}
           path: artifacts/expanded-qa/
+          retention-days: 7
+  existing-regressions:
+    needs: candidate
+    runs-on: ubuntu-latest
+    timeout-minutes: 15
+    steps:
+      - uses: actions/checkout@v4
+        with:
+          ref: ${{ needs.candidate.outputs.revision }}
+          persist-credentials: false
+      - uses: actions/setup-node@v4
+        with:
+          node-version: 22
+          cache: npm
+      - name: Build and install browsers
+        run: |
+          mkdir -p artifacts/expanded-existing
+          npm ci > artifacts/expanded-existing/install.log 2>&1
+          npm run build > artifacts/expanded-existing/build.log 2>&1
+          npx playwright install --with-deps chromium firefox webkit > artifacts/expanded-existing/browser.log 2>&1
+      - name: Existing 22-case mobile touch and safe-area suite
+        env:
+          MOBILE_ASSERT: '1'
+          MOBILE_ENGINES: chromium,webkit
+        run: node --experimental-strip-types scripts/verify-mobile.mjs > artifacts/expanded-existing/mobile.log 2>&1 || { tail -70 artifacts/expanded-existing/mobile.log; exit 1; }
+      - name: Existing save-session recovery suite
+        if: ${{ !cancelled() }}
+        run: npm run review:save-sessions > artifacts/expanded-existing/save.log 2>&1 || { tail -70 artifacts/expanded-existing/save.log; exit 1; }
+      - name: Existing cross-browser gameplay and offline suite
+        if: ${{ !cancelled() }}
+        run: node --experimental-strip-types scripts/verify-reliability.mjs > artifacts/expanded-existing/reliability.log 2>&1 || { tail -70 artifacts/expanded-existing/reliability.log; exit 1; }
+      - name: Existing fresh offline return suite
+        if: ${{ !cancelled() }}
+        run: node --experimental-strip-types scripts/capture-offline-game-review.mjs > artifacts/expanded-existing/offline.log 2>&1 || { tail -70 artifacts/expanded-existing/offline.log; exit 1; }
+      - uses: actions/upload-artifact@v4
+        if: always()
+        with:
+          name: expanded-existing-regressions
+          path: |
+            artifacts/expanded-existing/
+            artifacts/mobile/
+            artifacts/save-session-review/
+            artifacts/reliability/
+            artifacts/browser-review/offline-game/
           retention-days: 7
