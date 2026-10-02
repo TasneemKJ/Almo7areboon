@@ -28,8 +28,8 @@ async function session(viewport) {
     page.on('pageerror', error => diagnostics.pageErrors.push(error.message));
     page.on('response', response => { if (/\/(art|assets)\//.test(response.url()) && !response.ok()) diagnostics.assetFailures.push(`${response.status()} ${response.url()}`); });
     await page.goto(origin, { waitUntil: 'networkidle' });
-    await page.evaluate(() => navigator.serviceWorker.ready);
-    await page.waitForFunction(() => !!navigator.serviceWorker.controller);
+    // A rejected or stalled installation must fail here, not hang until the CI job is cancelled.
+    await page.waitForFunction(() => !!navigator.serviceWorker.controller, null, { timeout: 30000 });
     // Load every production entry under the active worker before testing a return visit.
     await page.reload({ waitUntil: 'networkidle' });
     await page.waitForFunction(() => document.querySelector('#app')?.dataset.saveSession === 'active');
