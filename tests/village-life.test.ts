@@ -8,6 +8,10 @@ async function life(){const m=await import('../src/view/village-life.ts').catch(
 const quiet={mood:'quiet',alarmMix:0,alarmSerial:0,time:0,alarmEnteredAt:null} as const;
 const viewport={placement:{x:0,y:0,scale:1},cssWorldScale:1,visibleSource:[0,0,900,1000] as const,hudSourceBounds:[]};
 const safeMoodInput={phase:'running',hpFraction:1,nearestEnemyX:Infinity,playerBaseHit:false,paused:false} as const;
+test('malformed HUD normalization caps input before allocating mapped geometry',()=>{
+ const source=readFileSync(new URL('../src/view/village-life.ts',import.meta.url),'utf8');
+ assert.match(source,/hudSourceBounds:input\.viewport\.hudSourceBounds\.slice\(0,32\)\.map\(sourceBounds\)/);
+});
 function advanceTo(state:VillageMoodState,time:number){while(time-state.time>1e-8)state=advanceVillageMood(state,safeMoodInput,Math.min(.05,time-state.time));return state;}
 function hit(state:VillageMoodState){return advanceVillageMood(state,{...safeMoodInput,playerBaseHit:true},0);}
 test('a passage suppressed during alarm stays absent through recovery and repeated alarm entries',async()=>{

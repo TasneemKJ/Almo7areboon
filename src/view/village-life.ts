@@ -203,7 +203,7 @@ export function villageFrame(input:VillageFrameInput):VillageFrame {
   const startedDuringClosedAlarm=input.mood.alarmHistory?.some(alarm=>start+1e-9>=alarm.enteredAt&&start<alarm.endedAt-1e-9)??false;
   if(cycle>=0&&progress>=0&&progress<=1&&!startedDuringCurrentAlarm&&!startedDuringClosedAlarm){
    const cached=input.viewport.skyPath===null?null:sourceBounds(input.viewport.skyPath);
-   const path=input.viewport.skyPath===null?null:cached??villageSkyPath(age,{...input.viewport,placement,cssWorldScale,visibleSource:sourceBounds(input.viewport.visibleSource)??[0,0,900,1000],hudSourceBounds:input.viewport.hudSourceBounds.map(sourceBounds).filter((value):value is Bounds=>value!==null),skyPath:undefined});
+   const path=input.viewport.skyPath===null?null:cached??villageSkyPath(age,{...input.viewport,placement,cssWorldScale,visibleSource:sourceBounds(input.viewport.visibleSource)??[0,0,900,1000],hudSourceBounds:input.viewport.hudSourceBounds.slice(0,32).map(sourceBounds).filter((value):value is Bounds=>value!==null),skyPath:undefined});
    if(path){const x=path[0]+21+(path[2]-path[0]-42)*progress,y=(path[1]+path[3])/2;const pose=Math.min(2,Math.floor(progress*3));bird=BIRDS[pose].map(triangle=>paint(triangle.map(p=>({x:x+p.x,y:y+p.y})),.54));}
   }
  }
