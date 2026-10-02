@@ -683,6 +683,7 @@ export function mountBattlefield(element:HTMLElement,game:GamePort,onFrame:()=>v
   renderer=new Phaser.Game({type:Phaser.AUTO,parent:element,width:(element.clientWidth||450)*pixelRatio,height:(element.clientHeight||430)*pixelRatio,transparent:true,antialias:true,render:{antialias:true,pixelArt:false},scale:{mode:Phaser.Scale.NONE,zoom:1/pixelRatio,autoCenter:Phaser.Scale.NO_CENTER},scene:[new Battlefield()],audio:{noAudio:true},fps:{target:60},banner:false});
  }catch(error){loading.textContent='The battlefield could not start. Reload or try another browser.';throw error;}
  if(navigator.webdriver){
+  Object.defineProperty(renderer.canvas,'battlefieldDiagnosticSnapshot',{configurable:true,value:()=>new Promise(resolve=>renderer.renderer.snapshot(image=>resolve(image instanceof HTMLImageElement?image.src:null),'image/png'))} satisfies PropertyDescriptor);
   let reviewResult:ReviewSnapshot|null=null,reviewWaiter:((snapshot:ReviewSnapshot)=>void)|null=null,reviewArmed=false;
   Object.defineProperty(renderer.canvas,'battlefieldReviewArm',{configurable:true,value:(expected:'won'|'lost')=>{
    if(reviewArmed||expected!=='won'&&expected!=='lost')return false;reviewArmed=true;delete renderer.canvas.dataset.battlefieldReviewFrameReady;
