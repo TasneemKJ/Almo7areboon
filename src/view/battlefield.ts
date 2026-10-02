@@ -606,6 +606,7 @@ export function mountBattlefield(element:HTMLElement,game:GamePort,onFrame:()=>v
    this.battlefieldMemory=rememberBattlefieldMark(this.battlefieldMemory,input);
   }
   private drawBattlefieldMemory():void {
+   this.cacheBattlefieldHudBounds();
    const regions:BattlefieldMemoryRegion[]=[],kinds:BattlefieldMemoryMark['kind'][]=[],ages:number[]=[],alphas:number[]=[];
    for(const mark of this.battlefieldMemory){
     const frame=battlefieldMemoryFrame(mark,this.reduce),y=this.yAt(mark.lane)+4,layer=this.ambience;
