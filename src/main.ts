@@ -9,6 +9,7 @@ import './ui/material-language.css';
 import './ui/combat-focus.css';
 import './ui/era-glow.css';
 import './ui/readability.css';
+import './ui/layout-polish.css';
 import './ui/skill-cues.css';
 import { Game } from './game/simulation.ts';
 import { createBattlefieldPort } from './game/battlefield-port.ts';
