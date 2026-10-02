@@ -16,27 +16,88 @@ jobs:
         with:
           node-version: 22
           cache: npm
-      - name: Test candidate network cache policy
+      - name: Reproduce a bounded download pool before applying the fix
         run: |
           mkdir -p qa
+          npm ci > qa/install.log 2>&1
+          python3 - <<'PY'
+          from pathlib import Path
+          Path('tests/service-worker-downloads.test.ts').write_text('''import test from 'node:test';
+          import assert from 'node:assert/strict';
+          import { readFileSync } from 'node:fs';
+          import { runInNewContext } from 'node:vm';
+          import { setImmediate } from 'node:timers/promises';
+
+          test('installation drains response bodies before waiting for every download header', async () => {
+            const source = readFileSync(new URL('../public/sw.js', import.meta.url), 'utf8');
+            const scope = 'https://game.test/';
+            const html = Array.from({length:6}, (_,i) => `<script src="./assets/bundle-${i}.js"></script>`).join('');
+            const entries = new Map<string,Response>([[scope,new Response('previous complete shell')]]);
+            const handlers: Record<string,Function> = {};
+            const queued: Array<() => void> = [];
+            let active = 0, peak = 0, downloaded = 0, skipped = false;
+            const cache = {
+              async match(key:string) { return entries.get(key)?.clone(); },
+              async put(key:string,response:Response) { entries.set(key,new Response(await response.arrayBuffer())); },
+              async keys() { return []; },
+              async delete() { return true; },
+            };
+            // A network request retains its slot until its body is drained. Real
+            // ReadableStreams provide backpressure; no production logic is mocked.
+            const fetch = (url:string) => url === scope ? Promise.resolve(new Response(html)) : new Promise<Response>(resolve => {
+              const start = () => {
+                active++; peak = Math.max(peak,active); let chunk = 0;
+                resolve(new Response(new ReadableStream<Uint8Array>({
+                  pull(controller) {
+                    if (chunk++ < 4) controller.enqueue(new Uint8Array(16384));
+                    else { controller.close(); active--; downloaded++; queued.shift()?.(); }
+                  },{highWaterMark:0})));
+              };
+              if (active < 2) start(); else queued.push(start);
+            });
+            runInNewContext(source, { URL, Response, fetch, caches:{open:async()=>cache}, self:{
+              registration:{scope}, location:{origin:'https://game.test'},
+              skipWaiting:async()=>{skipped=true;}, clients:{claim:async()=>{}},
+              addEventListener:(name:string,handler:Function)=>{handlers[name]=handler;},
+            }});
+            let settled = false, failure:unknown;
+            const lifetimes:Promise<unknown>[] = [];
+            handlers.install({waitUntil:(value:Promise<unknown>)=>lifetimes.push(value)});
+            const completion = Promise.all(lifetimes).then(()=>{settled=true;},error=>{failure=error;});
+            for (let i=0;i<100&&!settled&&!failure;i++) await setImmediate();
+            assert.equal(failure,undefined);
+            assert.equal(settled,true,'installer must consume bodies to release download slots');
+            await completion;
+            assert.equal(downloaded,6); assert.equal(queued.length,0); assert.ok(peak<=2);
+            assert.equal(entries.size,7); assert.equal(skipped,true);
+            assert.equal(await entries.get(scope)!.text(),html);
+          });
+          ''')
+          PY
+          if node --experimental-strip-types --test tests/service-worker-downloads.test.ts > qa/red.log 2>&1; then echo 'Regression unexpectedly passed'; exit 1; fi
+          grep 'installer must consume bodies' qa/red.log
+      - name: Drain each body as its headers arrive and retain its original response metadata
+        run: |
           python3 - <<'PY'
           from pathlib import Path
           path=Path('public/sw.js');source=path.read_text()
-          old="response ||= await fetch(url, { cache: 'reload' });"
+          old='    return [url, response];'
           assert source.count(old)==1
-          path.write_text(source.replace(old,"response ||= await fetch(url, { cache: 'no-store' });"))
+          source=source.replace(old,'    // Drain now: an installing worker may throttle later requests until earlier bodies finish.\n    // Keep the original response for cache storage, including its URL and headers.\n    await response.clone().arrayBuffer();\n'+old)
+          path.write_text(source)
           path=Path('scripts/capture-offline-game-review.mjs');source=path.read_text()
           old='await page.evaluate(() => navigator.serviceWorker.ready);'
           assert source.count(old)==1
           source=source.replace(old,"await page.waitForFunction(() => !!navigator.serviceWorker.controller,null,{timeout:30000});")
           Path('scripts/.offline-diagnose.mjs').write_text(source)
           PY
-          npm ci > qa/install.log 2>&1
+          node --experimental-strip-types --test tests/service-worker-downloads.test.ts > qa/green.log 2>&1 || { cat qa/green.log; exit 1; }
+          cat qa/green.log
           npm test > qa/tests.log 2>&1 || { tail -80 qa/tests.log; exit 1; }
           tail -8 qa/tests.log
           npm run build > qa/build.log 2>&1
           npx playwright install --with-deps chromium > qa/browser-install.log 2>&1
-      - name: Offline install and actual return at 320px and 390px
+      - name: Original offline install and actual return at 320px and 390px
         run: |
           result=0
           timeout 150s node --experimental-strip-types scripts/.offline-diagnose.mjs > qa/offline-repro.log 2>&1 || result=$?
@@ -48,5 +109,7 @@ jobs:
           name: focused-mobile-diagnostics
           path: |
             qa/
+            tests/service-worker-downloads.test.ts
+            public/sw.js
             artifacts/browser-review/offline-game/
           retention-days: 7
