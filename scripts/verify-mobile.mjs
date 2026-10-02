@@ -25,7 +25,7 @@ async function capture(page,name,phase){
   const visible=e=>e.getClientRects().length>0&&getComputedStyle(e).visibility!=='hidden'&&!e.closest('[hidden],[inert]');
   const controls=[...document.querySelectorAll('button,summary')].filter(visible).map(e=>{
    const rect=box(e),top=document.elementFromPoint(rect.x+rect.width/2,rect.y+rect.height/2);
-   return {command:e.dataset.command??e.dataset.tab??e.dataset.unit??'',text:e.innerText.trim().slice(0,70),disabled:!!e.disabled,...rect,reachable:!!top&&e.contains(top)};
+   return {command:e.dataset.command??e.dataset.tab??e.dataset.unit??(e.dataset.storyPage!==undefined?`story-page-${e.dataset.storyPage}`:''),dismiss:e.classList.contains('close-button'),text:e.innerText.trim().slice(0,70),disabled:!!e.disabled,...rect,reachable:!!top&&e.contains(top)};
   });
   const regions={};for(const s of ['.game-shell','#world','.stage','#ready','.deployment','.upgrades','.bottom-nav','#deploy-hint','#story-rally','.dialog']){const e=document.querySelector(s);if(e&&visible(e))regions[s]=box(e);}
   return {width:innerWidth,height:innerHeight,scrollWidth:document.documentElement.scrollWidth,scrollHeight:document.documentElement.scrollHeight,session:document.querySelector('#app')?.dataset.saveSession,regions,controls};
@@ -33,12 +33,13 @@ async function capture(page,name,phase){
  await page.screenshot({path:`${out}/${name}-${phase}.png`});
  return {phase,...data};
 }
-async function run(engine,width,height,temporary=false){
- const name=`${engine}-${width}x${height}${temporary?'-temporary':''}`;
+async function run(engine,width,height,temporary=false,insets=null){
+ const name=`${engine}-${width}x${height}${temporary?'-temporary':''}${insets?'-safe':''}`;
  const context=await browser.newContext({viewport:{width,height},deviceScaleFactor:1,hasTouch:true,isMobile:true,reducedMotion:'reduce'});
- context.setDefaultTimeout(15000);const item={name,status:'failed',screens:[]};report.cases.push(item);
+ context.setDefaultTimeout(15000);const item={name,status:'failed',insets,issues:[],screens:[]};report.cases.push(item);
  const page=await context.newPage();page.on('pageerror',error=>report.errors.push({name,message:error.message}));
  try{
+  if(insets)await (await context.newCDPSession(page)).send('Emulation.setSafeAreaInsetsOverride',{insets});
   await page.goto(`${origin}/__fixture`);
   await page.evaluate(({p,primary,backup})=>{localStorage.setItem(primary,JSON.stringify(p));localStorage.setItem(backup,JSON.stringify(p));},{p:{...defaultProfile(),sound:false,motion:'reduced'},primary:SAVE_KEY,backup:BACKUP_KEY});
   if(temporary)await page.addInitScript(()=>Object.defineProperty(navigator,'locks',{value:undefined,configurable:true}));
@@ -49,9 +50,13 @@ async function run(engine,width,height,temporary=false){
   item.screens.push(await capture(page,name,'ready'));
   await page.locator('[data-command="chronicle"]').tap();
   item.screens.push(await capture(page,name,'storybook'));
+  await page.locator('.dialog').evaluate(el=>el.scrollTop=400);
+  item.screens.push(await capture(page,name,'storybook-scroll'));
+  await page.locator('.dialog').evaluate(el=>el.scrollTop=0);
   await page.locator('.close-button').tap();
   await page.locator('[data-command="start"]').tap();
   await page.locator('[data-unit="0"]').tap();
+  item.screens.push(await capture(page,name,'running'));
   await page.locator('[data-command="pause"]').tap();
   await page.waitForFunction(()=>document.querySelector('#pause')?.getAttribute('aria-pressed')==='true');
   item.screens.push(await capture(page,name,'battle'));
@@ -64,11 +69,23 @@ async function run(engine,width,height,temporary=false){
   await page.locator('[data-tab="battle"]').tap();
   assert.equal(await page.locator('#pause').getAttribute('aria-pressed'),'true','returning to battle preserves manual pause');
   if(process.env.MOBILE_ASSERT==='1'){
+   const check=(ok,message)=>{if(!ok)item.issues.push(message);};
    for(const screen of item.screens){
-    assert.ok(screen.scrollWidth<=width,`${name}/${screen.phase}: horizontal overflow`);
-    const dialog=screen.regions['.dialog'];if(dialog)assert.ok(dialog.x>=0&&dialog.right<=width,`${name}/${screen.phase}: dialog overflows`);
-    if(height>=540&&!dialog){for(const control of screen.controls.filter(c=>['battle','evolution','cards','skills'].includes(c.command)))assert.ok(control.y>=0&&control.bottom<=height&&control.reachable,`${name}/${screen.phase}: navigation ${control.command} is obscured`);}
+    const prefix=`${name}/${screen.phase}`,top=insets?.top??0,bottom=height-(insets?.bottom??0);
+    check(screen.scrollWidth<=width,`${prefix}: horizontal overflow`);
+    const dialog=screen.regions['.dialog'];if(dialog)check(dialog.x>=0&&dialog.right<=width,`${prefix}: dialog overflows`);
+    if(height>=540&&!dialog){for(const c of screen.controls.filter(c=>['battle','evolution','cards','skills'].includes(c.command)))check(c.y>=top&&c.bottom<=bottom&&c.reachable,`${prefix}: navigation ${c.command} is obscured`);}
+    for(const c of screen.controls.filter(c=>!c.disabled&&(c.command==='story-rally'||c.command.startsWith('story-page-'))))check(c.width>=44&&c.height>=44,`${prefix}: ${c.command} target is ${c.width}x${c.height}, below 44x44`);
+    if(screen.phase==='ready'){
+     const a=screen.controls.find(c=>c.command==='battles'),b=screen.controls.find(c=>c.command==='start');
+     if(a&&b)check(Math.min(a.bottom,b.bottom)-Math.max(a.y,b.y)<=0,`${prefix}: chapter selection overlaps Battle`);
+    }
+    if(screen.phase.startsWith('storybook')){
+     const close=screen.controls.find(c=>c.dismiss);
+     check(close&&close.y>=top&&close.bottom<=bottom&&close.reachable,`${prefix}: close control is outside the safe visible area`);
+    }
    }
+   assert.deepEqual(item.issues,[],`${name}: mobile layout boundaries`);
   }
   item.status='passed';console.log('PASS',name);
  }catch(error){item.error=error.stack;console.error('FAIL',name,error.message);await page.screenshot({path:`${out}/${name}-failure.png`}).catch(()=>{});}
@@ -80,6 +97,7 @@ try{
   browser=await driver.launch({headless:true,...(engine==='chromium'&&process.env.CHROMIUM_PATH?{executablePath:process.env.CHROMIUM_PATH}:{})});report.browsers[engine]=browser.version();
   for(const [w,h] of [[320,568],[360,640],[390,844],[430,932],[390,550],[844,390]])await run(engine,w,h);
   await run(engine,320,568,true);await run(engine,390,550,true);
+  if(engine==='chromium'){await run(engine,390,844,false,{top:44,bottom:34,left:0,right:0});await run(engine,390,550,true,{top:44,bottom:34,left:0,right:0});}
   await browser.close();browser=null;
  }
  assert.deepEqual(report.errors,[],'no uncaught browser errors');assert.ok(report.cases.every(c=>c.status==='passed'));
