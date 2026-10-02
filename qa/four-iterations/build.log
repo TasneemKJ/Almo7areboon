@@ -1,0 +1,20 @@
+
+> almo7areboon@0.1.0 build
+> tsc --noEmit && vite build
+
+[36mvite v7.3.6 [32mbuilding client environment for production...[36m[39m
+transforming...
+[32m✓[39m 113 modules transformed.
+rendering chunks...
+computing gzip size...
+[2mdist/[22m[32mindex.html                            [39m[1m[2m    1.99 kB[22m[1m[22m[2m │ gzip:   0.94 kB[22m
+[2mdist/[22m[2massets/[22m[32msoundscape-worker-CL7R_qoD.js  [39m[1m[2m    2.67 kB[22m[1m[22m
+[2mdist/[22m[2massets/[22m[35mindex-g6-sesD2.css             [39m[1m[2m   52.78 kB[22m[1m[22m[2m │ gzip:  12.29 kB[22m
+[2mdist/[22m[2massets/[22m[36mindex-DNqgTmK_.js              [39m[1m[2m  329.05 kB[22m[1m[22m[2m │ gzip: 122.37 kB[22m
+[2mdist/[22m[2massets/[22m[36mphaser-DFK5Ua9d.js             [39m[1m[33m1,208.06 kB[39m[22m[2m │ gzip: 332.17 kB[22m
+[33m
+(!) Some chunks are larger than 500 kB after minification. Consider:
+- Using dynamic import() to code-split the application
+- Use build.rollupOptions.output.manualChunks to improve chunking: https://rollupjs.org/configuration-options/#output-manualchunks
+- Adjust chunk size limit for this warning via build.chunkSizeWarningLimit.[39m
+[32m✓ built in 5.62s[39m
