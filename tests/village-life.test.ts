@@ -10,7 +10,7 @@ const viewport={placement:{x:0,y:0,scale:1},cssWorldScale:1,visibleSource:[0,0,9
 const safeMoodInput={phase:'running',hpFraction:1,nearestEnemyX:Infinity,playerBaseHit:false,paused:false} as const;
 test('malformed HUD normalization caps input before allocating mapped geometry',()=>{
  const source=readFileSync(new URL('../src/view/village-life.ts',import.meta.url),'utf8');
- assert.match(source,/hudSourceBounds:input\.viewport\.hudSourceBounds\.slice\(0,32\)\.map\(sourceBounds\)/);
+ assert.match(source,/const hudSourceBounds=input\.viewport\.hudSourceBounds\.slice\(0,32\)\.map\(sourceBounds\)/);
 });
 function advanceTo(state:VillageMoodState,time:number){while(time-state.time>1e-8)state=advanceVillageMood(state,safeMoodInput,Math.min(.05,time-state.time));return state;}
 function hit(state:VillageMoodState){return advanceVillageMood(state,{...safeMoodInput,playerBaseHit:true},0);}
@@ -161,6 +161,19 @@ test('defeat clears witnesses and closes both measured apertures with four cross
   for(const [index,stroke] of frame.verdictStrokes.entries()){
    const bounds=m.VILLAGE_PLATES[age].windows[Math.floor(index/2)].bounds;assert.ok(inside(stroke.from,bounds)&&inside(stroke.to,bounds));assert.ok(stroke.alpha>0&&stroke.alpha<=1);
   }
+ }
+});
+
+test('verdict light changes skip measured HUD overlap and report only affected halos',async()=>{
+ const m=await life(),hudViewport={...viewport,hudSourceBounds:[[190,470,215,505] as const,[219,339,255,385] as const]};
+ const ordinary=m.villageFrame({age:0,time:13,reduced:false,restoration:0,mood:quiet,viewport:hudViewport});
+ for(const mode of ['celebrate','shelter'] as const){
+  const verdict=m.villageFrame({age:0,time:13,reduced:false,restoration:0,mood:quiet,viewport:hudViewport,verdict:{mode,progress:1}});
+  assert.equal(verdict.lamps[0].alpha,ordinary.lamps[0].alpha,'HUD-overlapped authored light must keep its ordinary brightness');
+  assert.notEqual(verdict.lamps[1].alpha,ordinary.lamps[1].alpha,'clear authored light must still answer the verdict');
+  assert.deepEqual(verdict.verdictLights,[verdict.lamps[1]]);
+  if(mode==='celebrate'){assert.deepEqual(verdict.residents.map(resident=>resident.apertureId),['right-hearth']);assert.equal(verdict.verdictStrokes.length,3);}
+  else {assert.equal(verdict.residents.length,0);assert.equal(verdict.verdictStrokes.length,2);}
  }
 });
 

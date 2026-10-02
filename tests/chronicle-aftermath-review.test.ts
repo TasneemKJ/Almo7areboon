@@ -62,9 +62,11 @@ test('the same post-render verdict snapshot proves the village reaction at every
  assert.match(script,/function validateVillageVerdictSnapshot\(state,outcome,reduced=false\)/);
  assert.match(script,/assert\.equal\(state\.mode,outcome==='won'\?'celebrate':'shelter'\)/);
  assert.match(script,/assert\.equal\(state\.progress,1\)/);
- assert.match(script,/assert\.equal\(state\.witnesses,outcome==='won'\?2:0\)/);
- assert.match(script,/assert\.equal\(state\.strokes,outcome==='won'\?6:4\)/);
+ assert.match(script,/state\.witnesses>=1&&state\.witnesses<=2/);
+ assert.match(script,/state\.strokes,state\.witnesses\*3/);
+ assert.match(script,/state\.strokes===2\|\|state\.strokes===4/);
  assert.match(script,/Number\.isInteger\(state\.lights\)&&state\.lights>=2&&state\.lights<=6/);
+ assert.match(script,/Number\.isInteger\(state\.affectedLights\)&&state\.affectedLights>=0&&state\.affectedLights<=state\.lights/);
  assert.match(script,/assert\.equal\(state\.paused,false\)/);
  assert.match(script,/validateVillageVerdictSnapshot\(capture\.villageVerdict,expected,reduced\)/);
  assert.doesNotMatch(script,/state\.elapsed<\.\d+/,'verdict evidence must not race the wall-clock result sheet through a clamped elapsed threshold');

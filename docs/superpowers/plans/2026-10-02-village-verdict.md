@@ -41,7 +41,7 @@
 - Produces: `villageVerdictFrame(input): Readonly<VillageVerdictFrame>|null`; `VillageFrame.verdictStrokes`; verdict-aware residents and light descriptions.
 
 - [x] **Step 1:** Write failing model tests for terminal-only truth, first-frame completion, reduced-motion completion, malformed/huge time, immutability and non-mutation.
-- [ ] **Step 2:** Write failing village tests for two victory witnesses/six rays, zero loss witnesses/four shutter strokes, measured finite bounds, bit-mask preservation, no duplicate occupancy and hard output caps.
+- [x] **Step 2:** Write failing village tests for two victory witnesses/six rays, zero loss witnesses/four shutter strokes, measured finite bounds, bit-mask preservation, no duplicate occupancy and hard output caps.
 - [ ] **Step 3:** Run `node --experimental-strip-types --test tests/village-verdict.test.ts tests/village-life.test.ts` and confirm failure is the missing contract.
 - [ ] **Step 4:** Implement the minimal pure model and measured composition.
 - [ ] **Step 5:** Re-run the focused tests and confirm they pass.
@@ -60,6 +60,7 @@
 - [x] **Step 1:** Write failing source/integration tests for authoritative aftermath ownership, pause-aware elapsed time, existing ambience/light pools, diagnostics gating and reset/shutdown cleanup.
 - [x] **Step 2:** Run `node --experimental-strip-types --test tests/village-verdict.test.ts tests/village-life.test.ts tests/village-integration.test.ts tests/battle-aftermath-integration.test.ts` and confirm the renderer contract fails.
 - [x] **Step 3:** Wire the verdict through `drawAtmosphere`, paint strokes on ambience, summarize only under webdriver, and clear every lifecycle boundary.
+- [x] **Amendment:** Suppress only aperture marks and light changes whose measured source extents overlap the live DOM HUD; report only actually changed halos so the collision oracle matches the rendered response.
 - [x] **Step 4:** Re-run focused tests, all source tests and `npm run build`.
 - [x] **Step 5:** Commit the renderer slice.
 

@@ -8,7 +8,7 @@ export interface VillageHalo {center:Point;rx:number;ry:number;color:number;alph
 export interface VillageStroke {from:Point;to:Point;width:number;color:number;alpha:number}
 export interface VillageViewport {placement:{x:number;y:number;scale:number};cssWorldScale:number;visibleSource:Bounds;hudSourceBounds:readonly Bounds[];skyPath?:Bounds|null}
 export interface VillageFrameInput {age:number;time:number;reduced:boolean;restoration?:number;mood:Readonly<VillageMoodSnapshot>;viewport:VillageViewport;verdict?:Readonly<VillageVerdictFrame>|null}
-export interface VillageFrame {residents:readonly {apertureId:string;panes:readonly PaintedPolygon[]}[];lamps:readonly VillageHalo[];restorationLights:readonly VillageHalo[];verdictStrokes:readonly VillageStroke[];water:readonly VillageStroke[];bird:readonly PaintedPolygon[]|null}
+export interface VillageFrame {residents:readonly {apertureId:string;panes:readonly PaintedPolygon[]}[];lamps:readonly VillageHalo[];restorationLights:readonly VillageHalo[];verdictLights:readonly VillageHalo[];verdictStrokes:readonly VillageStroke[];water:readonly VillageStroke[];bird:readonly PaintedPolygon[]|null}
 interface Aperture {id:string;bounds:Bounds;framing:readonly Bounds[];panes:readonly (readonly Point[])[];dark:boolean}
 type Lamp=readonly [number,number,number,number];
 interface Plate {path:string;sha256:string;width:900;height:1000;windows:readonly Aperture[];lamps:readonly Lamp[];sky:Bounds}
@@ -138,6 +138,8 @@ export function villageFrame(input:VillageFrameInput):VillageFrame {
  const mix=input.reduced?(input.mood.mood==='alarmed'?1:0):sharedMix;
  const placement=safePlacement(input.viewport.placement);
  const cssWorldScale=safeCssWorldScale(input.viewport.cssWorldScale);
+ const hudSourceBounds=input.viewport.hudSourceBounds.slice(0,32).map(sourceBounds).filter((value):value is Bounds=>value!==null);
+ const clearOfHud=([l,t,r,b]:Bounds)=>!hudSourceBounds.some(([hl,ht,hr,hb])=>l<hr&&r>hl&&t<hb&&b>ht);
  const project=(p:Point):Point=>({x:placement.x+p.x*placement.scale,y:placement.y+p.y*placement.scale});
  const paint=(points:readonly Point[],alpha:number):PaintedPolygon=>({points:points.map(project),color:INK,alpha});
  const residents:VillageFrame['residents'][number][]=[];
@@ -149,7 +151,7 @@ export function villageFrame(input:VillageFrameInput):VillageFrame {
   const room=plate.windows[index],panes:PaintedPolygon[]=[];
   // Darkening shares the exact panes; the baked framing and hanging shadow remain intact.
   if(verdict?.mode!=='shelter'&&mix>0)for(const pane of room.panes)panes.push(paint(pane,.10*mix));
-  if(verdict?.mode==='celebrate'&&verdict.progress>0){
+  if(verdict?.mode==='celebrate'&&verdict.progress>0&&clearOfHud([room.bounds[0]-8,room.bounds[1]-10,room.bounds[2]+8,room.bounds[3]+3])){
    const [l,t,r,b]=room.bounds,w=r-l,h=b-t,alpha=(room.dark?.28:.40)*verdict.progress;
    for(const triangle of RESIDENT){
     const shape=triangle.map(p=>({x:l+p.x*w,y:t+p.y*h}));
@@ -172,22 +174,29 @@ export function villageFrame(input:VillageFrameInput):VillageFrame {
  const verdictStrokes:VillageStroke[]=[];
  if(verdict?.mode==='celebrate')for(const room of plate.windows){
   const [l,t,r]=room.bounds,w=r-l;
+  if(!clearOfHud([room.bounds[0]-8,room.bounds[1]-10,room.bounds[2]+8,room.bounds[3]+3]))continue;
   for(let index=0;index<3;index++){
    const x=l+(index+1)*w/4;
    verdictStrokes.push({from:project({x,y:t+2}),to:project({x:x+(index-1)*4,y:t-6}),width:Math.max(.75,1.1*placement.scale),color:0xf2cf79,alpha:.62*verdict.progress});
   }
  }else if(verdict?.mode==='shelter')for(const room of plate.windows){
   const [l,t,r,b]=room.bounds,inset=Math.min(2,(r-l)/5,(b-t)/5);
+  if(!clearOfHud([l-2,t-2,r+2,b+2]))continue;
   verdictStrokes.push({from:project({x:l+inset,y:t+inset}),to:project({x:r-inset,y:b-inset}),width:Math.max(.9,1.4*placement.scale),color:INK,alpha:.58*verdict.progress});
   verdictStrokes.push({from:project({x:r-inset,y:t+inset}),to:project({x:l+inset,y:b-inset}),width:Math.max(.9,1.4*placement.scale),color:INK,alpha:.58*verdict.progress});
  }
  const lightFactor=verdict?.mode==='celebrate'?1+.35*verdict.progress:verdict?.mode==='shelter'?1-.75*verdict.progress:1;
- const lamps=plate.lamps.map(([x,y,rx,ry],index)=>({center:project({x,y}),rx:rx*placement.scale,ry:ry*placement.scale,color:age===5&&index>=2?0x8edfc9:0xffd08a,
- alpha:Math.max(0,Math.min(1,(.12+index*.008+(input.reduced?0:.018*Math.sin(time*2*Math.PI/(3.7+index*.9)+age+index*2)))*(1-.55*mix)*lightFactor))}));
+ const verdictLights:VillageHalo[]=[];
+ const lamps=plate.lamps.map(([x,y,rx,ry],index)=>{
+  const factor=verdict&&clearOfHud([x-rx,y-ry,x+rx,y+ry])?lightFactor:1;
+  const mark={center:project({x,y}),rx:rx*placement.scale,ry:ry*placement.scale,color:age===5&&index>=2?0x8edfc9:0xffd08a,alpha:Math.max(0,Math.min(1,(.12+index*.008+(input.reduced?0:.018*Math.sin(time*2*Math.PI/(3.7+index*.9)+age+index*2)))*(1-.55*mix)*factor))};
+  if(factor!==1)verdictLights.push(mark);return mark;
+ });
  const restorationLights:VillageHalo[]=[];
  const restoredLight=(index:number,color:number,alpha:number)=>{
   const [l,t,r,b]=plate.windows[index].bounds;
-  restorationLights.push({center:project({x:(l+r)/2,y:(t+b)/2}),rx:Math.max(16,(r-l)*.95)*placement.scale,ry:Math.max(18,(b-t)*.9)*placement.scale,color,alpha:Math.max(0,Math.min(1,alpha*(1-.65*mix)*lightFactor))});
+  const x=(l+r)/2,y=(t+b)/2,rx=Math.max(16,(r-l)*.95),ry=Math.max(18,(b-t)*.9),factor=verdict&&clearOfHud([x-rx,y-ry,x+rx,y+ry])?lightFactor:1;
+  const mark={center:project({x,y}),rx:rx*placement.scale,ry:ry*placement.scale,color,alpha:Math.max(0,Math.min(1,alpha*(1-.65*mix)*factor))};restorationLights.push(mark);if(factor!==1)verdictLights.push(mark);
  };
  if((restoration&1)!==0)restoredLight(0,0xffb36d,.18);
  if((restoration&4)!==0)restoredLight(1,0xf2cf79,.14+(input.reduced?0:.025*Math.sin(time*1.7+age*.8)));
@@ -203,9 +212,9 @@ export function villageFrame(input:VillageFrameInput):VillageFrame {
   const startedDuringClosedAlarm=input.mood.alarmHistory?.some(alarm=>start+1e-9>=alarm.enteredAt&&start<alarm.endedAt-1e-9)??false;
   if(cycle>=0&&progress>=0&&progress<=1&&!startedDuringCurrentAlarm&&!startedDuringClosedAlarm){
    const cached=input.viewport.skyPath===null?null:sourceBounds(input.viewport.skyPath);
-   const path=input.viewport.skyPath===null?null:cached??villageSkyPath(age,{...input.viewport,placement,cssWorldScale,visibleSource:sourceBounds(input.viewport.visibleSource)??[0,0,900,1000],hudSourceBounds:input.viewport.hudSourceBounds.slice(0,32).map(sourceBounds).filter((value):value is Bounds=>value!==null),skyPath:undefined});
+   const path=input.viewport.skyPath===null?null:cached??villageSkyPath(age,{...input.viewport,placement,cssWorldScale,visibleSource:sourceBounds(input.viewport.visibleSource)??[0,0,900,1000],hudSourceBounds,skyPath:undefined});
    if(path){const x=path[0]+21+(path[2]-path[0]-42)*progress,y=(path[1]+path[3])/2;const pose=Math.min(2,Math.floor(progress*3));bird=BIRDS[pose].map(triangle=>paint(triangle.map(p=>({x:x+p.x,y:y+p.y})),.54));}
   }
  }
- return {residents,lamps,restorationLights,verdictStrokes,water,bird};
+ return {residents,lamps,restorationLights,verdictLights,verdictStrokes,water,bird};
 }

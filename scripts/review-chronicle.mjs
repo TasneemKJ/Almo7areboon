@@ -94,8 +94,8 @@ function validateAftermathSnapshot(state,outcome,reduced=false){
 }
 function validateVillageVerdictSnapshot(state,outcome,reduced=false){
  assert.equal(state.mode,outcome==='won'?'celebrate':'shelter');assert.equal(state.progress,1);
- assert.equal(state.witnesses,outcome==='won'?2:0);assert.equal(state.strokes,outcome==='won'?6:4);
- assert.ok(Number.isInteger(state.lights)&&state.lights>=2&&state.lights<=6);assert.ok(Array.isArray(state.regions)&&state.regions.length>=state.strokes+state.lights);for(const bounds of state.regions){for(const value of Object.values(bounds))assert.ok(Number.isFinite(value));assert.ok(bounds.left<bounds.right&&bounds.top<bounds.bottom);}assert.equal(state.reduced,reduced);assert.equal(state.paused,false);
+ if(outcome==='won'){assert.ok(state.witnesses>=1&&state.witnesses<=2);assert.equal(state.strokes,state.witnesses*3);}else {assert.equal(state.witnesses,0);assert.ok(state.strokes===2||state.strokes===4);}
+ assert.ok(Number.isInteger(state.lights)&&state.lights>=2&&state.lights<=6);assert.ok(Number.isInteger(state.affectedLights)&&state.affectedLights>=0&&state.affectedLights<=state.lights);assert.ok(Array.isArray(state.regions)&&state.regions.length>=state.strokes+state.affectedLights);for(const bounds of state.regions){for(const value of Object.values(bounds))assert.ok(Number.isFinite(value));assert.ok(bounds.left<bounds.right&&bounds.top<bounds.bottom);}assert.equal(state.reduced,reduced);assert.equal(state.paused,false);
 }
 async function clickEnabled(page,locator){
  if(await page.locator('#world').getAttribute('data-phase')!=='running'||!await locator.isEnabled())return false;
