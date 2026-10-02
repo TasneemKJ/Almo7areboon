@@ -47,8 +47,9 @@ export function battlefieldMemoryNeedsHudMeasurement(marks:readonly BattlefieldM
  return marks.length>0;
 }
 
-export function battlefieldMemoryAfterReset(marks:readonly BattlefieldMemoryMark[],reason:'motion'|'scene'):readonly BattlefieldMemoryMark[] {
- return reason==='motion'?marks:Object.freeze([]);
+export function battlefieldMemoryAfterReset(marks:readonly BattlefieldMemoryMark[],reason:'motion'|'scene',pending:readonly BattlefieldMemoryInput[]=[]):readonly BattlefieldMemoryMark[] {
+ if(reason==='scene')return Object.freeze([]);
+ return pending.reduce<readonly BattlefieldMemoryMark[]>((current,input)=>rememberBattlefieldMark(current,input),marks);
 }
 
 const finite=(value:number,fallback:number)=>Number.isFinite(value)?value:fallback;

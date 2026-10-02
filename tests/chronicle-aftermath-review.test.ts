@@ -122,6 +122,8 @@ test('native battle-memory journeys use public actions and prove HUD-safe paused
  assert.match(script,/page\.emulateMedia\(\{reducedMotion:'reduce'\}\)/,'the native journey must preserve a live mark while system motion becomes reduced');
  assert.match(script,/page\.emulateMedia\(\{reducedMotion:'no-preference'\}\)/,'the native journey must preserve the same mark when system motion resumes');
  assert.match(script,/page\.setViewportSize\(\{width:1000,height:760\}\)/,'resize cleanup must execute in native Chromium');
- assert.match(script,/normal-motion Meteor memory must wait for its projectile to land/);
+ assert.match(script,/dataset\.battlefieldMemoryPending/,'the native journey must observe the real projectile interval');
+ assert.match(script,/normal-motion Meteor memory must remain absent during its observed in-flight frame/);
+ assert.match(script,/entering reduced motion during an observed Meteor flight commits its accepted target memory before clearing animation/);
  assert.match(script,/waitForFunction\(\(\)=>!document\.querySelector\('canvas'\)\?\.dataset\.battlefieldMemory/,'the native journey must prove active-time expiry after the paused check');
 });

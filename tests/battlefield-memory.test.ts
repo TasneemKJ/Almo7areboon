@@ -27,6 +27,12 @@ test('motion-mode resets preserve live marks while scene resets clear them',()=>
  assert.deepEqual(battlefieldMemoryAfterReset(marks,'scene'),[]);
 });
 
+test('motion reset commits accepted impact memory still carried by a cleared projectile',()=>{
+ const after=battlefieldMemoryAfterReset([], 'motion', [{kind:'meteor',x:240,lane:2,side:'player'}]);
+ assert.equal(after.length,1);
+ assert.deepEqual({...after[0]},{kind:'meteor',x:240,lane:2,side:'player',age:0,life:BATTLEFIELD_MEMORY_LIFE,order:1});
+});
+
 test('a truthful impact creates one finite immutable fourteen-second road mark',()=>{
  const marks=heavy();
  assert.equal(marks.length,1);
