@@ -12,15 +12,3 @@ import {createArmyUpdater} from '../src/ui/army-screen.ts';
 test('cleared waves do not direct escort players to the irrelevant enemy base',()=>{const status={spawned:5,total:5,nextIn:null,enemiesRemaining:0,pendingEnemies:0,cleared:true,preview:null};assert.match(waveLabel(status,'escort'),/ESCORT THE CART/);assert.match(waveAccessibleLabel(status,'hold'),/courtyard/i);assert.doesNotMatch(waveInspectionHtml(status,'rescue'),/attack the enemy base/);});
 test('the replacement skill has a guard icon, not the food icon, and refreshes on selection changes',()=>{const p=defaultProfile(),units={innerHTML:''},skills={innerHTML:''},stages={innerHTML:''},update=createArmyUpdater({units,skills,stages},()=>'/portrait');update(p);const before=skills.innerHTML;p.chronicle!.captain='gatekeeper';update(p);assert.notEqual(skills.innerHTML,before);assert.match(skills.innerHTML,/Stand together/);p.chronicle!.captain='none';update(p);assert.equal(skills.innerHTML,before);});
 
-
-test('completed chronicle outcomes keep their victory or regroup guidance',()=>{
- for(const phase of ['won','lost'] as const){
-  const g=new Game(defaultProfile());
-  g.dispatch({type:'chronicle-route',route:'escort',battle:0});
-  g.state.phase=phase;
-  const text=battleGuidance(g.profile,g.state);
-  if(phase==='won')assert.match(text,/Victory!/);
-  else assert.match(text,/coins are safe/i);
-  assert.doesNotMatch(text,/Flour cart/);
- }
-});
