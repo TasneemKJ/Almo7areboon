@@ -5,7 +5,19 @@ import {SAVE_KEY,BACKUP_KEY} from '../../src/game/save.ts';
 const out='artifacts/webkit-render-diagnostic';mkdirSync(out,{recursive:true});
 const browser=await webkit.launch({headless:true}),report={cases:[],errors:[]};
 async function open(viewport){const context=await browser.newContext({viewport,hasTouch:true,isMobile:true,reducedMotion:'reduce'}),p=preparedChronicleProfile();p.sound=false;p.motion='reduced';await context.addInitScript(({p,k,b})=>{localStorage.setItem(k,JSON.stringify(p));localStorage.setItem(b,JSON.stringify(p));},{p,k:SAVE_KEY,b:BACKUP_KEY});const page=await context.newPage();page.on('pageerror',e=>report.errors.push(e.message));await page.goto('http://127.0.0.1:4173/',{waitUntil:'networkidle'});await page.waitForFunction(()=>document.querySelector('#app')?.dataset.saveSession==='active');return {context,page};}
-async function framebuffer(page){return page.locator('#battlefield canvas').evaluate(canvas=>new Promise(resolve=>requestAnimationFrame(()=>requestAnimationFrame(()=>{const gl=canvas.getContext('webgl2')||canvas.getContext('webgl');if(!gl){resolve({context:'none'});return;}const w=gl.drawingBufferWidth,h=gl.drawingBufferHeight,p=new Uint8Array(w*h*4);gl.readPixels(0,0,w,h,gl.RGBA,gl.UNSIGNED_BYTE,p);const colors=new Set(),step=Math.max(1,Math.floor(w*h/6000));let alpha=0;for(let i=0;i<w*h;i+=step){const q=i*4;if(p[q+3])alpha++;colors.add(`${p[q]>>4}:${p[q+1]>>4}:${p[q+2]>>4}:${p[q+3]>>4}`);}resolve({context:'webgl',lost:gl.isContextLost(),w,h,colors:colors.size,alpha});})))));}
+async function framebuffer(page){
+ return page.locator('#battlefield canvas').evaluate(canvas=>new Promise(resolve=>{
+  requestAnimationFrame(()=>requestAnimationFrame(()=>{
+   const gl=canvas.getContext('webgl2')||canvas.getContext('webgl');
+   if(!gl){resolve({context:'none'});return;}
+   const w=gl.drawingBufferWidth,h=gl.drawingBufferHeight,p=new Uint8Array(w*h*4);
+   gl.readPixels(0,0,w,h,gl.RGBA,gl.UNSIGNED_BYTE,p);
+   const colors=new Set(),step=Math.max(1,Math.floor(w*h/6000));let alpha=0;
+   for(let i=0;i<w*h;i+=step){const q=i*4;if(p[q+3])alpha++;colors.add(`${p[q]>>4}:${p[q+1]>>4}:${p[q+2]>>4}:${p[q+3]>>4}`);}
+   resolve({context:'webgl',lost:gl.isContextLost(),w,h,colors:colors.size,alpha});
+  }));
+ }));
+}
 async function screen(page,name){const png=await page.locator('#battlefield').screenshot();writeFileSync(`${out}/${name}.png`,png);return page.evaluate(async encoded=>{const img=new Image();img.src='data:image/png;base64,'+encoded;await img.decode();const c=document.createElement('canvas');c.width=img.width;c.height=img.height;const x=c.getContext('2d',{willReadFrequently:true});x.drawImage(img,0,0);const d=x.getImageData(0,0,c.width,c.height).data,colors=new Set();for(let y=0;y<c.height;y+=3)for(let xx=0;xx<c.width;xx+=3){const i=(y*c.width+xx)*4;colors.add(`${d[i]>>4}:${d[i+1]>>4}:${d[i+2]>>4}:${d[i+3]>>4}`);}return {colors:colors.size};},png.toString('base64'));}
 try{for(const viewport of [{width:320,height:568},{width:390,height:844}]){const {context,page}=await open(viewport),item={viewport};report.cases.push(item);try{
  item.initialFB=await framebuffer(page);
