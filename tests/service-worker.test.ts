@@ -138,6 +138,15 @@ test('a non-entry navigation cannot replace the cached game shell',async()=>{
  assert.equal(await (await fixture.cache.match('./icon.svg'))!.text(),'network response');
 });
 
+test('an unchanged content-hashed shell reuses its complete cached bundle',async()=>{
+ const shell='<script src="./assets/game-AB12cd34.js"></script>';
+ const fixture=cacheFixture({shell});
+ await fixture.cache.put('./',fixture.basic(shell));
+ await fixture.cache.put('./assets/game-AB12cd34.js',fixture.basic('hashed bundle'));
+ await fixture.request();
+ assert.equal(fixture.fetches,1,'the navigation should not re-download an immutable cached bundle');
+});
+
 for (const mode of ['navigate', 'cors']) {
   for (const failure of ['failOpen', 'failMatch'] as const) {
     test(`${mode} still reaches the network when ${failure} is unavailable`, async () => {

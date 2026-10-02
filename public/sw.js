@@ -9,6 +9,7 @@ const inScope = url => {
 };
 const shellURLs = html => [...html.matchAll(/(?:src|href)="([^"#?]+\.(?:js|css|webmanifest|svg|png))"/g)]
   .map(match => new URL(match[1], SCOPE)).filter(inScope).map(url => url.href);
+const immutableBundle = url => /\/assets\/[^/]+-[A-Za-z0-9_-]{8,}\.(?:js|css)$/.test(new URL(url).pathname);
 
 async function trimBundles(cache) {
   const bundles = (await cache.keys()).filter(request => {
@@ -25,7 +26,11 @@ async function trimBundles(cache) {
 async function cacheShell(cache, page) {
   const html = await page.clone().text();
   const assets = await Promise.all(shellURLs(html).map(async url => {
-    const response = await fetch(url, { cache: 'reload' });
+    let response;
+    if (immutableBundle(url)) {
+      try { response = await cache.match(url); } catch { /* Fetch below if storage is unavailable. */ }
+    }
+    response ||= await fetch(url, { cache: 'reload' });
     if (!response.ok) throw new Error(`Unable to cache ${url}`);
     return [url, response];
   }));
