@@ -1,0 +1,39 @@
+name: Reliability checks
+
+on:
+  push:
+    branches: [main, fix/game-reliability-audit]
+  pull_request:
+  workflow_dispatch:
+
+permissions:
+  contents: read
+
+concurrency:
+  group: reliability-${{ github.head_ref || github.ref }}
+  cancel-in-progress: true
+
+jobs:
+  reliability:
+    runs-on: ubuntu-latest
+    timeout-minutes: 15
+    steps:
+      - uses: actions/checkout@v4
+      - uses: actions/setup-node@v4
+        with:
+          node-version: 24
+          cache: npm
+      - run: npm ci
+      - name: Unit and integration tests
+        run: npm test
+      - name: Production build
+        run: npm run build
+      - name: Capture audit dependencies
+        run: tar -czf /tmp/audit-dependencies.tar.gz node_modules
+      - uses: actions/upload-artifact@v4
+        with:
+          name: reliability-baseline
+          path: |
+            /tmp/audit-dependencies.tar.gz
+            dist/
+          retention-days: 1
