@@ -156,7 +156,7 @@ export class ChronicleView {
       cat.fillStyle(0xc7985c,.9);cat.fillTriangle(headX-face*2.9,bodyY-8,headX-face*2,bodyY-11.1,headX-face*.8,bodyY-8.2);cat.fillCircle(headX+face*2,bodyY-4.4,1.1);
       cat.lineStyle(2.2,0x3a3730,.98);cat.lineBetween(x-face*8,bodyY-1,x-face*11,y);cat.lineBetween(x-face*1,bodyY-1,x+face*2,y);
       const tailX=x-face*10,tailY=bodyY-2,tailReach=face*-(10+Math.cos(frame.tailAngle)*3);cat.lineStyle(2.4,0x3a3730,.98);cat.beginPath();cat.moveTo(tailX,tailY);cat.lineTo(tailX+tailReach*.62,tailY-5-Math.sin(frame.tailAngle)*4);cat.lineTo(tailX+tailReach,tailY-10+Math.sin(frame.tailAngle)*5);cat.strokePath();
-      this.scene.game.canvas.dataset.chronicleCat=JSON.stringify({mode:frame.mode,x:frame.x,facing:frame.facing,gait:frame.gait,paws:frame.paws.length,groundDepth:plan.groundDepth,catDepth:plan.catDepth,endpointDepth:plan.endpointDepth,reduced,paused:s.paused});
+      if(navigator.webdriver)this.scene.game.canvas.dataset.chronicleCat=JSON.stringify({mode:frame.mode,x:frame.x,facing:frame.facing,gait:frame.gait,tailAngle:frame.tailAngle,paws:frame.paws.length,groundDepth:plan.groundDepth,catDepth:plan.catDepth,endpointDepth:plan.endpointDepth,reduced,paused:s.paused});
     }
     if(c.rally){g.lineStyle(1.2,0xe4c894,.7);g.strokeEllipse(104,groundY+8,31,13);g.lineBetween(115,groundY+6,115,groundY-22);g.fillStyle(0xd3b880,.9);g.fillTriangle(115,groundY-22,130,groundY-18,115,groundY-12);}
     const keeper=s.units.find(u=>u.storyBoss&&u.hp>0);

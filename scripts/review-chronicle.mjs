@@ -67,9 +67,10 @@ async function pauseAtCatMode(page,mode){
   await page.waitForFunction(value=>{const raw=document.querySelector('canvas')?.dataset.chronicleCat;if(!raw)return false;const state=JSON.parse(raw);return state.mode===value&&!state.paused;},mode,{timeout:Math.max(1,deadline-Date.now())});
   const observed=await page.locator('#pause').evaluate((button,value)=>{const raw=document.querySelector('canvas')?.dataset.chronicleCat;if(!raw)return null;const state=JSON.parse(raw);if(state.mode!==value||state.paused)return null;button.click();return state;},mode);
   if(!observed)continue;
-  await page.locator('#pause[aria-pressed="true"]').waitFor();
+  await page.waitForFunction(()=>{const raw=document.querySelector('canvas')?.dataset.chronicleCat;if(!raw)return false;return JSON.parse(raw).paused===true;});
   const paused=await page.locator('canvas').evaluate(node=>JSON.parse(node.dataset.chronicleCat));
-  assert.equal(paused.mode,mode);assert.equal(paused.paused,true);assert.equal(paused.gait,0);assert.equal(paused.paws,0);
+  assert.equal(paused.mode,mode);assert.equal(paused.paused,true);
+  assert.deepEqual({mode:paused.mode,x:paused.x,gait:paused.gait,tailAngle:paused.tailAngle,paws:paused.paws},{mode:observed.mode,x:observed.x,gait:observed.gait,tailAngle:observed.tailAngle,paws:observed.paws},'public pause control must freeze the observed cat frame');
   assert.ok(paused.groundDepth<paused.catDepth&&paused.catDepth<paused.endpointDepth);
   return paused;
  }

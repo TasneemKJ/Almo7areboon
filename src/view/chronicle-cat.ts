@@ -17,7 +17,7 @@ const finite=(value:number,fallback=0)=>Number.isFinite(value)?value:fallback;
 /** View-only guide for the saved missing-page route. It never owns mission progress or movement. */
 export function chronicleCatFrame(input:Readonly<ChronicleCatInput>):ChronicleCatFrame|null {
  if(!Number.isInteger(input.discoveries)||(input.discoveries&4)===0||input.route!=='whisper')return null;
- const reduced=input.reduced===true,paused=input.paused===true,time=Math.max(0,finite(input.time));
+ const reduced=input.reduced===true,time=Math.max(0,finite(input.time));
  let mode:ChronicleCatMode='leading',x=HOME_X,facing:-1|1=1;
  if(input.phase==='ready'){mode='waiting';x=HOME_X;}
  else if(input.rescued===true){
@@ -25,9 +25,10 @@ export function chronicleCatFrame(input:Readonly<ChronicleCatInput>):ChronicleCa
   x=reduced?HOME_BOUND:clamp(finite(input.travellerX,620)*.45-22,HOME_BOUND,CAGE_WATCH_X);
  }else if(reduced||time>=5.5){mode='watching';x=CAGE_WATCH_X;}
  else x=HOME_X+(CAGE_WATCH_X-HOME_X)*clamp(time/5.5,0,1);
- const moving=!reduced&&!paused&&(mode==='leading'||mode==='home')&&x>HOME_BOUND&&x<CAGE_WATCH_X;
- const gait:0|1=moving?Math.floor(time*6)%2 as 0|1:0;
- const tailAngle=moving?Math.sin(time*5.2)*.32:0;
+ const moving=!reduced&&(mode==='leading'||mode==='home')&&x>HOME_BOUND&&x<CAGE_WATCH_X;
+ const motionTime=time%60;
+ const gait:0|1=moving?Math.floor(motionTime*6)%2 as 0|1:0;
+ const tailAngle=moving?Math.sin(motionTime*5.2)*.32:0;
  const paws:ChronicleCatPaw[]=moving?[0,1,2].map(index=>({x:clamp(x-facing*(10+index*8),HOME_BOUND,CAGE_WATCH_X),y:index%2?2:-1,alpha:.62-index*.13})):[];
  return {mode,x,facing,gait,tailAngle,paws};
 }

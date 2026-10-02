@@ -44,13 +44,19 @@ test('after the rescue the cat accompanies the authoritative scout home without 
 
 test('pause and reduced motion keep static poses while malformed inputs fail finite and bounded',async()=>{
  const {chronicleCatFrame}=await subject();
- const paused=chronicleCatFrame(input({paused:true,time:2.1}));
- assert.equal(paused?.gait,0);assert.equal(paused?.tailAngle,0);assert.equal(paused?.paws.length,0);
+ const moving=chronicleCatFrame(input({paused:false,time:2.2})),paused=chronicleCatFrame(input({paused:true,time:2.2}));
+ assert.deepEqual(paused,moving,'pause freezes the already-derived presentation frame instead of resetting it');
  const reduced=chronicleCatFrame(input({reduced:true,time:0})),reducedLater=chronicleCatFrame(input({reduced:true,time:999}));
  assert.deepEqual(reduced,reducedLater);assert.deepEqual([reduced?.mode,reduced?.x,reduced?.gait],['watching',249,0]);
  const malformed=chronicleCatFrame(input({time:NaN,travellerX:Infinity,phase:'broken'}));
  assert.ok(malformed);assert.ok(Number.isFinite(malformed.x)&&Number.isFinite(malformed.tailAngle));
  assert.ok(malformed.x>=56&&malformed.x<=249);assert.ok(malformed.paws.every(mark=>Number.isFinite(mark.x)&&Number.isFinite(mark.y)&&Number.isFinite(mark.alpha)));
+});
+
+test('large finite clocks stay finite in the rescued home pose',async()=>{
+ const {chronicleCatFrame}=await subject();
+ const huge=chronicleCatFrame(input({rescued:true,travellerX:560,time:Number.MAX_VALUE}));
+ assert.ok(huge);assert.ok(Number.isFinite(huge.gait)&&Number.isFinite(huge.tailAngle));
 });
 
 test('render plan keeps paw marks below the cat and the cat behind rescue endpoints',async()=>{
@@ -71,7 +77,7 @@ test('ChronicleView pools, clears and reports the route-truthful cat without own
  assert.match(source,/this\.cat\.clear\(\)\.setVisible\(false\)/);
  assert.match(source,/this\.catGround\.clear\(\)/);
  assert.ok((source.match(/delete this\.scene\.game\.canvas\.dataset\.chronicleCat/g)??[]).length>=2,'update and destroy both clear stale webdriver metadata');
- assert.match(source,/dataset\.chronicleCat=JSON\.stringify\(\{mode:frame\.mode,x:frame\.x/);
+ assert.match(source,/if\(navigator\.webdriver\)this\.scene\.game\.canvas\.dataset\.chronicleCat=JSON\.stringify\(\{mode:frame\.mode,x:frame\.x/);
  assert.doesNotMatch(source,/this\.scene\.add\.(?:graphics|image|sprite)\([^)]*\).*chronicleCatFrame/s,'cat updates must reuse constructor-owned objects');
 });
 
@@ -81,6 +87,7 @@ test('native journey requires original lead, watch and home evidence at all supp
  assert.match(source,/for\(const \[width,height\] of \[\[320,568\],\[390,844\],\[1024,768\]\]\)\{\n  const p=preparedChronicleProfile\(\);p\.speed=1;p\.chronicle\.discoveries=7;p\.chronicle\.route='whisper'/);
  for(const state of ['leading','watching','home'])assert.match(source,new RegExp(`shot\\(f,'cat-${state}'\\)`));
  assert.match(source,/dataset\.chronicleCat/);
+ assert.match(source,/waitForFunction\(\(\)=>\{const raw=document\.querySelector\('canvas'\)\?\.dataset\.chronicleCat;if\(!raw\)return false;return JSON\.parse\(raw\)\.paused===true;\}\)/);
  assert.match(source,/paused\.groundDepth<paused\.catDepth&&paused\.catDepth<paused\.endpointDepth/);
  assert.match(source,/cat\.mode==='home'&&cat\.x<rescue\.scout\.x/);
  assert.match(source,/paused cat presentation must remain save-inert/);
