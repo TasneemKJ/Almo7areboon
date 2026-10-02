@@ -21,6 +21,8 @@ const origin=`http://127.0.0.1:${server.address().port}`;
 const report={revision:execFileSync('git',['rev-parse','HEAD'],{encoding:'utf8'}).trim(),status:'failed',cases:[],errors:[],browsers:{}};
 let browser;
 async function capture(page,name,phase){
+ // A state change can resize the canvas; allow layout and the next render frame to settle.
+ await page.evaluate(()=>new Promise(resolve=>requestAnimationFrame(()=>requestAnimationFrame(resolve))));
  const data=await page.evaluate(()=>{
   const box=e=>{const r=e.getBoundingClientRect();return {x:r.x,y:r.y,width:r.width,height:r.height,right:r.right,bottom:r.bottom};};
   const visible=e=>e.getClientRects().length>0&&getComputedStyle(e).visibility!=='hidden'&&!e.closest('[hidden],[inert]');
@@ -28,7 +30,7 @@ async function capture(page,name,phase){
    const rect=box(e),top=document.elementFromPoint(rect.x+rect.width/2,rect.y+rect.height/2);
    return {command:e.dataset.command??e.dataset.tab??e.dataset.unit??(e.dataset.storyPage!==undefined?`story-page-${e.dataset.storyPage}`:''),dismiss:e.classList.contains('close-button'),text:e.innerText.trim().slice(0,70),disabled:!!e.disabled,...rect,reachable:!!top&&e.contains(top)};
   });
-  const regions={};for(const s of ['.game-shell','#world','.stage','#ready','.deployment','.upgrades','.bottom-nav','#deploy-hint','#story-rally','.dialog']){const e=document.querySelector(s);if(e&&visible(e))regions[s]=box(e);}
+  const regions={};for(const s of ['.game-shell','#world','#battlefield','#world canvas','.stage','#ready','.deployment','.upgrades','.bottom-nav','#deploy-hint','#story-rally','.dialog']){const e=document.querySelector(s);if(e&&visible(e))regions[s]=box(e);}
   return {width:innerWidth,height:innerHeight,scrollWidth:document.documentElement.scrollWidth,scrollHeight:document.documentElement.scrollHeight,session:document.querySelector('#app')?.dataset.saveSession,regions,controls};
  });
  await page.screenshot({path:`${out}/${name}-${phase}.png`});
@@ -94,6 +96,11 @@ async function run(engine,width,height,temporary=false,insets=null){
    for(const screen of item.screens){
     const prefix=`${name}/${screen.phase}`,top=insets?.top??0,bottom=screen.height-(insets?.bottom??0);
     check(screen.scrollWidth<=screen.width,`${prefix}: horizontal overflow`);
+    const world=screen.regions['#world'],surface=screen.regions['#battlefield'],canvas=screen.regions['#world canvas'];
+    if(world){
+     check(surface&&surface.height>=world.height-1&&surface.width>=world.width-1,`${prefix}: battlefield mount does not fill the visible world`);
+     check(canvas&&canvas.height>0&&canvas.width>0,`${prefix}: battlefield canvas has no visible size`);
+    }
     const dialog=screen.regions['.dialog'];if(dialog)check(dialog.x>=0&&dialog.right<=screen.width,`${prefix}: dialog overflows`);
     if(screen.height>=540&&!dialog){for(const c of screen.controls.filter(c=>['battle','evolution','cards','skills'].includes(c.command)))check(c.y>=top&&c.bottom<=bottom&&c.reachable,`${prefix}: navigation ${c.command} is obscured`);}
     for(const c of screen.controls.filter(c=>!c.disabled&&(c.command==='story-rally'||c.command.startsWith('story-page-'))))check(c.width>=44&&c.height>=44,`${prefix}: ${c.command} target is ${c.width}x${c.height}, below 44x44`);
