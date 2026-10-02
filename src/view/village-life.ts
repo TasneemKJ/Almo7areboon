@@ -1,4 +1,5 @@
 import type {VillageMoodSnapshot} from './village-mood.ts';
+import type {VillageVerdictFrame} from './village-verdict.ts';
 
 export type Bounds=readonly [number,number,number,number];
 export interface Point {x:number;y:number}
@@ -6,8 +7,8 @@ export interface PaintedPolygon {points:readonly Point[];color:number;alpha:numb
 export interface VillageHalo {center:Point;rx:number;ry:number;color:number;alpha:number}
 export interface VillageStroke {from:Point;to:Point;width:number;color:number;alpha:number}
 export interface VillageViewport {placement:{x:number;y:number;scale:number};cssWorldScale:number;visibleSource:Bounds;hudSourceBounds:readonly Bounds[];skyPath?:Bounds|null}
-export interface VillageFrameInput {age:number;time:number;reduced:boolean;restoration?:number;mood:Readonly<VillageMoodSnapshot>;viewport:VillageViewport}
-export interface VillageFrame {residents:readonly {apertureId:string;panes:readonly PaintedPolygon[]}[];lamps:readonly VillageHalo[];restorationLights:readonly VillageHalo[];water:readonly VillageStroke[];bird:readonly PaintedPolygon[]|null}
+export interface VillageFrameInput {age:number;time:number;reduced:boolean;restoration?:number;mood:Readonly<VillageMoodSnapshot>;viewport:VillageViewport;verdict?:Readonly<VillageVerdictFrame>|null}
+export interface VillageFrame {residents:readonly {apertureId:string;panes:readonly PaintedPolygon[]}[];lamps:readonly VillageHalo[];restorationLights:readonly VillageHalo[];verdictStrokes:readonly VillageStroke[];water:readonly VillageStroke[];bird:readonly PaintedPolygon[]|null}
 interface Aperture {id:string;bounds:Bounds;framing:readonly Bounds[];panes:readonly (readonly Point[])[];dark:boolean}
 type Lamp=readonly [number,number,number,number];
 interface Plate {path:string;sha256:string;width:900;height:1000;windows:readonly Aperture[];lamps:readonly Lamp[];sky:Bounds}
@@ -122,6 +123,7 @@ export function villageFrame(input:VillageFrameInput):VillageFrame {
  const restoration=Number.isInteger(input.restoration)&&input.restoration!>=0&&input.restoration!<=7?input.restoration!:0;
  const time=input.reduced?0:Number.isFinite(input.time)?Math.max(0,input.time):0;
  const sharedMix=Number.isFinite(input.mood.alarmMix)?Math.max(0,Math.min(1,input.mood.alarmMix)):0;
+ const verdict=input.verdict&&(input.verdict.mode==='celebrate'||input.verdict.mode==='shelter')&&Number.isFinite(input.verdict.progress)?{mode:input.verdict.mode,progress:Math.max(0,Math.min(1,input.verdict.progress))}:null;
  // Reduced motion uses discrete visual states; the shared long ramp remains intact for audio.
  const mix=input.reduced?(input.mood.mood==='alarmed'?1:0):sharedMix;
  const {placement}=input.viewport;
@@ -135,8 +137,14 @@ export function villageFrame(input:VillageFrameInput):VillageFrame {
  for(let index=0;index<plate.windows.length;index++){
   const room=plate.windows[index],panes:PaintedPolygon[]=[];
   // Darkening shares the exact panes; the baked framing and hanging shadow remain intact.
-  if(mix>0)for(const pane of room.panes)panes.push(paint(pane,.10*mix));
-  if(returning&&(courtyard||occupied&&index===(input.reduced?0:visit%2))){
+  if(verdict?.mode!=='shelter'&&mix>0)for(const pane of room.panes)panes.push(paint(pane,.10*mix));
+  if(verdict?.mode==='celebrate'&&verdict.progress>0){
+   const [l,t,r,b]=room.bounds,w=r-l,h=b-t,alpha=(room.dark?.28:.40)*verdict.progress;
+   for(const triangle of RESIDENT){
+    const shape=triangle.map(p=>({x:l+p.x*w,y:t+p.y*h}));
+    for(const pane of room.panes){const clipped=clip(shape,pane);if(clipped.length>=3)panes.push(paint(clipped,alpha));}
+   }
+  }else if(!verdict&&returning&&(courtyard||occupied&&index===(input.reduced?0:visit%2))){
    const [l,t,r,b]=room.bounds,w=r-l,h=b-t,small=w*placement.scale*input.viewport.cssWorldScale<6||h*placement.scale*input.viewport.cssWorldScale<8;
    const envelope=input.reduced||courtyard?1:Math.min(1,phase/.7,(duration-phase)/.7);
    const warmth=!input.reduced&&input.mood.mood==='recovering'?1-sharedMix/.375:1;
@@ -150,12 +158,25 @@ export function villageFrame(input:VillageFrameInput):VillageFrame {
   }
   if(panes.length)residents.push({apertureId:room.id,panes});
  }
+ const verdictStrokes:VillageStroke[]=[];
+ if(verdict?.mode==='celebrate')for(const room of plate.windows){
+  const [l,t,r]=room.bounds,w=r-l;
+  for(let index=0;index<3;index++){
+   const x=l+(index+1)*w/4;
+   verdictStrokes.push({from:project({x,y:t+2}),to:project({x:x+(index-1)*4,y:t-6}),width:Math.max(.75,1.1*placement.scale),color:0xf2cf79,alpha:.62*verdict.progress});
+  }
+ }else if(verdict?.mode==='shelter')for(const room of plate.windows){
+  const [l,t,r,b]=room.bounds,inset=Math.min(2,(r-l)/5,(b-t)/5);
+  verdictStrokes.push({from:project({x:l+inset,y:t+inset}),to:project({x:r-inset,y:b-inset}),width:Math.max(.9,1.4*placement.scale),color:INK,alpha:.58*verdict.progress});
+  verdictStrokes.push({from:project({x:r-inset,y:t+inset}),to:project({x:l+inset,y:b-inset}),width:Math.max(.9,1.4*placement.scale),color:INK,alpha:.58*verdict.progress});
+ }
+ const lightFactor=verdict?.mode==='celebrate'?1+.35*verdict.progress:verdict?.mode==='shelter'?1-.75*verdict.progress:1;
  const lamps=plate.lamps.map(([x,y,rx,ry],index)=>({center:project({x,y}),rx:rx*placement.scale,ry:ry*placement.scale,color:age===5&&index>=2?0x8edfc9:0xffd08a,
- alpha:(.12+index*.008+(input.reduced?0:.018*Math.sin(time*2*Math.PI/(3.7+index*.9)+age+index*2)))*(1-.55*mix)}));
+ alpha:Math.min(1,(.12+index*.008+(input.reduced?0:.018*Math.sin(time*2*Math.PI/(3.7+index*.9)+age+index*2)))*(1-.55*mix)*lightFactor)}));
  const restorationLights:VillageHalo[]=[];
  const restoredLight=(index:number,color:number,alpha:number)=>{
   const [l,t,r,b]=plate.windows[index].bounds;
-  restorationLights.push({center:project({x:(l+r)/2,y:(t+b)/2}),rx:Math.max(16,(r-l)*.95)*placement.scale,ry:Math.max(18,(b-t)*.9)*placement.scale,color,alpha:alpha*(1-.65*mix)});
+  restorationLights.push({center:project({x:(l+r)/2,y:(t+b)/2}),rx:Math.max(16,(r-l)*.95)*placement.scale,ry:Math.max(18,(b-t)*.9)*placement.scale,color,alpha:Math.min(1,alpha*(1-.65*mix)*lightFactor)});
  };
  if((restoration&1)!==0)restoredLight(0,0xffb36d,.18);
  if((restoration&4)!==0)restoredLight(1,0xf2cf79,.14+(input.reduced?0:.025*Math.sin(time*1.7+age*.8)));
@@ -174,5 +195,5 @@ export function villageFrame(input:VillageFrameInput):VillageFrame {
    if(path){const x=path[0]+21+(path[2]-path[0]-42)*progress,y=(path[1]+path[3])/2;const pose=Math.min(2,Math.floor(progress*3));bird=BIRDS[pose].map(triangle=>paint(triangle.map(p=>({x:x+p.x,y:y+p.y})),.54));}
   }
  }
- return {residents,lamps,restorationLights,water,bird};
+ return {residents,lamps,restorationLights,verdictStrokes,water,bird};
 }

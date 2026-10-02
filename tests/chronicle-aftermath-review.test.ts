@@ -52,6 +52,19 @@ test('journey validates bounded diagnostics, settlement stability, overflow, run
  assert.match(script,/assert\.equal\(assetFailures\.length,0/);
 });
 
+test('the same post-render verdict snapshot proves the village reaction at every target width',()=>{
+ const script=source();
+ assert.match(script,/node\.battlefieldReviewSnapshot\(\(\{image,resultOpen,aftermath,villageVerdict\}\)=>/);
+ assert.match(script,/function validateVillageVerdictSnapshot\(state,outcome\)/);
+ assert.match(script,/assert\.equal\(state\.mode,outcome==='won'\?'celebrate':'shelter'\)/);
+ assert.match(script,/assert\.equal\(state\.progress,1\)/);
+ assert.match(script,/assert\.equal\(state\.witnesses,outcome==='won'\?2:0\)/);
+ assert.match(script,/assert\.equal\(state\.strokes,outcome==='won'\?6:4\)/);
+ assert.match(script,/Number\.isInteger\(state\.lights\)&&state\.lights>=2&&state\.lights<=6/);
+ assert.match(script,/assert\.equal\(state\.paused,false\)/);
+ assert.match(script,/validateVillageVerdictSnapshot\(capture\.villageVerdict,expected\)/);
+});
+
 test('aftermath scenarios opt into full motion while existing reduced-motion fixtures stay unchanged',()=>{
  const script=source();
  assert.match(script,/async function open\(name,width,height,profile,reducedMotion='reduce'\)/);

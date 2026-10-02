@@ -24,6 +24,7 @@ import {stackedY} from './floater-stack.ts';
 import {waveArrivalForPort} from './wave-arrival.ts';
 import {paintWaveArrival,waveArrivalRenderPlan} from './wave-arrival-paint.ts';
 import {battleAftermathPose} from './battle-aftermath.ts';
+import {villageVerdictFrame} from './village-verdict.ts';
 import {TROOP_FRAME} from './unit-illustrations.ts';
 import {compactNumber} from '../ui/battle-hud.ts';
 import {battleResolution} from './render-resolution.ts';
@@ -39,7 +40,7 @@ type Floater={text:Phaser.GameObjects.Text;life:number;max:number;startY:number;
 type AttackCue={x:number;y:number;lane:number;age:number;kind:Unit['kind'];side:Side;life:number;max:number};
 type ImpactCue={x:number;y:number;age:number;kind:Unit['kind'];side:Side;life:number;max:number;trait?:'guard'|'pierce'|'sweep';lane?:number};
 type Flare={x:number;y:number;life:number;max:number;radius:number;color:number};
-type ReviewSnapshot={image:HTMLImageElement|null;resultOpen:boolean;aftermath:unknown};
+type ReviewSnapshot={image:HTMLImageElement|null;resultOpen:boolean;aftermath:unknown;villageVerdict:unknown};
 const xAt=(x:number)=>x*.45;
 /** View-only: nudges bodies sharing a lane by a few pixels so crowded columns read as individuals, not one stacked sprite. */
 const noise=(n:number)=>{const value=Math.sin(n*117.13)*43758.5453;return value-Math.floor(value);};
@@ -140,7 +141,7 @@ export function mountBattlefield(element:HTMLElement,game:GamePort,onFrame:()=>v
     this.baseText.push(text);this.world.add(text);
    }
    this.scale.on('resize',this.resize,this);
-   this.events.once('shutdown',()=>{delete this.game.canvas.dataset.waveArrival;delete this.game.canvas.dataset.battleAftermath;this.aftermath=null;this.scale.off('resize',this.resize,this);this.resetEffects();this.units.clear();this.idle=[];});
+   this.events.once('shutdown',()=>{delete this.game.canvas.dataset.waveArrival;delete this.game.canvas.dataset.battleAftermath;delete this.game.canvas.dataset.villageVerdict;this.aftermath=null;this.scale.off('resize',this.resize,this);this.resetEffects();this.units.clear();this.idle=[];});
    this.resize();this.syncEra();loading.remove();
    if(this.failed)element.dispatchEvent(new CustomEvent('visual-fallback',{bubbles:true}));
   }
@@ -345,11 +346,14 @@ export function mountBattlefield(element:HTMLElement,game:GamePort,onFrame:()=>v
   }
   private drawAtmosphere():void {
    const g=this.ambience;g.clear();
+   if(navigator.webdriver)delete this.game.canvas.dataset.villageVerdict;
    if(storybookArt(game.profile.age)){
     this.streak.clear();this.stars.setVisible(false);this.clouds.setVisible(false);this.mist.setVisible(false);this.stageLight.setVisible(true);
     const mood=options.villageMood?.()??this.quietVillage;
-    const frame=villageFrame({age:game.profile.age,time:options.villageMood?mood.time:this.clock,reduced:this.reduce,restoration:game.profile.chronicle?.restoration??0,mood,viewport:this.villageViewport});
+    const villageVerdict=this.aftermath?.phase===game.state.phase?villageVerdictFrame({phase:this.aftermath.phase,elapsed:Math.max(0,this.clock-this.aftermath.at),reduced:this.reduce}):null;
+    const frame=villageFrame({age:game.profile.age,time:options.villageMood?mood.time:this.clock,reduced:this.reduce,restoration:game.profile.chronicle?.restoration??0,mood,viewport:this.villageViewport,verdict:villageVerdict});
     for(const resident of frame.residents)for(const pane of resident.panes){g.fillStyle(pane.color,pane.alpha);g.fillPoints(pane.points as Phaser.Types.Math.Vector2Like[],true);}
+    for(const stroke of frame.verdictStrokes){g.lineStyle(stroke.width,stroke.color,stroke.alpha);g.lineBetween(stroke.from.x,stroke.from.y,stroke.to.x,stroke.to.y);}
     for(const mark of frame.water){g.lineStyle(mark.width,mark.color,mark.alpha);g.lineBetween(mark.from.x,mark.from.y,mark.to.x,mark.to.y);}
     if(frame.bird)for(const shape of frame.bird){g.fillStyle(shape.color,shape.alpha);g.fillPoints(shape.points as Phaser.Types.Math.Vector2Like[],true);}
     const lights=[...frame.lamps,...frame.restorationLights];
@@ -358,6 +362,7 @@ export function mountBattlefield(element:HTMLElement,game:GamePort,onFrame:()=>v
      if(!mark){image.setVisible(false);continue;}
      image.setVisible(true).setPosition(mark.center.x,mark.center.y).setDisplaySize(mark.rx*2,mark.ry*2).setTint(mark.color).setAlpha(mark.alpha);
     }
+    if(navigator.webdriver&&villageVerdict)this.game.canvas.dataset.villageVerdict=JSON.stringify({mode:villageVerdict.mode,progress:villageVerdict.progress,witnesses:frame.residents.length,strokes:frame.verdictStrokes.length,lights:lights.length,reduced:this.reduce,paused:game.state.paused});
     return;
    }
    if(!storybookArt(game.profile.age)){
@@ -659,7 +664,7 @@ export function mountBattlefield(element:HTMLElement,game:GamePort,onFrame:()=>v
    const dt=Math.min(.05,Math.max(0,delta/1000));game.step(dt);
    const events=game.drainEvents();options.onPresentation?.(dt,events);if(events.length)onEvents(events);
    if(options.isVisible&&!options.isVisible()){onFrame();return;}
-   if(this.lastState!==game.state){this.lastState=game.state;this.aftermath=null;delete this.game.canvas.dataset.battleAftermath;this.resetEffects();for(const view of this.units.values())view.body.destroy();this.units.clear();}
+   if(this.lastState!==game.state){this.lastState=game.state;this.aftermath=null;delete this.game.canvas.dataset.battleAftermath;delete this.game.canvas.dataset.villageVerdict;this.resetEffects();for(const view of this.units.values())view.body.destroy();this.units.clear();}
    const reduced=reducedMotion(game.profile.motion,motionQuery.matches);
    if(reduced&&!this.reduce)this.resetEffects();this.reduce=reduced;
    if(!game.state.paused&&!this.reduce)this.clock+=dt;
@@ -678,8 +683,9 @@ export function mountBattlefield(element:HTMLElement,game:GamePort,onFrame:()=>v
    if(reviewArmed||expected!=='won'&&expected!=='lost')return false;reviewArmed=true;
    const waitForOutcome=()=>renderer.renderer.once(Phaser.Renderer.Events.POST_RENDER,()=>{
     const raw=renderer.canvas.dataset.battleAftermath;let state:{phase?:unknown;elapsed?:unknown}|null=null;try{state=raw?JSON.parse(raw) as {phase?:unknown;elapsed?:unknown}:null;}catch{state=null;}
-    if(!state||state.phase!==expected||typeof state.elapsed!=='number'||state.elapsed<.35){waitForOutcome();return;}
-    const frame={resultOpen:document.querySelector('.result-dialog')!==null,aftermath:state};
+    const verdictRaw=renderer.canvas.dataset.villageVerdict;let villageVerdict:unknown=null;try{villageVerdict=verdictRaw?JSON.parse(verdictRaw):null;}catch{villageVerdict=null;}
+    if(!state||state.phase!==expected||typeof state.elapsed!=='number'||state.elapsed<.65||!villageVerdict){waitForOutcome();return;}
+    const frame={resultOpen:document.querySelector('.result-dialog')!==null,aftermath:state,villageVerdict};
     renderer.renderer.snapshot(image=>{reviewResult={...frame,image:image instanceof HTMLImageElement?image:null};reviewWaiter?.(reviewResult);reviewWaiter=null;},'image/png');
    });
    waitForOutcome();return true;

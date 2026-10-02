@@ -19,14 +19,14 @@ async function armCanvasShot(fixture,expected){await fixture.page.locator('canva
 async function canvasShot(fixture,state,expected){
  const capture=await fixture.page.locator('canvas').evaluate((node,phase)=>new Promise((resolve,reject)=>{
   if(typeof node.battlefieldReviewSnapshot!=='function'){reject(new Error('Phaser post-render snapshot is unavailable'));return;}
-  node.battlefieldReviewSnapshot(({image,resultOpen,aftermath})=>{
+  node.battlefieldReviewSnapshot(({image,resultOpen,aftermath,villageVerdict})=>{
    if(!(image instanceof HTMLImageElement)){reject(new Error('Phaser post-render snapshot did not return an image'));return;}
    const probe=document.createElement('canvas');probe.width=image.naturalWidth;probe.height=image.naturalHeight;const context=probe.getContext('2d',{willReadFrequently:true});if(!context){reject(new Error('Snapshot pixel probe is unavailable'));return;}context.drawImage(image,0,0);
    const pixels=context.getImageData(0,0,probe.width,probe.height).data,step=Math.max(1,Math.floor(probe.width*probe.height/4096));let opaque=0;const colors=new Set();for(let pixel=0;pixel<probe.width*probe.height;pixel+=step){const i=pixel*4;if(pixels[i+3]>8){opaque++;colors.add(`${pixels[i]>>4}:${pixels[i+1]>>4}:${pixels[i+2]>>4}:${pixels[i+3]>>4}`);}}
-   resolve({encoded:image.src.split(',')[1],width:image.naturalWidth,height:image.naturalHeight,resultOpen,aftermath,opaque,colors:colors.size,phase});
+   resolve({encoded:image.src.split(',')[1],width:image.naturalWidth,height:image.naturalHeight,resultOpen,aftermath,villageVerdict,opaque,colors:colors.size,phase});
   });
  }),expected);
- assert.equal(capture.resultOpen,false,'survivor verdict snapshot must precede the result sheet');validateAftermathSnapshot(capture.aftermath,expected);assert.ok(capture.opaque>512&&capture.colors>32,`snapshot pixels are blank or uniform: ${JSON.stringify({opaque:capture.opaque,colors:capture.colors})}`);
+ assert.equal(capture.resultOpen,false,'survivor verdict snapshot must precede the result sheet');validateAftermathSnapshot(capture.aftermath,expected);validateVillageVerdictSnapshot(capture.villageVerdict,expected);assert.ok(capture.opaque>512&&capture.colors>32,`snapshot pixels are blank or uniform: ${JSON.stringify({opaque:capture.opaque,colors:capture.colors})}`);
  const bytes=Buffer.from(capture.encoded,'base64');assert.deepEqual([...bytes.subarray(0,8)],[137,80,78,71,13,10,26,10]);assert.equal(bytes.readUInt32BE(16),capture.width);assert.equal(bytes.readUInt32BE(20),capture.height);
  const file=`${fixture.name}-${state}.png`;await writeFile(`${out}/${file}`,bytes);screens.push(file);return capture.aftermath;
 }
@@ -81,6 +81,11 @@ function validateAftermathSnapshot(state,outcome){
  assert.equal(state.triumph>0,true,'the surviving winning side must answer the verdict');if(outcome==='lost')assert.equal(state.withdraw>0,true,'a living defeated survivor must visibly withdraw');
  assert.equal(Array.isArray(state.roles),true);assert.equal(state.roles.length,3);assert.equal(state.roles.every(value=>Number.isInteger(value)&&value>=0),true);
  assert.ok(state.maxForward>=0&&state.maxForward<=4);assert.ok(state.maxLift>=0&&state.maxLift<=4);assert.ok(state.maxAngle>=0&&state.maxAngle<=4);assert.equal(state.reduced,false);
+}
+function validateVillageVerdictSnapshot(state,outcome){
+ assert.equal(state.mode,outcome==='won'?'celebrate':'shelter');assert.equal(state.progress,1);
+ assert.equal(state.witnesses,outcome==='won'?2:0);assert.equal(state.strokes,outcome==='won'?6:4);
+ assert.ok(Number.isInteger(state.lights)&&state.lights>=2&&state.lights<=6);assert.equal(state.reduced,false);assert.equal(state.paused,false);
 }
 async function clickEnabled(page,locator){
  if(await page.locator('#world').getAttribute('data-phase')!=='running'||!await locator.isEnabled())return false;

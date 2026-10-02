@@ -132,3 +132,40 @@ test('reduced motion freezes restored warmth and habitation without hiding saved
  const m=await life();
  for(let age=0;age<6;age++){const first=m.villageFrame({age,time:0,reduced:true,restoration:7,mood:quiet,viewport}),later=m.villageFrame({age,time:999,reduced:true,restoration:7,mood:quiet,viewport});assert.deepEqual(later,first);assert.equal(first.restorationLights.length,2);assert.equal(first.residents.length,2);}
 });
+
+test('victory brings two measured witnesses home with six upward acknowledgement strokes',async()=>{
+ const m=await life();
+ for(let age=0;age<6;age++){
+  const frame=m.villageFrame({age,time:9,reduced:false,restoration:0,mood:{...quiet,mood:'alarmed',alarmMix:1,alarmEnteredAt:8},viewport,verdict:{mode:'celebrate',progress:1}});
+  assert.equal(frame.residents.length,2);assert.equal(frame.residents.filter((resident:any)=>resident.panes.some((pane:any)=>pane.alpha>.2)).length,2);
+  assert.equal(frame.verdictStrokes.length,6);
+  const windows=m.VILLAGE_PLATES[age].windows;
+  for(const [index,stroke] of frame.verdictStrokes.entries()){
+   const bounds=windows[Math.floor(index/3)].bounds;assert.ok(inside(stroke.from,[bounds[0]-8,bounds[1]-10,bounds[2]+8,bounds[3]+3]));assert.ok(inside(stroke.to,[bounds[0]-8,bounds[1]-10,bounds[2]+8,bounds[3]+3]));
+   assert.ok(stroke.to.y<stroke.from.y,'victory marks rise instead of reading as shutters');assert.ok(stroke.alpha>0&&stroke.alpha<=1);
+  }
+ }
+});
+
+test('defeat clears witnesses and closes both measured apertures with four crossed strokes',async()=>{
+ const m=await life();
+ for(let age=0;age<6;age++){
+  const ordinary=m.villageFrame({age,time:0,reduced:true,restoration:7,mood:quiet,viewport});
+  const frame=m.villageFrame({age,time:0,reduced:true,restoration:7,mood:quiet,viewport,verdict:{mode:'shelter',progress:1}});
+  assert.equal(frame.residents.length,0);assert.equal(frame.verdictStrokes.length,4);assert.equal(frame.lamps.length,ordinary.lamps.length);assert.equal(frame.restorationLights.length,ordinary.restorationLights.length);
+  assert.ok(frame.lamps.every((lamp:any,index:number)=>lamp.alpha<ordinary.lamps[index].alpha));assert.ok(frame.restorationLights.every((lamp:any,index:number)=>lamp.alpha<ordinary.restorationLights[index].alpha));
+  for(const [index,stroke] of frame.verdictStrokes.entries()){
+   const bounds=m.VILLAGE_PLATES[age].windows[Math.floor(index/2)].bounds;assert.ok(inside(stroke.from,bounds)&&inside(stroke.to,bounds));assert.ok(stroke.alpha>0&&stroke.alpha<=1);
+  }
+ }
+});
+
+test('verdict composition stays finite bounded immutable and never duplicates ordinary occupancy',async()=>{
+ const m=await life();
+ for(let age=0;age<6;age++)for(const verdict of [{mode:'celebrate',progress:0},{mode:'celebrate',progress:.5},{mode:'celebrate',progress:1},{mode:'shelter',progress:0},{mode:'shelter',progress:.5},{mode:'shelter',progress:1}] as const){
+  const input:any={age,time:13,reduced:false,restoration:7,mood:{...quiet},viewport:{...viewport,placement:{...viewport.placement},hudSourceBounds:[]},verdict:{...verdict}},before=structuredClone(input),frame=m.villageFrame(input);
+  assert.deepEqual(input,before);assert.ok(frame.residents.length<=2);assert.ok(frame.verdictStrokes.length<=6);assert.ok(frame.lamps.length<=4);assert.ok(frame.restorationLights.length<=2);
+  assert.equal(new Set(frame.residents.map((resident:any)=>resident.apertureId)).size,frame.residents.length);
+  for(const stroke of frame.verdictStrokes)for(const value of [stroke.from.x,stroke.from.y,stroke.to.x,stroke.to.y,stroke.width,stroke.alpha,stroke.color])assert.ok(Number.isFinite(value));
+ }
+});
