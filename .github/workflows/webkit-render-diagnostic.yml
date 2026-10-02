@@ -6,7 +6,7 @@ permissions: {contents: read}
 jobs:
   diagnose:
     runs-on: ubuntu-latest
-    timeout-minutes: 12
+    timeout-minutes: 10
     steps:
       - uses: actions/checkout@v4
         with: {persist-credentials: false}
@@ -15,18 +15,14 @@ jobs:
       - run: npm ci
       - run: npm run build
       - run: npx playwright install --with-deps webkit
-      - name: Repeat the original painted-frame assertion three times
-        run: |
+      - run: |
           mkdir -p artifacts/webkit-render-diagnostic
           npm run preview -- --port 4173 > artifacts/webkit-render-diagnostic/preview.log 2>&1 &
           for i in $(seq 1 30); do curl -fsS http://127.0.0.1:4173/ >/dev/null && break || sleep 1; done
-          for run in 1 2 3; do
-            QA_SUITE=render QA_ENGINES=webkit QA_OUT=artifacts/webkit-render-diagnostic/original-$run node --experimental-strip-types scripts/qa/render-recovery-probe.mjs > artifacts/webkit-render-diagnostic/original-$run.log 2>&1 || { cat artifacts/webkit-render-diagnostic/original-$run.log; exit 1; }
-            cat artifacts/webkit-render-diagnostic/original-$run.log
-          done
+          node --experimental-strip-types scripts/qa/webkit-framebuffer-diagnostic.mjs | tee artifacts/webkit-render-diagnostic/framebuffer.log
       - uses: actions/upload-artifact@v4
         if: always()
         with:
-          name: webkit-render-diagnostic-repeat
+          name: webkit-framebuffer-diagnostic
           path: artifacts/webkit-render-diagnostic/
           retention-days: 7
