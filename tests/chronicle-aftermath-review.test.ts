@@ -128,6 +128,8 @@ test('native battle-memory journeys use public actions and prove HUD-safe paused
  assert.match(script,/normal-motion Meteor memory must remain absent during its observed in-flight frame/);
  assert.match(script,/const handle=await waitForBattlefieldStage\(page,'Meteor projectile carries memory'/,'the in-flight absence proof must use the exact wait handle rather than a later page round trip');
  assert.match(script,/await handle\.jsonValue\(\)/,'the exact observed projectile frame must be materialized for assertion');
+ assert.match(script,/control\.click\(\);\}return \{landed,paused:shouldPause\}/,'the motion-transition journey must publicly pause in the same browser frame that proves the Meteor is still in flight');
+ assert.match(script,/memory\.reduced===true&&memory\.paused===true/,'the reset-commit evidence must remain under public pause ownership');
  assert.match(script,/const paused=await pauseAtBattlefieldMemory\(f\.page,'meteor'\)/,'the transition comparison must freeze active-time aging through the public pause control');
  assert.match(script,/the publicly paused in-flight mark must survive reduced-to-system without aging/);
  assert.match(script,/entering reduced motion during an observed Meteor flight commits its accepted target memory before clearing animation/);
