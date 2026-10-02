@@ -1,0 +1,165 @@
+# One-off user-authorized preview QA. No scheduled task, deployment, promotion,
+# application change, or modification to the repository's existing release gates.
+name: Vercel preview playtest
+on:
+  push:
+    branches: [qa/vercel-preview-20261002]
+    paths: [.github/workflows/vercel-preview-playtest.yml]
+permissions:
+  contents: read
+concurrency:
+  group: vercel-preview-qa-20261002
+  cancel-in-progress: false
+jobs:
+  preview:
+    runs-on: ubuntu-latest
+    timeout-minutes: 15
+    env:
+      PREVIEW_URL: https://almo7areboon-p9c219pzp-tasnim-almousa.vercel.app/
+      SOURCE_SHA: fe71e36cfe0ffe1239ef907d6d5b037703b1a39f
+      DEPLOYMENT_ID: dpl_6JgtGWekxKdZAU7ECJFjXyL3HSKc
+    steps:
+      - uses: actions/checkout@v4
+        with:
+          ref: fe71e36cfe0ffe1239ef907d6d5b037703b1a39f
+          persist-credentials: false
+      - uses: actions/setup-node@v4
+        with:
+          node-version: '24'
+          cache: npm
+      - name: Check exact source
+        run: test "$(git rev-parse HEAD)" = "$SOURCE_SHA"
+      - run: npm ci
+      - name: Full source tests
+        run: |
+          set -o pipefail
+          npm test | tee preview-source-tests.log
+      - name: Production build
+        run: |
+          set -o pipefail
+          npm run build | tee preview-build.log
+      - name: Verify immutable deployed assets
+        id: deployment
+        run: |
+          node --input-type=module <<'NODE'
+          import assert from 'node:assert/strict';
+          import {readFileSync, mkdirSync, writeFileSync} from 'node:fs';
+          import {createHash} from 'node:crypto';
+          const url=process.env.PREVIEW_URL;
+          const report={url, sourceSha:process.env.SOURCE_SHA, files:[]};
+          mkdirSync('artifacts/vercel-preview',{recursive:true});
+          const hash=bytes=>createHash('sha256').update(bytes).digest('hex');
+          try {
+            const response=await fetch(url,{signal:AbortSignal.timeout(20000)});
+            report.status=response.status; report.finalUrl=response.url;
+            assert.equal(response.status,200,'Preview must be accessible without changing protection');
+            assert.equal(new URL(response.url).origin,new URL(url).origin,'Authentication redirects are not gameplay');
+            const html=await response.text();
+            assert.ok(html.includes(process.env.DEPLOYMENT_ID),'Expected immutable Vercel deployment');
+            for (const file of ['assets/index-DqO3oDvW.js','assets/phaser-DFK5Ua9d.js','assets/index-BooCli7L.css','sw.js']) {
+              if (file!=='sw.js') assert.ok(html.includes(file),`Entry names ${file}`);
+              const asset=await fetch(new URL(file,url),{signal:AbortSignal.timeout(20000)});
+              assert.equal(asset.status,200,`${file} responds successfully`);
+              const actual=hash(Buffer.from(await asset.arrayBuffer()));
+              const expected=hash(readFileSync(`dist/${file}`));
+              report.files.push({file, actual, expected});
+              assert.equal(actual,expected,`${file} matches the exact checked-out build`);
+            }
+          } finally {
+            writeFileSync('artifacts/vercel-preview/deployment.json',JSON.stringify(report,null,2));
+            console.log(JSON.stringify(report,null,2));
+          }
+          NODE
+      - run: npx playwright install --with-deps chromium
+      - name: Deployed public-action journeys and original screenshots
+        run: |
+          cat > scripts/.vercel-preview-capture.mjs <<'NODE'
+          import { chromium } from 'playwright';
+          import assert from 'node:assert/strict';
+          import { mkdirSync, writeFileSync } from 'node:fs';
+          const url = process.env.PREVIEW_URL;
+          const output = 'artifacts/vercel-preview';
+          mkdirSync(output, { recursive: true });
+          const report = { url, sourceSha: process.env.SOURCE_SHA, cases: [], errors: [], assetFailures: [] };
+          const browser = await chromium.launch();
+          try {
+            for (const [width, height, motion] of [[320, 640, 'no-preference'], [390, 844, 'no-preference'], [1024, 768, 'no-preference'], [390, 844, 'reduce']]) {
+              const key = `${width}-${motion}`;
+              const context = await browser.newContext({ viewport: { width, height }, deviceScaleFactor: 2, hasTouch: width < 768, reducedMotion: motion });
+              const page = await context.newPage();
+              page.setDefaultTimeout(15000);
+              page.on('pageerror', e => report.errors.push({ key, message: e.message }));
+              page.on('response', r => { if (new URL(r.url()).origin === new URL(url).origin && r.status() >= 400) report.assetFailures.push({ key, url: r.url(), status: r.status() }); });
+              const snapshot = async () => page.evaluate(() => {
+                const profile = JSON.parse(localStorage.getItem('almo7areboon.save.v1'));
+                return { deployed: profile.deployed, sound: profile.sound, motion: profile.motion, food: document.querySelector('#food-count').textContent };
+              });
+              try {
+                const response = await page.goto(url, { waitUntil: 'networkidle' });
+                assert.equal(response.status(), 200);
+                assert.equal(new URL(page.url()).origin, new URL(url).origin, 'never mistake an authentication redirect for the game');
+                await page.waitForSelector('#battlefield canvas');
+                await page.waitForFunction(() => !document.querySelector('.world-loader'));
+                assert.equal(await page.evaluate(() => document.documentElement.scrollWidth > innerWidth), false, 'no horizontal overflow');
+                await page.screenshot({ path: `${output}/${key}-01-ready.png` });
+                await page.getByRole('button', { name: /^BATTLE/ }).click();
+                await page.getByRole('button', { name: /Food drop/i }).click();
+                const beforeDeploy = await snapshot();
+                await page.getByRole('button', { name: /Deploy Pathkeeper/ }).click();
+                await page.getByRole('button', { name: 'Pause battle', exact: true }).click();
+                const paused = await snapshot();
+                assert.equal(paused.deployed, beforeDeploy.deployed + 1, 'one public action deploys exactly one troop');
+                assert.equal(await page.locator('#pause').getAttribute('aria-pressed'), 'true');
+                await page.keyboard.press('1');
+                await page.keyboard.press('q');
+                assert.deepEqual(await snapshot(), paused, 'paused shortcuts cannot spend food or deploy');
+                await page.screenshot({ path: `${output}/${key}-02-battle-paused.png` });
+                await page.locator('[data-command="settings"]').click();
+                await page.screenshot({ path: `${output}/${key}-03-settings.png` });
+                await page.keyboard.press('Escape');
+                assert.equal(await page.locator('#pause').getAttribute('aria-pressed'), 'true', 'closing settings preserves manual pause');
+                assert.deepEqual(await snapshot(), paused, 'opening and dismissing settings preserves choices');
+                await page.getByRole('button', { name: 'Resume battle', exact: true }).click();
+                await page.reload({ waitUntil: 'networkidle' });
+                await page.waitForSelector('#battlefield canvas');
+                await page.waitForFunction(() => !document.querySelector('.world-loader'));
+                const reloaded = await snapshot();
+                assert.equal(reloaded.deployed, paused.deployed, 'reload retains deployed counter');
+                assert.equal(reloaded.sound, paused.sound, 'reload retains sound preference');
+                assert.equal(reloaded.motion, paused.motion, 'reload retains motion preference');
+                assert.equal(await page.locator('#world').getAttribute('data-phase'), 'ready', 'unfinished battle reloads ready');
+                await page.screenshot({ path: `${output}/${key}-04-reloaded.png` });
+                report.cases.push({ key, beforeDeploy, paused, reloaded, status: 'passed' });
+              } catch (error) {
+                report.cases.push({ key, status: 'failed', message: error.message });
+                await page.screenshot({ path: `${output}/${key}-failure.png` }).catch(e => report.errors.push({ key, message: `Failure capture: ${e.message}` }));
+                throw error;
+              } finally {
+                await context.close();
+              }
+            }
+            assert.deepEqual(report.errors, [], 'no uncaught page errors');
+            assert.deepEqual(report.assetFailures, [], 'no failed first-party responses');
+          } finally {
+            writeFileSync(`${output}/journeys.json`, JSON.stringify(report, null, 2));
+            console.log(JSON.stringify(report, null, 2));
+            await browser.close();
+          }
+          NODE
+          node scripts/.vercel-preview-capture.mjs
+      - name: Existing damaged-save, evolution, keyboard, export and random-input probe
+        if: ${{ !cancelled() && steps.deployment.outcome == 'success' }}
+        run: |
+          set -o pipefail
+          node scripts/monkey-test.mjs "$PREVIEW_URL" 30 | tee preview-monkey.log
+      - name: Retain original evidence even on failure
+        if: always()
+        uses: actions/upload-artifact@v4
+        with:
+          name: vercel-preview-fe71e36-evidence
+          path: |
+            artifacts/vercel-preview/
+            preview-source-tests.log
+            preview-build.log
+            preview-monkey.log
+          retention-days: 7
