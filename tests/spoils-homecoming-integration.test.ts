@@ -35,3 +35,9 @@ test('battlefield launches from the numeric cue and suppresses missing-texture p
  assert.match(source,/this\.spoilsOrder=0;this\.resetEffects\(\)/);
  assert.doesNotMatch(source,/resetEffects[^\n]*this\.spoilsOrder=0/);
 });
+
+test('reduced-motion review atomically retains the credited numeric cue before capture',async()=>{
+ const review=await readFile(new URL('../scripts/review-chronicle.mjs',import.meta.url),'utf8');
+ assert.match(review,/async function pauseAtCreditedCoinCue[\s\S]*dataset\.spoilsReward[\s\S]*button\.click\(\)[\s\S]*return cue/);
+ assert.doesNotMatch(review,/waitForCreditedCoin[\s\S]*waitForTimeout\(50\)/);
+});

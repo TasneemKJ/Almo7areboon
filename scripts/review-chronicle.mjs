@@ -166,13 +166,14 @@ async function pauseAtSpoilsHomecoming(page){
  }
  throw new Error('Timed out waiting for an authoritative homeward coin reward');
 }
-async function waitForCreditedCoin(page,before){
+async function pauseAtCreditedCoinCue(page,before){
  const deadline=Date.now()+60000;
  while(Date.now()<deadline){
-  const current=await page.locator('#coins').textContent();if(current!==before)return current;
+  const cue=await page.locator('#pause').evaluate((button,previous)=>{const current=document.querySelector('#coins')?.textContent,raw=document.querySelector('canvas')?.dataset.spoilsReward;if(current===previous||!raw||button.disabled)return null;const cue=JSON.parse(raw);button.click();return cue;},before);
+  if(cue){await page.locator('#pause[aria-pressed="true"]').waitFor();return cue;}
   await clickEnabled(page,page.locator('[data-skill="food"]'));await clickEnabled(page,page.locator('[data-unit="0"]'));await page.waitForTimeout(25);
  }
- throw new Error('Timed out waiting for a credited combat coin');
+ throw new Error('Timed out pausing on a credited combat coin cue');
 }
 async function reachNaturalOutcome(page,outcome){
  await page.locator('[data-command="start"]').click();
@@ -236,8 +237,7 @@ try{
  }
  {
   const p=preparedChronicleProfile();p.coins=0;p.motion='system';p.speed=2;p.age=0;p.enemyAge=0;p.foodLevel=30;p.baseLevel=20;p.unlocked=[true,true,true];p.chronicle.route='road';p.chronicle.expedition=null;
-  const f=await open('390-spoils-reduced',390,844,p,'reduce'),before=await f.page.locator('#coins').textContent();await f.page.locator('[data-command="start"]').click();await waitForCreditedCoin(f.page,before);await f.page.waitForTimeout(50);
-  const cue=await f.page.locator('canvas').evaluate(node=>JSON.parse(node.dataset.spoilsReward??'null'));validateSpoilsStaticReward(cue,true);
+  const f=await open('390-spoils-reduced',390,844,p,'reduce'),before=await f.page.locator('#coins').textContent();await f.page.locator('[data-command="start"]').click();const cue=await pauseAtCreditedCoinCue(f.page,before);validateSpoilsStaticReward(cue,true);
   assert.equal(await f.page.locator('canvas').getAttribute('data-spoils-homecoming'),null,'reduced motion must retain the numeric reward without a travelling token');await noOverflow(f.page);await shot(f,'spoils-reduced');checks.push('390: reduced motion credits the same public combat reward, keeps the visible numeric cue, and adds no travelling spoils');await f.context.close();
  }
  {
