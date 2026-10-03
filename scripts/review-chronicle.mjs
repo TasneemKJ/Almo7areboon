@@ -15,6 +15,7 @@ async function open(name,width,height,profile,reducedMotion='reduce'){
  await page.goto(base,{waitUntil:'networkidle'});await page.waitForSelector('canvas');await page.waitForTimeout(500);return {page,context,name};
 }
 async function shot(fixture,state){const file=`${fixture.name}-${state}.png`;await fixture.page.screenshot({path:`${out}/${file}`});screens.push(file);}
+async function canvasElementShot(fixture,state){const file=`${fixture.name}-${state}.png`;await fixture.page.locator('canvas').screenshot({path:`${out}/${file}`});screens.push(file);}
 async function armCanvasShot(fixture,expected){await fixture.page.locator('canvas').evaluate((node,phase)=>{
  if(typeof node.battlefieldReviewArm!=='function'||!node.battlefieldReviewArm(phase))throw new Error('Phaser post-render snapshot could not be armed');
 },expected);}
@@ -220,9 +221,9 @@ try{
   checks.push(`disclosed restoration=${restoration} ready-state fixture renders the current painted settlement without presentation save writes`);await f.context.close();
  }
  for(const fixture of arrivalReviewFixtures()){
-  const p=preparedChronicleProfile();p.speed=1;p.age=fixture.age;p.enemyAge=0;p.furthestBattle=Math.max(0,p.furthestBattle);p.chronicle.chapter=0;p.chronicle.route=fixture.route;p.chronicle.expedition=null;
+  const p=preparedChronicleProfile();p.speed=1;p.age=fixture.age;p.enemyAge=fixture.age;p.furthestBattle=fixture.age;p.chronicle.clears[fixture.age]=1;p.chronicle.chapter=fixture.age;p.chronicle.route=fixture.route;p.chronicle.expedition=null;
   const f=await open(fixture.name,fixture.width,fixture.height,p,fixture.reducedMotion);await f.page.locator('[data-command="start"]').click();
-  const {paused,watchfire}=await pauseAtWaveArrival(f.page,fixture.intent,()=>shot(f,'incoming-road')),reduced=fixture.reducedMotion==='reduce';assert.equal(paused.reduced,reduced);assert.equal(watchfire.reduced,reduced);assert.ok(watchfire.lights>=1&&watchfire.lights<=fixture.authoredLights);assert.ok(paused.x>=340&&paused.x<=410);assert.ok(paused.y>120&&paused.y<430);
+  const {paused,watchfire}=await pauseAtWaveArrival(f.page,fixture.intent,()=>canvasElementShot(f,'incoming-road')),reduced=fixture.reducedMotion==='reduce';assert.equal(paused.reduced,reduced);assert.equal(watchfire.reduced,reduced);assert.ok(watchfire.lights>=1&&watchfire.lights<=fixture.authoredLights);assert.ok(paused.x>=340&&paused.x<=410);assert.ok(paused.y>120&&paused.y<430);
   const before=await settledSaveAfterAutosave(f.page);await noOverflow(f.page);await f.page.waitForTimeout(5250);
   assert.equal(await saved(f.page),before,'paused wave-arrival presentation must remain save-inert across the next autosave boundary');
   const still=await f.page.locator('canvas').evaluate(node=>JSON.parse(node.dataset.waveArrival));validateArrivalSnapshot(still,fixture.intent);assert.deepEqual(still,paused,'paused road omen must remain static');
