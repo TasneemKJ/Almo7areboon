@@ -32,6 +32,9 @@ test('native chronicle journey captures and pause-compares the watchfire with it
  assert.match(source,/async function assertWatchfireClearOfHud\(page,state\)/);
  assert.match(source,/await assertWatchfireClearOfHud\(page,observed\.watchfire\)/);
  assert.match(source,/watchfire\.progress>=\.75/);
+ const pauseAssertion=source.indexOf('assertWatchfirePaused(watchfire,pausedWatchfire)');
+ const screenshotCallback=source.indexOf('await onObserved?.(paused)');
+ assert.ok(pauseAssertion>=0&&screenshotCallback>pauseAssertion,'capture must happen only after the transient relay is frozen');
  assert.match(source,/p\.age=fixture\.age/);
  assert.match(source,/open\(fixture\.name,fixture\.width,fixture\.height,p,fixture\.reducedMotion\)/);
  assert.match(source,/pauseAtWaveArrival\(f\.page,fixture\.intent/);
