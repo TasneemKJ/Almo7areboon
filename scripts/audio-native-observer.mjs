@@ -23,6 +23,7 @@ export function installNativeAudioObserver({blockStorage=false}={}){
   Object.defineProperty(entry,'native',{value:node});
   if(kind==='gain')recordParameter(node.gain,entry.id);
   if(kind==='bed'||kind==='transient'){
+   if(kind==='transient')recordParameter(node.frequency,entry.id);
    const start=node.start,stop=node.stop;
    node.start=function(...args){const result=Reflect.apply(start,this,args);entry.starts.push({at:args[0]??context.currentTime,bufferFrames:node.buffer?.length??null});if(kind==='transient')entry.wave=node.type;entry.live=entry.connected;peaks();return result;};
    node.stop=function(...args){const result=Reflect.apply(stop,this,args);entry.stops.push(args[0]??context.currentTime);return result;};

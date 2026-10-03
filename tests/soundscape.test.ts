@@ -36,3 +36,15 @@ test('authored production PCM stays finite stereo with the exact 3,072,000-byte 
   for(const channel of [pcm.left,pcm.right]){assert.equal(channel[0],0);assert.equal(channel.at(-1),0);for(const sample of channel){assert.ok(Number.isFinite(sample));assert.ok(Math.abs(sample)<=.27);}}
  }
 });
+
+test('six authored courtyard answers are finite bounded and chapter-distinct',async()=>{
+ const m=await model(),phrases=[];
+ for(let age=0;age<6;age++){
+  const phrase=m.courtyardAnswer(age);phrases.push(phrase.join(','));
+  assert.ok(Object.isFrozen(phrase));assert.equal(phrase.length,2);
+  assert.ok(phrase.every((frequency:number)=>Number.isFinite(frequency)&&frequency>=80&&frequency<=700));
+  assert.notEqual(phrase[0],phrase[1]);
+ }
+ assert.equal(new Set(phrases).size,6);
+ assert.deepEqual(m.courtyardAnswer(NaN),m.courtyardAnswer(0));
+});
