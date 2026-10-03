@@ -88,3 +88,12 @@ test('direct malformed input fails finite without mutating caller data',async()=
  assert.equal(offstage.y,620);
  assert.equal(m.spoilsHomecomingFrame(offstage,300,false)?.y,620);
 });
+
+test('reward evidence disappears when its numeric cue leaves the live floater pool',async()=>{
+ const m=await subject();
+ const reward={life:.62,reward:37,text:{text:'+37',alpha:1,visible:true,active:true}};
+ assert.deepEqual(m.spoilsRewardEvidence(reward,[reward],true),{amount:37,text:'+37',alpha:1,reduced:true});
+ assert.equal(m.spoilsRewardEvidence(reward,[],true),null,'an evicted reward must not remain review-visible');
+ assert.equal(m.spoilsRewardEvidence({...reward,text:{...reward.text,visible:false}},[reward],true),null,'an invisible reward must not remain review-visible');
+ assert.equal(m.spoilsRewardEvidence({...reward,text:{...reward.text,active:false}},[reward],true),null,'a destroyed reward must not remain review-visible');
+});
