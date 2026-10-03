@@ -83,7 +83,8 @@ test('direct malformed input fails finite without mutating caller data',async()=
  const frame=m.spoilsHomecomingFrame(mark,Infinity,false);
  assert.ok(frame);
  for(const value of [frame.x,frame.y,frame.alpha,frame.size,frame.angle])assert.equal(Number.isFinite(value),true);
- const [offstage]=m.rememberSpoilsHomecoming([],{x:300,y:10000,amount:1});
- assert.equal(offstage.y,500);
- assert.equal(m.spoilsHomecomingFrame(offstage,300,false)?.y,500);
+ const [tall]=m.rememberSpoilsHomecoming([],{x:300,y:561,amount:1},1,620);assert.equal(tall.y,561);
+ const [offstage]=m.rememberSpoilsHomecoming([],{x:300,y:10000,amount:1},2,620);
+ assert.equal(offstage.y,620);
+ assert.equal(m.spoilsHomecomingFrame(offstage,300,false)?.y,620);
 });

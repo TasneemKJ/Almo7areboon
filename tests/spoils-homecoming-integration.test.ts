@@ -31,5 +31,7 @@ test('battlefield launches from the numeric cue and suppresses missing-texture p
  const source=await readFile(new URL('../src/view/battlefield.ts',import.meta.url),'utf8');
  assert.match(source,/textures\.exists\('spoils-coin'\).*SPOILS_HOMECOMING_CAP/s);
  assert.match(source,/private spoilsOrder=0/);
- assert.match(source,/rememberSpoilsHomecoming\(this\.spoilsHomecoming,\{\.\.\.intent,x:this\.spoilsReward\.text\.x,y:this\.spoilsReward\.startY\},\+\+this\.spoilsOrder\)/);
+ assert.match(source,/rememberSpoilsHomecoming\(this\.spoilsHomecoming,\{\.\.\.intent,x:this\.spoilsReward\.text\.x,y:this\.spoilsReward\.startY\},\+\+this\.spoilsOrder,this\.layout\.height\)/);
+ assert.match(source,/this\.spoilsOrder=0;this\.resetEffects\(\)/);
+ assert.doesNotMatch(source,/resetEffects[^\n]*this\.spoilsOrder=0/);
 });

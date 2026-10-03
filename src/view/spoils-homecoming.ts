@@ -19,12 +19,13 @@ export function spoilsHomecomingIntentForEvent(event:Readonly<GameEvent>):Spoils
  return freeze({x:clamp(event.x!*0.45,24,426),amount:event.amount!});
 }
 
-export function rememberSpoilsHomecoming(previous:readonly Readonly<SpoilsHomecomingMark>[],input:Readonly<SpoilsHomecomingInput>,requestedOrder?:number):readonly Readonly<SpoilsHomecomingMark>[] {
+export function rememberSpoilsHomecoming(previous:readonly Readonly<SpoilsHomecomingMark>[],input:Readonly<SpoilsHomecomingInput>,requestedOrder?:number,stageHeight=500):readonly Readonly<SpoilsHomecomingMark>[] {
  const largest=previous.reduce((value,mark)=>Math.max(value,Number.isSafeInteger(mark.order)?mark.order:0),0);
  const order=Number.isSafeInteger(requestedOrder)&&requestedOrder!>largest?requestedOrder!:largest+1;
+ const maxY=clamp(finite(stageHeight,500),1,10000);
  const mark:SpoilsHomecomingMark={
   x:clamp(finite(input.x,225),24,426),
-  ...(Number.isFinite(input.y)?{y:clamp(input.y!,0,500)}:{}),
+  ...(Number.isFinite(input.y)?{y:clamp(input.y!,0,maxY)}:{}),
   amount:Math.max(1,finite(input.amount,1)),
   age:0,
   life:SPOILS_HOMECOMING_LIFE,

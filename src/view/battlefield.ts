@@ -636,7 +636,7 @@ export function mountBattlefield(element:HTMLElement,game:GamePort,onFrame:()=>v
     token.setVisible(true).setPosition(frame.x,frame.y).setDisplaySize(frame.size,frame.size).setAngle(frame.angle).setAlpha(frame.alpha);
     diagnostics.push({order:mark.order,amount:mark.amount,age:mark.age,x:frame.x,y:frame.y,alpha:frame.alpha});
    }
-   if(navigator.webdriver&&diagnostics.length)this.game.canvas.dataset.spoilsHomecoming=JSON.stringify({count:diagnostics.length,cap:SPOILS_HOMECOMING_CAP,marks:diagnostics,reduced:this.reduce,paused:game.state.paused});
+   if(navigator.webdriver&&diagnostics.length)this.game.canvas.dataset.spoilsHomecoming=JSON.stringify({count:diagnostics.length,cap:SPOILS_HOMECOMING_CAP,height:this.layout.height,marks:diagnostics,reduced:this.reduce,paused:game.state.paused});
    else if(navigator.webdriver)delete this.game.canvas.dataset.spoilsHomecoming;
   }
   private event(e:GameEvent):void {
@@ -664,7 +664,7 @@ export function mountBattlefield(element:HTMLElement,game:GamePort,onFrame:()=>v
     else{this.impact(x,y-22,e.amount??0,e.source?.age??0,e.source?.kind??0,e.source?.side??'player');if(intent)this.rememberImpact(intent);}
    }
    if(e.type==='death'){this.emit(x,y-12,9,e.side==='player'?0x82cce8:0xe6b388,true,.52,e.lane??1);this.flare(x,y-14,18,e.side==='player'?0x5ccfff:0xff8a50,.3);}
-   if(e.type==='coin'&&e.amount){this.spoilsReward=this.floatText(x,y-51,`+${compactNumber(e.amount)}`,'#ffdf7f');this.spoilsReward.reward=e.amount;const intent=spoilsHomecomingIntentForEvent(e);if(intent&&!this.reduce&&this.spoilsTokens.length)this.spoilsHomecoming=rememberSpoilsHomecoming(this.spoilsHomecoming,{...intent,x:this.spoilsReward.text.x,y:this.spoilsReward.startY},++this.spoilsOrder);}
+   if(e.type==='coin'&&e.amount){this.spoilsReward=this.floatText(x,y-51,`+${compactNumber(e.amount)}`,'#ffdf7f');this.spoilsReward.reward=e.amount;const intent=spoilsHomecomingIntentForEvent(e);if(intent&&!this.reduce&&this.spoilsTokens.length)this.spoilsHomecoming=rememberSpoilsHomecoming(this.spoilsHomecoming,{...intent,x:this.spoilsReward.text.x,y:this.spoilsReward.startY},++this.spoilsOrder,this.layout.height);}
    if(e.type==='win'&&game.state.chronicle&&['escort','hold','rescue'].includes(game.state.chronicle.objective)){this.floatText(225,this.layout.groundY-70,'THE COMPANY RETURNS','#e5d4ad',true);this.ring(110,this.layout.groundY-12,0xd5bd89,24);return;}
    if(e.type==='win'){this.emit(408,this.layout.groundY-27,40,0xffd373,false,1.25);this.flare(411,this.layout.groundY-30,120,0xffd27a,1.1);if(!this.reduce){this.cameras.main.shake(100,.0015);this.cameras.main.flash(260,255,226,170);}}
    if(e.type==='lose')this.emit(39,this.layout.groundY-10,20,0xb6a484,true,.8);
@@ -716,12 +716,12 @@ export function mountBattlefield(element:HTMLElement,game:GamePort,onFrame:()=>v
    if(this.spoilsReward?.life&&this.spoilsReward.life>0&&navigator.webdriver)this.game.canvas.dataset.spoilsReward=JSON.stringify({amount:this.spoilsReward.reward,text:this.spoilsReward.text.text,alpha:this.spoilsReward.text.alpha,reduced:this.reduce});
    else {this.spoilsReward=null;if(navigator.webdriver)delete this.game.canvas.dataset.spoilsReward;}
   }
-  private resetEffects(reason:'motion'|'scene'='scene'):void {this.baseHit={player:0,enemy:0};this.battlefieldMemory=battlefieldMemoryAfterReset(this.battlefieldMemory,reason,this.bolts.flatMap(b=>b.memory?[b.memory]:[]));this.spoilsHomecoming=[];this.spoilsReward=null;this.spoilsOrder=0;delete this.game.canvas.dataset.battlefieldMemory;delete this.game.canvas.dataset.battlefieldMemoryPending;delete this.game.canvas.dataset.spoilsHomecoming;delete this.game.canvas.dataset.spoilsReward;for(const token of this.spoilsTokens)token.setVisible(false);for(const g of this.groundFx)g.clear();this.attackCues=[];this.impactCues=[];this.fallen.clear();for(const f of this.floaters)f.text.destroy();this.floaters=[];this.sparks=[];this.bolts=[];this.rings=[];this.flares=[];this.glow?.clear();}
+  private resetEffects(reason:'motion'|'scene'='scene'):void {this.baseHit={player:0,enemy:0};this.battlefieldMemory=battlefieldMemoryAfterReset(this.battlefieldMemory,reason,this.bolts.flatMap(b=>b.memory?[b.memory]:[]));this.spoilsHomecoming=[];this.spoilsReward=null;delete this.game.canvas.dataset.battlefieldMemory;delete this.game.canvas.dataset.battlefieldMemoryPending;delete this.game.canvas.dataset.spoilsHomecoming;delete this.game.canvas.dataset.spoilsReward;for(const token of this.spoilsTokens)token.setVisible(false);for(const g of this.groundFx)g.clear();this.attackCues=[];this.impactCues=[];this.fallen.clear();for(const f of this.floaters)f.text.destroy();this.floaters=[];this.sparks=[];this.bolts=[];this.rings=[];this.flares=[];this.glow?.clear();}
   update(_time:number,delta:number):void {
    if(disposed||!this.world)return;
    const dt=Math.min(.05,Math.max(0,delta/1000));game.step(dt);
    const events=game.drainEvents();options.onPresentation?.(dt,events);if(events.length)onEvents(events);
-   if(this.lastState!==game.state){this.lastState=game.state;this.aftermath=null;delete this.game.canvas.dataset.battleAftermath;delete this.game.canvas.dataset.villageVerdict;this.resetEffects();for(const view of this.units.values())view.body.destroy();this.units.clear();}
+   if(this.lastState!==game.state){this.lastState=game.state;this.aftermath=null;delete this.game.canvas.dataset.battleAftermath;delete this.game.canvas.dataset.villageVerdict;this.spoilsOrder=0;this.resetEffects();for(const view of this.units.values())view.body.destroy();this.units.clear();}
    const reduced=reducedMotion(game.profile.motion,motionQuery.matches);
    if(reduced&&!this.reduce)this.resetEffects('motion');this.reduce=reduced;
    this.syncEra();for(const event of events)this.event(event);

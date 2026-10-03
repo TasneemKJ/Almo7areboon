@@ -9,7 +9,7 @@ async function subject(){
  assert.ok(module,'the native spoils evidence validator is missing');return module;
 }
 
-const valid={count:1,cap:6,marks:[{order:7,amount:37,age:.2,x:242,y:190,alpha:1}],reduced:false,paused:false};
+const valid={count:1,cap:6,height:430,marks:[{order:7,amount:37,age:.2,x:242,y:190,alpha:1}],reduced:false,paused:false};
 
 test('native evidence accepts one finite bounded homeward reward',async()=>{
  const m=await subject();assert.doesNotThrow(()=>m.validateSpoilsHomecomingSnapshot(valid,false,false));
@@ -20,11 +20,13 @@ test('native evidence rejects malformed, excess, off-stage and reduced-motion tr
  for(const state of [
   {...valid,count:2},
   {...valid,cap:7},
+  {...valid,height:0},
   {...valid,marks:[{...valid.marks[0],age:.9}]},
   {...valid,marks:[{...valid.marks[0],x:23}]},
   {...valid,marks:[{...valid.marks[0],x:427}]},
   {...valid,marks:[{...valid.marks[0],alpha:.34}]},
   {...valid,marks:[{...valid.marks[0],alpha:1.1}]},
+  {...valid,marks:[{...valid.marks[0],y:431}]},
   {...valid,marks:[{...valid.marks[0],order:0}]},
   {...valid,reduced:true},
  ])assert.throws(()=>m.validateSpoilsHomecomingSnapshot(state,false,false),assert.AssertionError);
