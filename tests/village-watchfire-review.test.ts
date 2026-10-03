@@ -41,6 +41,7 @@ test('native chronicle journey captures and pause-compares the watchfire with it
  assert.match(source,/renderedCanvasShot\(f,'incoming-road'\)/);
  assert.match(source,/p\.age=fixture\.age;p\.enemyAge=fixture\.age;p\.furthestBattle=fixture\.age/);
  assert.match(source,/p\.timeline=fixture\.timeline/,'desktop bulwark plates must use their authored longer opening');
+ assert.match(source,/p\.mastery\.timeline=fixture\.timeline;p\.chronicle\.timeline=fixture\.timeline/,'serialized fixture timelines must remain internally consistent');
  assert.match(source,/p\.chronicle\.clears\[fixture\.age\]=1;p\.chronicle\.chapter=fixture\.age/);
  assert.match(source,/open\(fixture\.name,fixture\.width,fixture\.height,p,fixture\.reducedMotion\)/);
  assert.match(source,/pauseAtWaveArrival\(f\.page,fixture\.intent/);
@@ -51,7 +52,7 @@ test('native chronicle journey captures and pause-compares the watchfire with it
 test('native chronicle journey observes the first authored warning before combat inputs and diagnoses timeouts',()=>{
  const source=readFileSync(new URL('../scripts/review-chronicle.mjs',import.meta.url),'utf8');
  const arrival=source.slice(source.indexOf('async function pauseAtWaveArrival'),source.indexOf('async function pauseAtCatMode'));
- assert.match(source,/p\.speed=1;p\.timeline=fixture\.timeline;p\.age=fixture\.age/,'the review must preserve normal speed and the authored fixture opening for the narrow warning window');
+ assert.match(source,/p\.speed=1;p\.timeline=fixture\.timeline;p\.mastery\.timeline=fixture\.timeline;p\.chronicle\.timeline=fixture\.timeline;p\.age=fixture\.age/,'the review must preserve normal speed and the internally consistent authored fixture opening');
  assert.match(arrival,/Date\.now\(\)\+20000/,'the first authored wave must appear under a finite software-rendering ceiling');
  assert.ok((arrival.match(/arrival\.number!==1\|\|watchfire\.number!==1/g)??[]).length>=2,'observation and atomic pause recheck must both reject later matching waves');
  assert.doesNotMatch(arrival,/data-unit|data-skill|clickEnabled/,'warning evidence must precede troop and skill inputs so combat cannot manufacture a later matching wave');

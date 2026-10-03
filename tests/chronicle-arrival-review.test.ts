@@ -1,6 +1,7 @@
 import test from 'node:test';
 import assert from 'node:assert/strict';
 import {Game} from '../src/game/simulation.ts';
+import {decodeSave} from '../src/game/save.ts';
 import {preparedChronicleProfile} from '../scripts/simulate-chronicle.ts';
 
 const path='../scripts/chronicle-arrival-review.ts';
@@ -23,7 +24,10 @@ test('native review fixtures cover three intent shapes, all village plates and b
 test('each configured Chronicle fixture exposes its commander on the first authoritative wave',async()=>{
  const m=await subject();
  for(const fixture of m.arrivalReviewFixtures()){
-  const profile=preparedChronicleProfile();profile.timeline=fixture.timeline;profile.age=fixture.age;profile.enemyAge=fixture.age;profile.furthestBattle=fixture.age;profile.chronicle!.clears[fixture.age]=1;profile.chronicle!.chapter=fixture.age;profile.chronicle!.route=fixture.route;profile.chronicle!.expedition=null;
+  const profile=preparedChronicleProfile();profile.timeline=fixture.timeline;profile.mastery.timeline=fixture.timeline;profile.chronicle!.timeline=fixture.timeline;profile.age=fixture.age;profile.enemyAge=fixture.age;profile.furthestBattle=fixture.age;profile.chronicle!.clears[fixture.age]=1;profile.chronicle!.chapter=fixture.age;profile.chronicle!.route=fixture.route;profile.chronicle!.expedition=null;
+  const decoded=decodeSave(JSON.stringify(profile)).profile;assert.ok(decoded);
+  assert.equal(decoded.timeline,fixture.timeline);assert.equal(decoded.mastery.timeline,fixture.timeline);assert.equal(decoded.chronicle!.timeline,fixture.timeline);
+  assert.equal(decoded.chronicle!.route,fixture.route);assert.equal(decoded.chronicle!.chapter,fixture.age);assert.equal(decoded.chronicle!.clears[fixture.age],1);
   const game=new Game(profile),preview=game.waveStatus().preview;
   assert.equal(preview?.number,1);assert.equal(preview?.intent,fixture.intent);assert.ok(preview&&preview.nextIn>=3&&preview.nextIn<=8);
   if(fixture.width===1024)assert.ok(preview.nextIn>4,'desktop bulwark evidence needs an authored load margin before its warning window');

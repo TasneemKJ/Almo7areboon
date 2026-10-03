@@ -239,7 +239,7 @@ try{
   checks.push(`disclosed restoration=${restoration} ready-state fixture renders the current painted settlement without presentation save writes`);await f.context.close();
  }
  for(const fixture of arrivalReviewFixtures()){
-  const p=preparedChronicleProfile();p.speed=1;p.timeline=fixture.timeline;p.age=fixture.age;p.enemyAge=fixture.age;p.furthestBattle=fixture.age;p.chronicle.clears[fixture.age]=1;p.chronicle.chapter=fixture.age;p.chronicle.route=fixture.route;p.chronicle.expedition=null;
+  const p=preparedChronicleProfile();p.speed=1;p.timeline=fixture.timeline;p.mastery.timeline=fixture.timeline;p.chronicle.timeline=fixture.timeline;p.age=fixture.age;p.enemyAge=fixture.age;p.furthestBattle=fixture.age;p.chronicle.clears[fixture.age]=1;p.chronicle.chapter=fixture.age;p.chronicle.route=fixture.route;p.chronicle.expedition=null;
   const f=await open(fixture.name,fixture.width,fixture.height,p,fixture.reducedMotion);await f.page.locator('[data-command="start"]').click();
   const {paused,watchfire}=await pauseAtWaveArrival(f.page,fixture.intent,()=>renderedCanvasShot(f,'incoming-road')),reduced=fixture.reducedMotion==='reduce',expectedLights=reduced?fixture.authoredLights:null;assert.equal(paused.reduced,reduced);assert.equal(watchfire.reduced,reduced);if(expectedLights===null)assert.ok(watchfire.lights>=1&&watchfire.lights<=fixture.authoredLights);else assert.equal(watchfire.lights,expectedLights);assert.ok(paused.x>=340&&paused.x<=410);assert.ok(paused.y>120&&paused.y<430);
   const before=await settledSaveAfterAutosave(f.page);await noOverflow(f.page);await f.page.waitForTimeout(5250);
