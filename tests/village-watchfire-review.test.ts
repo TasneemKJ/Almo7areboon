@@ -31,9 +31,10 @@ test('native chronicle journey captures and pause-compares the watchfire with it
  assert.match(source,/assertWatchfirePaused\(watchfire,pausedWatchfire\)/);
  assert.match(source,/async function assertWatchfireClearOfHud\(page,state\)/);
  assert.match(source,/await assertWatchfireClearOfHud\(page,observed\.watchfire\)/);
- assert.match(source,/watchfire\.lights===expectedLights/);
+ assert.match(source,/watchfire\.progress>=\.75/);
  assert.match(source,/p\.age=fixture\.age/);
  assert.match(source,/open\(fixture\.name,fixture\.width,fixture\.height,p,fixture\.reducedMotion\)/);
- assert.match(source,/pauseAtWaveArrival\(f\.page,fixture\.intent,fixture\.lights/);
+ assert.match(source,/pauseAtWaveArrival\(f\.page,fixture\.intent/);
+ assert.match(source,/watchfire\.lights<=fixture\.authoredLights/);
  assert.match(source,/shot\(f,'incoming-road'\)/);
 });

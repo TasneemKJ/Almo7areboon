@@ -9,7 +9,7 @@ async function subject(){
 
 test('native review fixtures cover three intent shapes, all village plates and both motion modes across phone and desktop widths',async()=>{
  const m=await subject(),fixtures=m.arrivalReviewFixtures();
- assert.deepEqual(fixtures.map((fixture:any)=>[fixture.width,fixture.height,fixture.route,fixture.intent,fixture.age,fixture.lights,fixture.reducedMotion]),[
+ assert.deepEqual(fixtures.map((fixture:any)=>[fixture.width,fixture.height,fixture.route,fixture.intent,fixture.age,fixture.authoredLights,fixture.reducedMotion]),[
   [320,568,'escort','rush',0,2,'reduce'],[390,844,'scout','volley',1,2,'no-preference'],
   [1024,768,'bell','bulwark',2,3,'reduce'],[320,568,'escort','rush',3,4,'no-preference'],
   [390,844,'scout','volley',4,3,'reduce'],[1024,768,'bell','bulwark',5,4,'no-preference'],

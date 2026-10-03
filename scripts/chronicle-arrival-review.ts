@@ -2,19 +2,19 @@ import assert from 'node:assert/strict';
 import type {RouteId} from '../src/game/chronicle.ts';
 import type {WaveIntent} from '../src/game/encounters.ts';
 
-export interface ArrivalReviewFixture {name:string;width:number;height:number;route:RouteId;intent:WaveIntent;age:number;lights:number;reducedMotion:'reduce'|'no-preference'}
+export interface ArrivalReviewFixture {name:string;width:number;height:number;route:RouteId;intent:WaveIntent;age:number;authoredLights:number;reducedMotion:'reduce'|'no-preference'}
 export interface ArrivalSnapshot {
  intent:WaveIntent;counts:readonly [number,number,number];nextIn:number;progress:number;
  banner:'swallowtail'|'split-pennant'|'weighted-square';roleShapes:readonly string[];knots:number;
  x:number;y:number;depth:number;baseDepth:number;actorFrontDepth:number;reduced:boolean;paused:boolean;
 }
 const fixtures:readonly ArrivalReviewFixture[]=Object.freeze([
- Object.freeze({name:'320-wave-rush-first-fires',width:320,height:568,route:'escort',intent:'rush',age:0,lights:2,reducedMotion:'reduce'}),
- Object.freeze({name:'390-wave-volley-olive',width:390,height:844,route:'scout',intent:'volley',age:1,lights:2,reducedMotion:'no-preference'}),
- Object.freeze({name:'1024-wave-bulwark-harbor',width:1024,height:768,route:'bell',intent:'bulwark',age:2,lights:3,reducedMotion:'reduce'}),
- Object.freeze({name:'320-wave-rush-lantern',width:320,height:568,route:'escort',intent:'rush',age:3,lights:4,reducedMotion:'no-preference'}),
- Object.freeze({name:'390-wave-volley-hillside',width:390,height:844,route:'scout',intent:'volley',age:4,lights:3,reducedMotion:'reduce'}),
- Object.freeze({name:'1024-wave-bulwark-courtyards',width:1024,height:768,route:'bell',intent:'bulwark',age:5,lights:4,reducedMotion:'no-preference'}),
+ Object.freeze({name:'320-wave-rush-first-fires',width:320,height:568,route:'escort',intent:'rush',age:0,authoredLights:2,reducedMotion:'reduce'}),
+ Object.freeze({name:'390-wave-volley-olive',width:390,height:844,route:'scout',intent:'volley',age:1,authoredLights:2,reducedMotion:'no-preference'}),
+ Object.freeze({name:'1024-wave-bulwark-harbor',width:1024,height:768,route:'bell',intent:'bulwark',age:2,authoredLights:3,reducedMotion:'reduce'}),
+ Object.freeze({name:'320-wave-rush-lantern',width:320,height:568,route:'escort',intent:'rush',age:3,authoredLights:4,reducedMotion:'no-preference'}),
+ Object.freeze({name:'390-wave-volley-hillside',width:390,height:844,route:'scout',intent:'volley',age:4,authoredLights:3,reducedMotion:'reduce'}),
+ Object.freeze({name:'1024-wave-bulwark-courtyards',width:1024,height:768,route:'bell',intent:'bulwark',age:5,authoredLights:4,reducedMotion:'no-preference'}),
 ]);
 export const arrivalReviewFixtures=()=>fixtures;
 
