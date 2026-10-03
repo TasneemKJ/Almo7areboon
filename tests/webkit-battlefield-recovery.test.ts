@@ -33,6 +33,8 @@ test('battlefield applies the renderer policy without lifecycle recreation hooks
 test('mobile WebKit verification fails on an unpainted stress frame', () => {
   const mobile = readFileSync(new URL('../scripts/verify-mobile.mjs', import.meta.url), 'utf8');
   assert.match(mobile, /async function verifyPaintedWebkitBattlefield\(browser\)/);
+  assert.match(mobile, /async\(\{encoded,roi,label\}\)=>/);
+  assert.match(mobile, /roi:\{x:45,y:180,width:300,height:220\},label\}/);
   assert.match(mobile, /assert\.ok\(sample\.rgbStddev>=\.15/);
   assert.match(mobile, /if\(engine==='webkit'\)await verifyPaintedWebkitBattlefield\(browser\)/);
   assert.match(mobile, /painted\(`cycle-\$\{cycle\}`,cycle===10\|\|cycle===20\)/);
