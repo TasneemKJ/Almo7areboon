@@ -51,6 +51,8 @@ test('native chronicle journey gives software-rendered desktop a full stage budg
  const source=readFileSync(new URL('../scripts/review-chronicle.mjs',import.meta.url),'utf8');
  const arrival=source.slice(source.indexOf('async function pauseAtWaveArrival'),source.indexOf('async function pauseAtCatMode'));
  assert.match(arrival,/Date\.now\(\)\+60000/);
+ assert.match(arrival,/clickEnabled\(page,page\.locator\(`\[data-unit="\$\{kind\}"\]`\)\)/,'the real-control fixture must keep the village defended while waiting for later authored intents');
+ assert.match(arrival,/clickEnabled\(page,page\.locator\('\[data-skill="freeze"\]'\)\)/,'the real-control fixture must use its available tactical control rather than bypass alarm suppression');
  assert.match(arrival,/waveArrival:/);
  assert.match(arrival,/villageWatchfire:/);
  assert.match(arrival,/profile:/);

@@ -128,17 +128,22 @@ async function pauseAtWaveArrival(page,intent,onObserved){
  // The native 1024×768 fixture renders a 2× software framebuffer in Actions.
  // Match the other rendering-dependent stages' budget without advancing or
  // bypassing the authoritative simulation state that the assertion observes.
- const deadline=Date.now()+60000;
+ // Later commander intents also need a real defending company: otherwise the
+ // village is truthfully alarmed before its later wave and suppresses the relay.
+ const deadline=Date.now()+60000,order=[0,1,0,2,1,2];let cursor=0;
  while(Date.now()<deadline){
-  try{await page.waitForFunction(intent=>{const node=document.querySelector('canvas'),raw=node?.dataset.waveArrival,watchRaw=node?.dataset.villageWatchfire;if(!raw||!watchRaw)return false;const state=JSON.parse(raw),watchfire=JSON.parse(watchRaw),ready=watchfire.reduced||watchfire.progress>=.75;return state.intent===intent&&watchfire.intent===intent&&ready&&state.progress===watchfire.progress&&state.nextIn>=0&&state.nextIn<=(watchfire.reduced?4:1)&&!state.paused&&!watchfire.paused;},intent,{timeout:Math.max(1,deadline-Date.now())});}
-  catch(error){if(String(error).includes('Timeout'))break;throw error;}
   const observed=await page.locator('canvas').evaluate((node,intent)=>{const raw=node.dataset.waveArrival,watchRaw=node.dataset.villageWatchfire;if(!raw||!watchRaw)return null;const arrival=JSON.parse(raw),watchfire=JSON.parse(watchRaw),ready=watchfire.reduced||watchfire.progress>=.75;return arrival.intent===intent&&watchfire.intent===intent&&ready&&arrival.progress===watchfire.progress&&arrival.nextIn>=0&&arrival.nextIn<=(watchfire.reduced?4:1)&&!arrival.paused&&!watchfire.paused?{arrival,watchfire}:null;},intent);
-  if(!observed)continue;validateArrivalSnapshot(observed.arrival,intent);validateWatchfireSnapshot(observed.watchfire,intent);await assertWatchfireClearOfHud(page,observed.watchfire);
-  const before=await page.locator('#pause').evaluate((button,value)=>{const node=document.querySelector('canvas'),raw=node?.dataset.waveArrival,watchRaw=node?.dataset.villageWatchfire;if(!raw||!watchRaw)return null;const arrival=JSON.parse(raw),watchfire=JSON.parse(watchRaw),ready=watchfire.reduced||watchfire.progress>=.75;if(arrival.intent!==value||watchfire.intent!==value||!ready||arrival.progress!==watchfire.progress||arrival.nextIn<0||arrival.nextIn>(watchfire.reduced?4:1)||arrival.paused||watchfire.paused)return null;button.click();return {arrival,watchfire};},intent);
-  if(!before)continue;
-  await page.waitForFunction(()=>{const node=document.querySelector('canvas'),raw=node?.dataset.waveArrival,watchRaw=node?.dataset.villageWatchfire;return raw&&watchRaw&&JSON.parse(raw).paused===true&&JSON.parse(watchRaw).paused===true;});
-  const pausedFrames=await page.locator('canvas').evaluate(node=>({arrival:JSON.parse(node.dataset.waveArrival),watchfire:JSON.parse(node.dataset.villageWatchfire)})),paused=pausedFrames.arrival,watchfire=before.watchfire,pausedWatchfire=pausedFrames.watchfire;
-  validateArrivalSnapshot(before.arrival,intent);validateArrivalSnapshot(paused,intent);validateWatchfireSnapshot(watchfire,intent);validateWatchfireSnapshot(pausedWatchfire,intent);assertArrivalPaused(before.arrival,paused);assertWatchfirePaused(watchfire,pausedWatchfire);await onObserved?.(paused);return {before:before.arrival,paused,watchfire:pausedWatchfire};
+  if(observed){
+   validateArrivalSnapshot(observed.arrival,intent);validateWatchfireSnapshot(observed.watchfire,intent);await assertWatchfireClearOfHud(page,observed.watchfire);
+   const before=await page.locator('#pause').evaluate((button,value)=>{const node=document.querySelector('canvas'),raw=node?.dataset.waveArrival,watchRaw=node?.dataset.villageWatchfire;if(!raw||!watchRaw)return null;const arrival=JSON.parse(raw),watchfire=JSON.parse(watchRaw),ready=watchfire.reduced||watchfire.progress>=.75;if(arrival.intent!==value||watchfire.intent!==value||!ready||arrival.progress!==watchfire.progress||arrival.nextIn<0||arrival.nextIn>(watchfire.reduced?4:1)||arrival.paused||watchfire.paused)return null;button.click();return {arrival,watchfire};},intent);
+   if(before){
+    await page.waitForFunction(()=>{const node=document.querySelector('canvas'),raw=node?.dataset.waveArrival,watchRaw=node?.dataset.villageWatchfire;return raw&&watchRaw&&JSON.parse(raw).paused===true&&JSON.parse(watchRaw).paused===true;});
+    const pausedFrames=await page.locator('canvas').evaluate(node=>({arrival:JSON.parse(node.dataset.waveArrival),watchfire:JSON.parse(node.dataset.villageWatchfire)})),paused=pausedFrames.arrival,watchfire=before.watchfire,pausedWatchfire=pausedFrames.watchfire;
+    validateArrivalSnapshot(before.arrival,intent);validateArrivalSnapshot(paused,intent);validateWatchfireSnapshot(watchfire,intent);validateWatchfireSnapshot(pausedWatchfire,intent);assertArrivalPaused(before.arrival,paused);assertWatchfirePaused(watchfire,pausedWatchfire);await onObserved?.(paused);return {before:before.arrival,paused,watchfire:pausedWatchfire};
+   }
+  }
+  await clickEnabled(page,page.locator('[data-skill="food"]'));await clickEnabled(page,page.locator('[data-skill="freeze"]'));await clickEnabled(page,page.locator('[data-skill="meteor"]'));
+  const kind=order[cursor%order.length];if(await clickEnabled(page,page.locator(`[data-unit="${kind}"]`)))cursor++;await page.waitForTimeout(25);
  }
  const diagnostic=await page.evaluate(()=>{const node=document.querySelector('canvas'),parse=raw=>{try{return raw?JSON.parse(raw):null;}catch{return {invalid:true};}},saved=parse(localStorage.getItem('almo7areboon.save.v1'));return {
   waveArrival:parse(node?.dataset.waveArrival),villageWatchfire:parse(node?.dataset.villageWatchfire),phase:document.querySelector('.world')?.dataset.phase??null,
