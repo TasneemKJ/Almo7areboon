@@ -2,16 +2,16 @@ import assert from 'node:assert/strict';
 import type {RouteId} from '../src/game/chronicle.ts';
 import type {WaveIntent} from '../src/game/encounters.ts';
 
-export interface ArrivalReviewFixture {name:string;width:number;height:number;route:RouteId;intent:WaveIntent}
+export interface ArrivalReviewFixture {name:string;width:number;height:number;route:RouteId;intent:WaveIntent;age:number;reducedMotion:'reduce'|'no-preference'}
 export interface ArrivalSnapshot {
  intent:WaveIntent;counts:readonly [number,number,number];nextIn:number;progress:number;
  banner:'swallowtail'|'split-pennant'|'weighted-square';roleShapes:readonly string[];knots:number;
  x:number;y:number;depth:number;baseDepth:number;actorFrontDepth:number;reduced:boolean;paused:boolean;
 }
 const fixtures:readonly ArrivalReviewFixture[]=Object.freeze([
- Object.freeze({name:'320-wave-rush',width:320,height:568,route:'escort',intent:'rush'}),
- Object.freeze({name:'390-wave-volley',width:390,height:844,route:'scout',intent:'volley'}),
- Object.freeze({name:'1024-wave-bulwark',width:1024,height:768,route:'bell',intent:'bulwark'}),
+ Object.freeze({name:'320-wave-rush',width:320,height:568,route:'escort',intent:'rush',age:0,reducedMotion:'reduce'}),
+ Object.freeze({name:'390-wave-volley',width:390,height:844,route:'scout',intent:'volley',age:2,reducedMotion:'no-preference'}),
+ Object.freeze({name:'1024-wave-bulwark',width:1024,height:768,route:'bell',intent:'bulwark',age:5,reducedMotion:'reduce'}),
 ]);
 export const arrivalReviewFixtures=()=>fixtures;
 

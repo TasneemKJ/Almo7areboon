@@ -55,6 +55,15 @@ async function assertMemoryClearOfHud(page,state){
  },state.regions.map(region=>region));
  assert.deepEqual(geometry.collisions,[],'battlefield memory must remain clear of the rendered DOM HUD');return geometry;
 }
+async function assertWatchfireClearOfHud(page,state){
+ const geometry=await page.locator('canvas').evaluate((node,regions)=>{
+  const canvas=node.getBoundingClientRect(),scale=canvas.width/450,boxes=regions.map(bounds=>({left:canvas.left+bounds.left*scale,top:canvas.top+bounds.top*scale,right:canvas.left+bounds.right*scale,bottom:canvas.top+bounds.bottom*scale}));
+  const selectors='.resources .currency,.resources .game-wordmark,.stage .eyebrow,.stage h1,.stage .scene-name,.stage .battle-select,.world-tools button,.battle-meta span,.battle-meta button,.battle-skills button';
+  const collisions=[];for(const hud of document.querySelectorAll(selectors)){const style=getComputedStyle(hud),rect=hud.getBoundingClientRect();if(style.display==='none'||style.visibility==='hidden'||!rect.width||!rect.height)continue;if(boxes.some(box=>box.left<rect.right&&box.right>rect.left&&box.top<rect.bottom&&box.bottom>rect.top))collisions.push(hud instanceof HTMLElement?hud.id||hud.className||hud.tagName:hud.nodeName);}
+  return {boxes,collisions};
+ },state.regions);
+ assert.deepEqual(geometry.collisions,[],'village watchfire must remain clear of the rendered DOM HUD');return geometry;
+}
 async function pauseAtBattlefieldMemory(page,kind){
  const deadline=Date.now()+60000;
  while(Date.now()<deadline){
@@ -112,7 +121,7 @@ async function pauseAtWaveArrival(page,intent,onObserved){
  while(Date.now()<deadline){
   await page.waitForFunction(value=>{const node=document.querySelector('canvas'),raw=node?.dataset.waveArrival,watchRaw=node?.dataset.villageWatchfire;if(!raw||!watchRaw)return false;const state=JSON.parse(raw),watchfire=JSON.parse(watchRaw);return state.intent===value&&watchfire.intent===value&&state.progress===watchfire.progress&&state.nextIn>=0&&state.nextIn<=4&&!state.paused&&!watchfire.paused;},intent,{timeout:Math.max(1,deadline-Date.now())});
   const observed=await page.locator('canvas').evaluate((node,value)=>{const raw=node.dataset.waveArrival,watchRaw=node.dataset.villageWatchfire;if(!raw||!watchRaw)return null;const arrival=JSON.parse(raw),watchfire=JSON.parse(watchRaw);return arrival.intent===value&&watchfire.intent===value&&!arrival.paused&&!watchfire.paused?{arrival,watchfire}:null;},intent);
-  if(!observed)continue;validateArrivalSnapshot(observed.arrival,intent);validateWatchfireSnapshot(observed.watchfire,intent);await onObserved?.(observed.arrival);
+  if(!observed)continue;validateArrivalSnapshot(observed.arrival,intent);validateWatchfireSnapshot(observed.watchfire,intent);await assertWatchfireClearOfHud(page,observed.watchfire);await onObserved?.(observed.arrival);
   const before=await page.locator('#pause').evaluate((button,value)=>{const node=document.querySelector('canvas'),raw=node?.dataset.waveArrival,watchRaw=node?.dataset.villageWatchfire;if(!raw||!watchRaw)return null;const arrival=JSON.parse(raw),watchfire=JSON.parse(watchRaw);if(arrival.intent!==value||watchfire.intent!==value||arrival.paused||watchfire.paused)return null;button.click();return {arrival,watchfire};},intent);
   if(!before)continue;
   await page.waitForFunction(()=>{const node=document.querySelector('canvas'),raw=node?.dataset.waveArrival,watchRaw=node?.dataset.villageWatchfire;return raw&&watchRaw&&JSON.parse(raw).paused===true&&JSON.parse(watchRaw).paused===true;});
@@ -211,13 +220,13 @@ try{
   checks.push(`disclosed restoration=${restoration} ready-state fixture renders the current painted settlement without presentation save writes`);await f.context.close();
  }
  for(const fixture of arrivalReviewFixtures()){
-  const p=preparedChronicleProfile();p.speed=1;p.enemyAge=0;p.furthestBattle=Math.max(0,p.furthestBattle);p.chronicle.chapter=0;p.chronicle.route=fixture.route;p.chronicle.expedition=null;
-  const f=await open(fixture.name,fixture.width,fixture.height,p);await f.page.locator('[data-command="start"]').click();
-  const {paused}=await pauseAtWaveArrival(f.page,fixture.intent,()=>shot(f,'incoming-road'));assert.equal(paused.reduced,true);assert.ok(paused.x>=340&&paused.x<=410);assert.ok(paused.y>120&&paused.y<430);
+  const p=preparedChronicleProfile();p.speed=1;p.age=fixture.age;p.enemyAge=0;p.furthestBattle=Math.max(0,p.furthestBattle);p.chronicle.chapter=0;p.chronicle.route=fixture.route;p.chronicle.expedition=null;
+  const f=await open(fixture.name,fixture.width,fixture.height,p,fixture.reducedMotion);await f.page.locator('[data-command="start"]').click();
+  const {paused,watchfire}=await pauseAtWaveArrival(f.page,fixture.intent,()=>shot(f,'incoming-road')),reduced=fixture.reducedMotion==='reduce';assert.equal(paused.reduced,reduced);assert.equal(watchfire.reduced,reduced);assert.ok(paused.x>=340&&paused.x<=410);assert.ok(paused.y>120&&paused.y<430);
   const before=await settledSaveAfterAutosave(f.page);await noOverflow(f.page);await f.page.waitForTimeout(5250);
   assert.equal(await saved(f.page),before,'paused wave-arrival presentation must remain save-inert across the next autosave boundary');
   const still=await f.page.locator('canvas').evaluate(node=>JSON.parse(node.dataset.waveArrival));validateArrivalSnapshot(still,fixture.intent);assert.deepEqual(still,paused,'paused road omen must remain static');
-  checks.push(`${fixture.width}: real ${fixture.intent} commander preview renders the schedule-derived road omen behind actors and stays static/save-inert under public pause`);await f.context.close();
+  checks.push(`${fixture.width}: plate ${fixture.age} real ${fixture.intent} commander preview renders the schedule-derived road omen and ${fixture.reducedMotion} watchfire relay clear of the live HUD, then stays static/save-inert under public pause`);await f.context.close();
  }
  for(const [width,height] of [[320,568],[390,844],[1024,768]]){
   const p=preparedChronicleProfile();p.motion='system';p.speed=2;p.age=0;p.enemyAge=0;p.foodLevel=12;p.unlocked=[true,true,true];p.chronicle.route='road';p.chronicle.expedition=null;

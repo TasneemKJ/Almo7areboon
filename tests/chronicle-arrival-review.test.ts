@@ -7,10 +7,10 @@ async function subject(){
  assert.ok(module,'arrival browser-review contract must exist');return module;
 }
 
-test('native review fixtures cover three intent shapes across phone and desktop widths',async()=>{
+test('native review fixtures cover three intent shapes, village plates and motion modes across phone and desktop widths',async()=>{
  const m=await subject(),fixtures=m.arrivalReviewFixtures();
- assert.deepEqual(fixtures.map((fixture:any)=>[fixture.width,fixture.height,fixture.route,fixture.intent]),[
-  [320,568,'escort','rush'],[390,844,'scout','volley'],[1024,768,'bell','bulwark'],
+ assert.deepEqual(fixtures.map((fixture:any)=>[fixture.width,fixture.height,fixture.route,fixture.intent,fixture.age,fixture.reducedMotion]),[
+  [320,568,'escort','rush',0,'reduce'],[390,844,'scout','volley',2,'no-preference'],[1024,768,'bell','bulwark',5,'reduce'],
  ]);
  assert.ok(Object.isFrozen(fixtures)&&fixtures.every(Object.isFrozen));
 });
