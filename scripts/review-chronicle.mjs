@@ -3,6 +3,7 @@ import {mkdir,writeFile} from 'node:fs/promises';
 import assert from 'node:assert/strict';
 import {simulateChronicle,preparedChronicleProfile} from './simulate-chronicle.ts';
 import {arrivalReviewFixtures,assertArrivalPaused,validateArrivalSnapshot} from './chronicle-arrival-review.ts';
+import {assertWatchfirePaused,validateWatchfireSnapshot} from './village-watchfire-review.ts';
 import {assertSpoilsHomecomingPaused,assertSpoilsHomecomingProgress,validateSpoilsHomecomingSnapshot,validateSpoilsStaticReward} from './spoils-homecoming-review.ts';
 const base=process.env.REVIEW_URL??'http://127.0.0.1:4173',out='artifacts/chronicle';await mkdir(out,{recursive:true});
 const browser=await chromium.launch({headless:true,...(process.env.CHROMIUM_PATH?{executablePath:process.env.CHROMIUM_PATH}:{}),args:['--enable-unsafe-swiftshader']});
@@ -109,14 +110,14 @@ async function settledSaveAfterAutosave(page){await page.waitForTimeout(5250);re
 async function pauseAtWaveArrival(page,intent,onObserved){
  const deadline=Date.now()+30000;
  while(Date.now()<deadline){
-  await page.waitForFunction(value=>{const raw=document.querySelector('canvas')?.dataset.waveArrival;if(!raw)return false;const state=JSON.parse(raw);return state.intent===value&&state.nextIn>=0&&state.nextIn<=4&&!state.paused;},intent,{timeout:Math.max(1,deadline-Date.now())});
-  const observed=await page.locator('canvas').evaluate((node,value)=>{const raw=node.dataset.waveArrival;if(!raw)return null;const state=JSON.parse(raw);return state.intent===value&&!state.paused?state:null;},intent);
-  if(!observed)continue;validateArrivalSnapshot(observed,intent);await onObserved?.(observed);
-  const before=await page.locator('#pause').evaluate((button,value)=>{const raw=document.querySelector('canvas')?.dataset.waveArrival;if(!raw)return null;const state=JSON.parse(raw);if(state.intent!==value||state.paused)return null;button.click();return state;},intent);
+  await page.waitForFunction(value=>{const node=document.querySelector('canvas'),raw=node?.dataset.waveArrival,watchRaw=node?.dataset.villageWatchfire;if(!raw||!watchRaw)return false;const state=JSON.parse(raw),watchfire=JSON.parse(watchRaw);return state.intent===value&&watchfire.intent===value&&state.progress===watchfire.progress&&state.nextIn>=0&&state.nextIn<=4&&!state.paused&&!watchfire.paused;},intent,{timeout:Math.max(1,deadline-Date.now())});
+  const observed=await page.locator('canvas').evaluate((node,value)=>{const raw=node.dataset.waveArrival,watchRaw=node.dataset.villageWatchfire;if(!raw||!watchRaw)return null;const arrival=JSON.parse(raw),watchfire=JSON.parse(watchRaw);return arrival.intent===value&&watchfire.intent===value&&!arrival.paused&&!watchfire.paused?{arrival,watchfire}:null;},intent);
+  if(!observed)continue;validateArrivalSnapshot(observed.arrival,intent);validateWatchfireSnapshot(observed.watchfire,intent);await onObserved?.(observed.arrival);
+  const before=await page.locator('#pause').evaluate((button,value)=>{const node=document.querySelector('canvas'),raw=node?.dataset.waveArrival,watchRaw=node?.dataset.villageWatchfire;if(!raw||!watchRaw)return null;const arrival=JSON.parse(raw),watchfire=JSON.parse(watchRaw);if(arrival.intent!==value||watchfire.intent!==value||arrival.paused||watchfire.paused)return null;button.click();return {arrival,watchfire};},intent);
   if(!before)continue;
-  await page.waitForFunction(()=>{const raw=document.querySelector('canvas')?.dataset.waveArrival;return raw&&JSON.parse(raw).paused===true;});
-  const paused=await page.locator('canvas').evaluate(node=>JSON.parse(node.dataset.waveArrival));
-  validateArrivalSnapshot(before,intent);validateArrivalSnapshot(paused,intent);assertArrivalPaused(before,paused);return {before,paused};
+  await page.waitForFunction(()=>{const node=document.querySelector('canvas'),raw=node?.dataset.waveArrival,watchRaw=node?.dataset.villageWatchfire;return raw&&watchRaw&&JSON.parse(raw).paused===true&&JSON.parse(watchRaw).paused===true;});
+  const pausedFrames=await page.locator('canvas').evaluate(node=>({arrival:JSON.parse(node.dataset.waveArrival),watchfire:JSON.parse(node.dataset.villageWatchfire)})),paused=pausedFrames.arrival,watchfire=before.watchfire,pausedWatchfire=pausedFrames.watchfire;
+  validateArrivalSnapshot(before.arrival,intent);validateArrivalSnapshot(paused,intent);validateWatchfireSnapshot(watchfire,intent);validateWatchfireSnapshot(pausedWatchfire,intent);assertArrivalPaused(before.arrival,paused);assertWatchfirePaused(watchfire,pausedWatchfire);return {before:before.arrival,paused,watchfire:pausedWatchfire};
  }
  throw new Error(`Timed out pausing at ${intent} wave arrival`);
 }

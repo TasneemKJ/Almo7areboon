@@ -7,8 +7,8 @@ export interface PaintedPolygon {points:readonly Point[];color:number;alpha:numb
 export interface VillageHalo {center:Point;rx:number;ry:number;color:number;alpha:number}
 export interface VillageStroke {from:Point;to:Point;width:number;color:number;alpha:number}
 export interface VillageViewport {placement:{x:number;y:number;scale:number};cssWorldScale:number;visibleSource:Bounds;hudSourceBounds:readonly Bounds[];skyPath?:Bounds|null}
-export interface VillageFrameInput {age:number;time:number;reduced:boolean;restoration?:number;mood:Readonly<VillageMoodSnapshot>;viewport:VillageViewport;verdict?:Readonly<VillageVerdictFrame>|null}
-export interface VillageFrame {residents:readonly {apertureId:string;panes:readonly PaintedPolygon[]}[];verdictResidents:readonly {apertureId:string;panes:readonly PaintedPolygon[]}[];lamps:readonly VillageHalo[];restorationLights:readonly VillageHalo[];verdictLights:readonly VillageHalo[];verdictStrokes:readonly VillageStroke[];water:readonly VillageStroke[];bird:readonly PaintedPolygon[]|null}
+export interface VillageFrameInput {age:number;time:number;reduced:boolean;restoration?:number;mood:Readonly<VillageMoodSnapshot>;viewport:VillageViewport;verdict?:Readonly<VillageVerdictFrame>|null;watch?:Readonly<{progress:number;intent:string}>|null}
+export interface VillageFrame {residents:readonly {apertureId:string;panes:readonly PaintedPolygon[]}[];verdictResidents:readonly {apertureId:string;panes:readonly PaintedPolygon[]}[];lamps:readonly VillageHalo[];restorationLights:readonly VillageHalo[];verdictLights:readonly VillageHalo[];watchLights:readonly VillageHalo[];verdictStrokes:readonly VillageStroke[];watchStrokes:readonly VillageStroke[];water:readonly VillageStroke[];bird:readonly PaintedPolygon[]|null}
 interface Aperture {id:string;bounds:Bounds;framing:readonly Bounds[];panes:readonly (readonly Point[])[];dark:boolean}
 type Lamp=readonly [number,number,number,number];
 interface Plate {path:string;sha256:string;width:900;height:1000;windows:readonly Aperture[];lamps:readonly Lamp[];sky:Bounds}
@@ -134,6 +134,10 @@ export function villageFrame(input:VillageFrameInput):VillageFrame {
  const time=input.reduced?0:Number.isFinite(input.time)?Math.min(1_000_000,Math.max(0,input.time)):0;
  const sharedMix=Number.isFinite(input.mood.alarmMix)?Math.max(0,Math.min(1,input.mood.alarmMix)):0;
  const verdict=input.verdict&&(input.verdict.mode==='celebrate'||input.verdict.mode==='shelter')&&Number.isFinite(input.verdict.progress)?{mode:input.verdict.mode,progress:Math.max(0,Math.min(1,input.verdict.progress))}:null;
+ const watchIntent=input.watch?.intent;
+ const watchProgress=!verdict&&input.mood.mood!=='alarmed'&&input.watch&&
+  (watchIntent==='rush'||watchIntent==='volley'||watchIntent==='bulwark')&&
+  Number.isFinite(input.watch.progress)&&input.watch.progress>=0&&input.watch.progress<=1?input.watch.progress:null;
  // Reduced motion uses discrete visual states; the shared long ramp remains intact for audio.
  const mix=input.reduced?(input.mood.mood==='alarmed'?1:0):sharedMix;
  const placement=safePlacement(input.viewport.placement);
@@ -191,9 +195,13 @@ export function villageFrame(input:VillageFrameInput):VillageFrame {
  }
  const lightFactor=verdict?.mode==='celebrate'?1+.35*verdict.progress:verdict?.mode==='shelter'?1-.75*verdict.progress:1;
  const verdictLights:VillageHalo[]=[];
+ const watchLights:VillageHalo[]=[],watchStrokes:VillageStroke[]=[];
+ const watchCount=watchProgress===null?0:input.reduced?plate.lamps.length:Math.min(plate.lamps.length,1+Math.floor(watchProgress*plate.lamps.length+1e-9));
+ const watchIndexes=[...plate.lamps.keys()].sort((a,b)=>plate.lamps[a][0]-plate.lamps[b][0]).slice(0,watchCount),watched=new Set(watchIndexes);
  const lamps=plate.lamps.map(([x,y,rx,ry],index)=>{
   const factor=verdict&&clearOfHud([x-rx,y-ry,x+rx,y+ry])?lightFactor:1;
-  const mark={center:project({x,y}),rx:rx*placement.scale,ry:ry*placement.scale,color:age===5&&index>=2?0x8edfc9:0xffd08a,alpha:Math.max(0,Math.min(1,(.12+index*.008+(input.reduced?0:.018*Math.sin(time*2*Math.PI/(3.7+index*.9)+age+index*2)))*(1-.55*mix)*factor))};
+  const watches=watched.has(index)&&clearOfHud([x-rx-4,y-ry-8,x+rx+4,y+ry+2]),watchFactor=watches?1.65:1;
+  const mark={center:project({x,y}),rx:rx*placement.scale,ry:ry*placement.scale,color:age===5&&index>=2?0x8edfc9:0xffd08a,alpha:Math.max(0,Math.min(1,(.12+index*.008+(input.reduced?0:.018*Math.sin(time*2*Math.PI/(3.7+index*.9)+age+index*2)))*(1-.55*mix)*factor*watchFactor))};
   if(factor!==1)verdictLights.push(mark);return mark;
  });
  const restorationLights:VillageHalo[]=[];
@@ -220,5 +228,10 @@ export function villageFrame(input:VillageFrameInput):VillageFrame {
    if(path){const x=path[0]+21+(path[2]-path[0]-42)*progress,y=(path[1]+path[3])/2;const pose=Math.min(2,Math.floor(progress*3));bird=BIRDS[pose].map(triangle=>paint(triangle.map(p=>({x:x+p.x,y:y+p.y})),.54));}
   }
  }
- return {residents,verdictResidents,lamps,restorationLights,verdictLights,verdictStrokes,water,bird};
+ for(const index of watchIndexes){
+  const [x,y,rx,ry]=plate.lamps[index];if(!clearOfHud([x-rx-4,y-ry-8,x+rx+4,y+ry+2]))continue;
+  const mark=lamps[index];watchLights.push({...mark,center:{...mark.center}});const color=age===5&&index>=2?0x8edfc9:0xf2cf79,width=Math.max(.75,1.05*placement.scale);
+  for(const [dx,lean] of [[0,0],[-3,1],[3,-1]] as const)watchStrokes.push({from:project({x:x+dx,y:y-ry*.15}),to:project({x:x+dx+lean,y:y-ry*.85}),width,color,alpha:.62});
+ }
+ return {residents,verdictResidents,lamps,restorationLights,verdictLights,watchLights:freeze(watchLights),verdictStrokes,watchStrokes:freeze(watchStrokes),water,bird};
 }

@@ -21,7 +21,7 @@ import {cloudFrame,shootingStar,starFrame} from './living-sky.ts';
 import {VIGNETTE_RADIUS,eraGrade,gradeMatrix,gradePixels,keyLightRays,projectileGlow,stageGlow,teamHalo,vignetteStops,foregroundMist,type GlowMark} from './cinematic-grade.ts';
 import {DeathVisuals} from './death-visuals.ts';
 import {stackedY} from './floater-stack.ts';
-import {waveArrivalForPort} from './wave-arrival.ts';
+import {waveArrivalForPort,type WaveArrivalFrame} from './wave-arrival.ts';
 import {paintWaveArrival,waveArrivalRenderPlan} from './wave-arrival-paint.ts';
 import {battleAftermathPose} from './battle-aftermath.ts';
 import {villageVerdictFrame} from './village-verdict.ts';
@@ -115,6 +115,7 @@ export function mountBattlefield(element:HTMLElement,game:GamePort,onFrame:()=>v
   private clock=0;
   private reduce=false;
   private failed=false;
+  private waveArrival:WaveArrivalFrame|null=null;
   constructor(){super('battlefield');}
   preload():void {
    for(const asset of visualAssets()){
@@ -160,7 +161,7 @@ export function mountBattlefield(element:HTMLElement,game:GamePort,onFrame:()=>v
     this.baseText.push(text);this.world.add(text);
    }
    this.scale.on('resize',this.resize,this);
-   this.events.once('shutdown',()=>{delete this.game.canvas.dataset.waveArrival;delete this.game.canvas.dataset.battleAftermath;delete this.game.canvas.dataset.villageVerdict;delete this.game.canvas.dataset.battlefieldMemory;delete this.game.canvas.dataset.spoilsHomecoming;delete this.game.canvas.dataset.spoilsReward;delete this.game.canvas.dataset.battlefieldReviewFrameReady;this.aftermath=null;this.scale.off('resize',this.resize,this);this.resetEffects();this.units.clear();this.idle=[];});
+   this.events.once('shutdown',()=>{delete this.game.canvas.dataset.waveArrival;delete this.game.canvas.dataset.battleAftermath;delete this.game.canvas.dataset.villageVerdict;delete this.game.canvas.dataset.villageWatchfire;delete this.game.canvas.dataset.battlefieldMemory;delete this.game.canvas.dataset.spoilsHomecoming;delete this.game.canvas.dataset.spoilsReward;delete this.game.canvas.dataset.battlefieldReviewFrameReady;this.aftermath=null;this.waveArrival=null;this.scale.off('resize',this.resize,this);this.resetEffects();this.units.clear();this.idle=[];});
    this.resize();this.syncEra();loading.remove();
    if(this.failed)element.dispatchEvent(new CustomEvent('visual-fallback',{bubbles:true}));
   }
@@ -369,21 +370,22 @@ export function mountBattlefield(element:HTMLElement,game:GamePort,onFrame:()=>v
   }
   private drawWaveArrival(groundY:number):void {
    const graphics=this.arrivalSignal.clear();delete this.game.canvas.dataset.waveArrival;
-   const frame=waveArrivalForPort(game,this.reduce);if(!frame)return;
+   const frame=this.waveArrival;if(!frame)return;
    const plan=waveArrivalRenderPlan(groundY),report=paintWaveArrival(graphics,frame,plan);
    graphics.setDepth(plan.depth);
    this.game.canvas.dataset.waveArrival=JSON.stringify({intent:frame.intent,counts:frame.counts,nextIn:frame.nextIn,progress:frame.progress,banner:report.banner,roleShapes:report.roleShapes,knots:report.knots,x:plan.x,y:plan.y,depth:plan.depth,baseDepth:plan.baseDepth,actorFrontDepth:plan.actorFrontDepth,reduced:this.reduce,paused:game.state.paused});
   }
   private drawAtmosphere():void {
    const g=this.ambience;g.clear();
-   if(navigator.webdriver)delete this.game.canvas.dataset.villageVerdict;
+   if(navigator.webdriver){delete this.game.canvas.dataset.villageVerdict;delete this.game.canvas.dataset.villageWatchfire;}
    if(storybookArt(game.profile.age)){
     this.streak.clear();this.stars.setVisible(false);this.clouds.setVisible(false);this.mist.setVisible(false);this.stageLight.setVisible(true);
     const mood=options.villageMood?.()??this.quietVillage;
     const villageVerdict=this.aftermath?.phase===game.state.phase?villageVerdictFrame({phase:this.aftermath.phase,elapsed:Math.max(0,this.clock-this.aftermath.at),reduced:this.reduce}):null;
-    const frame=villageFrame({age:game.profile.age,time:options.villageMood?mood.time:this.clock,reduced:this.reduce,restoration:game.profile.chronicle?.restoration??0,mood,viewport:this.villageViewport,verdict:villageVerdict});
+    const frame=villageFrame({age:game.profile.age,time:options.villageMood?mood.time:this.clock,reduced:this.reduce,restoration:game.profile.chronicle?.restoration??0,mood,viewport:this.villageViewport,verdict:villageVerdict,watch:this.waveArrival});
     for(const resident of frame.residents)for(const pane of resident.panes){g.fillStyle(pane.color,pane.alpha);g.fillPoints(pane.points as Phaser.Types.Math.Vector2Like[],true);}
     for(const stroke of frame.verdictStrokes){g.lineStyle(stroke.width,stroke.color,stroke.alpha);g.lineBetween(stroke.from.x,stroke.from.y,stroke.to.x,stroke.to.y);}
+    for(const stroke of frame.watchStrokes){g.lineStyle(stroke.width,stroke.color,stroke.alpha);g.lineBetween(stroke.from.x,stroke.from.y,stroke.to.x,stroke.to.y);}
     for(const mark of frame.water){g.lineStyle(mark.width,mark.color,mark.alpha);g.lineBetween(mark.from.x,mark.from.y,mark.to.x,mark.to.y);}
     if(frame.bird)for(const shape of frame.bird){g.fillStyle(shape.color,shape.alpha);g.fillPoints(shape.points as Phaser.Types.Math.Vector2Like[],true);}
     const lights=[...frame.lamps,...frame.restorationLights];
@@ -392,12 +394,17 @@ export function mountBattlefield(element:HTMLElement,game:GamePort,onFrame:()=>v
      ...frame.verdictStrokes.map(stroke=>({left:Math.min(stroke.from.x,stroke.to.x)-stroke.width,top:Math.min(stroke.from.y,stroke.to.y)-stroke.width,right:Math.max(stroke.from.x,stroke.to.x)+stroke.width,bottom:Math.max(stroke.from.y,stroke.to.y)+stroke.width})),
      ...frame.verdictLights.map(mark=>({left:mark.center.x-mark.rx,top:mark.center.y-mark.ry,right:mark.center.x+mark.rx,bottom:mark.center.y+mark.ry})),
     ];
+    const watchfireRegions=[
+     ...frame.watchStrokes.map(stroke=>({left:Math.min(stroke.from.x,stroke.to.x)-stroke.width,top:Math.min(stroke.from.y,stroke.to.y)-stroke.width,right:Math.max(stroke.from.x,stroke.to.x)+stroke.width,bottom:Math.max(stroke.from.y,stroke.to.y)+stroke.width})),
+     ...frame.watchLights.map(mark=>({left:mark.center.x-mark.rx,top:mark.center.y-mark.ry,right:mark.center.x+mark.rx,bottom:mark.center.y+mark.ry})),
+    ];
     for(let i=0;i<this.stageLight.length;i++){
      const image=this.stageLight.getAt(i) as Phaser.GameObjects.Image,mark=lights[i];
      if(!mark){image.setVisible(false);continue;}
      image.setVisible(true).setPosition(mark.center.x,mark.center.y).setDisplaySize(mark.rx*2,mark.ry*2).setTint(mark.color).setAlpha(mark.alpha);
     }
     if(navigator.webdriver&&villageVerdict)this.game.canvas.dataset.villageVerdict=JSON.stringify({mode:villageVerdict.mode,progress:villageVerdict.progress,witnesses:frame.verdictResidents.length,strokes:frame.verdictStrokes.length,lights:lights.length,affectedLights:frame.verdictLights.length,regions:verdictRegions,reduced:this.reduce,paused:game.state.paused});
+    if(navigator.webdriver&&this.waveArrival&&frame.watchLights.length)this.game.canvas.dataset.villageWatchfire=JSON.stringify({intent:this.waveArrival.intent,progress:this.waveArrival.progress,lights:frame.watchLights.length,strokes:frame.watchStrokes.length,regions:watchfireRegions,reduced:this.reduce,paused:game.state.paused});
     return;
    }
    if(!storybookArt(game.profile.age)){
@@ -731,12 +738,13 @@ export function mountBattlefield(element:HTMLElement,game:GamePort,onFrame:()=>v
    if(disposed||!this.world)return;
    const dt=Math.min(.05,Math.max(0,delta/1000));game.step(dt);
    const events=game.drainEvents();options.onPresentation?.(dt,events);if(events.length)onEvents(events);
-   if(this.lastState!==game.state){this.lastState=game.state;this.aftermath=null;delete this.game.canvas.dataset.battleAftermath;delete this.game.canvas.dataset.villageVerdict;this.spoilsOrder=0;this.resetEffects();for(const view of this.units.values())view.body.destroy();this.units.clear();}
+   if(this.lastState!==game.state){this.lastState=game.state;this.aftermath=null;delete this.game.canvas.dataset.battleAftermath;delete this.game.canvas.dataset.villageVerdict;delete this.game.canvas.dataset.villageWatchfire;this.spoilsOrder=0;this.resetEffects();for(const view of this.units.values())view.body.destroy();this.units.clear();}
    const reduced=reducedMotion(game.profile.motion,motionQuery.matches);
    if(reduced&&!this.reduce)this.resetEffects('motion');this.reduce=reduced;
    this.syncEra();for(const event of events)this.event(event);
    if(options.isVisible&&!options.isVisible()){onFrame();return;}
    if(!game.state.paused&&!this.reduce)this.clock+=dt;
+   this.waveArrival=waveArrivalForPort(game,this.reduce);
    this.drawAtmosphere();this.drawBaseDamage();this.drawArmy();this.healthBars();this.effects(game.state.paused?0:dt);onFrame();
   }
  }

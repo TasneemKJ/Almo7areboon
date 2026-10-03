@@ -221,3 +221,45 @@ test('malformed cached viewport geometry cannot leak non-finite bird coordinates
   assert.ok(values.every(value=>Number.isFinite(value)&&Math.abs(value)<=2_000),`unbounded cached viewport output: ${JSON.stringify({age,overrides,values})}`);
  }
 });
+
+// Catches a missing or non-sequential village response to the authoritative
+// incoming-wave progress already used by the road omen.
+test('incoming waves pass one bounded shape-backed watchfire relay across measured lamps',async()=>{
+ const m=await life(),frame=(progress:number)=>m.villageFrame({age:3,time:4,reduced:false,mood:quiet,viewport,watch:{progress,intent:'rush'}} as any) as any;
+ const opening=frame(0),middle=frame(.5),launch=frame(1);
+ assert.deepEqual([opening.watchLights?.length,middle.watchLights?.length,launch.watchLights?.length],[1,3,4]);
+ assert.deepEqual([opening.watchStrokes?.length,middle.watchStrokes?.length,launch.watchStrokes?.length],[3,9,12]);
+ assert.deepEqual(launch.watchLights.map((light:any)=>[light.center.x,light.center.y]),m.VILLAGE_PLATES[3].lamps.map((lamp:readonly number[])=>lamp.slice(0,2)));
+ assert.ok(launch.watchStrokes.every((stroke:any)=>stroke.to.y<stroke.from.y),'each beacon must have an upright silhouette');
+});
+
+test('every painted chapter relays watchfires monotonically toward the enemy road',async()=>{
+ const m=await life();
+ for(let age=0;age<6;age++)for(const progress of [0,.4,.75,1]){
+  const frame=m.villageFrame({age,time:4,reduced:false,mood:quiet,viewport,watch:{progress,intent:'bulwark'}} as any);
+  const xs=frame.watchLights.map((light:any)=>light.center.x);assert.deepEqual(xs,[...xs].sort((a,b)=>a-b),`chapter ${age} progress ${progress}`);
+ }
+});
+
+test('watchfire relay fails closed around invalid, covered, alarmed and verdict states',async()=>{
+ const m=await life(),base:any={age:0,time:4,reduced:false,mood:quiet,viewport,watch:{progress:1,intent:'rush'}};
+ for(const watch of [null,{progress:NaN,intent:'rush'},{progress:Infinity,intent:'rush'},{progress:-.01,intent:'rush'},{progress:1.01,intent:'rush'},{progress:.5,intent:'unknown'}]){
+  const frame=m.villageFrame({...base,watch});assert.deepEqual(frame.watchLights,[]);assert.deepEqual(frame.watchStrokes,[]);
+ }
+ const covered=m.villageFrame({...base,viewport:{...viewport,hudSourceBounds:[[188,465,216,503] as const]}});
+ assert.equal(covered.watchLights.length,1,'a covered authored lamp is skipped without stopping the relay');
+ assert.deepEqual([covered.watchLights[0].center.x,covered.watchLights[0].center.y],m.VILLAGE_PLATES[0].lamps[1].slice(0,2));
+ for(const overrides of [{mood:{...quiet,mood:'alarmed',alarmMix:1}},{verdict:{mode:'celebrate',progress:.5}},{verdict:{mode:'shelter',progress:.5}}]){
+  const frame=m.villageFrame({...base,...overrides});assert.deepEqual(frame.watchLights,[]);assert.deepEqual(frame.watchStrokes,[]);
+ }
+});
+
+test('reduced-motion watchfire is a still immutable full relay and leaves caller input untouched',async()=>{
+ const m=await life(),input:any={age:5,time:99,reduced:true,mood:{...quiet},viewport:{...viewport,placement:{...viewport.placement},hudSourceBounds:[]},watch:{progress:0,intent:'rush'}},before=structuredClone(input);
+ const opening=m.villageFrame(input),launch=m.villageFrame({...input,watch:{progress:1,intent:'rush'}});
+ assert.deepEqual(input,before);assert.deepEqual(opening.watchLights,launch.watchLights);assert.deepEqual(opening.watchStrokes,launch.watchStrokes);
+ assert.equal(opening.watchLights.length,m.VILLAGE_PLATES[5].lamps.length);assert.equal(opening.watchStrokes.length,m.VILLAGE_PLATES[5].lamps.length*3);
+ assert.ok(Object.isFrozen(opening.watchLights)&&Object.isFrozen(opening.watchStrokes));
+ assert.ok(opening.watchLights.every((light:any)=>Object.isFrozen(light)&&Object.isFrozen(light.center)));
+ assert.ok(opening.watchStrokes.every((stroke:any)=>Object.isFrozen(stroke)&&Object.isFrozen(stroke.from)&&Object.isFrozen(stroke.to)));
+});
