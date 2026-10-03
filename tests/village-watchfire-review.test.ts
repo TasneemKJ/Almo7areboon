@@ -35,8 +35,9 @@ test('native chronicle journey captures and pause-compares the watchfire with it
  const pauseAssertion=source.indexOf('assertWatchfirePaused(watchfire,pausedWatchfire)');
  const screenshotCallback=source.indexOf('await onObserved?.(paused)');
  assert.ok(pauseAssertion>=0&&screenshotCallback>pauseAssertion,'capture must happen only after the transient relay is frozen');
- assert.match(source,/async function canvasElementShot\(fixture,state\)/);
- assert.match(source,/canvasElementShot\(f,'incoming-road'\)/);
+ assert.match(source,/async function renderedCanvasShot\(fixture,state\)/);
+ assert.match(source,/node\.battlefieldReviewCanvasSnapshot/);
+ assert.match(source,/renderedCanvasShot\(f,'incoming-road'\)/);
  assert.match(source,/p\.age=fixture\.age;p\.enemyAge=fixture\.age;p\.furthestBattle=fixture\.age/);
  assert.match(source,/p\.chronicle\.clears\[fixture\.age\]=1;p\.chronicle\.chapter=fixture\.age/);
  assert.match(source,/open\(fixture\.name,fixture\.width,fixture\.height,p,fixture\.reducedMotion\)/);

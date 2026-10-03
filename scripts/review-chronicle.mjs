@@ -15,7 +15,14 @@ async function open(name,width,height,profile,reducedMotion='reduce'){
  await page.goto(base,{waitUntil:'networkidle'});await page.waitForSelector('canvas');await page.waitForTimeout(500);return {page,context,name};
 }
 async function shot(fixture,state){const file=`${fixture.name}-${state}.png`;await fixture.page.screenshot({path:`${out}/${file}`});screens.push(file);}
-async function canvasElementShot(fixture,state){const file=`${fixture.name}-${state}.png`;await fixture.page.locator('canvas').screenshot({path:`${out}/${file}`});screens.push(file);}
+async function renderedCanvasShot(fixture,state){
+ const capture=await fixture.page.locator('canvas').evaluate(node=>new Promise((resolve,reject)=>{
+  if(typeof node.battlefieldReviewCanvasSnapshot!=='function'){reject(new Error('Phaser canvas snapshot is unavailable'));return;}
+  node.battlefieldReviewCanvasSnapshot(image=>{if(!(image instanceof HTMLImageElement)){reject(new Error('Phaser canvas snapshot did not return an image'));return;}resolve({encoded:image.src.split(',')[1],width:image.naturalWidth,height:image.naturalHeight});});
+ }));
+ const bytes=Buffer.from(capture.encoded,'base64');assert.deepEqual([...bytes.subarray(0,8)],[137,80,78,71,13,10,26,10]);assert.equal(bytes.readUInt32BE(16),capture.width);assert.equal(bytes.readUInt32BE(20),capture.height);
+ const file=`${fixture.name}-${state}.png`;await writeFile(`${out}/${file}`,bytes);screens.push(file);
+}
 async function armCanvasShot(fixture,expected){await fixture.page.locator('canvas').evaluate((node,phase)=>{
  if(typeof node.battlefieldReviewArm!=='function'||!node.battlefieldReviewArm(phase))throw new Error('Phaser post-render snapshot could not be armed');
 },expected);}
@@ -223,7 +230,7 @@ try{
  for(const fixture of arrivalReviewFixtures()){
   const p=preparedChronicleProfile();p.speed=1;p.age=fixture.age;p.enemyAge=fixture.age;p.furthestBattle=fixture.age;p.chronicle.clears[fixture.age]=1;p.chronicle.chapter=fixture.age;p.chronicle.route=fixture.route;p.chronicle.expedition=null;
   const f=await open(fixture.name,fixture.width,fixture.height,p,fixture.reducedMotion);await f.page.locator('[data-command="start"]').click();
-  const {paused,watchfire}=await pauseAtWaveArrival(f.page,fixture.intent,()=>canvasElementShot(f,'incoming-road')),reduced=fixture.reducedMotion==='reduce';assert.equal(paused.reduced,reduced);assert.equal(watchfire.reduced,reduced);assert.ok(watchfire.lights>=1&&watchfire.lights<=fixture.authoredLights);assert.ok(paused.x>=340&&paused.x<=410);assert.ok(paused.y>120&&paused.y<430);
+  const {paused,watchfire}=await pauseAtWaveArrival(f.page,fixture.intent,()=>renderedCanvasShot(f,'incoming-road')),reduced=fixture.reducedMotion==='reduce';assert.equal(paused.reduced,reduced);assert.equal(watchfire.reduced,reduced);assert.ok(watchfire.lights>=1&&watchfire.lights<=fixture.authoredLights);assert.ok(paused.x>=340&&paused.x<=410);assert.ok(paused.y>120&&paused.y<430);
   const before=await settledSaveAfterAutosave(f.page);await noOverflow(f.page);await f.page.waitForTimeout(5250);
   assert.equal(await saved(f.page),before,'paused wave-arrival presentation must remain save-inert across the next autosave boundary');
   const still=await f.page.locator('canvas').evaluate(node=>JSON.parse(node.dataset.waveArrival));validateArrivalSnapshot(still,fixture.intent);assert.deepEqual(still,paused,'paused road omen must remain static');

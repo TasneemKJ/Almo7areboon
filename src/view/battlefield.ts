@@ -768,6 +768,9 @@ export function mountBattlefield(element:HTMLElement,game:GamePort,onFrame:()=>v
    waitForOutcome();return true;
   }} satisfies PropertyDescriptor);
   Object.defineProperty(renderer.canvas,'battlefieldReviewSnapshot',{configurable:true,value:(callback:(snapshot:ReviewSnapshot)=>void)=>{if(reviewResult)callback(reviewResult);else reviewWaiter=callback;}} satisfies PropertyDescriptor);
+  Object.defineProperty(renderer.canvas,'battlefieldReviewCanvasSnapshot',{configurable:true,value:(callback:(image:HTMLImageElement|null)=>void)=>{
+   renderer.renderer.once(Phaser.Renderer.Events.POST_RENDER,()=>renderer.renderer.snapshot(image=>callback(image instanceof HTMLImageElement?image:null),'image/png'));
+  }} satisfies PropertyDescriptor);
  }
  renderer.canvas.setAttribute('role','img');renderer.canvas.setAttribute('aria-label','Illustrated battlefield. Blue warriors attack the red enemy base.');
  const observer=new ResizeObserver(()=>{if(!disposed&&element.clientWidth>0&&element.clientHeight>0)renderer.scale.resize(Math.round(element.clientWidth*pixelRatio),Math.round(element.clientHeight*pixelRatio));});observer.observe(element);
