@@ -56,6 +56,7 @@ test('deep verification runs automatically for pull requests and main pushes', (
   const pushBranches = block('push').match(/^branches: \[([^\]]+)\]$/)?.[1]
     .split(',').map(branch => branch.trim());
   assert.ok(pushBranches?.includes('main'), 'push must include the exact main branch');
+  assert.ok(pushBranches?.every(branch => !branch.startsWith('!')), 'push branch filters must not contain exclusions');
   assert.equal(block('pull_request'), '', 'pull_request must not be narrowed by branches or event types');
   assert.equal(block('workflow_dispatch'), '', 'manual verification must remain available');
 });
