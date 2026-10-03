@@ -1,0 +1,79 @@
+name: Mobile QA - forty recorded iterations
+on:
+  push:
+    branches: [qa/mobile-40-iterations]
+  workflow_dispatch:
+permissions:
+  contents: read
+concurrency:
+  group: mobile-40-${{ github.ref }}
+  cancel-in-progress: true
+jobs:
+  source:
+    runs-on: ubuntu-latest
+    timeout-minutes: 10
+    steps:
+      - uses: actions/checkout@v4
+        with: {persist-credentials: false}
+      - uses: actions/setup-node@v4
+        with: {node-version: 22, cache: npm}
+      - run: npm ci
+      - name: Validate the campaign runners
+        run: |
+          node --check scripts/qa40/campaign.mjs
+          node --check scripts/qa40/dialog-layout.mjs
+      - name: Source regression suite
+        run: npm test
+      - name: Production build
+        run: npm run build
+      - name: Record exact source and revision
+        run: |
+          mkdir -p artifacts/qa40-source
+          git rev-parse HEAD > artifacts/qa40-source/revision.txt
+          tar -czf artifacts/qa40-source/source.tar.gz src scripts/qa40 public package.json package-lock.json tsconfig.json vite.config.ts index.html
+      - uses: actions/upload-artifact@v4
+        if: always()
+        with:
+          name: qa40-source
+          path: artifacts/qa40-source/
+          retention-days: 7
+  iterations:
+    runs-on: ubuntu-latest
+    timeout-minutes: 15
+    strategy:
+      fail-fast: false
+      max-parallel: 4
+      matrix:
+        engine: [chromium, webkit]
+        ids: ['1-10', '11-20', '21-30', '31-40']
+    steps:
+      - uses: actions/checkout@v4
+        with: {persist-credentials: false}
+      - uses: actions/setup-node@v4
+        with: {node-version: 22, cache: npm}
+      - run: npm ci
+      - run: node --check scripts/qa40/campaign.mjs
+      - run: npm run build
+      - run: npx playwright install --with-deps ${{ matrix.engine }}
+      - name: Check dismiss header against the actual production template
+        if: matrix.ids == '1-10'
+        env:
+          QA_ENGINE: ${{ matrix.engine }}
+          QA_OUT: artifacts/qa40/${{ matrix.engine }}-dialog-layout
+        run: node --experimental-strip-types scripts/qa40/dialog-layout.mjs
+      - name: Execute ten independently recorded iterations
+        env:
+          QA_ENGINE: ${{ matrix.engine }}
+          QA_IDS: ${{ matrix.ids }}
+          QA_OUT: artifacts/qa40/${{ matrix.engine }}-${{ matrix.ids }}
+        shell: bash
+        run: |
+          set -euo pipefail
+          mkdir -p "$QA_OUT"
+          node --experimental-strip-types scripts/qa40/campaign.mjs 2>&1 | tee "$QA_OUT/run.log"
+      - uses: actions/upload-artifact@v4
+        if: always()
+        with:
+          name: qa40-${{ matrix.engine }}-${{ matrix.ids }}
+          path: artifacts/qa40/
+          retention-days: 7

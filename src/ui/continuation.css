@@ -139,7 +139,7 @@
    over scrolled quest rewards and other content. Storybook keeps its own header. */
 .dialog:has(>.dialog-dismiss) { scroll-padding-block-start:58px; }
 .dialog-dismiss {
- position:sticky; top:0; height:44px; margin-top:-15px; margin-bottom:12px;
+ position:sticky; top:0; height:44px; margin-top:0; margin-bottom:12px;
  z-index:3; display:flex; justify-content:flex-end; background:var(--paper);
  border-bottom:1px solid var(--paper-edge);
 }
