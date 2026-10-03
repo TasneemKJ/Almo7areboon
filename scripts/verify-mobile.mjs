@@ -160,10 +160,12 @@ async function verifyPaintedWebkitBattlefield(browser){
 try{
  for(const engine of (process.env.MOBILE_ENGINES??'chromium').split(',')){
   const driver=engine==='webkit'?webkit:chromium;
-  browser=await driver.launch({headless:true,...(engine==='chromium'&&process.env.CHROMIUM_PATH?{executablePath:process.env.CHROMIUM_PATH}:{})});report.browsers[engine]=browser.version();
+  const launch=()=>driver.launch({headless:true,...(engine==='chromium'&&process.env.CHROMIUM_PATH?{executablePath:process.env.CHROMIUM_PATH}:{})});
+  browser=await launch();report.browsers[engine]=browser.version();
   for(const [w,h] of [[320,568],[351,640],[360,640],[361,640],[390,844],[430,932],[390,550],[844,390]])await run(engine,w,h);
+  if(engine==='webkit'){await browser.close();browser=await launch();}
   await run(engine,320,568,true);await run(engine,390,550,true);
-  if(engine==='webkit')await verifyPaintedWebkitBattlefield(browser);
+  if(engine==='webkit'){await browser.close();browser=await launch();await verifyPaintedWebkitBattlefield(browser);}
   if(engine==='chromium'){await run(engine,390,844,false,{top:44,bottom:34,left:0,right:0});await run(engine,390,550,true,{top:44,bottom:34,left:0,right:0});}
   await browser.close();browser=null;
  }
