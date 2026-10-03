@@ -128,12 +128,12 @@ async function pauseAtWaveArrival(page,intent,onObserved){
  // Every Chronicle commander owns the first authored wave. Observe that warning
  // before troop or skill input can win the battle, alarm the village, or race the
  // narrow animated relay window on a software-rendered Actions framebuffer.
- const deadline=Date.now()+10000;
+ const deadline=Date.now()+20000;
  while(Date.now()<deadline){
-  const observed=await page.locator('canvas').evaluate((node,intent)=>{const raw=node.dataset.waveArrival,watchRaw=node.dataset.villageWatchfire;if(!raw||!watchRaw)return null;const arrival=JSON.parse(raw),watchfire=JSON.parse(watchRaw),ready=watchfire.reduced||watchfire.progress>=.75;return arrival.intent===intent&&watchfire.intent===intent&&ready&&arrival.progress===watchfire.progress&&arrival.nextIn>=0&&arrival.nextIn<=(watchfire.reduced?4:1)&&!arrival.paused&&!watchfire.paused?{arrival,watchfire}:null;},intent);
+  const observed=await page.locator('canvas').evaluate((node,intent)=>{const raw=node.dataset.waveArrival,watchRaw=node.dataset.villageWatchfire;if(!raw||!watchRaw)return null;const arrival=JSON.parse(raw),watchfire=JSON.parse(watchRaw),ready=watchfire.reduced||watchfire.progress>=.75;if(arrival.number!==1||watchfire.number!==1)return null;return arrival.intent===intent&&watchfire.intent===intent&&ready&&arrival.progress===watchfire.progress&&arrival.nextIn>=0&&arrival.nextIn<=(watchfire.reduced?4:1)&&!arrival.paused&&!watchfire.paused?{arrival,watchfire}:null;},intent);
   if(observed){
    validateArrivalSnapshot(observed.arrival,intent);validateWatchfireSnapshot(observed.watchfire,intent);await assertWatchfireClearOfHud(page,observed.watchfire);
-   const before=await page.locator('#pause').evaluate((button,value)=>{const node=document.querySelector('canvas'),raw=node?.dataset.waveArrival,watchRaw=node?.dataset.villageWatchfire;if(!raw||!watchRaw)return null;const arrival=JSON.parse(raw),watchfire=JSON.parse(watchRaw),ready=watchfire.reduced||watchfire.progress>=.75;if(arrival.intent!==value||watchfire.intent!==value||!ready||arrival.progress!==watchfire.progress||arrival.nextIn<0||arrival.nextIn>(watchfire.reduced?4:1)||arrival.paused||watchfire.paused)return null;button.click();return {arrival,watchfire};},intent);
+   const before=await page.locator('#pause').evaluate((button,value)=>{const node=document.querySelector('canvas'),raw=node?.dataset.waveArrival,watchRaw=node?.dataset.villageWatchfire;if(!raw||!watchRaw)return null;const arrival=JSON.parse(raw),watchfire=JSON.parse(watchRaw),ready=watchfire.reduced||watchfire.progress>=.75;if(arrival.number!==1||watchfire.number!==1||arrival.intent!==value||watchfire.intent!==value||!ready||arrival.progress!==watchfire.progress||arrival.nextIn<0||arrival.nextIn>(watchfire.reduced?4:1)||arrival.paused||watchfire.paused)return null;button.click();return {arrival,watchfire};},intent);
    if(before){
     await page.waitForFunction(()=>{const node=document.querySelector('canvas'),raw=node?.dataset.waveArrival,watchRaw=node?.dataset.villageWatchfire;return raw&&watchRaw&&JSON.parse(raw).paused===true&&JSON.parse(watchRaw).paused===true;});
     const pausedFrames=await page.locator('canvas').evaluate(node=>({arrival:JSON.parse(node.dataset.waveArrival),watchfire:JSON.parse(node.dataset.villageWatchfire)})),paused=pausedFrames.arrival,watchfire=before.watchfire,pausedWatchfire=pausedFrames.watchfire;
@@ -239,7 +239,7 @@ try{
   checks.push(`disclosed restoration=${restoration} ready-state fixture renders the current painted settlement without presentation save writes`);await f.context.close();
  }
  for(const fixture of arrivalReviewFixtures()){
-  const p=preparedChronicleProfile();p.speed=1;p.age=fixture.age;p.enemyAge=fixture.age;p.furthestBattle=fixture.age;p.chronicle.clears[fixture.age]=1;p.chronicle.chapter=fixture.age;p.chronicle.route=fixture.route;p.chronicle.expedition=null;
+  const p=preparedChronicleProfile();p.speed=1;p.timeline=fixture.timeline;p.age=fixture.age;p.enemyAge=fixture.age;p.furthestBattle=fixture.age;p.chronicle.clears[fixture.age]=1;p.chronicle.chapter=fixture.age;p.chronicle.route=fixture.route;p.chronicle.expedition=null;
   const f=await open(fixture.name,fixture.width,fixture.height,p,fixture.reducedMotion);await f.page.locator('[data-command="start"]').click();
   const {paused,watchfire}=await pauseAtWaveArrival(f.page,fixture.intent,()=>renderedCanvasShot(f,'incoming-road')),reduced=fixture.reducedMotion==='reduce',expectedLights=reduced?fixture.authoredLights:null;assert.equal(paused.reduced,reduced);assert.equal(watchfire.reduced,reduced);if(expectedLights===null)assert.ok(watchfire.lights>=1&&watchfire.lights<=fixture.authoredLights);else assert.equal(watchfire.lights,expectedLights);assert.ok(paused.x>=340&&paused.x<=410);assert.ok(paused.y>120&&paused.y<430);
   const before=await settledSaveAfterAutosave(f.page);await noOverflow(f.page);await f.page.waitForTimeout(5250);

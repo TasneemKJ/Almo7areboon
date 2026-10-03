@@ -58,7 +58,7 @@ test('watchfire reuses village ambience and light pools with bounded webdriver e
  assert.match(source,/for\(const stroke of frame\.watchStrokes\)\{g\.lineStyle\(stroke\.width,stroke\.color,stroke\.alpha\);g\.lineBetween\(stroke\.from\.x,stroke\.from\.y,stroke\.to\.x,stroke\.to\.y\);\}/);
  assert.match(source,/const watchfireRegions=/);
  assert.match(source,/frame\.watchStrokes\.map/);assert.match(source,/frame\.watchLights\.map/);
- assert.match(source,/dataset\.villageWatchfire=JSON\.stringify\(\{intent:this\.waveArrival\.intent,progress:this\.waveArrival\.progress,lights:frame\.watchLights\.length,strokes:frame\.watchStrokes\.length,regions:watchfireRegions,reduced:this\.reduce,paused:game\.state\.paused\}\)/);
+ assert.match(source,/dataset\.villageWatchfire=JSON\.stringify\(\{number:this\.waveArrival\.number,intent:this\.waveArrival\.intent,progress:this\.waveArrival\.progress,lights:frame\.watchLights\.length,strokes:frame\.watchStrokes\.length,regions:watchfireRegions,reduced:this\.reduce,paused:game\.state\.paused\}\)/);
  assert.match(source,/delete this\.game\.canvas\.dataset\.villageWatchfire/);
  assert.match(source,/battlefieldReviewCanvasSnapshot/,'native watchfire evidence must use Phaser post-render pixels rather than a DOM screenshot clip');
  assert.match(source,/while\(this\.stageLight\.length<6\)/);

@@ -3,12 +3,13 @@ import type {WaveIntent} from '../src/game/encounters.ts';
 
 export interface WatchfireReviewRegion {left:number;top:number;right:number;bottom:number}
 export interface WatchfireReviewSnapshot {
- intent:WaveIntent;progress:number;lights:number;strokes:number;regions:readonly WatchfireReviewRegion[];
+ number:number;intent:WaveIntent;progress:number;lights:number;strokes:number;regions:readonly WatchfireReviewRegion[];
  reduced:boolean;paused:boolean;
 }
 
 export function validateWatchfireSnapshot(value:unknown,expected:WaveIntent):WatchfireReviewSnapshot {
  assert.ok(value&&typeof value==='object'&&!Array.isArray(value));const state=value as Record<string,unknown>;
+ assert.ok(typeof state.number==='number'&&Number.isInteger(state.number)&&state.number>=1&&state.number<=5);
  assert.equal(state.intent,expected);assert.ok(typeof state.progress==='number'&&Number.isFinite(state.progress)&&state.progress>=0&&state.progress<=1);
  assert.ok(typeof state.lights==='number'&&Number.isInteger(state.lights)&&state.lights>=1&&state.lights<=4);
  assert.equal(state.strokes,(state.lights as number)*3);assert.ok(Array.isArray(state.regions)&&state.regions.length===(state.lights as number)+(state.strokes as number));

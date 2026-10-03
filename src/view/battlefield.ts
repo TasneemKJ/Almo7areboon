@@ -373,7 +373,7 @@ export function mountBattlefield(element:HTMLElement,game:GamePort,onFrame:()=>v
    const frame=this.waveArrival;if(!frame)return;
    const plan=waveArrivalRenderPlan(groundY),report=paintWaveArrival(graphics,frame,plan);
    graphics.setDepth(plan.depth);
-   this.game.canvas.dataset.waveArrival=JSON.stringify({intent:frame.intent,counts:frame.counts,nextIn:frame.nextIn,progress:frame.progress,banner:report.banner,roleShapes:report.roleShapes,knots:report.knots,x:plan.x,y:plan.y,depth:plan.depth,baseDepth:plan.baseDepth,actorFrontDepth:plan.actorFrontDepth,reduced:this.reduce,paused:game.state.paused});
+   this.game.canvas.dataset.waveArrival=JSON.stringify({number:frame.number,intent:frame.intent,counts:frame.counts,nextIn:frame.nextIn,progress:frame.progress,banner:report.banner,roleShapes:report.roleShapes,knots:report.knots,x:plan.x,y:plan.y,depth:plan.depth,baseDepth:plan.baseDepth,actorFrontDepth:plan.actorFrontDepth,reduced:this.reduce,paused:game.state.paused});
   }
   private drawAtmosphere():void {
    const g=this.ambience;g.clear();
@@ -404,7 +404,7 @@ export function mountBattlefield(element:HTMLElement,game:GamePort,onFrame:()=>v
      image.setVisible(true).setPosition(mark.center.x,mark.center.y).setDisplaySize(mark.rx*2,mark.ry*2).setTint(mark.color).setAlpha(mark.alpha);
     }
     if(navigator.webdriver&&villageVerdict)this.game.canvas.dataset.villageVerdict=JSON.stringify({mode:villageVerdict.mode,progress:villageVerdict.progress,witnesses:frame.verdictResidents.length,strokes:frame.verdictStrokes.length,lights:lights.length,affectedLights:frame.verdictLights.length,regions:verdictRegions,reduced:this.reduce,paused:game.state.paused});
-    if(navigator.webdriver&&this.waveArrival&&frame.watchLights.length)this.game.canvas.dataset.villageWatchfire=JSON.stringify({intent:this.waveArrival.intent,progress:this.waveArrival.progress,lights:frame.watchLights.length,strokes:frame.watchStrokes.length,regions:watchfireRegions,reduced:this.reduce,paused:game.state.paused});
+    if(navigator.webdriver&&this.waveArrival&&frame.watchLights.length)this.game.canvas.dataset.villageWatchfire=JSON.stringify({number:this.waveArrival.number,intent:this.waveArrival.intent,progress:this.waveArrival.progress,lights:frame.watchLights.length,strokes:frame.watchStrokes.length,regions:watchfireRegions,reduced:this.reduce,paused:game.state.paused});
     return;
    }
    if(!storybookArt(game.profile.age)){
