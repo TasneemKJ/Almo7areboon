@@ -36,6 +36,11 @@ test('mobile WebKit verification fails on an unpainted stress frame', () => {
   assert.match(mobile, /async\(\{encoded,roi,label\}\)=>/);
   assert.match(mobile, /roi:\{x:45,y:180,width:300,height:220\},label\}/);
   assert.match(mobile, /assert\.ok\(sample\.rgbStddev>=\.15/);
-  assert.match(mobile, /if\(engine==='webkit'\)await verifyPaintedWebkitBattlefield\(browser\)/);
+  assert.equal(
+    mobile.match(/if\(engine==='webkit'\)\{await browser\.close\(\);browser=await launch\(\);/g)?.length,
+    2,
+    'temporary-save and painted-stress journeys each begin in a fresh WebKit process',
+  );
+  assert.match(mobile, /await verifyPaintedWebkitBattlefield\(browser\)/);
   assert.match(mobile, /painted\(`cycle-\$\{cycle\}`,cycle===10\|\|cycle===20\)/);
 });
