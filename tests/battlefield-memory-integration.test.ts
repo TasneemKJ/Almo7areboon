@@ -23,6 +23,12 @@ test('accepted Meteor lands only on real current enemy views and survives reduce
  assert.match(code,/memory:targets\.length\?memory:undefined/,'the no-target fallback meteor must not leave a false scar');
 });
 
+test('accepted impact events are adapted before hidden presentation returns',()=>{
+ const code=source(),adapt=code.indexOf('for(const event of events)this.event(event)'),hidden=code.indexOf("if(options.isVisible&&!options.isVisible())"),clock=code.indexOf('if(!game.state.paused&&!this.reduce)this.clock+=dt');
+ assert.ok(adapt>=0&&hidden>adapt,'hidden ownership may freeze painting and aging only after accepted events become presentation state');
+ assert.ok(clock>hidden,'hidden ownership must still freeze the presentation clock');
+});
+
 test('memory reuses the existing ambience plane behind actors without burying combat cues',()=>{
  const code=source();
  assert.match(code,/private battlefieldMemory:readonly BattlefieldMemoryMark\[\]=\[\]/);

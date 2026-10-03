@@ -701,12 +701,12 @@ export function mountBattlefield(element:HTMLElement,game:GamePort,onFrame:()=>v
    if(disposed||!this.world)return;
    const dt=Math.min(.05,Math.max(0,delta/1000));game.step(dt);
    const events=game.drainEvents();options.onPresentation?.(dt,events);if(events.length)onEvents(events);
-   if(options.isVisible&&!options.isVisible()){onFrame();return;}
    if(this.lastState!==game.state){this.lastState=game.state;this.aftermath=null;delete this.game.canvas.dataset.battleAftermath;delete this.game.canvas.dataset.villageVerdict;this.resetEffects();for(const view of this.units.values())view.body.destroy();this.units.clear();}
    const reduced=reducedMotion(game.profile.motion,motionQuery.matches);
    if(reduced&&!this.reduce)this.resetEffects('motion');this.reduce=reduced;
-   if(!game.state.paused&&!this.reduce)this.clock+=dt;
    this.syncEra();for(const event of events)this.event(event);
+   if(options.isVisible&&!options.isVisible()){onFrame();return;}
+   if(!game.state.paused&&!this.reduce)this.clock+=dt;
    this.drawAtmosphere();this.drawBaseDamage();this.drawArmy();this.healthBars();this.effects(game.state.paused?0:dt);onFrame();
   }
  }
