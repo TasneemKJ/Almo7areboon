@@ -8,8 +8,9 @@ export type BattlefieldRendererMode = 'auto' | 'canvas';
 export function battlefieldRendererMode(userAgent: string): BattlefieldRendererMode {
   const agent = typeof userAgent === 'string' ? userAgent : '';
   const appleMobile = /\b(?:iPhone|iPad|iPod)\b/i.test(agent);
+  const iosBrowser = /(?:CriOS|FxiOS|EdgiOS|OPiOS)\//i.test(agent);
   const safari = /AppleWebKit/i.test(agent)
     && /Safari/i.test(agent)
     && !/(?:Chrome|Chromium|CriOS|Edg|EdgiOS|OPR|FxiOS)/i.test(agent);
-  return appleMobile || safari ? 'canvas' : 'auto';
+  return appleMobile || iosBrowser || safari ? 'canvas' : 'auto';
 }
