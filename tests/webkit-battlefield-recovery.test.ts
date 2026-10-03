@@ -23,13 +23,13 @@ test('battlefield mount exposes a bounded same-size presentation refresh', () =>
   );
 });
 
-test('returning to Battle refreshes after the view is exposed', () => {
-  const switchStart = main.indexOf('function switchTab(tab:string)');
-  const switchEnd = main.indexOf('\nfunction renderScreen', switchStart);
-  assert.ok(switchStart >= 0 && switchEnd > switchStart, 'switchTab source is present');
-  const switchTab = main.slice(switchStart, switchEnd);
-  const exposed = switchTab.indexOf("$('battle-view').setAttribute('aria-hidden',String(tab!=='battle'));");
-  const refresh = switchTab.indexOf("if(tab==='battle')renderer.refresh();");
-  assert.ok(exposed >= 0 && refresh > exposed, 'the surface refresh runs only after Battle is exposed');
-  assert.doesNotMatch(switchTab, /reload|new Phaser\.Game/, 'recovery must not reload or recreate the game');
+test('accepted Battle start refreshes after the running layout is committed', () => {
+  const actionStart = main.indexOf('function action(a:Action):boolean');
+  const actionEnd = main.indexOf('\nfunction update(', actionStart);
+  assert.ok(actionStart >= 0 && actionEnd > actionStart, 'action source is present');
+  const action = main.slice(actionStart, actionEnd);
+  const domUpdate = action.indexOf('update(true);');
+  const refresh = action.indexOf("if(a.type==='start')renderer.refresh();");
+  assert.ok(domUpdate >= 0 && refresh > domUpdate, 'the surface refresh runs only after the accepted start updates the running DOM');
+  assert.doesNotMatch(action, /reload|new Phaser\.Game/, 'recovery must not reload or recreate the game');
 });
