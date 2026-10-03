@@ -18,8 +18,10 @@ jobs:
       - uses: actions/setup-node@v4
         with: {node-version: 22, cache: npm}
       - run: npm ci
-      - name: Validate the campaign runner
-        run: node --check scripts/qa40/campaign.mjs
+      - name: Validate the campaign runners
+        run: |
+          node --check scripts/qa40/campaign.mjs
+          node --check scripts/qa40/dialog-layout.mjs
       - name: Source regression suite
         run: npm test
       - name: Production build
@@ -53,6 +55,12 @@ jobs:
       - run: node --check scripts/qa40/campaign.mjs
       - run: npm run build
       - run: npx playwright install --with-deps ${{ matrix.engine }}
+      - name: Check dismiss header against the actual production template
+        if: matrix.ids == '1-10'
+        env:
+          QA_ENGINE: ${{ matrix.engine }}
+          QA_OUT: artifacts/qa40/${{ matrix.engine }}-dialog-layout
+        run: node --experimental-strip-types scripts/qa40/dialog-layout.mjs
       - name: Execute ten independently recorded iterations
         env:
           QA_ENGINE: ${{ matrix.engine }}
