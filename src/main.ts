@@ -177,7 +177,7 @@ function action(a:Action):boolean{
   if(!guardAction())return false;
   unlockAudio(game.profile.sound);const ok=game.dispatch(a);
   if(ok){
-    persist();syncPause();rebuildArmy();update(true);if(activeTab!=='battle')renderScreen(a.type==='select-legacy');
+    persist();syncPause();rebuildArmy();update(true);if(a.type==='start')renderer.refresh();if(activeTab!=='battle')renderScreen(a.type==='select-legacy');
     if(a.type==='summon')playSummonAudio(game.profile.sound&&playable()&&!document.hidden&&!manualPaused&&activeTab==='cards'&&modal===null);
   }
   return ok;
@@ -257,7 +257,6 @@ function switchTab(tab:string){
   root!.querySelectorAll<HTMLElement>('[data-tab]').forEach(button=>{button.classList.toggle('active',button.dataset.tab===tab);button.setAttribute('aria-current',button.dataset.tab===tab?'page':'false');});
   $('secondary-screen').hidden=tab==='battle';$('battle-view').inert=tab!=='battle';
   $('battle-view').setAttribute('aria-hidden',String(tab!=='battle'));
-  if(tab==='battle')renderer.refresh();
   syncPause();renderScreen();update(true);
   if(tab!=='battle')$('secondary-title')?.focus();
 }
