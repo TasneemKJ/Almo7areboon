@@ -3,7 +3,7 @@ import assert from 'node:assert/strict';
 import { readFileSync } from 'node:fs';
 import { battlefieldRendererMode } from '../src/view/renderer-policy.ts';
 
-test('Safari and every iOS browser use the reliable Canvas renderer path', () => {
+test('Safari and WebKit-based iOS browsers use the reliable Canvas renderer path', () => {
   const safariMac = 'Mozilla/5.0 (Macintosh; Intel Mac OS X 10_15_7) AppleWebKit/605.1.15 (KHTML, like Gecko) Version/26.0 Safari/605.1.15';
   const webkitLinux = 'Mozilla/5.0 (X11; Linux x86_64) AppleWebKit/605.1.15 (KHTML, like Gecko) Version/26.0 Safari/605.1.15';
   const safariIphone = 'Mozilla/5.0 (iPhone; CPU iPhone OS 26_0 like Mac OS X) AppleWebKit/605.1.15 Version/26.0 Mobile/15E148 Safari/604.1';
@@ -41,6 +41,7 @@ test('mobile WebKit verification fails on an unpainted stress frame', () => {
   assert.match(mobile, /async\(\{encoded,roi,label\}\)=>/);
   assert.match(mobile, /roi:\{x:45,y:180,width:300,height:220\},label\}/);
   assert.match(mobile, /assert\.ok\(sample\.rgbStddev>=\.15/);
+  assert.match(mobile, /assert\.ok\(sample\.rgbStddev<\.15/);
   assert.equal(
     mobile.match(/if\(engine==='webkit'\)\{await browser\.close\(\);browser=await launch\(\);/g)?.length,
     2,
