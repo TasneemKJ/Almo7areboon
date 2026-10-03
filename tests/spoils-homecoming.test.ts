@@ -88,3 +88,22 @@ test('direct malformed input fails finite without mutating caller data',async()=
  assert.equal(offstage.y,620);
  assert.equal(m.spoilsHomecomingFrame(offstage,300,false)?.y,620);
 });
+
+test('reward evidence disappears when its numeric cue leaves the live floater pool',async()=>{
+ const m=await subject();
+ const reward={life:.62,reward:37,text:{text:'+37',alpha:1,visible:true,active:true}};
+ assert.deepEqual(m.spoilsRewardEvidence(reward,[reward],true),{amount:37,text:'+37',alpha:1,reduced:true});
+ assert.equal(m.spoilsRewardEvidence(reward,[],true),null,'an evicted reward must not remain review-visible');
+ const invisible={...reward,text:{...reward.text,visible:false}};
+ assert.equal(m.spoilsRewardEvidence(invisible,[invisible],true),null,'an invisible reward must not remain review-visible');
+ const destroyed={...reward,text:{...reward.text,active:false}};
+ assert.equal(m.spoilsRewardEvidence(destroyed,[destroyed],true),null,'a destroyed reward must not remain review-visible');
+ const expired={...reward,life:0};
+ assert.equal(m.spoilsRewardEvidence(expired,[expired],true),null,'an expired reward must not remain review-visible');
+ const timeless={...reward,life:Number.NaN};
+ assert.equal(m.spoilsRewardEvidence(timeless,[timeless],true),null,'a malformed lifetime must not remain review-visible');
+ const empty={...reward,reward:Number.NaN};
+ assert.equal(m.spoilsRewardEvidence(empty,[empty],true),null,'a malformed amount must not remain review-visible');
+ const transparent={...reward,text:{...reward.text,alpha:0}};
+ assert.equal(m.spoilsRewardEvidence(transparent,[transparent],true),null,'a transparent reward must not remain review-visible');
+});
