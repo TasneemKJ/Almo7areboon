@@ -14,11 +14,11 @@ jobs:
         with: {node-version: 22, cache: npm}
       - run: npm ci
       - run: npm run build
-      - run: node --check scripts/qa40-repro.mjs
+      - run: node --check scripts/qa40/repro-webkit-cycle.mjs
       - run: npx playwright install --with-deps webkit
       - name: Reproduce iteration 39 three times
         run: |
-          for n in 1 2 3; do QA_OUT=artifacts/repro-$n node --experimental-strip-types scripts/qa40-repro.mjs || exit 1; done
+          for n in 1 2 3; do QA_OUT=artifacts/repro-$n node --experimental-strip-types scripts/qa40/repro-webkit-cycle.mjs || exit 1; done
       - uses: actions/upload-artifact@v4
         if: always()
         with:
