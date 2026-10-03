@@ -274,11 +274,13 @@ try {
 
   if (report.firstBlank !== null) {
     const before = await page.evaluate(key => JSON.parse(localStorage.getItem(key)), SAVE_KEY);
-    await tap('[data-command="start"]');
-    await page.waitForFunction(() => document.querySelector('#world')?.dataset.phase === 'running');
+    if (await page.locator('#world').getAttribute('data-phase') === 'ready') {
+      await tap('[data-command="start"]');
+      await page.waitForFunction(() => document.querySelector('#world')?.dataset.phase === 'running');
+    }
     await tap('[data-unit="0"]');
     await page.waitForTimeout(500);
-    await tap('#pause');
+    if (await page.locator('#pause').getAttribute('aria-pressed') !== 'true') await tap('#pause');
     const after = await page.evaluate(key => JSON.parse(localStorage.getItem(key)), SAVE_KEY);
     report.simulationAdvancedWhileBlank = after.deployed === before.deployed + 1;
     await capture('blank-after-deploy');
