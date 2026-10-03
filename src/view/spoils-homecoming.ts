@@ -8,6 +8,9 @@ export const SPOILS_HOME_X=58;
 export interface SpoilsHomecomingInput {readonly x:number;readonly y?:number;readonly amount:number}
 export interface SpoilsHomecomingMark extends SpoilsHomecomingInput {readonly age:number;readonly life:number;readonly order:number}
 export interface SpoilsHomecomingFrame {readonly x:number;readonly y:number;readonly alpha:number;readonly size:number;readonly angle:number}
+export interface SpoilsRewardText {readonly text:string;readonly alpha:number;readonly visible:boolean;readonly active:boolean}
+export interface SpoilsRewardFloater {readonly text:SpoilsRewardText;readonly life:number;readonly reward?:number}
+export interface SpoilsRewardEvidence {readonly amount:number;readonly text:string;readonly alpha:number;readonly reduced:boolean}
 
 const freeze=<T>(value:T):T=>{if(value&&typeof value==='object'){for(const child of Object.values(value))freeze(child);Object.freeze(value);}return value;};
 const finite=(value:number,fallback:number)=>Number.isFinite(value)?value:fallback;
@@ -51,4 +54,9 @@ export function spoilsHomecomingFrame(mark:Readonly<SpoilsHomecomingMark>,ground
   angle:720*progress,
  };
  return freeze(frame);
+}
+
+export function spoilsRewardEvidence(reward:Readonly<SpoilsRewardFloater>|null,live:readonly Readonly<SpoilsRewardFloater>[],reduced:boolean):Readonly<SpoilsRewardEvidence>|null {
+ if(!reward||reward.life<=0||!live.includes(reward)||!reward.text.active||!reward.text.visible||!Number.isFinite(reward.reward)||reward.reward!<=0||!Number.isFinite(reward.text.alpha)||reward.text.alpha<=0)return null;
+ return freeze({amount:reward.reward!,text:reward.text.text,alpha:reward.text.alpha,reduced});
 }
