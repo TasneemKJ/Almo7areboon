@@ -32,7 +32,7 @@ import {compactNumber} from '../ui/battle-hud.ts';
 import {battleResolution} from './render-resolution.ts';
 import {battlefieldRendererMode} from './renderer-policy.ts';
 import {drawTroop,drawBase} from './art';
-import type {BattleState,GameEvent,GamePort,Unit,Side} from '../game/types';
+import type {BattleState,GameEvent,GamePort,Unit,Side,Phase} from '../game/types';
 
 type ImageOrFallback=Phaser.GameObjects.Image|Phaser.GameObjects.Graphics;
 type TroopView={body:ImageOrFallback;x:number;y:number;lane:number;side:Side;dustAt:number};
@@ -81,6 +81,7 @@ export function mountBattlefield(element:HTMLElement,game:GamePort,onFrame:()=>v
   private bars!:Phaser.GameObjects.Graphics;
   private stageLight!:Phaser.GameObjects.Container;
   private villageViewport!:VillageViewport;
+  private villageHudPhase:Phase|null=null;
   private quietVillage=createVillageMood();
   private halos!:Phaser.GameObjects.Graphics;
   private glow!:Phaser.GameObjects.Graphics;
@@ -744,6 +745,7 @@ export function mountBattlefield(element:HTMLElement,game:GamePort,onFrame:()=>v
    this.syncEra();for(const event of events)this.event(event);
    if(options.isVisible&&!options.isVisible()){onFrame();return;}
    if(!game.state.paused&&!this.reduce)this.clock+=dt;
+   if(this.villageHudPhase!==game.state.phase){this.villageHudPhase=game.state.phase;this.cacheVillageViewport();}
    this.waveArrival=waveArrivalForPort(game,this.reduce);
    this.drawAtmosphere();this.drawBaseDamage();this.drawArmy();this.healthBars();this.effects(game.state.paused?0:dt);onFrame();
   }
