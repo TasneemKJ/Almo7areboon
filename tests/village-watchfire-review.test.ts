@@ -47,10 +47,11 @@ test('native chronicle journey captures and pause-compares the watchfire with it
  assert.match(source,/reduced\?fixture\.authoredLights/,'reduced-motion native evidence must require every authored lamp');
 });
 
-test('native chronicle journey gives software-rendered desktop a full stage budget and diagnoses timeouts',()=>{
+test('native chronicle journey gives software-rendered late waves a bounded fast-stage budget and diagnoses timeouts',()=>{
  const source=readFileSync(new URL('../scripts/review-chronicle.mjs',import.meta.url),'utf8');
  const arrival=source.slice(source.indexOf('async function pauseAtWaveArrival'),source.indexOf('async function pauseAtCatMode'));
- assert.match(arrival,/Date\.now\(\)\+60000/);
+ assert.match(source,/p\.speed=2;p\.age=fixture\.age/,'the review must use the existing public fast-speed preference for authored late waves');
+ assert.match(arrival,/Date\.now\(\)\+120000/,'software-rendered desktop still gets a finite ceiling when frames advance slower than wall time');
  assert.match(arrival,/clickEnabled\(page,page\.locator\(`\[data-unit="\$\{kind\}"\]`\)\)/,'the real-control fixture must keep the village defended while waiting for later authored intents');
  assert.match(arrival,/clickEnabled\(page,page\.locator\('\[data-skill="freeze"\]'\)\)/,'the real-control fixture must use its available tactical control rather than bypass alarm suppression');
  assert.match(arrival,/waveArrival:/);
