@@ -31,7 +31,7 @@ export const titles=[
 ];
 const engine=process.env.QA_ENGINE??'chromium';
 assert.ok(['chromium','webkit','firefox'].includes(engine));
-const range=[39];return Array.from({length:b-a+1},(_,i)=>a+i);});
+const range=[39];
 assert.ok(range.every(id=>Number.isInteger(id)&&id>=1&&id<=40));
 const out=process.env.QA_OUT??`artifacts/qa40/${engine}`;mkdirSync(out,{recursive:true});
 const root=resolve('dist'),mime={'.html':'text/html','.js':'text/javascript','.css':'text/css','.svg':'image/svg+xml','.webp':'image/webp','.png':'image/png','.json':'application/json','.webmanifest':'application/manifest+json'};
