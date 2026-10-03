@@ -257,6 +257,7 @@ function switchTab(tab:string){
   root!.querySelectorAll<HTMLElement>('[data-tab]').forEach(button=>{button.classList.toggle('active',button.dataset.tab===tab);button.setAttribute('aria-current',button.dataset.tab===tab?'page':'false');});
   $('secondary-screen').hidden=tab==='battle';$('battle-view').inert=tab!=='battle';
   $('battle-view').setAttribute('aria-hidden',String(tab!=='battle'));
+  if(tab==='battle')renderer.refresh();
   syncPause();renderScreen();update(true);
   if(tab!=='battle')$('secondary-title')?.focus();
 }
