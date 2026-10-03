@@ -29,3 +29,11 @@ test('battlefield applies the renderer policy without lifecycle recreation hooks
   assert.match(battlefield, /\):\{destroy\(\):void\}/, 'the view keeps one normal lifetime owner');
   assert.doesNotMatch(main, /renderer\.refresh\(\)/, 'phase and tab changes must not churn the live renderer');
 });
+
+test('mobile WebKit verification fails on an unpainted stress frame', () => {
+  const mobile = readFileSync(new URL('../scripts/verify-mobile.mjs', import.meta.url), 'utf8');
+  assert.match(mobile, /async function verifyPaintedWebkitBattlefield\(browser\)/);
+  assert.match(mobile, /assert\.ok\(sample\.rgbStddev>=\.15/);
+  assert.match(mobile, /if\(engine==='webkit'\)await verifyPaintedWebkitBattlefield\(browser\)/);
+  assert.match(mobile, /webkit-painted-cycle-20/);
+});
