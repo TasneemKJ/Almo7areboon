@@ -8,7 +8,8 @@ test('Safari and every iOS browser use the reliable Canvas renderer path', () =>
   const webkitLinux = 'Mozilla/5.0 (X11; Linux x86_64) AppleWebKit/605.1.15 (KHTML, like Gecko) Version/26.0 Safari/605.1.15';
   const safariIphone = 'Mozilla/5.0 (iPhone; CPU iPhone OS 26_0 like Mac OS X) AppleWebKit/605.1.15 Version/26.0 Mobile/15E148 Safari/604.1';
   const chromeIpad = 'Mozilla/5.0 (iPad; CPU OS 26_0 like Mac OS X) AppleWebKit/605.1.15 CriOS/140.0.0.0 Mobile/15E148 Safari/604.1';
-  for (const userAgent of [safariMac, webkitLinux, safariIphone, chromeIpad]) {
+  const chromeIphoneDesktop = 'Mozilla/5.0 (Macintosh; Intel Mac OS X 10_13_5) AppleWebKit/605.1.15 (KHTML, like Gecko) CriOS/85 Version/11.1.1 Safari/605.1.15';
+  for (const userAgent of [safariMac, webkitLinux, safariIphone, chromeIpad, chromeIphoneDesktop]) {
     assert.equal(battlefieldRendererMode(userAgent), 'canvas');
   }
 });
