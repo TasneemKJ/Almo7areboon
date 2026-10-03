@@ -45,3 +45,11 @@ test('workflow always evaluates and includes every fallible verification check',
   assert.deepEqual(required?.sort(), ids.sort());
   assert.match(final, /node scripts\/require-verification\.mjs/);
 });
+
+
+test('deep verification runs automatically for pull requests and main pushes', () => {
+  const triggers = workflow.slice(workflow.indexOf('\non:\n'), workflow.indexOf('\npermissions:'));
+  assert.match(triggers, /\n  push:\n    branches: \[[^\]]*\bmain\b[^\]]*\]/);
+  assert.match(triggers, /\n  pull_request:\s*(?:\n|$)/);
+  assert.match(triggers, /\n  workflow_dispatch:\s*(?:\n|$)/);
+});
