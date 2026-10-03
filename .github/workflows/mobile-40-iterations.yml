@@ -1,0 +1,56 @@
+name: 40 mobile QA iterations
+on:
+  push:
+    branches: [qa/mobile-40-iterations]
+permissions: {contents: read}
+concurrency:
+  group: mobile-40-iterations
+  cancel-in-progress: false
+jobs:
+  source-and-domain:
+    runs-on: ubuntu-latest
+    timeout-minutes: 15
+    steps:
+      - uses: actions/checkout@v4
+        with: {persist-credentials: false}
+      - uses: actions/setup-node@v4
+        with: {node-version: 22, cache: npm}
+      - run: npm ci
+      - run: npm test
+      - run: npm run build
+      - name: Existing deterministic simulations
+        run: |
+          node --experimental-strip-types scripts/simulate-encounters.ts
+          node --experimental-strip-types scripts/simulate-progression.ts
+          node --experimental-strip-types scripts/simulate-mastery.ts
+          node --experimental-strip-types scripts/simulate-prestige.ts
+      - name: Mixed action stress
+        run: node --experimental-strip-types scripts/monkey-test.mjs
+  mobile-browser:
+    runs-on: ubuntu-latest
+    timeout-minutes: 20
+    steps:
+      - uses: actions/checkout@v4
+        with: {persist-credentials: false}
+      - uses: actions/setup-node@v4
+        with: {node-version: 22, cache: npm}
+      - run: npm ci
+      - run: npm run build
+      - run: npx playwright install --with-deps chromium webkit
+      - name: Mobile interaction matrix
+        run: node --experimental-strip-types scripts/verify-mobile.mjs
+      - name: Save/session ownership
+        run: node --experimental-strip-types scripts/verify-save-sessions.mjs
+      - name: Reliability/offline/cross-browser
+        run: node --experimental-strip-types scripts/verify-reliability.mjs
+      - name: Offline return
+        run: node --experimental-strip-types scripts/capture-offline-game-review.mjs
+      - uses: actions/upload-artifact@v4
+        if: always()
+        with:
+          name: mobile-40-iteration-evidence
+          path: |
+            artifacts/mobile/
+            artifacts/reliability/
+            artifacts/browser-review/offline-game/
+          retention-days: 7
