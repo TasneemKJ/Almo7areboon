@@ -296,6 +296,38 @@ try {
     await tap('.bottom-nav [data-tab="battle"]');
     report.recovery.push({ action: 'tab-roundtrip', sample: await capture('recovery-tab-roundtrip') });
 
+    await page.locator('#battlefield canvas').evaluate(canvas => {
+      const width = canvas.style.width;
+      canvas.style.width = `${canvas.getBoundingClientRect().width + 1}px`;
+      void canvas.offsetWidth;
+      canvas.style.width = width;
+    });
+    report.recovery.push({ action: 'canvas-css-size-nudge', sample: await capture('recovery-canvas-css-size') });
+
+    await page.locator('#battlefield canvas').evaluate(canvas => {
+      const visibility = canvas.style.visibility;
+      canvas.style.visibility = 'hidden';
+      void canvas.offsetWidth;
+      canvas.style.visibility = visibility;
+    });
+    report.recovery.push({ action: 'canvas-visibility-toggle', sample: await capture('recovery-canvas-visibility') });
+
+    await page.locator('#battlefield canvas').evaluate(canvas => {
+      const display = canvas.style.display;
+      canvas.style.display = 'none';
+      void canvas.offsetWidth;
+      canvas.style.display = display;
+    });
+    report.recovery.push({ action: 'canvas-display-toggle', sample: await capture('recovery-canvas-display') });
+
+    await page.locator('#battlefield canvas').evaluate(canvas => {
+      const parent = canvas.parentNode;
+      const next = canvas.nextSibling;
+      parent.removeChild(canvas);
+      parent.insertBefore(canvas, next);
+    });
+    report.recovery.push({ action: 'canvas-dom-reattach', sample: await capture('recovery-canvas-reattach') });
+
     await page.reload({ waitUntil: 'networkidle' });
     await page.waitForFunction(() => document.querySelector('#world')?.dataset.phase === 'ready');
     report.recovery.push({ action: 'reload', sample: await capture('recovery-reload') });
