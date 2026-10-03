@@ -30,6 +30,7 @@ import {SPOILS_HOMECOMING_CAP,rememberSpoilsHomecoming,spoilsHomecomingFrame,spo
 import {TROOP_FRAME} from './unit-illustrations.ts';
 import {compactNumber} from '../ui/battle-hud.ts';
 import {battleResolution} from './render-resolution.ts';
+import {battlefieldRendererMode} from './renderer-policy.ts';
 import {drawTroop,drawBase} from './art';
 import type {BattleState,GameEvent,GamePort,Unit,Side} from '../game/types';
 
@@ -61,7 +62,7 @@ const paintSpoilsToken=(g:Phaser.GameObjects.Graphics,frame:{x:number;y:number;s
 };
 
 /** Raster and SVG art share logical anchors; simulation remains the gameplay owner. */
-export function mountBattlefield(element:HTMLElement,game:GamePort,onFrame:()=>void,onEvents:(events:GameEvent[])=>void,options:{isVisible?:()=>boolean;villageMood?:()=>Readonly<VillageMoodSnapshot>;onPresentation?:(dt:number,events:readonly GameEvent[])=>void}={}):{refresh():void;destroy():void} {
+export function mountBattlefield(element:HTMLElement,game:GamePort,onFrame:()=>void,onEvents:(events:GameEvent[])=>void,options:{isVisible?:()=>boolean;villageMood?:()=>Readonly<VillageMoodSnapshot>;onPresentation?:(dt:number,events:readonly GameEvent[])=>void}={}):{destroy():void} {
  let disposed=false;
  const motionQuery=window.matchMedia('(prefers-reduced-motion: reduce)');
  const loading=document.createElement('div');loading.className='world-loader';loading.setAttribute('role','status');loading.textContent='Preparing the battlefield…';element.append(loading);
@@ -742,7 +743,7 @@ export function mountBattlefield(element:HTMLElement,game:GamePort,onFrame:()=>v
  let renderer:Phaser.Game;
  const pixelRatio=battleResolution(window.devicePixelRatio);
  try{
-  renderer=new Phaser.Game({type:Phaser.AUTO,parent:element,width:(element.clientWidth||450)*pixelRatio,height:(element.clientHeight||430)*pixelRatio,transparent:true,antialias:true,render:{antialias:true,pixelArt:false},scale:{mode:Phaser.Scale.NONE,zoom:1/pixelRatio,autoCenter:Phaser.Scale.NO_CENTER},scene:[new Battlefield()],audio:{noAudio:true},fps:{target:60},banner:false});
+  renderer=new Phaser.Game({type:battlefieldRendererMode(navigator.userAgent)==='canvas'?Phaser.CANVAS:Phaser.AUTO,parent:element,width:(element.clientWidth||450)*pixelRatio,height:(element.clientHeight||430)*pixelRatio,transparent:true,antialias:true,render:{antialias:true,pixelArt:false},scale:{mode:Phaser.Scale.NONE,zoom:1/pixelRatio,autoCenter:Phaser.Scale.NO_CENTER},scene:[new Battlefield()],audio:{noAudio:true},fps:{target:60},banner:false});
  }catch(error){loading.textContent='The battlefield could not start. Reload or try another browser.';throw error;}
  if(navigator.webdriver){
   let reviewResult:ReviewSnapshot|null=null,reviewWaiter:((snapshot:ReviewSnapshot)=>void)|null=null,reviewArmed=false;
@@ -761,7 +762,6 @@ export function mountBattlefield(element:HTMLElement,game:GamePort,onFrame:()=>v
   Object.defineProperty(renderer.canvas,'battlefieldReviewSnapshot',{configurable:true,value:(callback:(snapshot:ReviewSnapshot)=>void)=>{if(reviewResult)callback(reviewResult);else reviewWaiter=callback;}} satisfies PropertyDescriptor);
  }
  renderer.canvas.setAttribute('role','img');renderer.canvas.setAttribute('aria-label','Illustrated battlefield. Blue warriors attack the red enemy base.');
- const refresh=()=>{if(disposed)return;const width=element.clientWidth,height=element.clientHeight;if(width<=0||height<=0)return;renderer.scale.resize(Math.round(width*pixelRatio),Math.round(height*pixelRatio));};
- const observer=new ResizeObserver(refresh);observer.observe(element);
- return {refresh,destroy(){if(disposed)return;disposed=true;observer.disconnect();loading.remove();renderer.destroy(true);}};
+ const observer=new ResizeObserver(()=>{if(!disposed&&element.clientWidth>0&&element.clientHeight>0)renderer.scale.resize(Math.round(element.clientWidth*pixelRatio),Math.round(element.clientHeight*pixelRatio));});observer.observe(element);
+ return {destroy(){if(disposed)return;disposed=true;observer.disconnect();loading.remove();renderer.destroy(true);}};
 }
