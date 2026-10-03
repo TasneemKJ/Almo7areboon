@@ -35,5 +35,5 @@ test('mobile WebKit verification fails on an unpainted stress frame', () => {
   assert.match(mobile, /async function verifyPaintedWebkitBattlefield\(browser\)/);
   assert.match(mobile, /assert\.ok\(sample\.rgbStddev>=\.15/);
   assert.match(mobile, /if\(engine==='webkit'\)await verifyPaintedWebkitBattlefield\(browser\)/);
-  assert.match(mobile, /webkit-painted-cycle-20/);
+  assert.match(mobile, /painted\(`cycle-\$\{cycle\}`,cycle===10\|\|cycle===20\)/);
 });
