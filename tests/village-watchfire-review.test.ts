@@ -32,6 +32,7 @@ test('native chronicle journey captures and pause-compares the watchfire with it
  assert.match(source,/async function assertWatchfireClearOfHud\(page,state\)/);
  assert.match(source,/await assertWatchfireClearOfHud\(page,observed\.watchfire\)/);
  assert.match(source,/watchfire\.progress>=\.75/);
+ assert.match(source,/watchfire\.reduced\|\|watchfire\.progress>=\.75/,'reduced motion may capture its intentionally complete static relay at any authoritative preview progress');
  const pauseAssertion=source.indexOf('assertWatchfirePaused(watchfire,pausedWatchfire)');
  const screenshotCallback=source.indexOf('await onObserved?.(paused)');
  assert.ok(pauseAssertion>=0&&screenshotCallback>pauseAssertion,'capture must happen only after the transient relay is frozen');
@@ -43,6 +44,7 @@ test('native chronicle journey captures and pause-compares the watchfire with it
  assert.match(source,/open\(fixture\.name,fixture\.width,fixture\.height,p,fixture\.reducedMotion\)/);
  assert.match(source,/pauseAtWaveArrival\(f\.page,fixture\.intent/);
  assert.match(source,/watchfire\.lights<=fixture\.authoredLights/);
+ assert.match(source,/reduced\?fixture\.authoredLights/,'reduced-motion native evidence must require every authored lamp');
 });
 
 test('native chronicle journey gives software-rendered desktop a full stage budget and diagnoses timeouts',()=>{
