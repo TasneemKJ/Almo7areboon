@@ -1,4 +1,4 @@
-name: 40 mobile QA iterations
+name: Mobile QA baseline for the 40-iteration campaign
 on:
   push:
     branches: [qa/mobile-40-iterations]
@@ -24,8 +24,6 @@ jobs:
           node --experimental-strip-types scripts/simulate-progression.ts
           node --experimental-strip-types scripts/simulate-mastery.ts
           node --experimental-strip-types scripts/simulate-prestige.ts
-      - name: Mixed action stress
-        run: node --experimental-strip-types scripts/monkey-test.mjs
   mobile-browser:
     runs-on: ubuntu-latest
     timeout-minutes: 20
@@ -36,8 +34,11 @@ jobs:
         with: {node-version: 22, cache: npm}
       - run: npm ci
       - run: npm run build
-      - run: npx playwright install --with-deps chromium webkit
-      - name: Mobile interaction matrix
+      - run: npx playwright install --with-deps chromium firefox webkit
+      - name: Mobile interaction and layout assertions
+        env:
+          MOBILE_ASSERT: '1'
+          MOBILE_ENGINES: chromium,webkit
         run: node --experimental-strip-types scripts/verify-mobile.mjs
       - name: Save/session ownership
         run: node --experimental-strip-types scripts/verify-save-sessions.mjs
@@ -45,12 +46,37 @@ jobs:
         run: node --experimental-strip-types scripts/verify-reliability.mjs
       - name: Offline return
         run: node --experimental-strip-types scripts/capture-offline-game-review.mjs
+      - name: Browser random-input and damaged-save probe
+        shell: bash
+        run: |
+          set -euo pipefail
+          mkdir -p artifacts/mobile-40-baseline
+          npm run preview -- --host 127.0.0.1 --port 4173 --strictPort > artifacts/mobile-40-baseline/preview.log 2>&1 &
+          preview_pid=$!
+          trap 'kill "$preview_pid" 2>/dev/null || true' EXIT
+          ready=0
+          for i in $(seq 1 30); do
+            if ! kill -0 "$preview_pid" 2>/dev/null; then
+              cat artifacts/mobile-40-baseline/preview.log
+              exit 1
+            fi
+            if curl -fsS http://127.0.0.1:4173/ >/dev/null; then ready=1; break; fi
+            sleep 1
+          done
+          if [ "$ready" -ne 1 ]; then
+            cat artifacts/mobile-40-baseline/preview.log
+            echo 'Production preview did not become ready.' >&2
+            exit 1
+          fi
+          node scripts/monkey-test.mjs http://127.0.0.1:4173/ 30 2>&1 | tee artifacts/mobile-40-baseline/random-input.log
       - uses: actions/upload-artifact@v4
         if: always()
         with:
-          name: mobile-40-iteration-evidence
+          name: mobile-40-baseline-evidence
           path: |
             artifacts/mobile/
+            artifacts/save-session-review/
             artifacts/reliability/
             artifacts/browser-review/offline-game/
+            artifacts/mobile-40-baseline/
           retention-days: 7
