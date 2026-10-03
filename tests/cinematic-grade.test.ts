@@ -146,7 +146,7 @@ test('combat text and skill feedback stay legible against bright skies',()=>{
 
 test('skill banners are never evicted by the damage-number cap',()=>{
  const source=readFileSync(new URL('../src/view/battlefield.ts',import.meta.url),'utf8');
- assert.match(source,/banner:large\}\);/);
+ assert.match(source,/banner:large\}/);
  assert.match(source,/const numbers=this\.floaters\.filter\(f=>!f\.banner\);\n\s+if\(numbers\.length>24\)/);
  assert.doesNotMatch(source,/if\(this\.floaters\.length>24\)this\.floaters\.shift\(\)/);
 });

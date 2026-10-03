@@ -42,3 +42,14 @@ jobs:
             artifacts/chronicle/390-memory-reduced-battlefield-memory-meteor.png
             artifacts/chronicle/report.json
           retention-days: 7
+      - uses: actions/upload-artifact@v4
+        if: always()
+        with:
+          name: spoils-homecoming-review
+          path: |
+            artifacts/chronicle/320-spoils-home-spoils-home.png
+            artifacts/chronicle/390-spoils-home-spoils-home.png
+            artifacts/chronicle/1024-spoils-home-spoils-home.png
+            artifacts/chronicle/390-spoils-reduced-spoils-reduced.png
+            artifacts/chronicle/report.json
+          retention-days: 7

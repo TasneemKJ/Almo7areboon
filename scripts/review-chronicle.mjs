@@ -3,6 +3,7 @@ import {mkdir,writeFile} from 'node:fs/promises';
 import assert from 'node:assert/strict';
 import {simulateChronicle,preparedChronicleProfile} from './simulate-chronicle.ts';
 import {arrivalReviewFixtures,assertArrivalPaused,validateArrivalSnapshot} from './chronicle-arrival-review.ts';
+import {assertSpoilsHomecomingPaused,assertSpoilsHomecomingProgress,validateSpoilsHomecomingSnapshot,validateSpoilsStaticReward} from './spoils-homecoming-review.ts';
 const base=process.env.REVIEW_URL??'http://127.0.0.1:4173',out='artifacts/chronicle';await mkdir(out,{recursive:true});
 const browser=await chromium.launch({headless:true,...(process.env.CHROMIUM_PATH?{executablePath:process.env.CHROMIUM_PATH}:{}),args:['--enable-unsafe-swiftshader']});
 const errors=[],assetFailures=[],checks=[],screens=[];
@@ -34,7 +35,7 @@ async function canvasShot(fixture,state,expected,reduced=false){
 async function noOverflow(page){assert.ok(await page.evaluate(()=>document.documentElement.scrollWidth<=innerWidth+1),'root must not overflow horizontally');}
 async function waitForBattlefieldStage(page,name,predicate,arg=null,options={}){
  try{const result=await page.waitForFunction(predicate,arg,options);console.log(`battlefield stage passed: ${name}`);return result;}
- catch(error){const snapshot=await page.evaluate(()=>{const canvas=document.querySelector('canvas');const meteor=document.querySelector('[data-skill="meteor"]');return {phase:document.querySelector('.stage')?.dataset.phase??null,enemyViews:canvas?.dataset.battlefieldEnemyViews??null,pending:canvas?.dataset.battlefieldMemoryPending??null,memory:canvas?.dataset.battlefieldMemory??null,meteorDisabled:meteor instanceof HTMLButtonElement?meteor.disabled:null,meteorLabel:meteor?.getAttribute('aria-label')??meteor?.textContent??null};}).catch(snapshotError=>({snapshotError:String(snapshotError)}));throw new Error(`${name}: ${String(error)}; snapshot=${JSON.stringify(snapshot)}`);}
+ catch(error){const snapshot=await page.evaluate(()=>{const canvas=document.querySelector('canvas');const meteor=document.querySelector('[data-skill="meteor"]');return {phase:document.querySelector('.stage')?.dataset.phase??null,enemyViews:canvas?.dataset.battlefieldEnemyViews??null,pending:canvas?.dataset.battlefieldMemoryPending??null,memory:canvas?.dataset.battlefieldMemory??null,spoils:canvas?.dataset.spoilsHomecoming??null,meteorDisabled:meteor instanceof HTMLButtonElement?meteor.disabled:null,meteorLabel:meteor?.getAttribute('aria-label')??meteor?.textContent??null};}).catch(snapshotError=>({snapshotError:String(snapshotError)}));throw new Error(`${name}: ${String(error)}; snapshot=${JSON.stringify(snapshot)}`);}
 }
 function validateBattlefieldMemory(state,kind,reduced=false,paused=true){
  assert.ok(state&&Number.isInteger(state.count)&&state.count>=1&&state.count<=state.cap);
@@ -149,6 +150,31 @@ async function clickEnabled(page,locator){
  if(await page.locator('#world').getAttribute('data-phase')!=='running'||!await locator.isEnabled())return false;
  try{await locator.click({timeout:750,noWaitAfter:true,force:true});return true;}catch(error){if(error instanceof Error&&error.name==='TimeoutError')return false;const phase=await page.locator('#world').getAttribute('data-phase');if(phase!=='won'&&phase!=='lost')throw error;return false;}
 }
+async function pauseAtSpoilsHomecoming(page){
+ const deadline=Date.now()+60000;
+ while(Date.now()<deadline){
+  const observed=await page.locator('canvas').evaluate(node=>{const raw=node.dataset.spoilsHomecoming;if(!raw)return null;const state=JSON.parse(raw);if(state.paused||!state.marks?.some(mark=>mark.alpha>=.5&&mark.age>=.04&&mark.age<=.5&&Math.abs(mark.x-58)>6))return null;return state;});
+  if(observed){
+   validateSpoilsHomecomingSnapshot(observed,false,false);
+   await page.waitForFunction(prior=>{const raw=document.querySelector('canvas')?.dataset.spoilsHomecoming;if(!raw)return false;const state=JSON.parse(raw);return !state.paused&&prior.marks.some(start=>state.marks.some(current=>current.order===start.order&&current.alpha>=.35&&current.age>=start.age+.04&&Math.abs(current.x-58)<Math.abs(start.x-58)-1));},observed,{timeout:Math.max(1,deadline-Date.now())});
+   const progressed=await page.locator('#pause').evaluate((button,prior)=>{const raw=document.querySelector('canvas')?.dataset.spoilsHomecoming;if(!raw)return null;const state=JSON.parse(raw);const moved=!state.paused&&prior.marks.some(start=>state.marks.some(current=>current.order===start.order&&current.alpha>=.35&&current.age>=start.age+.04&&Math.abs(current.x-58)<Math.abs(start.x-58)-1));if(!moved)return null;button.click();return state;},observed);
+   if(!progressed)continue;assertSpoilsHomecomingProgress(observed,progressed);
+   await page.waitForFunction(()=>{const raw=document.querySelector('canvas')?.dataset.spoilsHomecoming;return raw&&JSON.parse(raw).paused===true;});
+   const paused=await page.locator('canvas').evaluate(node=>JSON.parse(node.dataset.spoilsHomecoming));assertSpoilsHomecomingPaused(progressed,paused);return paused;
+  }
+  await clickEnabled(page,page.locator('[data-skill="food"]'));await clickEnabled(page,page.locator('[data-unit="0"]'));await page.waitForTimeout(25);
+ }
+ throw new Error('Timed out waiting for an authoritative homeward coin reward');
+}
+async function pauseAtCreditedCoinCue(page,before){
+ const deadline=Date.now()+60000;
+ while(Date.now()<deadline){
+  const cue=await page.locator('#pause').evaluate((button,previous)=>{const current=document.querySelector('#coins')?.textContent,raw=document.querySelector('canvas')?.dataset.spoilsReward;if(current===previous||!raw||button.disabled)return null;const cue=JSON.parse(raw);button.click();return cue;},before);
+  if(cue){await page.locator('#pause[aria-pressed="true"]').waitFor();return cue;}
+  await clickEnabled(page,page.locator('[data-skill="food"]'));await clickEnabled(page,page.locator('[data-unit="0"]'));await page.waitForTimeout(25);
+ }
+ throw new Error('Timed out pausing on a credited combat coin cue');
+}
 async function reachNaturalOutcome(page,outcome){
  await page.locator('[data-command="start"]').click();
  const deadline=Date.now()+90000,order=[0,1,0,2,1,2];let cursor=0,lateHeavy=false;
@@ -201,6 +227,18 @@ try{
   if(width===390){await f.page.emulateMedia({reducedMotion:'reduce'});await f.page.waitForFunction(()=>JSON.parse(document.querySelector('canvas')?.dataset.battlefieldMemory??'null')?.reduced===true);const reduced=await f.page.locator('canvas').evaluate(node=>JSON.parse(node.dataset.battlefieldMemory));assert.deepEqual({...reduced,reduced:false},state,'system-to-reduced transition must preserve the live paused mark');await f.page.emulateMedia({reducedMotion:'no-preference'});await f.page.waitForFunction(()=>JSON.parse(document.querySelector('canvas')?.dataset.battlefieldMemory??'null')?.reduced===false);assert.deepEqual(await f.page.locator('canvas').evaluate(node=>JSON.parse(node.dataset.battlefieldMemory)),state,'reduced-to-system transition must preserve the live paused mark');}
   if(width===1024){await f.page.setViewportSize({width:1000,height:760});await f.page.waitForFunction(()=>!document.querySelector('canvas')?.dataset.battlefieldMemory);}
   checks.push(`${width}: a real public heavy deployment leaves one bounded depth-safe road gouge that freezes under public pause without save writes; live motion transitions preserve it and resize cleanup is verified`);await f.context.close();
+ }
+ for(const [width,height] of [[320,568],[390,844],[1024,768]]){
+  const p=preparedChronicleProfile();p.coins=0;p.motion='system';p.speed=2;p.age=0;p.enemyAge=0;p.foodLevel=30;p.baseLevel=20;p.unlocked=[true,true,true];p.chronicle.route='road';p.chronicle.expedition=null;
+  const f=await open(`${width}-spoils-home`,width,height,p,'no-preference');await f.page.locator('[data-command="start"]').click();
+  const state=await pauseAtSpoilsHomecoming(f.page);validateSpoilsHomecomingSnapshot(state,false,true);await noOverflow(f.page);const before=await settledSaveAfterAutosave(f.page);await shot(f,'spoils-home');await f.page.waitForTimeout(5250);
+  assert.equal(await saved(f.page),before,'paused homeward spoils must remain save-inert across an autosave boundary');assert.deepEqual(await f.page.locator('canvas').evaluate(node=>JSON.parse(node.dataset.spoilsHomecoming)),state,'public pause must keep the painted coin flight byte-stable');
+  checks.push(`${width}: a real public combat reward launches one capped painted coin toward the home shelter and freezes under public pause without save writes`);await f.context.close();
+ }
+ {
+  const p=preparedChronicleProfile();p.coins=0;p.motion='system';p.speed=2;p.age=0;p.enemyAge=0;p.foodLevel=30;p.baseLevel=20;p.unlocked=[true,true,true];p.chronicle.route='road';p.chronicle.expedition=null;
+  const f=await open('390-spoils-reduced',390,844,p,'reduce'),before=await f.page.locator('#coins').textContent();await f.page.locator('[data-command="start"]').click();const cue=await pauseAtCreditedCoinCue(f.page,before);validateSpoilsStaticReward(cue,true);
+  assert.equal(await f.page.locator('canvas').getAttribute('data-spoils-homecoming'),null,'reduced motion must retain the numeric reward without a travelling token');await noOverflow(f.page);await shot(f,'spoils-reduced');checks.push('390: reduced motion credits the same public combat reward, keeps the visible numeric cue, and adds no travelling spoils');await f.context.close();
  }
  {
   const p=preparedChronicleProfile();p.motion='system';p.speed=1;p.age=0;p.enemyAge=0;p.chronicle.route='road';p.chronicle.expedition=null;
