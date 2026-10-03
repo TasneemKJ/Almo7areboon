@@ -2,7 +2,7 @@ const sourceLane=(lane:number)=>Number.isFinite(lane)&&lane>=0&&lane<=2?Math.rou
 
 /** Source-attached cues sit over their troop, but behind every nearer ground plane. */
 export function groundEffectDepth(groundY:number,lane:number,laneGap:number):number {
- return groundY+sourceLane(lane)*laneGap+.75;
+ return groundY+sourceLane(lane)*laneGap+3;
 }
 
 /** Undefined lane deliberately retains the aerial/readability overlay. Never sort by particle height. */

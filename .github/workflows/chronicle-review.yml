@@ -31,3 +31,14 @@ jobs:
           name: folktale-tactics-review
           path: artifacts/chronicle
           retention-days: 7
+      - uses: actions/upload-artifact@v4
+        if: always()
+        with:
+          name: battlefield-memory-review
+          path: |
+            artifacts/chronicle/320-memory-heavy-battlefield-memory-heavy.png
+            artifacts/chronicle/390-memory-heavy-battlefield-memory-heavy.png
+            artifacts/chronicle/1024-memory-heavy-battlefield-memory-heavy.png
+            artifacts/chronicle/390-memory-reduced-battlefield-memory-meteor.png
+            artifacts/chronicle/report.json
+          retention-days: 7

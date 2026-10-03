@@ -3,6 +3,7 @@ import assert from 'node:assert/strict';
 import {readFileSync} from 'node:fs';
 
 const source=()=>readFileSync(new URL('../scripts/review-chronicle.mjs',import.meta.url),'utf8');
+const workflow=()=>readFileSync(new URL('../.github/workflows/chronicle-review.yml',import.meta.url),'utf8');
 
 test('native journey reaches fresh outcomes through public controls only',()=>{
  const script=source();
@@ -91,4 +92,53 @@ test('aftermath scenarios include full-motion coverage plus a native stable redu
  assert.match(script,/open\(name,width,height,p,'no-preference'\)/);
  assert.match(script,/\['390-aftermath-reduced',390,844,'won','reduce'\]/);
  assert.match(script,/assert\.deepEqual\(settled,capture\.villageVerdict,'reduced-motion verdict must remain complete and static'\)/);
+});
+
+test('native battle-memory journeys use public actions and prove HUD-safe paused and reduced road scars',()=>{
+ const script=source();
+ assert.match(script,/function validateBattlefieldMemory\(state,kind,reduced=false,paused=true\)/);
+ assert.match(script,/state\.count>=1&&state\.count<=state\.cap/);
+ assert.match(script,/assert\.equal\(state\.cap,6\)/);
+ assert.match(script,/assert\.ok\(state\.kinds\.includes\(kind\)\)/);
+ assert.match(script,/state\.ages\.length,state\.count/);
+ assert.match(script,/state\.alphas\.length,state\.count/);
+ assert.match(script,/async function pauseAtBattlefieldMemory\(page,kind\)/);
+ assert.match(script,/async function observeReducedBattlefieldMemory\(page,kind\)/);
+ assert.match(script,/state\.ages\.some\(age=>age>=10\.25\)/,'reduced evidence must cross the normal-motion fade boundary while active');
+ assert.match(script,/state\.alphas\.every\(alpha=>alpha===\.26\)/);
+ assert.match(script,/JSON\.parse\(node\.dataset\.battlefieldMemory\)/);
+ assert.match(script,/button\.click\(\)/,'the real public pause button must own the frozen evidence state');
+ assert.match(script,/assert\.deepEqual\(paused,observed,'public pause must freeze battlefield memory'\)/);
+ assert.match(script,/async function assertMemoryClearOfHud\(page,state\)/);
+ assert.match(script,/state\.regions\.map/);
+ assert.match(script,/for\(const \[width,height\] of \[\[320,568\],\[390,844\],\[1024,768\]\]\)\{/);
+ assert.match(script,/open\(`\$\{width\}-memory-heavy`,width,height,p,'no-preference'\)/);
+ assert.match(script,/locator\('\[data-unit="2"\]'\)\.click\(\)/);
+ assert.match(script,/shot\(f,'battlefield-memory-heavy'\)/);
+ assert.match(script,/open\('390-memory-reduced',390,844,p,'reduce'\)/);
+ assert.match(script,/getByRole\('button',\{name:\/Meteor\/i\}\)\.click\(\)/);
+ assert.match(script,/observeReducedBattlefieldMemory\(f\.page,'meteor'\)/);
+ assert.match(script,/shot\(f,'battlefield-memory-meteor'\)/);
+ assert.match(script,/assert\.deepEqual\(still,state,'reduced-motion battlefield memory must remain static'\)/);
+ assert.match(script,/page\.emulateMedia\(\{reducedMotion:'reduce'\}\)/,'the native journey must preserve a live mark while system motion becomes reduced');
+ assert.match(script,/page\.emulateMedia\(\{reducedMotion:'no-preference'\}\)/,'the native journey must preserve the same mark when system motion resumes');
+ assert.match(script,/page\.setViewportSize\(\{width:1000,height:760\}\)/,'resize cleanup must execute in native Chromium');
+ assert.match(script,/dataset\.battlefieldEnemyViews/,'the native journey must wait for a real current enemy before casting Meteor');
+ assert.match(script,/document\.querySelector\('\[data-skill=\"meteor\"\]'\)/,'the native journey must use the stable Meteor control identity rather than rendered text');
+ assert.match(script,/dataset\.battlefieldMemoryPending/,'the native journey must observe the real projectile interval');
+ assert.match(script,/normal-motion Meteor memory must remain absent during its observed in-flight frame/);
+ assert.match(script,/const handle=await waitForBattlefieldStage\(page,'Meteor projectile carries memory'/,'the in-flight absence proof must use the exact wait handle rather than a later page round trip');
+ assert.match(script,/await handle\.jsonValue\(\)/,'the exact observed projectile frame must be materialized for assertion');
+ assert.match(script,/control\.click\(\);\}return \{landed,paused:shouldPause\}/,'the motion-transition journey must publicly pause in the same browser frame that proves the Meteor is still in flight');
+ assert.match(script,/memory\.reduced===true&&memory\.paused===true/,'the reset-commit evidence must remain under public pause ownership');
+ assert.match(script,/observeMeteorFlight\(f\.page,true\)/,'the transition comparison must atomically freeze the in-flight Meteor through the public pause control');
+ assert.match(script,/the publicly paused in-flight mark must survive reduced-to-system without aging/);
+ assert.match(script,/entering reduced motion during an observed Meteor flight commits its accepted target memory before clearing animation/);
+ assert.match(script,/waitForFunction\(\(\)=>!document\.querySelector\('canvas'\)\?\.dataset\.battlefieldMemory/,'the native journey must prove active-time expiry after the paused check');
+});
+
+test('battlefield memory publishes focused original screenshot evidence',()=>{
+ const ci=workflow();
+ assert.match(ci,/name: battlefield-memory-review/);
+ for(const file of ['320-memory-heavy-battlefield-memory-heavy.png','390-memory-heavy-battlefield-memory-heavy.png','1024-memory-heavy-battlefield-memory-heavy.png','390-memory-reduced-battlefield-memory-meteor.png','report.json'])assert.ok(ci.includes(file),`focused artifact must include ${file}`);
 });

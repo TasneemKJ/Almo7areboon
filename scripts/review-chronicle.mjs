@@ -32,6 +32,51 @@ async function canvasShot(fixture,state,expected,reduced=false){
  const file=`${fixture.name}-${state}.png`;await writeFile(`${out}/${file}`,bytes);screens.push(file);return capture;
 }
 async function noOverflow(page){assert.ok(await page.evaluate(()=>document.documentElement.scrollWidth<=innerWidth+1),'root must not overflow horizontally');}
+async function waitForBattlefieldStage(page,name,predicate,arg=null,options={}){
+ try{const result=await page.waitForFunction(predicate,arg,options);console.log(`battlefield stage passed: ${name}`);return result;}
+ catch(error){const snapshot=await page.evaluate(()=>{const canvas=document.querySelector('canvas');const meteor=document.querySelector('[data-skill="meteor"]');return {phase:document.querySelector('.stage')?.dataset.phase??null,enemyViews:canvas?.dataset.battlefieldEnemyViews??null,pending:canvas?.dataset.battlefieldMemoryPending??null,memory:canvas?.dataset.battlefieldMemory??null,meteorDisabled:meteor instanceof HTMLButtonElement?meteor.disabled:null,meteorLabel:meteor?.getAttribute('aria-label')??meteor?.textContent??null};}).catch(snapshotError=>({snapshotError:String(snapshotError)}));throw new Error(`${name}: ${String(error)}; snapshot=${JSON.stringify(snapshot)}`);}
+}
+function validateBattlefieldMemory(state,kind,reduced=false,paused=true){
+ assert.ok(state&&Number.isInteger(state.count)&&state.count>=1&&state.count<=state.cap);
+ assert.equal(state.cap,6);assert.equal(state.kinds.length,state.count);assert.ok(state.kinds.includes(kind));assert.equal(state.regions.length,state.count);assert.equal(state.ages.length,state.count);assert.equal(state.alphas.length,state.count);
+ for(const region of state.regions)for(const value of Object.values(region))assert.equal(Number.isFinite(value),true);
+ assert.ok(state.regions.every(region=>region.left>=0&&region.right<=450&&region.top>=0&&region.bottom<=500));
+ assert.ok(state.ages.every(age=>Number.isFinite(age)&&age>=0&&age<14));assert.ok(state.alphas.every(alpha=>Number.isFinite(alpha)&&alpha>=0&&alpha<=1));
+ assert.equal(state.reduced,reduced);assert.equal(state.paused,paused);
+}
+async function assertMemoryClearOfHud(page,state){
+ const geometry=await page.locator('canvas').evaluate((node,regions)=>{
+  const canvas=node.getBoundingClientRect(),scale=canvas.width/450,boxes=regions.map(bounds=>({left:canvas.left+bounds.left*scale,top:canvas.top+bounds.top*scale,right:canvas.left+bounds.right*scale,bottom:canvas.top+bounds.bottom*scale}));
+  const selectors='.resources .currency,.resources .game-wordmark,.stage .eyebrow,.stage h1,.stage .scene-name,.stage .battle-select,.world-tools button,.battle-meta span,.battle-meta button,.battle-skills button';
+  const collisions=[];for(const hud of document.querySelectorAll(selectors)){const style=getComputedStyle(hud),rect=hud.getBoundingClientRect();if(style.display==='none'||style.visibility==='hidden'||!rect.width||!rect.height)continue;if(boxes.some(box=>box.left<rect.right&&box.right>rect.left&&box.top<rect.bottom&&box.bottom>rect.top))collisions.push(hud instanceof HTMLElement?hud.id||hud.className||hud.tagName:hud.nodeName);}
+  return {boxes,collisions};
+ },state.regions.map(region=>region));
+ assert.deepEqual(geometry.collisions,[],'battlefield memory must remain clear of the rendered DOM HUD');return geometry;
+}
+async function pauseAtBattlefieldMemory(page,kind){
+ const deadline=Date.now()+60000;
+ while(Date.now()<deadline){
+  await page.waitForFunction(value=>{const raw=document.querySelector('canvas')?.dataset.battlefieldMemory;if(!raw)return false;const state=JSON.parse(raw);return state.kinds?.includes(value)&&!state.paused;},kind,{timeout:Math.max(1,deadline-Date.now())});
+  const observed=await page.locator('#pause').evaluate((button,value)=>{const raw=document.querySelector('canvas')?.dataset.battlefieldMemory;if(!raw)return null;const state=JSON.parse(raw);if(!state.kinds?.includes(value)||state.paused)return null;button.click();return {...state,paused:true};},kind);
+  if(!observed)continue;
+  await page.waitForFunction(()=>{const raw=document.querySelector('canvas')?.dataset.battlefieldMemory;return raw&&JSON.parse(raw).paused===true;});
+  const paused=await page.locator('canvas').evaluate(node=>JSON.parse(node.dataset.battlefieldMemory));
+  assert.deepEqual(paused,observed,'public pause must freeze battlefield memory');return paused;
+ }
+ throw new Error(`Timed out pausing at ${kind} battlefield memory`);
+}
+async function observeReducedBattlefieldMemory(page,kind){
+ await page.waitForFunction(value=>{const raw=document.querySelector('canvas')?.dataset.battlefieldMemory;if(!raw)return false;const state=JSON.parse(raw);return state.kinds?.includes(value)&&state.reduced&&!state.paused&&state.ages.some(age=>age>=10.25)&&state.alphas.every(alpha=>alpha===.26);},kind,{timeout:60000});
+ return page.locator('canvas').evaluate(node=>JSON.parse(node.dataset.battlefieldMemory));
+}
+async function waitForMeteorControl(page){
+ await waitForBattlefieldStage(page,'Meteor control enabled',()=>{const node=document.querySelector('[data-skill="meteor"]');return node instanceof HTMLButtonElement&&!node.disabled;});
+ return page.locator('[data-skill="meteor"]');
+}
+async function observeMeteorFlight(page,pause=false){
+ const handle=await waitForBattlefieldStage(page,'Meteor projectile carries memory',shouldPause=>{const canvas=document.querySelector('canvas'),pending=JSON.parse(canvas?.dataset.battlefieldMemoryPending??'[]');if(!pending.includes('meteor'))return false;const memory=JSON.parse(canvas?.dataset.battlefieldMemory??'null'),landed=memory?.kinds?.includes('meteor')??false;if(landed)return {landed,paused:false};if(shouldPause){const control=document.querySelector('#pause');if(!(control instanceof HTMLButtonElement)||control.disabled)return false;control.click();}return {landed,paused:shouldPause};},pause);
+ const snapshot=await handle.jsonValue();await handle.dispose();return snapshot;
+}
 async function assertVerdictClearOfHud(page,state){
  const geometry=await page.locator('canvas').evaluate((node,regions)=>{
   const canvas=node.getBoundingClientRect(),scale=canvas.width/450,boxes=regions.map(bounds=>({left:canvas.left+bounds.left*scale,top:canvas.top+bounds.top*scale,right:canvas.left+bounds.right*scale,bottom:canvas.top+bounds.bottom*scale}));
@@ -147,6 +192,35 @@ try{
   const still=await f.page.locator('canvas').evaluate(node=>JSON.parse(node.dataset.waveArrival));validateArrivalSnapshot(still,fixture.intent);assert.deepEqual(still,paused,'paused road omen must remain static');
   checks.push(`${fixture.width}: real ${fixture.intent} commander preview renders the schedule-derived road omen behind actors and stays static/save-inert under public pause`);await f.context.close();
  }
+ for(const [width,height] of [[320,568],[390,844],[1024,768]]){
+  const p=preparedChronicleProfile();p.motion='system';p.speed=2;p.age=0;p.enemyAge=0;p.foodLevel=12;p.unlocked=[true,true,true];p.chronicle.route='road';p.chronicle.expedition=null;
+  const f=await open(`${width}-memory-heavy`,width,height,p,'no-preference');await f.page.locator('[data-command="start"]').click();
+  await f.page.waitForFunction(()=>{const node=document.querySelector('[data-unit="2"]');return node instanceof HTMLButtonElement&&!node.disabled;},null,{timeout:20000});await f.page.locator('[data-unit="2"]').click();
+  const state=await pauseAtBattlefieldMemory(f.page,'heavy');validateBattlefieldMemory(state,'heavy');await assertMemoryClearOfHud(f.page,state);await noOverflow(f.page);
+  const before=await settledSaveAfterAutosave(f.page);await shot(f,'battlefield-memory-heavy');await f.page.waitForTimeout(5250);assert.equal(await saved(f.page),before,'paused battlefield memory must remain save-inert across an autosave boundary');assert.deepEqual(await f.page.locator('canvas').evaluate(node=>JSON.parse(node.dataset.battlefieldMemory)),state,'paused heavy memory must remain static');
+  if(width===390){await f.page.emulateMedia({reducedMotion:'reduce'});await f.page.waitForFunction(()=>JSON.parse(document.querySelector('canvas')?.dataset.battlefieldMemory??'null')?.reduced===true);const reduced=await f.page.locator('canvas').evaluate(node=>JSON.parse(node.dataset.battlefieldMemory));assert.deepEqual({...reduced,reduced:false},state,'system-to-reduced transition must preserve the live paused mark');await f.page.emulateMedia({reducedMotion:'no-preference'});await f.page.waitForFunction(()=>JSON.parse(document.querySelector('canvas')?.dataset.battlefieldMemory??'null')?.reduced===false);assert.deepEqual(await f.page.locator('canvas').evaluate(node=>JSON.parse(node.dataset.battlefieldMemory)),state,'reduced-to-system transition must preserve the live paused mark');}
+  if(width===1024){await f.page.setViewportSize({width:1000,height:760});await f.page.waitForFunction(()=>!document.querySelector('canvas')?.dataset.battlefieldMemory);}
+  checks.push(`${width}: a real public heavy deployment leaves one bounded depth-safe road gouge that freezes under public pause without save writes; live motion transitions preserve it and resize cleanup is verified`);await f.context.close();
+ }
+ {
+  const p=preparedChronicleProfile();p.motion='system';p.speed=1;p.age=0;p.enemyAge=0;p.chronicle.route='road';p.chronicle.expedition=null;
+  const f=await open('390-memory-meteor-landing',390,844,p,'no-preference');await f.page.locator('[data-command="start"]').click();await waitForBattlefieldStage(f.page,'enemy view ready',()=>Number(document.querySelector('canvas')?.dataset.battlefieldEnemyViews??0)>0,null,{timeout:60000});const meteor=await waitForMeteorControl(f.page);await meteor.click();
+  const beforeLanding=await observeMeteorFlight(f.page);assert.equal(beforeLanding.landed,false,'normal-motion Meteor memory must remain absent during its observed in-flight frame');
+  await waitForBattlefieldStage(f.page,'Meteor memory lands',()=>!document.querySelector('canvas')?.dataset.battlefieldMemoryPending&&JSON.parse(document.querySelector('canvas')?.dataset.battlefieldMemory??'null')?.kinds?.includes('meteor'));const landed=await f.page.locator('canvas').evaluate(node=>JSON.parse(node.dataset.battlefieldMemory));validateBattlefieldMemory(landed,'meteor',false,false);await f.context.close();checks.push('390: normal-motion Meteor remains absent during an observed projectile frame and records real target memory only after landing');
+ }
+ {
+  const p=preparedChronicleProfile();p.motion='system';p.speed=1;p.age=0;p.enemyAge=0;p.chronicle.route='road';p.chronicle.expedition=null;
+  const f=await open('390-memory-flight-transition',390,844,p,'no-preference');await f.page.locator('[data-command="start"]').click();await waitForBattlefieldStage(f.page,'enemy view ready',()=>Number(document.querySelector('canvas')?.dataset.battlefieldEnemyViews??0)>0,null,{timeout:60000});const meteor=await waitForMeteorControl(f.page);await meteor.click();
+  const beforeTransition=await observeMeteorFlight(f.page,true);assert.deepEqual(beforeTransition,{landed:false,paused:true},'the public pause must freeze an observed in-flight Meteor before motion changes');await f.page.emulateMedia({reducedMotion:'reduce'});
+  await waitForBattlefieldStage(f.page,'motion transition commits Meteor memory',()=>!document.querySelector('canvas')?.dataset.battlefieldMemoryPending&&(()=>{const memory=JSON.parse(document.querySelector('canvas')?.dataset.battlefieldMemory??'null');return memory?.kinds?.includes('meteor')&&memory.reduced===true&&memory.paused===true;})());const committed=await f.page.locator('canvas').evaluate(node=>JSON.parse(node.dataset.battlefieldMemory));validateBattlefieldMemory(committed,'meteor',true,true);await f.page.emulateMedia({reducedMotion:'no-preference'});await f.page.waitForFunction(()=>JSON.parse(document.querySelector('canvas')?.dataset.battlefieldMemory??'null')?.reduced===false);assert.deepEqual(await f.page.locator('canvas').evaluate(node=>JSON.parse(node.dataset.battlefieldMemory)),{...committed,reduced:false},'the publicly paused in-flight mark must survive reduced-to-system without aging');await f.context.close();checks.push('390: entering reduced motion during an observed Meteor flight commits its accepted target memory before clearing animation');
+ }
+ {
+  const p=preparedChronicleProfile();p.motion='system';p.speed=1;p.age=0;p.enemyAge=0;p.chronicle.route='road';p.chronicle.expedition=null;
+  const f=await open('390-memory-reduced',390,844,p,'reduce');await f.page.locator('[data-command="start"]').click();await f.page.waitForTimeout(5000);await f.page.getByRole('button',{name:/Meteor/i}).click();
+  const aging=await observeReducedBattlefieldMemory(f.page,'meteor');validateBattlefieldMemory(aging,'meteor',true,false);assert.ok(aging.alphas.every(alpha=>alpha===.26));
+  const state=await pauseAtBattlefieldMemory(f.page,'meteor');validateBattlefieldMemory(state,'meteor',true,true);await assertMemoryClearOfHud(f.page,state);await noOverflow(f.page);await shot(f,'battlefield-memory-meteor');
+  await f.page.waitForTimeout(450);const still=await f.page.locator('canvas').evaluate(node=>JSON.parse(node.dataset.battlefieldMemory));assert.deepEqual(still,state,'reduced-motion battlefield memory must remain static');await f.page.locator('#pause').click();await f.page.waitForFunction(()=>!document.querySelector('canvas')?.dataset.battlefieldMemory,null,{timeout:6000});checks.push('390: accepted public Meteor leaves a constant-alpha reduced-motion rosette past the normal fade boundary, freezes under pause, and expires after active time resumes');await f.context.close();
+ }
  for(const [name,width,height,outcome] of [['320-aftermath-loss',320,568,'lost'],['390-aftermath-win',390,844,'won'],['1024-aftermath-win',1024,768,'won']]){
   const p=preparedChronicleProfile();p.motion='system';p.speed=2;p.age=0;p.enemyAge=0;p.chronicle.route='road';p.chronicle.expedition=null;
   if(outcome==='lost'){p.baseLevel=0;p.foodLevel=0;p.unlocked=[true,true,true];}
@@ -241,5 +315,5 @@ try{
   await f.page.reload({waitUntil:'networkidle'});await f.page.locator('[data-command="start"]').waitFor();const saved=await f.page.evaluate(()=>JSON.parse(localStorage.getItem('almo7areboon.save.v1')));assert.equal(saved.chronicle.expedition.stage,1);assert.equal(saved.chronicle.expedition.provision,'shelter');assert.equal(saved.pendingVictory,null);checks.push('expedition continue consumes receipt once and resumes the next objective after reload');await f.context.close();
  }
  assert.equal(errors.length,0,JSON.stringify(errors));assert.equal(assetFailures.length,0,JSON.stringify(assetFailures));
-}catch(error){errors.push({name:'review',error:String(error)});process.exitCode=1;}
+}catch(error){errors.push({name:'review',error:error instanceof Error?error.stack??String(error):String(error)});process.exitCode=1;}
 finally{await writeFile(`${out}/report.json`,JSON.stringify({scope:'Chromium software rendering; disclosed preparation fixtures, public battle controls, portrait and desktop viewports; not physical-device, Safari, organic-balance or retention acceptance',checks,screens,errors,assetFailures},null,2));console.log(JSON.stringify({checks,screens,errors,assetFailures},null,2));await browser.close();}
