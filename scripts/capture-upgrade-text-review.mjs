@@ -11,7 +11,21 @@ const diagnostics={revision:spawnSync('git',['rev-parse','HEAD'],{encoding:'utf8
 let server,browser,serverLog='';
 const save=page=>page.evaluate(key=>JSON.parse(localStorage.getItem(key)),SAVE_KEY);
 async function tabTo(page,selector){for(let n=0;n<40;n++){if(await page.locator(selector).evaluate(node=>node===document.activeElement))return;await page.keyboard.press('Tab');}throw Error(`Keyboard could not reach ${selector}`);}
+async function revealUpgrades(page,name){
+ const geometry=()=>page.evaluate(()=>{const view=document.querySelector('.battle-view'),upgrades=document.querySelector('.upgrades'),nav=document.querySelector('.bottom-nav'),v=view.getBoundingClientRect(),u=upgrades.getBoundingClientRect(),n=nav.getBoundingClientRect();return {scrollTop:view.scrollTop,scrollHeight:view.scrollHeight,clientHeight:view.clientHeight,viewTop:v.top,viewBottom:v.bottom,upgradesTop:u.top,upgradesBottom:u.bottom,navTop:n.top,clipped:u.bottom>Math.min(v.bottom,n.top)+1};});
+ const before=await geometry();
+ if(!before.clipped)return {needed:false,before,after:before};
+ assert.ok(before.scrollHeight>before.clientHeight+1,`${name}: clipped upgrades require an internal reflow scroll`);
+ await page.locator('.battle-view').evaluate(node=>node.scrollTo({top:node.scrollHeight,behavior:'instant'}));
+ await page.evaluate(()=>new Promise(resolve=>requestAnimationFrame(()=>requestAnimationFrame(resolve))));
+ const after=await geometry();
+ assert.ok(after.scrollTop>before.scrollTop,`${name}: enlarged upgrades remain reachable by vertical scroll`);
+ assert.ok(after.upgradesTop>=after.viewTop-1,`${name}: scrolled upgrades stay inside the battle view`);
+ assert.ok(after.upgradesBottom<=Math.min(after.viewBottom,after.navTop)+1,`${name}: scrolled upgrades stay clear of fixed navigation`);
+ return {needed:true,before,after};
+}
 async function measure(page,name,rootPx,max=false){
+ const reflow=await revealUpgrades(page,name);
  const layout=await page.evaluate(()=>{
   const rect=node=>{const r=node.getBoundingClientRect();return {left:r.left,right:r.right,top:r.top,bottom:r.bottom,width:r.width,height:r.height};};
   const ranges=node=>{const found=[];const walker=document.createTreeWalker(node,NodeFilter.SHOW_TEXT);let text;while(text=walker.nextNode()){if(text.parentElement.closest('small'))continue;for(const match of text.textContent.matchAll(/\S+/g)){const range=document.createRange();range.setStart(text,match.index);range.setEnd(text,match.index+match[0].length);found.push({word:match[0],fragments:[...range.getClientRects()].map(r=>({left:r.left,right:r.right,top:r.top,bottom:r.bottom,width:r.width,height:r.height}))});}}return found;};
@@ -36,7 +50,7 @@ async function measure(page,name,rootPx,max=false){
   else if(control.key==='pause')assert.equal(control.disabled,layout.phase!=='running',`${name}: pause is available only while running`);
   else if(layout.phase==='ready'||layout.manualPaused)assert.equal(control.disabled,true,`${name}: deployment/skills reject ready or manual pause`);
  }
- diagnostics.cases.push({name,status:'passed',...layout,rowHeights:layout.rows.map(r=>r.row.height)});return layout;
+ diagnostics.cases.push({name,status:'passed',...layout,reflow,rowHeights:layout.rows.map(r=>r.row.height)});return layout;
 }
 async function capture(page,name){await page.screenshot({path:`${output}/${name}.png`,fullPage:true});diagnostics.screenshots.push(`${name}.png`);}
 async function focusCaptures(page,prefix){for(const selector of ['#food-upgrade','#base-upgrade','.nav-item:first-child','.nav-item:last-child']){await page.keyboard.press('Tab');await capture(page,`${prefix}-${selector.replace(/[^a-z]/g,'')}-before`);await tabTo(page,selector);await page.locator(selector).scrollIntoViewIfNeeded();const s=await page.locator(selector).evaluate(n=>{const s=getComputedStyle(n);return {width:s.outlineWidth,offset:s.outlineOffset,style:s.outlineStyle};});assert.deepEqual(s,{width:'3px',offset:'-3px',style:'solid'});await capture(page,`${prefix}-${selector.replace(/[^a-z]/g,'')}-focused`);}}

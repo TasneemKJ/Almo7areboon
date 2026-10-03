@@ -98,3 +98,18 @@ test('muted body copy and blue button gradients keep AA contrast on their surfac
  for(const top of css.match(/linear-gradient\(#3[0-9a-f]{5},#244d64\)/g)??[])assert.ok(ratio('#fff3d7',top.slice(16,23))>=4.5,top);
  assert.equal((css.match(/linear-gradient\(#326a86,#244d64\)/g)??[]).length,2,'both blue button surfaces use the darker gradient');
 });
+
+
+test('legacy and timeline-reset controls keep the mobile 44px touch floor',()=>{
+ const css=readFileSync(new URL('../src/ui/continuation.css',import.meta.url),'utf8');
+ assert.match(css,/\.legacy-choice label\s*\{[^}]*min-height:\s*44px/s);
+ assert.match(css,/\.prestige-reset summary\s*\{[^}]*min-height:\s*44px/s);
+});
+
+test('ordinary scrolling dialogs reserve a sticky dismiss header instead of floating Close over content',()=>{
+ const css=readFileSync(new URL('../src/ui/continuation.css',import.meta.url),'utf8');
+ const main=readFileSync(new URL('../src/main.ts',import.meta.url),'utf8');
+ assert.match(css,/\.dialog-dismiss\s*\{[^}]*position:\s*sticky[^}]*height:\s*44px/s);
+ assert.match(css,/\.dialog-dismiss>\.close-button\s*\{[^}]*position:\s*static/s);
+ assert.ok(main.includes('class="dialog-dismiss"'));
+});

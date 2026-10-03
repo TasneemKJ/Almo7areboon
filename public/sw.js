@@ -32,6 +32,9 @@ async function cacheShell(cache, page, reuseBundles = true) {
     }
     response ||= await fetch(url, { cache: 'reload' });
     if (!response.ok) throw new Error(`Unable to cache ${url}`);
+    // Drain now: an installing worker may throttle later requests until earlier bodies finish.
+    // Keep the original response for cache storage, including its URL and headers.
+    await response.clone().arrayBuffer();
     return [url, response];
   }));
   // Commit the page last: a failed update leaves the previous complete shell bootable.

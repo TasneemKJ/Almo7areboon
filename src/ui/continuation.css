@@ -85,10 +85,10 @@
 .legacy-choice { display:grid; grid-template-columns:24px minmax(0,1fr); column-gap:7px; padding:8px 0; }
 .legacy-choice+.legacy-choice { border-top:1px solid var(--paper-edge); }
 .legacy-choice input { grid-row:1 / 3; width:20px; height:20px; margin:5px 0; accent-color:#345b3d; }
-.legacy-choice label { display:flex; align-items:center; min-height:32px; font-size:14px; font-weight:700; cursor:pointer; }
+.legacy-choice label { display:flex; align-items:center; min-height:44px; font-size:14px; font-weight:700; cursor:pointer; }
 .legacy-choice p { margin:0; font-size:11px; line-height:1.5; }
 .prestige-reset { border-block:1px solid var(--paper-edge); margin-block:16px; padding-block:12px; }
-.prestige-reset summary { min-height:36px; cursor:pointer; font-weight:700; font-size:13px; }
+.prestige-reset summary { min-height:44px; cursor:pointer; font-weight:700; font-size:13px; }
 .prestige-reset h3 { font-size:13px; }
 .prestige-reset ul { padding-left:20px; }
 .prestige-dialog .big-button { width:100%; min-height:48px; white-space:normal; line-height:1.35; }
@@ -102,3 +102,45 @@
 
 .buy-button:focus-visible,.nav-item:focus-visible { outline:3px solid #edb755; outline-offset:-3px; }
 @media(forced-colors:active) { .buy-button:focus-visible,.nav-item:focus-visible,.audio-volume input:focus-visible { outline-color:Highlight; } }
+
+/* A short phone or a home-indicator inset must not make the two ready controls
+   occupy the chapter selector's hit area. Keep both bands in normal grid flow;
+   only the battlefield/deployment region scrolls when their minimums cannot fit. */
+.battle-view { overflow-y:auto; overscroll-behavior:contain; }
+.world[data-phase="ready"] {
+ display:grid;
+ grid-template-rows:auto minmax(8px,1fr) auto;
+ min-height:min-content;
+}
+.world[data-phase="ready"] .stage {
+ position:relative; inset:auto; grid-row:1;
+ margin:calc(72px + env(safe-area-inset-top,0px)) 10px 0;
+}
+.world[data-phase="ready"] .ready {
+ position:relative; inset:auto; grid-row:3;
+ margin:8px 0 13px;
+}
+@media(max-height:700px) {
+ .world[data-phase="ready"] .stage { margin-top:calc(60px + env(safe-area-inset-top,0px)); }
+ .world[data-phase="ready"] .ready { margin-bottom:12px; }
+}
+/* The modal's content box, including its dismiss control, stays out of notches
+   and home indicators in both portrait and the short landscape fallback. */
+.modal-layer {
+ --modal-gutter:17px;
+ padding:max(var(--modal-gutter),env(safe-area-inset-top,0px))
+         max(var(--modal-gutter),env(safe-area-inset-right,0px))
+         max(var(--modal-gutter),env(safe-area-inset-bottom,0px))
+         max(var(--modal-gutter),env(safe-area-inset-left,0px));
+}
+@media(max-width:360px) { .modal-layer { --modal-gutter:12px; } }
+
+/* A dedicated sticky dismiss header prevents the close button from floating
+   over scrolled quest rewards and other content. Storybook keeps its own header. */
+.dialog:has(>.dialog-dismiss) { scroll-padding-block-start:58px; }
+.dialog-dismiss {
+ position:sticky; top:0; height:44px; margin-top:-15px; margin-bottom:12px;
+ z-index:3; display:flex; justify-content:flex-end; background:var(--paper);
+ border-bottom:1px solid var(--paper-edge);
+}
+.dialog-dismiss>.close-button { position:static; flex-shrink:0; }
