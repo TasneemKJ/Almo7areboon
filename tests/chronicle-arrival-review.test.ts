@@ -7,11 +7,14 @@ async function subject(){
  assert.ok(module,'arrival browser-review contract must exist');return module;
 }
 
-test('native review fixtures cover three intent shapes, village plates and motion modes across phone and desktop widths',async()=>{
+test('native review fixtures cover three intent shapes, all village plates and both motion modes across phone and desktop widths',async()=>{
  const m=await subject(),fixtures=m.arrivalReviewFixtures();
- assert.deepEqual(fixtures.map((fixture:any)=>[fixture.width,fixture.height,fixture.route,fixture.intent,fixture.age,fixture.reducedMotion]),[
-  [320,568,'escort','rush',0,'reduce'],[390,844,'scout','volley',2,'no-preference'],[1024,768,'bell','bulwark',5,'reduce'],
+ assert.deepEqual(fixtures.map((fixture:any)=>[fixture.width,fixture.height,fixture.route,fixture.intent,fixture.age,fixture.lights,fixture.reducedMotion]),[
+  [320,568,'escort','rush',0,2,'reduce'],[390,844,'scout','volley',1,2,'no-preference'],
+  [1024,768,'bell','bulwark',2,3,'reduce'],[320,568,'escort','rush',3,4,'no-preference'],
+  [390,844,'scout','volley',4,3,'reduce'],[1024,768,'bell','bulwark',5,4,'no-preference'],
  ]);
+ assert.deepEqual(fixtures.map((fixture:any)=>fixture.age),[0,1,2,3,4,5]);
  assert.ok(Object.isFrozen(fixtures)&&fixtures.every(Object.isFrozen));
 });
 

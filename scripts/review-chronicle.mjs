@@ -116,11 +116,11 @@ async function pauseAtLandmarkPhase(page,phase){
 // Production persists playable profiles every five seconds. Cross that real
 // boundary before asserting that a paused presentation itself writes nothing.
 async function settledSaveAfterAutosave(page){await page.waitForTimeout(5250);return saved(page);}
-async function pauseAtWaveArrival(page,intent,onObserved){
+async function pauseAtWaveArrival(page,intent,expectedLights,onObserved){
  const deadline=Date.now()+30000;
  while(Date.now()<deadline){
-  await page.waitForFunction(value=>{const node=document.querySelector('canvas'),raw=node?.dataset.waveArrival,watchRaw=node?.dataset.villageWatchfire;if(!raw||!watchRaw)return false;const state=JSON.parse(raw),watchfire=JSON.parse(watchRaw);return state.intent===value&&watchfire.intent===value&&state.progress===watchfire.progress&&state.nextIn>=0&&state.nextIn<=4&&!state.paused&&!watchfire.paused;},intent,{timeout:Math.max(1,deadline-Date.now())});
-  const observed=await page.locator('canvas').evaluate((node,value)=>{const raw=node.dataset.waveArrival,watchRaw=node.dataset.villageWatchfire;if(!raw||!watchRaw)return null;const arrival=JSON.parse(raw),watchfire=JSON.parse(watchRaw);return arrival.intent===value&&watchfire.intent===value&&!arrival.paused&&!watchfire.paused?{arrival,watchfire}:null;},intent);
+  await page.waitForFunction(({intent,expectedLights})=>{const node=document.querySelector('canvas'),raw=node?.dataset.waveArrival,watchRaw=node?.dataset.villageWatchfire;if(!raw||!watchRaw)return false;const state=JSON.parse(raw),watchfire=JSON.parse(watchRaw);return state.intent===intent&&watchfire.intent===intent&&watchfire.lights===expectedLights&&state.progress===watchfire.progress&&state.nextIn>=0&&state.nextIn<=4&&!state.paused&&!watchfire.paused;},{intent,expectedLights},{timeout:Math.max(1,deadline-Date.now())});
+  const observed=await page.locator('canvas').evaluate((node,{intent,expectedLights})=>{const raw=node.dataset.waveArrival,watchRaw=node.dataset.villageWatchfire;if(!raw||!watchRaw)return null;const arrival=JSON.parse(raw),watchfire=JSON.parse(watchRaw);return arrival.intent===intent&&watchfire.intent===intent&&watchfire.lights===expectedLights&&!arrival.paused&&!watchfire.paused?{arrival,watchfire}:null;},{intent,expectedLights});
   if(!observed)continue;validateArrivalSnapshot(observed.arrival,intent);validateWatchfireSnapshot(observed.watchfire,intent);await assertWatchfireClearOfHud(page,observed.watchfire);await onObserved?.(observed.arrival);
   const before=await page.locator('#pause').evaluate((button,value)=>{const node=document.querySelector('canvas'),raw=node?.dataset.waveArrival,watchRaw=node?.dataset.villageWatchfire;if(!raw||!watchRaw)return null;const arrival=JSON.parse(raw),watchfire=JSON.parse(watchRaw);if(arrival.intent!==value||watchfire.intent!==value||arrival.paused||watchfire.paused)return null;button.click();return {arrival,watchfire};},intent);
   if(!before)continue;
@@ -222,7 +222,7 @@ try{
  for(const fixture of arrivalReviewFixtures()){
   const p=preparedChronicleProfile();p.speed=1;p.age=fixture.age;p.enemyAge=0;p.furthestBattle=Math.max(0,p.furthestBattle);p.chronicle.chapter=0;p.chronicle.route=fixture.route;p.chronicle.expedition=null;
   const f=await open(fixture.name,fixture.width,fixture.height,p,fixture.reducedMotion);await f.page.locator('[data-command="start"]').click();
-  const {paused,watchfire}=await pauseAtWaveArrival(f.page,fixture.intent,()=>shot(f,'incoming-road')),reduced=fixture.reducedMotion==='reduce';assert.equal(paused.reduced,reduced);assert.equal(watchfire.reduced,reduced);assert.ok(paused.x>=340&&paused.x<=410);assert.ok(paused.y>120&&paused.y<430);
+  const {paused,watchfire}=await pauseAtWaveArrival(f.page,fixture.intent,fixture.lights,()=>shot(f,'incoming-road')),reduced=fixture.reducedMotion==='reduce';assert.equal(paused.reduced,reduced);assert.equal(watchfire.reduced,reduced);assert.equal(watchfire.lights,fixture.lights);assert.ok(paused.x>=340&&paused.x<=410);assert.ok(paused.y>120&&paused.y<430);
   const before=await settledSaveAfterAutosave(f.page);await noOverflow(f.page);await f.page.waitForTimeout(5250);
   assert.equal(await saved(f.page),before,'paused wave-arrival presentation must remain save-inert across the next autosave boundary');
   const still=await f.page.locator('canvas').evaluate(node=>JSON.parse(node.dataset.waveArrival));validateArrivalSnapshot(still,fixture.intent);assert.deepEqual(still,paused,'paused road omen must remain static');
