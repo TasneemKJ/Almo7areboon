@@ -125,9 +125,13 @@ async function pauseAtLandmarkPhase(page,phase){
 // boundary before asserting that a paused presentation itself writes nothing.
 async function settledSaveAfterAutosave(page){await page.waitForTimeout(5250);return saved(page);}
 async function pauseAtWaveArrival(page,intent,onObserved){
- const deadline=Date.now()+30000;
+ // The native 1024×768 fixture renders a 2× software framebuffer in Actions.
+ // Match the other rendering-dependent stages' budget without advancing or
+ // bypassing the authoritative simulation state that the assertion observes.
+ const deadline=Date.now()+60000;
  while(Date.now()<deadline){
-  await page.waitForFunction(intent=>{const node=document.querySelector('canvas'),raw=node?.dataset.waveArrival,watchRaw=node?.dataset.villageWatchfire;if(!raw||!watchRaw)return false;const state=JSON.parse(raw),watchfire=JSON.parse(watchRaw);return state.intent===intent&&watchfire.intent===intent&&watchfire.progress>=.75&&state.progress===watchfire.progress&&state.nextIn>=0&&state.nextIn<=1&&!state.paused&&!watchfire.paused;},intent,{timeout:Math.max(1,deadline-Date.now())});
+  try{await page.waitForFunction(intent=>{const node=document.querySelector('canvas'),raw=node?.dataset.waveArrival,watchRaw=node?.dataset.villageWatchfire;if(!raw||!watchRaw)return false;const state=JSON.parse(raw),watchfire=JSON.parse(watchRaw);return state.intent===intent&&watchfire.intent===intent&&watchfire.progress>=.75&&state.progress===watchfire.progress&&state.nextIn>=0&&state.nextIn<=1&&!state.paused&&!watchfire.paused;},intent,{timeout:Math.max(1,deadline-Date.now())});}
+  catch(error){if(String(error).includes('Timeout'))break;throw error;}
   const observed=await page.locator('canvas').evaluate((node,intent)=>{const raw=node.dataset.waveArrival,watchRaw=node.dataset.villageWatchfire;if(!raw||!watchRaw)return null;const arrival=JSON.parse(raw),watchfire=JSON.parse(watchRaw);return arrival.intent===intent&&watchfire.intent===intent&&watchfire.progress>=.75&&!arrival.paused&&!watchfire.paused?{arrival,watchfire}:null;},intent);
   if(!observed)continue;validateArrivalSnapshot(observed.arrival,intent);validateWatchfireSnapshot(observed.watchfire,intent);await assertWatchfireClearOfHud(page,observed.watchfire);
   const before=await page.locator('#pause').evaluate((button,value)=>{const node=document.querySelector('canvas'),raw=node?.dataset.waveArrival,watchRaw=node?.dataset.villageWatchfire;if(!raw||!watchRaw)return null;const arrival=JSON.parse(raw),watchfire=JSON.parse(watchRaw);if(arrival.intent!==value||watchfire.intent!==value||arrival.paused||watchfire.paused)return null;button.click();return {arrival,watchfire};},intent);
@@ -136,7 +140,12 @@ async function pauseAtWaveArrival(page,intent,onObserved){
   const pausedFrames=await page.locator('canvas').evaluate(node=>({arrival:JSON.parse(node.dataset.waveArrival),watchfire:JSON.parse(node.dataset.villageWatchfire)})),paused=pausedFrames.arrival,watchfire=before.watchfire,pausedWatchfire=pausedFrames.watchfire;
   validateArrivalSnapshot(before.arrival,intent);validateArrivalSnapshot(paused,intent);validateWatchfireSnapshot(watchfire,intent);validateWatchfireSnapshot(pausedWatchfire,intent);assertArrivalPaused(before.arrival,paused);assertWatchfirePaused(watchfire,pausedWatchfire);await onObserved?.(paused);return {before:before.arrival,paused,watchfire:pausedWatchfire};
  }
- throw new Error(`Timed out pausing at ${intent} wave arrival`);
+ const diagnostic=await page.evaluate(()=>{const node=document.querySelector('canvas'),parse=raw=>{try{return raw?JSON.parse(raw):null;}catch{return {invalid:true};}},saved=parse(localStorage.getItem('almo7areboon.save.v1'));return {
+  waveArrival:parse(node?.dataset.waveArrival),villageWatchfire:parse(node?.dataset.villageWatchfire),phase:document.querySelector('.world')?.dataset.phase??null,
+  profile:saved?{age:saved.age,enemyAge:saved.enemyAge,furthestBattle:saved.furthestBattle,chapter:saved.chronicle?.chapter,route:saved.chronicle?.route,clears:saved.chronicle?.clears}:null,
+  pausePressed:document.querySelector('#pause')?.getAttribute('aria-pressed')??null,waveLabel:document.querySelector('#wave-label')?.textContent??null,
+ };});
+ throw new Error(`Timed out pausing at ${intent} wave arrival; diagnostic=${JSON.stringify(diagnostic)}`);
 }
 async function pauseAtCatMode(page,mode){
  const deadline=Date.now()+60000;

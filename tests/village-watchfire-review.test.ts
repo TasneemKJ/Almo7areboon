@@ -44,3 +44,13 @@ test('native chronicle journey captures and pause-compares the watchfire with it
  assert.match(source,/pauseAtWaveArrival\(f\.page,fixture\.intent/);
  assert.match(source,/watchfire\.lights<=fixture\.authoredLights/);
 });
+
+test('native chronicle journey gives software-rendered desktop a full stage budget and diagnoses timeouts',()=>{
+ const source=readFileSync(new URL('../scripts/review-chronicle.mjs',import.meta.url),'utf8');
+ const arrival=source.slice(source.indexOf('async function pauseAtWaveArrival'),source.indexOf('async function pauseAtCatMode'));
+ assert.match(arrival,/Date\.now\(\)\+60000/);
+ assert.match(arrival,/waveArrival:/);
+ assert.match(arrival,/villageWatchfire:/);
+ assert.match(arrival,/profile:/);
+ assert.match(arrival,/Timed out pausing at \$\{intent\} wave arrival; diagnostic=/);
+});
