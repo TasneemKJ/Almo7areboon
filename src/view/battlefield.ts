@@ -26,7 +26,7 @@ import {paintWaveArrival,waveArrivalRenderPlan} from './wave-arrival-paint.ts';
 import {battleAftermathPose} from './battle-aftermath.ts';
 import {villageVerdictFrame} from './village-verdict.ts';
 import {BATTLEFIELD_MEMORY_CAP,battlefieldMemoryAfterReset,battlefieldMemoryFrame,battlefieldMemoryIntentForHit,battlefieldMemoryNeedsHudMeasurement,battlefieldMemoryRegionClearOf,rememberBattlefieldMark,stepBattlefieldMemory,type BattlefieldMemoryInput,type BattlefieldMemoryMark,type BattlefieldMemoryRegion} from './battlefield-memory.ts';
-import {SPOILS_HOMECOMING_CAP,rememberSpoilsHomecoming,spoilsHomecomingFrame,spoilsHomecomingIntentForEvent,stepSpoilsHomecoming,type SpoilsHomecomingMark} from './spoils-homecoming.ts';
+import {SPOILS_HOMECOMING_CAP,rememberSpoilsHomecoming,spoilsHomecomingFrame,spoilsHomecomingIntentForEvent,spoilsRewardEvidence,stepSpoilsHomecoming,type SpoilsHomecomingMark} from './spoils-homecoming.ts';
 import {TROOP_FRAME} from './unit-illustrations.ts';
 import {compactNumber} from '../ui/battle-hud.ts';
 import {battleResolution} from './render-resolution.ts';
@@ -721,7 +721,8 @@ export function mountBattlefield(element:HTMLElement,game:GamePort,onFrame:()=>v
    this.flares=this.flares.filter(f=>f.life>0);
    for(const f of this.floaters){f.life-=dt;const progress=1-f.life/f.max;f.text.setY(f.startY-(this.reduce?0:progress*22)).setAlpha(Math.max(0,Math.min(1,f.life/f.max*2)));if(f.life<=0)f.text.destroy();}
    this.floaters=this.floaters.filter(f=>f.life>0);
-   if(this.spoilsReward?.life&&this.spoilsReward.life>0&&navigator.webdriver)this.game.canvas.dataset.spoilsReward=JSON.stringify({amount:this.spoilsReward.reward,text:this.spoilsReward.text.text,alpha:this.spoilsReward.text.alpha,reduced:this.reduce});
+   const rewardEvidence=navigator.webdriver?spoilsRewardEvidence(this.spoilsReward,this.floaters,this.reduce):null;
+   if(rewardEvidence)this.game.canvas.dataset.spoilsReward=JSON.stringify(rewardEvidence);
    else {this.spoilsReward=null;if(navigator.webdriver)delete this.game.canvas.dataset.spoilsReward;}
   }
   private resetEffects(reason:'motion'|'scene'='scene'):void {this.baseHit={player:0,enemy:0};this.battlefieldMemory=battlefieldMemoryAfterReset(this.battlefieldMemory,reason,this.bolts.flatMap(b=>b.memory?[b.memory]:[]));this.spoilsHomecoming=[];this.spoilsReward=null;delete this.game.canvas.dataset.battlefieldMemory;delete this.game.canvas.dataset.battlefieldMemoryPending;delete this.game.canvas.dataset.spoilsHomecoming;delete this.game.canvas.dataset.spoilsReward;for(const g of this.groundFx)g.clear();this.attackCues=[];this.impactCues=[];this.fallen.clear();for(const f of this.floaters)f.text.destroy();this.floaters=[];this.sparks=[];this.bolts=[];this.rings=[];this.flares=[];this.glow?.clear();}
