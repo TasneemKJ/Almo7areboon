@@ -30,6 +30,7 @@ import {SPOILS_HOMECOMING_CAP,rememberSpoilsHomecoming,spoilsHomecomingFrame,spo
 import {TROOP_FRAME} from './unit-illustrations.ts';
 import {compactNumber} from '../ui/battle-hud.ts';
 import {battleResolution} from './render-resolution.ts';
+import {battlefieldRendererMode} from './renderer-policy.ts';
 import {drawTroop,drawBase} from './art';
 import type {BattleState,GameEvent,GamePort,Unit,Side} from '../game/types';
 
@@ -742,7 +743,7 @@ export function mountBattlefield(element:HTMLElement,game:GamePort,onFrame:()=>v
  let renderer:Phaser.Game;
  const pixelRatio=battleResolution(window.devicePixelRatio);
  try{
-  renderer=new Phaser.Game({type:Phaser.AUTO,parent:element,width:(element.clientWidth||450)*pixelRatio,height:(element.clientHeight||430)*pixelRatio,transparent:true,antialias:true,render:{antialias:true,pixelArt:false},scale:{mode:Phaser.Scale.NONE,zoom:1/pixelRatio,autoCenter:Phaser.Scale.NO_CENTER},scene:[new Battlefield()],audio:{noAudio:true},fps:{target:60},banner:false});
+  renderer=new Phaser.Game({type:battlefieldRendererMode(navigator.userAgent)==='canvas'?Phaser.CANVAS:Phaser.AUTO,parent:element,width:(element.clientWidth||450)*pixelRatio,height:(element.clientHeight||430)*pixelRatio,transparent:true,antialias:true,render:{antialias:true,pixelArt:false},scale:{mode:Phaser.Scale.NONE,zoom:1/pixelRatio,autoCenter:Phaser.Scale.NO_CENTER},scene:[new Battlefield()],audio:{noAudio:true},fps:{target:60},banner:false});
  }catch(error){loading.textContent='The battlefield could not start. Reload or try another browser.';throw error;}
  if(navigator.webdriver){
   let reviewResult:ReviewSnapshot|null=null,reviewWaiter:((snapshot:ReviewSnapshot)=>void)|null=null,reviewArmed=false;

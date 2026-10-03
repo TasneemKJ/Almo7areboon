@@ -121,12 +121,58 @@ async function run(engine,width,height,temporary=false,insets=null){
  }catch(error){item.error=error.stack;console.error('FAIL',name,error.message);await page.screenshot({path:`${out}/${name}-failure.png`}).catch(()=>{});}
  finally{await context.close();}
 }
+async function verifyPaintedWebkitBattlefield(browser){
+ const name='webkit-390x844-painted-stress',item={name,status:'failed',issues:[],screens:[],observations:[]};report.cases.push(item);
+ const context=await browser.newContext({viewport:{width:390,height:844},deviceScaleFactor:1,hasTouch:true,isMobile:true,reducedMotion:'reduce'});
+ context.setDefaultTimeout(15000);const page=await context.newPage();page.on('pageerror',error=>report.errors.push({name,message:error.message}));
+ const tap=selector=>page.locator(selector).tap(),frames=()=>page.evaluate(()=>new Promise(resolve=>requestAnimationFrame(()=>requestAnimationFrame(resolve))));
+ const painted=async(label,persist=false,expectPainted=true)=>{
+  await frames();const file=`${out}/webkit-painted-${label}.png`,image=await page.screenshot(persist?{path:file}:{});
+  const sample=await page.evaluate(async({encoded,roi,label})=>{
+   const image=new Image();image.src=`data:image/png;base64,${encoded}`;await image.decode();
+   const canvas=document.createElement('canvas');canvas.width=image.width;canvas.height=image.height;
+   const context=canvas.getContext('2d',{willReadFrequently:true});context.drawImage(image,0,0);
+   const pixels=context.getImageData(roi.x,roi.y,roi.width,roi.height).data;let count=0,sum=0,squares=0;
+   for(let i=0;i<pixels.length;i+=4)for(const channel of [pixels[i],pixels[i+1],pixels[i+2]]){const value=channel/255;count++;sum+=value;squares+=value*value;}
+   const mean=sum/count;return {label,rgbStddev:Math.sqrt(Math.max(0,squares/count-mean*mean))};
+  },{encoded:image.toString('base64'),roi:{x:45,y:180,width:300,height:220},label});
+  item.observations.push(sample);if(persist)item.screens.push(file.split('/').pop());
+  if(expectPainted)assert.ok(sample.rgbStddev>=.15,`${label}: battlefield lost its painted scene (RGB stddev ${sample.rgbStddev})`);
+  else assert.ok(sample.rgbStddev<.15,`${label}: hidden battlefield still crossed the painted threshold (RGB stddev ${sample.rgbStddev})`);
+  return sample;
+ };
+ try{
+  await page.goto(`${origin}/__fixture`);
+  await page.evaluate(({p,primary,backup})=>{localStorage.setItem(primary,JSON.stringify(p));localStorage.setItem(backup,JSON.stringify(p));},{p:{...defaultProfile(),sound:false,motion:'reduced'},primary:SAVE_KEY,backup:BACKUP_KEY});
+  await page.goto(origin,{waitUntil:'networkidle'});await page.waitForFunction(()=>document.querySelector('#app')?.dataset.saveSession==='active');
+  await painted('before',true);
+  const battlefield=page.locator('#battlefield canvas');
+  const previousVisibility=await battlefield.evaluate(node=>{const previous=node.style.visibility;node.style.visibility='hidden';return previous;});
+  await painted('blank-control',false,false);
+  await battlefield.evaluate((node,visibility)=>{node.style.visibility=visibility;},previousVisibility);
+  await painted('restored-control');
+  for(let cycle=1;cycle<=20;cycle++){
+   await tap('[data-command="start"]');await page.waitForFunction(()=>document.querySelector('#world')?.dataset.phase==='running');
+   await painted(`cycle-${cycle}-start`,cycle===20);
+   await tap('#pause');await page.waitForFunction(()=>document.querySelector('#pause')?.getAttribute('aria-pressed')==='true');
+   for(const tab of ['cards','skills','evolution','battle'])await tap(`.bottom-nav [data-tab="${tab}"]`);
+   await tap('[data-command="settings"]');await tap('[data-command="retreat"]');await page.getByRole('heading',{name:'REGROUP',exact:true}).waitFor();
+   await tap('[data-command="retry"]');await page.waitForFunction(()=>document.querySelector('#world')?.dataset.phase==='ready');
+   await painted(`cycle-${cycle}`,cycle===10||cycle===20);
+  }
+  item.status='passed';console.log('PASS',name);
+ }catch(error){item.error=error.stack;console.error('FAIL',name,error.message);await page.screenshot({path:`${out}/${name}-failure.png`}).catch(()=>{});}
+ finally{await context.close();}
+}
 try{
  for(const engine of (process.env.MOBILE_ENGINES??'chromium').split(',')){
   const driver=engine==='webkit'?webkit:chromium;
-  browser=await driver.launch({headless:true,...(engine==='chromium'&&process.env.CHROMIUM_PATH?{executablePath:process.env.CHROMIUM_PATH}:{})});report.browsers[engine]=browser.version();
+  const launch=()=>driver.launch({headless:true,...(engine==='chromium'&&process.env.CHROMIUM_PATH?{executablePath:process.env.CHROMIUM_PATH}:{})});
+  browser=await launch();report.browsers[engine]=browser.version();
   for(const [w,h] of [[320,568],[351,640],[360,640],[361,640],[390,844],[430,932],[390,550],[844,390]])await run(engine,w,h);
+  if(engine==='webkit'){await browser.close();browser=await launch();}
   await run(engine,320,568,true);await run(engine,390,550,true);
+  if(engine==='webkit'){await browser.close();browser=await launch();await verifyPaintedWebkitBattlefield(browser);}
   if(engine==='chromium'){await run(engine,390,844,false,{top:44,bottom:34,left:0,right:0});await run(engine,390,550,true,{top:44,bottom:34,left:0,right:0});}
   await browser.close();browser=null;
  }
