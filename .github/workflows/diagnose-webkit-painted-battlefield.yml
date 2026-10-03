@@ -2,6 +2,8 @@ name: Diagnose painted WebKit battlefield
 on:
   push:
     branches: [diagnose/webkit-painted-battlefield-20261003]
+  pull_request:
+    branches: [main]
   workflow_dispatch:
 permissions:
   contents: read
