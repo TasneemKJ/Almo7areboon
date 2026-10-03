@@ -126,7 +126,7 @@ async function verifyPaintedWebkitBattlefield(browser){
  const context=await browser.newContext({viewport:{width:390,height:844},deviceScaleFactor:1,hasTouch:true,isMobile:true,reducedMotion:'reduce'});
  context.setDefaultTimeout(15000);const page=await context.newPage();page.on('pageerror',error=>report.errors.push({name,message:error.message}));
  const tap=selector=>page.locator(selector).tap(),frames=()=>page.evaluate(()=>new Promise(resolve=>requestAnimationFrame(()=>requestAnimationFrame(resolve))));
- const painted=async(label,persist=false)=>{
+ const painted=async(label,persist=false,expectPainted=true)=>{
   await frames();const file=`${out}/webkit-painted-${label}.png`,image=await page.screenshot(persist?{path:file}:{});
   const sample=await page.evaluate(async({encoded,roi,label})=>{
    const image=new Image();image.src=`data:image/png;base64,${encoded}`;await image.decode();
@@ -137,13 +137,20 @@ async function verifyPaintedWebkitBattlefield(browser){
    const mean=sum/count;return {label,rgbStddev:Math.sqrt(Math.max(0,squares/count-mean*mean))};
   },{encoded:image.toString('base64'),roi:{x:45,y:180,width:300,height:220},label});
   item.observations.push(sample);if(persist)item.screens.push(file.split('/').pop());
-  assert.ok(sample.rgbStddev>=.15,`${label}: battlefield lost its painted scene (RGB stddev ${sample.rgbStddev})`);return sample;
+  if(expectPainted)assert.ok(sample.rgbStddev>=.15,`${label}: battlefield lost its painted scene (RGB stddev ${sample.rgbStddev})`);
+  else assert.ok(sample.rgbStddev<.15,`${label}: hidden battlefield still crossed the painted threshold (RGB stddev ${sample.rgbStddev})`);
+  return sample;
  };
  try{
   await page.goto(`${origin}/__fixture`);
   await page.evaluate(({p,primary,backup})=>{localStorage.setItem(primary,JSON.stringify(p));localStorage.setItem(backup,JSON.stringify(p));},{p:{...defaultProfile(),sound:false,motion:'reduced'},primary:SAVE_KEY,backup:BACKUP_KEY});
   await page.goto(origin,{waitUntil:'networkidle'});await page.waitForFunction(()=>document.querySelector('#app')?.dataset.saveSession==='active');
   await painted('before',true);
+  const battlefield=page.locator('#battlefield canvas');
+  const previousVisibility=await battlefield.evaluate(node=>{const previous=node.style.visibility;node.style.visibility='hidden';return previous;});
+  await painted('blank-control',false,false);
+  await battlefield.evaluate((node,visibility)=>{node.style.visibility=visibility;},previousVisibility);
+  await painted('restored-control');
   for(let cycle=1;cycle<=20;cycle++){
    await tap('[data-command="start"]');await page.waitForFunction(()=>document.querySelector('#world')?.dataset.phase==='running');
    await painted(`cycle-${cycle}-start`,cycle===20);
