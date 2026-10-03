@@ -1,0 +1,91 @@
+name: Four QA iterations
+on:
+  push:
+    branches: [qa/four-iterations-2026-10-04]
+permissions: {contents: read}
+concurrency:
+  group: four-qa-iterations-2026-10-04
+  cancel-in-progress: false
+jobs:
+  iteration-1-battle:
+    runs-on: ubuntu-latest
+    timeout-minutes: 15
+    steps:
+      - uses: actions/checkout@v4
+        with: {persist-credentials: false}
+      - uses: actions/setup-node@v4
+        with: {node-version: 22, cache: npm}
+      - run: npm ci
+      - run: npm test
+      - run: npm run build
+      - name: Battle simulations
+        run: |
+          node --experimental-strip-types scripts/simulate-encounters.ts
+          node --experimental-strip-types scripts/simulate-chronicle.ts
+  iteration-2-progression:
+    runs-on: ubuntu-latest
+    timeout-minutes: 15
+    steps:
+      - uses: actions/checkout@v4
+        with: {persist-credentials: false}
+      - uses: actions/setup-node@v4
+        with: {node-version: 22, cache: npm}
+      - run: npm ci
+      - name: Progression and reward simulations
+        run: |
+          node --experimental-strip-types scripts/simulate-progression.ts
+          node --experimental-strip-types scripts/simulate-mastery.ts
+          node --experimental-strip-types scripts/simulate-prestige.ts
+      - name: Reward/save focused tests
+        run: node --experimental-strip-types --test tests/daily-reward.test.ts tests/cards.test.ts tests/progression.test.ts tests/mastery.test.ts tests/prestige.test.ts tests/recovery.test.ts tests/reset.test.ts
+  iteration-3-recovery:
+    runs-on: ubuntu-latest
+    timeout-minutes: 20
+    steps:
+      - uses: actions/checkout@v4
+        with: {persist-credentials: false}
+      - uses: actions/setup-node@v4
+        with: {node-version: 22, cache: npm}
+      - run: npm ci
+      - run: npm run build
+      - run: npx playwright install --with-deps chromium firefox webkit
+      - name: Save/session ownership
+        run: node --experimental-strip-types scripts/verify-save-sessions.mjs
+      - name: Cross-browser and offline recovery
+        run: |
+          node --experimental-strip-types scripts/verify-reliability.mjs
+          node --experimental-strip-types scripts/capture-offline-game-review.mjs
+  iteration-4-mobile-render:
+    runs-on: ubuntu-latest
+    timeout-minutes: 25
+    steps:
+      - uses: actions/checkout@v4
+        with: {persist-credentials: false}
+      - uses: actions/setup-node@v4
+        with: {node-version: 22, cache: npm}
+      - run: npm ci
+      - run: npm run build
+      - run: npx playwright install --with-deps chromium webkit
+      - name: Mobile Chromium/WebKit
+        env:
+          MOBILE_ASSERT: '1'
+          MOBILE_ENGINES: chromium,webkit
+        run: node --experimental-strip-types scripts/verify-mobile.mjs
+      - name: 40-scenario stress — Chromium
+        env:
+          QA_ENGINE: chromium
+          QA_RANGE: 1-40
+          QA_OUT: artifacts/four-iterations/chromium
+        run: node --experimental-strip-types scripts/qa40/campaign.mjs
+      - name: 40-scenario stress — WebKit
+        env:
+          QA_ENGINE: webkit
+          QA_RANGE: 1-40
+          QA_OUT: artifacts/four-iterations/webkit
+        run: node --experimental-strip-types scripts/qa40/campaign.mjs
+      - uses: actions/upload-artifact@v4
+        if: always()
+        with:
+          name: four-iteration-evidence
+          path: artifacts/
+          retention-days: 7
