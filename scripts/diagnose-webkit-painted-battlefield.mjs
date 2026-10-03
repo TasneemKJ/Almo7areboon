@@ -64,6 +64,7 @@ const report = {
   errors: [],
   captures: [],
   firstBlank: null,
+  firstBlankStage: null,
   simulationAdvancedWhileBlank: null,
   recovery: [],
 };
@@ -76,12 +77,19 @@ try {
   context = await browser.newContext({ viewport, hasTouch: true, isMobile: true, reducedMotion: 'reduce' });
   context.setDefaultTimeout(12_000);
   await context.addInitScript(() => {
-    window.__qaRender = { contexts: [], events: [], raf: 0, resize: [] };
+    window.__qaRender = { contexts: [], events: [], raf: 0, resize: [], commands: { clear: 0, drawArrays: 0, drawElements: 0 } };
     const originalGetContext = HTMLCanvasElement.prototype.getContext;
     HTMLCanvasElement.prototype.getContext = function(type, ...args) {
       const context = originalGetContext.call(this, type, ...args);
       if (/^webgl2?$/.test(String(type)) && context && !window.__qaRender.contexts.includes(context)) {
         window.__qaRender.contexts.push(context);
+        for (const name of ['clear', 'drawArrays', 'drawElements']) {
+          const original = context[name].bind(context);
+          context[name] = (...callArgs) => {
+            window.__qaRender.commands[name] += 1;
+            return original(...callArgs);
+          };
+        }
         this.addEventListener('webglcontextlost', event => {
           window.__qaRender.events.push({ type: 'lost', at: performance.now(), prevented: event.defaultPrevented });
         });
@@ -207,14 +215,15 @@ try {
           version: gl.getParameter(gl.VERSION),
         })),
         contextEvents: window.__qaRender?.events ?? [],
+        commands: { ...(window.__qaRender?.commands ?? {}) },
       };
     });
   }
 
-  async function capture(label) {
+  async function capture(label, persist = true) {
     await twoFrames();
     const path = `${output}/${label}.png`;
-    const screenshot = await page.screenshot({ path });
+    const screenshot = await page.screenshot(persist ? { path } : {});
     const metrics = await imageMetrics(screenshot);
     const sample = {
       label,
@@ -223,35 +232,45 @@ try {
       telemetry: await telemetry(),
     };
     report.captures.push(sample);
+    if (!persist && !sample.painted) writeFileSync(path, screenshot);
     return sample;
   }
 
-  async function cycle() {
+  async function cycle(iteration) {
+    const prefix = String(iteration).padStart(2, '0');
     await tap('[data-command="start"]');
     await page.waitForFunction(() => document.querySelector('#world')?.dataset.phase === 'running');
+    let sample = await capture(`${prefix}-after-start`, false);
+    if (!sample.painted) return sample;
     await tap('#pause');
     await page.waitForFunction(() => document.querySelector('#pause')?.getAttribute('aria-pressed') === 'true');
+    sample = await capture(`${prefix}-after-pause`, false);
+    if (!sample.painted) return sample;
     for (const tab of ['cards', 'skills', 'evolution', 'battle']) {
       await tap(`.bottom-nav [data-tab="${tab}"]`);
     }
+    sample = await capture(`${prefix}-after-tabs`, false);
+    if (!sample.painted) return sample;
     await tap('[data-command="settings"]');
     await tap('[data-command="retreat"]');
     await page.getByRole('heading', { name: 'REGROUP', exact: true }).waitFor();
     await tap('[data-command="retry"]');
     await page.waitForFunction(() => document.querySelector('#world')?.dataset.phase === 'ready');
+    return capture(`${prefix}-after-retry`, false);
   }
 
   const initial = await capture('00-before');
   assert.ok(initial.painted, `Initial battlefield must be painted; stddev=${initial.metrics.rgbStddev}`);
 
   for (let iteration = 1; iteration <= 20; iteration += 1) {
-    await cycle();
-    const sample = await capture(`${String(iteration).padStart(2, '0')}-cycle`);
+    const sample = await cycle(iteration);
     if (!sample.painted) {
       report.firstBlank = iteration;
+      report.firstBlankStage = sample.label;
       break;
     }
   }
+  if (report.firstBlank === null) await capture('20-after');
 
   if (report.firstBlank !== null) {
     const before = await page.evaluate(key => JSON.parse(localStorage.getItem(key)), SAVE_KEY);
@@ -286,6 +305,7 @@ try {
     revision,
     browser: report.browser,
     firstBlank: report.firstBlank,
+    firstBlankStage: report.firstBlankStage,
     simulationAdvancedWhileBlank: report.simulationAdvancedWhileBlank,
     errors: report.errors,
     recovery: report.recovery.map(item => ({
