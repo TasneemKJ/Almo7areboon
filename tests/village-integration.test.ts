@@ -55,8 +55,11 @@ test('one authoritative wave frame drives both the road omen and pooled village 
 });
 test('watchfire reuses village ambience and light pools with bounded webdriver evidence and cleanup',()=>{
  const source=readFileSync(new URL('../src/view/battlefield.ts',import.meta.url),'utf8');
+ const main=readFileSync(new URL('../src/main.ts',import.meta.url),'utf8');
  assert.match(source,/private villageHudPhase:Phase\|null=null;/,'the HUD exclusion map needs an explicit phase owner');
- assert.match(source,/if\(this\.villageHudPhase!==game\.state\.phase\)\{this\.villageHudPhase=game\.state\.phase;this\.cacheVillageViewport\(\);\}/,'ready-to-running DOM reflow must invalidate stale HUD exclusions before the village is painted');
+ assert.match(source,/onFrame:\(force\?:boolean\)=>void/,'the renderer must be able to request an immediate host-layout sync');
+ assert.match(source,/if\(this\.villageHudPhase!==game\.state\.phase\)\{const world=element\.closest<HTMLElement>\('\.world'\);if\(world\?\.dataset\.phase!==game\.state\.phase\)onFrame\(true\);this\.villageHudPhase=game\.state\.phase;this\.cacheVillageViewport\(\);\}/,'phase reflow must reach the DOM before HUD exclusions are measured and the village is painted');
+ assert.match(main,/mountBattlefield\(\$\('battlefield'\),port,force=>update\(force\),events/,'the host must honor a forced layout sync from the renderer');
  assert.match(source,/for\(const stroke of frame\.watchStrokes\)\{g\.lineStyle\(stroke\.width,stroke\.color,stroke\.alpha\);g\.lineBetween\(stroke\.from\.x,stroke\.from\.y,stroke\.to\.x,stroke\.to\.y\);\}/);
  assert.match(source,/const watchfireRegions=/);
  assert.match(source,/frame\.watchStrokes\.map/);assert.match(source,/frame\.watchLights\.map/);

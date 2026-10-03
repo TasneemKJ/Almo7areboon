@@ -605,7 +605,7 @@ function events(batch:GameEvent[]){
 }
 const port=createBattlefieldPort(()=>game,action,dt=>{syncPause();if(playable())game.step(dt*game.profile.speed);});
 rebuildArmy();syncMotion();syncPause();update(true);
-const renderer=mountBattlefield($('battlefield'),port,()=>update(),events,{isVisible:()=>activeTab==='battle'&&!document.hidden,villageMood:()=>villagePresentation!.mood,onPresentation:syncVillagePresentation});
+const renderer=mountBattlefield($('battlefield'),port,force=>update(force),events,{isVisible:()=>activeTab==='battle'&&!document.hidden,villageMood:()=>villagePresentation!.mood,onPresentation:syncVillagePresentation});
 lifetime.add(()=>renderer.destroy());lifetime.add(disposeAudio);
 lifetime.add(()=>{window.clearTimeout(toastTimer);window.cancelAnimationFrame(focusFrame);isolateModal(false);});
 lifetime.add(()=>{acquisitionVersion++;sessionReady=false;session.dispose();});

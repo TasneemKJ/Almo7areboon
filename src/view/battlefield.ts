@@ -62,7 +62,7 @@ const paintSpoilsToken=(g:Phaser.GameObjects.Graphics,frame:{x:number;y:number;s
 };
 
 /** Raster and SVG art share logical anchors; simulation remains the gameplay owner. */
-export function mountBattlefield(element:HTMLElement,game:GamePort,onFrame:()=>void,onEvents:(events:GameEvent[])=>void,options:{isVisible?:()=>boolean;villageMood?:()=>Readonly<VillageMoodSnapshot>;onPresentation?:(dt:number,events:readonly GameEvent[])=>void}={}):{destroy():void} {
+export function mountBattlefield(element:HTMLElement,game:GamePort,onFrame:(force?:boolean)=>void,onEvents:(events:GameEvent[])=>void,options:{isVisible?:()=>boolean;villageMood?:()=>Readonly<VillageMoodSnapshot>;onPresentation?:(dt:number,events:readonly GameEvent[])=>void}={}):{destroy():void} {
  let disposed=false;
  const motionQuery=window.matchMedia('(prefers-reduced-motion: reduce)');
  const loading=document.createElement('div');loading.className='world-loader';loading.setAttribute('role','status');loading.textContent='Preparing the battlefield…';element.append(loading);
@@ -745,7 +745,7 @@ export function mountBattlefield(element:HTMLElement,game:GamePort,onFrame:()=>v
    this.syncEra();for(const event of events)this.event(event);
    if(options.isVisible&&!options.isVisible()){onFrame();return;}
    if(!game.state.paused&&!this.reduce)this.clock+=dt;
-   if(this.villageHudPhase!==game.state.phase){this.villageHudPhase=game.state.phase;this.cacheVillageViewport();}
+   if(this.villageHudPhase!==game.state.phase){const world=element.closest<HTMLElement>('.world');if(world?.dataset.phase!==game.state.phase)onFrame(true);this.villageHudPhase=game.state.phase;this.cacheVillageViewport();}
    this.waveArrival=waveArrivalForPort(game,this.reduce);
    this.drawAtmosphere();this.drawBaseDamage();this.drawArmy();this.healthBars();this.effects(game.state.paused?0:dt);onFrame();
   }
