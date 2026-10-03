@@ -30,5 +30,6 @@ test('a real public battle credits coins before emitting the presentation intent
 test('battlefield launches from the numeric cue and suppresses missing-texture placeholders',async()=>{
  const source=await readFile(new URL('../src/view/battlefield.ts',import.meta.url),'utf8');
  assert.match(source,/textures\.exists\('spoils-coin'\).*SPOILS_HOMECOMING_CAP/s);
- assert.match(source,/rememberSpoilsHomecoming\(this\.spoilsHomecoming,\{\.\.\.intent,y:y-51\}\)/);
+ assert.match(source,/private spoilsOrder=0/);
+ assert.match(source,/rememberSpoilsHomecoming\(this\.spoilsHomecoming,\{\.\.\.intent,x:this\.spoilsReward\.text\.x,y:this\.spoilsReward\.startY\},\+\+this\.spoilsOrder\)/);
 });

@@ -35,6 +35,13 @@ test('homeward tokens are immutable and capped to the newest six rewards',async(
  assert.throws(()=>{(marks as unknown[]).push({});},TypeError);
 });
 
+test('renderer-supplied identity stays unique after the active list becomes empty',async()=>{
+ const m=await subject();const [first]=m.rememberSpoilsHomecoming([],{x:100,amount:1},7);
+ assert.equal(first.order,7);
+ const [later]=m.rememberSpoilsHomecoming([],{x:120,amount:2},8);
+ assert.equal(later.order,8);
+});
+
 test('pause is byte-stable and active presentation time expires at nine tenths of a second',async()=>{
  const m=await subject();const marks=m.rememberSpoilsHomecoming([],{x:300,amount:9});
  assert.equal(m.SPOILS_HOMECOMING_LIFE,.9);
@@ -76,4 +83,7 @@ test('direct malformed input fails finite without mutating caller data',async()=
  const frame=m.spoilsHomecomingFrame(mark,Infinity,false);
  assert.ok(frame);
  for(const value of [frame.x,frame.y,frame.alpha,frame.size,frame.angle])assert.equal(Number.isFinite(value),true);
+ const [offstage]=m.rememberSpoilsHomecoming([],{x:300,y:10000,amount:1});
+ assert.equal(offstage.y,500);
+ assert.equal(m.spoilsHomecomingFrame(offstage,300,false)?.y,500);
 });
