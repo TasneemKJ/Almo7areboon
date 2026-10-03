@@ -45,3 +45,18 @@ test('workflow always evaluates and includes every fallible verification check',
   assert.deepEqual(required?.sort(), ids.sort());
   assert.match(final, /node scripts\/require-verification\.mjs/);
 });
+
+test('deep verification runs automatically for pull requests and main pushes', () => {
+  const triggers = workflow.slice(workflow.indexOf('\non:\n'), workflow.indexOf('\npermissions:'));
+  const block = (name: string) => {
+    const match = triggers.match(new RegExp(`\\n  ${name}:(.*?)(?=\\n  [\\w-]+:|$)`, 's'));
+    assert.ok(match, `${name} trigger is required`);
+    return match[1].trim();
+  };
+  const pushBranches = block('push').match(/^branches: \[([^\]]+)\]$/)?.[1]
+    .split(',').map(branch => branch.trim());
+  assert.ok(pushBranches?.includes('main'), 'push must include the exact main branch');
+  assert.ok(pushBranches?.every(branch => !branch.includes('!')), 'push branch filters must not contain exclusions');
+  assert.equal(block('pull_request'), '', 'pull_request must not be narrowed by branches or event types');
+  assert.equal(block('workflow_dispatch'), '', 'manual verification must remain available');
+});

@@ -1,7 +1,8 @@
 name: Verify game
-# This suite is intentionally expensive. Run it manually when deep verification is needed;
-# fast mobile/reliability workflows remain automatic on normal development changes.
 on:
+  push:
+    branches: [main, feat/finish-core-40-passes]
+  pull_request:
   workflow_dispatch:
 permissions:
   contents: read
