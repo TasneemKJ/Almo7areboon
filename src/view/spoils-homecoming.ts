@@ -2,9 +2,10 @@ import type {GameEvent} from '../game/types.ts';
 
 export const SPOILS_HOMECOMING_CAP=6;
 export const SPOILS_HOMECOMING_LIFE=.9;
+export const SPOILS_HOMECOMING_TRAVEL=.72;
 export const SPOILS_HOME_X=58;
 
-export interface SpoilsHomecomingInput {readonly x:number;readonly amount:number}
+export interface SpoilsHomecomingInput {readonly x:number;readonly y?:number;readonly amount:number}
 export interface SpoilsHomecomingMark extends SpoilsHomecomingInput {readonly age:number;readonly life:number;readonly order:number}
 export interface SpoilsHomecomingFrame {readonly x:number;readonly y:number;readonly alpha:number;readonly size:number;readonly angle:number}
 
@@ -22,6 +23,7 @@ export function rememberSpoilsHomecoming(previous:readonly Readonly<SpoilsHomeco
  const order=previous.reduce((largest,mark)=>Math.max(largest,Number.isFinite(mark.order)?mark.order:0),0)+1;
  const mark:SpoilsHomecomingMark={
   x:clamp(finite(input.x,225),24,426),
+  ...(Number.isFinite(input.y)?{y:input.y}:{}),
   amount:Math.max(1,finite(input.amount,1)),
   age:0,
   life:SPOILS_HOMECOMING_LIFE,
@@ -38,11 +40,11 @@ export function stepSpoilsHomecoming(previous:readonly Readonly<SpoilsHomecoming
 export function spoilsHomecomingFrame(mark:Readonly<SpoilsHomecomingMark>,groundY:number,reduced:boolean):Readonly<SpoilsHomecomingFrame>|null {
  if(reduced)return null;
  const safeGround=finite(groundY,300),fromX=clamp(finite(mark.x,225),24,426),age=clamp(finite(mark.age,0),0,SPOILS_HOMECOMING_LIFE);
- const progress=age/SPOILS_HOMECOMING_LIFE,fromY=safeGround-51,toY=safeGround-72;
+ const progress=clamp(age/SPOILS_HOMECOMING_TRAVEL,0,1),fromY=finite(mark.y??NaN,safeGround-51),toY=safeGround-72;
  const frame:SpoilsHomecomingFrame={
   x:fromX+(SPOILS_HOME_X-fromX)*progress,
   y:fromY+(toY-fromY)*progress-176*progress*(1-progress),
-  alpha:progress<.8?1:clamp((1-progress)/.2,0,1),
+  alpha:age<=SPOILS_HOMECOMING_TRAVEL?1:clamp((SPOILS_HOMECOMING_LIFE-age)/(SPOILS_HOMECOMING_LIFE-SPOILS_HOMECOMING_TRAVEL),0,1),
   size:16+2*Math.sin(Math.PI*progress),
   angle:720*progress,
  };

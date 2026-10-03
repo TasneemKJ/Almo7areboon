@@ -38,7 +38,7 @@ type TroopView={body:ImageOrFallback;x:number;y:number;lane:number;side:Side;dus
 type Spark={x:number;y:number;vx:number;vy:number;life:number;max:number;size:number;color:number;dust:boolean;lane?:number};
 type Bolt={from:{x:number;y:number};to:{x:number;y:number};life:number;max:number;arc:number;age:number;kind:Unit['kind'];side:Side;heavy:boolean;damage:number;meteor?:boolean;memory?:BattlefieldMemoryInput;targetBase?:boolean;targetSide?:Side;targetAge?:number};
 type Ring={x:number;y:number;life:number;max:number;radius:number;color:number};
-type Floater={text:Phaser.GameObjects.Text;life:number;max:number;startY:number;banner:boolean};
+type Floater={text:Phaser.GameObjects.Text;life:number;max:number;startY:number;banner:boolean;reward?:number};
 type AttackCue={x:number;y:number;lane:number;age:number;kind:Unit['kind'];side:Side;life:number;max:number};
 type ImpactCue={x:number;y:number;age:number;kind:Unit['kind'];side:Side;life:number;max:number;trait?:'guard'|'pierce'|'sweep';lane?:number};
 type Flare={x:number;y:number;life:number;max:number;radius:number;color:number};
@@ -94,6 +94,7 @@ export function mountBattlefield(element:HTMLElement,game:GamePort,onFrame:()=>v
   private battlefieldHudBounds:BattlefieldMemoryRegion[]=[];
   private spoilsHomecoming:readonly SpoilsHomecomingMark[]=[];
   private spoilsTokens:Phaser.GameObjects.Image[]=[];
+  private spoilsReward:Floater|null=null;
   private floaters:Floater[]=[];
   private layout=arenaLayout(450,430);
   private ages='';
@@ -140,7 +141,7 @@ export function mountBattlefield(element:HTMLElement,game:GamePort,onFrame:()=>v
    this.world.add(this.foreground);
    this.mist=this.add.container();this.world.add(this.mist);
    this.fx=this.add.graphics();this.world.add(this.fx);
-   for(let i=0;i<SPOILS_HOMECOMING_CAP;i++){const token=this.add.image(0,0,'spoils-coin').setVisible(false);this.world.add(token);this.spoilsTokens.push(token);}
+   if(this.textures.exists('spoils-coin'))for(let i=0;i<SPOILS_HOMECOMING_CAP;i++){const token=this.add.image(0,0,'spoils-coin').setVisible(false);this.world.add(token);this.spoilsTokens.push(token);}
    this.glow=this.add.graphics().setBlendMode(Phaser.BlendModes.ADD);this.world.add(this.glow);
    this.bars=this.add.graphics();this.world.add(this.bars);
    for(let i=0;i<2;i++){
@@ -148,7 +149,7 @@ export function mountBattlefield(element:HTMLElement,game:GamePort,onFrame:()=>v
     this.baseText.push(text);this.world.add(text);
    }
    this.scale.on('resize',this.resize,this);
-   this.events.once('shutdown',()=>{delete this.game.canvas.dataset.waveArrival;delete this.game.canvas.dataset.battleAftermath;delete this.game.canvas.dataset.villageVerdict;delete this.game.canvas.dataset.battlefieldMemory;delete this.game.canvas.dataset.spoilsHomecoming;delete this.game.canvas.dataset.battlefieldReviewFrameReady;this.aftermath=null;this.scale.off('resize',this.resize,this);this.resetEffects();this.units.clear();this.idle=[];});
+   this.events.once('shutdown',()=>{delete this.game.canvas.dataset.waveArrival;delete this.game.canvas.dataset.battleAftermath;delete this.game.canvas.dataset.villageVerdict;delete this.game.canvas.dataset.battlefieldMemory;delete this.game.canvas.dataset.spoilsHomecoming;delete this.game.canvas.dataset.spoilsReward;delete this.game.canvas.dataset.battlefieldReviewFrameReady;this.aftermath=null;this.scale.off('resize',this.resize,this);this.resetEffects();this.units.clear();this.idle=[];});
    this.resize();this.syncEra();loading.remove();
    if(this.failed)element.dispatchEvent(new CustomEvent('visual-fallback',{bubbles:true}));
   }
@@ -592,15 +593,16 @@ export function mountBattlefield(element:HTMLElement,game:GamePort,onFrame:()=>v
    if(this.reduce)return;
    this.rings.push({x,y,life:.32,max:.32,radius,color});if(this.rings.length>24)this.rings.shift();
   }
-  private floatText(x:number,y:number,value:string,color='#fff1c8',large=false,heavy=false):void {
+  private floatText(x:number,y:number,value:string,color='#fff1c8',large=false,heavy=false):Floater {
    const life=large?1.05:.62;
    const px=Math.max(22,Math.min(428,x));
    y=stackedY(this.floaters.map(f=>({x:f.text.x,startY:f.startY,life:f.life,max:f.max,banner:f.banner})),px,y,large);
    const text=this.add.text(px,y,value,{fontFamily:'Trebuchet MS, Arial, sans-serif',fontSize:large?'22px':heavy?'15px':'13px',fontStyle:'bold',color,stroke:'#132a33',strokeThickness:large?5:3}).setOrigin(.5).setShadow(0,2,'#08171d',large?6:3,true,true);
-   this.world.add(text);this.floaters.push({text,life,max:life,startY:y,banner:large});
+   const floater={text,life,max:life,startY:y,banner:large};this.world.add(text);this.floaters.push(floater);
    // Skill and reward banners never compete with damage numbers for the 24 recycled slots.
    const numbers=this.floaters.filter(f=>!f.banner);
    if(numbers.length>24){const oldest=numbers[0];oldest.text.destroy();this.floaters.splice(this.floaters.indexOf(oldest),1);}
+   return floater;
   }
   private impact(x:number,y:number,amount:number,age:number,kind:Unit['kind'],side:Side,heavy=kind===2):void {
    this.impactCues.push({x,y,age,kind,side,life:heavy?.3:.24,max:heavy?.3:.24});if(this.impactCues.length>54)this.impactCues.shift();
@@ -626,12 +628,12 @@ export function mountBattlefield(element:HTMLElement,game:GamePort,onFrame:()=>v
    else if(navigator.webdriver)delete this.game.canvas.dataset.battlefieldMemory;
   }
   private drawSpoilsHomecoming():void {
-   const diagnostics:{amount:number;age:number;x:number;y:number;alpha:number}[]=[];
+   const diagnostics:{order:number;amount:number;age:number;x:number;y:number;alpha:number}[]=[];
    for(let index=0;index<this.spoilsTokens.length;index++){
     const token=this.spoilsTokens[index],mark=this.spoilsHomecoming[index],frame=mark?spoilsHomecomingFrame(mark,this.layout.groundY,this.reduce):null;
     if(!mark||!frame){token.setVisible(false);continue;}
     token.setVisible(true).setPosition(frame.x,frame.y).setDisplaySize(frame.size,frame.size).setAngle(frame.angle).setAlpha(frame.alpha);
-    diagnostics.push({amount:mark.amount,age:mark.age,x:frame.x,y:frame.y,alpha:frame.alpha});
+    diagnostics.push({order:mark.order,amount:mark.amount,age:mark.age,x:frame.x,y:frame.y,alpha:frame.alpha});
    }
    if(navigator.webdriver&&diagnostics.length)this.game.canvas.dataset.spoilsHomecoming=JSON.stringify({count:diagnostics.length,cap:SPOILS_HOMECOMING_CAP,marks:diagnostics,reduced:this.reduce,paused:game.state.paused});
    else if(navigator.webdriver)delete this.game.canvas.dataset.spoilsHomecoming;
@@ -661,7 +663,7 @@ export function mountBattlefield(element:HTMLElement,game:GamePort,onFrame:()=>v
     else{this.impact(x,y-22,e.amount??0,e.source?.age??0,e.source?.kind??0,e.source?.side??'player');if(intent)this.rememberImpact(intent);}
    }
    if(e.type==='death'){this.emit(x,y-12,9,e.side==='player'?0x82cce8:0xe6b388,true,.52,e.lane??1);this.flare(x,y-14,18,e.side==='player'?0x5ccfff:0xff8a50,.3);}
-   if(e.type==='coin'&&e.amount){this.floatText(x,y-51,`+${compactNumber(e.amount)}`,'#ffdf7f');const intent=spoilsHomecomingIntentForEvent(e);if(intent&&!this.reduce)this.spoilsHomecoming=rememberSpoilsHomecoming(this.spoilsHomecoming,intent);}
+   if(e.type==='coin'&&e.amount){this.spoilsReward=this.floatText(x,y-51,`+${compactNumber(e.amount)}`,'#ffdf7f');this.spoilsReward.reward=e.amount;const intent=spoilsHomecomingIntentForEvent(e);if(intent&&!this.reduce&&this.spoilsTokens.length)this.spoilsHomecoming=rememberSpoilsHomecoming(this.spoilsHomecoming,{...intent,y:y-51});}
    if(e.type==='win'&&game.state.chronicle&&['escort','hold','rescue'].includes(game.state.chronicle.objective)){this.floatText(225,this.layout.groundY-70,'THE COMPANY RETURNS','#e5d4ad',true);this.ring(110,this.layout.groundY-12,0xd5bd89,24);return;}
    if(e.type==='win'){this.emit(408,this.layout.groundY-27,40,0xffd373,false,1.25);this.flare(411,this.layout.groundY-30,120,0xffd27a,1.1);if(!this.reduce){this.cameras.main.shake(100,.0015);this.cameras.main.flash(260,255,226,170);}}
    if(e.type==='lose')this.emit(39,this.layout.groundY-10,20,0xb6a484,true,.8);
@@ -710,8 +712,10 @@ export function mountBattlefield(element:HTMLElement,game:GamePort,onFrame:()=>v
    this.flares=this.flares.filter(f=>f.life>0);
    for(const f of this.floaters){f.life-=dt;const progress=1-f.life/f.max;f.text.setY(f.startY-(this.reduce?0:progress*22)).setAlpha(Math.max(0,Math.min(1,f.life/f.max*2)));if(f.life<=0)f.text.destroy();}
    this.floaters=this.floaters.filter(f=>f.life>0);
+   if(this.spoilsReward?.life&&this.spoilsReward.life>0&&navigator.webdriver)this.game.canvas.dataset.spoilsReward=JSON.stringify({amount:this.spoilsReward.reward,text:this.spoilsReward.text.text,alpha:this.spoilsReward.text.alpha,reduced:this.reduce});
+   else {this.spoilsReward=null;if(navigator.webdriver)delete this.game.canvas.dataset.spoilsReward;}
   }
-  private resetEffects(reason:'motion'|'scene'='scene'):void {this.baseHit={player:0,enemy:0};this.battlefieldMemory=battlefieldMemoryAfterReset(this.battlefieldMemory,reason,this.bolts.flatMap(b=>b.memory?[b.memory]:[]));this.spoilsHomecoming=[];delete this.game.canvas.dataset.battlefieldMemory;delete this.game.canvas.dataset.battlefieldMemoryPending;delete this.game.canvas.dataset.spoilsHomecoming;for(const token of this.spoilsTokens)token.setVisible(false);for(const g of this.groundFx)g.clear();this.attackCues=[];this.impactCues=[];this.fallen.clear();for(const f of this.floaters)f.text.destroy();this.floaters=[];this.sparks=[];this.bolts=[];this.rings=[];this.flares=[];this.glow?.clear();}
+  private resetEffects(reason:'motion'|'scene'='scene'):void {this.baseHit={player:0,enemy:0};this.battlefieldMemory=battlefieldMemoryAfterReset(this.battlefieldMemory,reason,this.bolts.flatMap(b=>b.memory?[b.memory]:[]));this.spoilsHomecoming=[];this.spoilsReward=null;delete this.game.canvas.dataset.battlefieldMemory;delete this.game.canvas.dataset.battlefieldMemoryPending;delete this.game.canvas.dataset.spoilsHomecoming;delete this.game.canvas.dataset.spoilsReward;for(const token of this.spoilsTokens)token.setVisible(false);for(const g of this.groundFx)g.clear();this.attackCues=[];this.impactCues=[];this.fallen.clear();for(const f of this.floaters)f.text.destroy();this.floaters=[];this.sparks=[];this.bolts=[];this.rings=[];this.flares=[];this.glow?.clear();}
   update(_time:number,delta:number):void {
    if(disposed||!this.world)return;
    const dt=Math.min(.05,Math.max(0,delta/1000));game.step(dt);

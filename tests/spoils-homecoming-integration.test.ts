@@ -4,6 +4,7 @@ import {defaultProfile} from '../src/game/save.ts';
 import {Game} from '../src/game/simulation.ts';
 import {spoilsHomecomingIntentForEvent} from '../src/view/spoils-homecoming.ts';
 import {visualAssets} from '../src/view/visual-assets.ts';
+import {readFile} from 'node:fs/promises';
 
 test('the existing painted coin is loaded once for the bounded battlefield pool',()=>{
  const assets=visualAssets().filter(asset=>asset.key==='spoils-coin');
@@ -24,4 +25,10 @@ test('a real public battle credits coins before emitting the presentation intent
  assert.ok(game.profile.coins>=amount&&game.state.earned>=amount,'simulation credit must precede presentation');
  const intent=spoilsHomecomingIntentForEvent(reward);
  assert.ok(intent&&intent.x>=24&&intent.x<=426&&intent.amount===amount);
+});
+
+test('battlefield launches from the numeric cue and suppresses missing-texture placeholders',async()=>{
+ const source=await readFile(new URL('../src/view/battlefield.ts',import.meta.url),'utf8');
+ assert.match(source,/textures\.exists\('spoils-coin'\).*SPOILS_HOMECOMING_CAP/s);
+ assert.match(source,/rememberSpoilsHomecoming\(this\.spoilsHomecoming,\{\.\.\.intent,y:y-51\}\)/);
 });

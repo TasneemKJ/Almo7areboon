@@ -50,5 +50,6 @@ jobs:
             artifacts/chronicle/320-spoils-home-spoils-home.png
             artifacts/chronicle/390-spoils-home-spoils-home.png
             artifacts/chronicle/1024-spoils-home-spoils-home.png
+            artifacts/chronicle/390-spoils-reduced-spoils-reduced.png
             artifacts/chronicle/report.json
           retention-days: 7

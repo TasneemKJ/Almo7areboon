@@ -3,7 +3,7 @@ import {mkdir,writeFile} from 'node:fs/promises';
 import assert from 'node:assert/strict';
 import {simulateChronicle,preparedChronicleProfile} from './simulate-chronicle.ts';
 import {arrivalReviewFixtures,assertArrivalPaused,validateArrivalSnapshot} from './chronicle-arrival-review.ts';
-import {assertSpoilsHomecomingPaused,validateSpoilsHomecomingSnapshot} from './spoils-homecoming-review.ts';
+import {assertSpoilsHomecomingPaused,assertSpoilsHomecomingProgress,validateSpoilsHomecomingSnapshot,validateSpoilsStaticReward} from './spoils-homecoming-review.ts';
 const base=process.env.REVIEW_URL??'http://127.0.0.1:4173',out='artifacts/chronicle';await mkdir(out,{recursive:true});
 const browser=await chromium.launch({headless:true,...(process.env.CHROMIUM_PATH?{executablePath:process.env.CHROMIUM_PATH}:{}),args:['--enable-unsafe-swiftshader']});
 const errors=[],assetFailures=[],checks=[],screens=[];
@@ -153,11 +153,14 @@ async function clickEnabled(page,locator){
 async function pauseAtSpoilsHomecoming(page){
  const deadline=Date.now()+60000;
  while(Date.now()<deadline){
-  const observed=await page.locator('#pause').evaluate(button=>{const raw=document.querySelector('canvas')?.dataset.spoilsHomecoming;if(!raw)return null;const state=JSON.parse(raw);if(state.paused||!state.count)return null;button.click();return state;});
+  const observed=await page.locator('canvas').evaluate(node=>{const raw=node.dataset.spoilsHomecoming;if(!raw)return null;const state=JSON.parse(raw);if(state.paused||!state.marks?.some(mark=>mark.alpha>=.5&&mark.age>=.04&&mark.age<=.5&&Math.abs(mark.x-58)>6))return null;return state;});
   if(observed){
    validateSpoilsHomecomingSnapshot(observed,false,false);
+   await page.waitForFunction(prior=>{const raw=document.querySelector('canvas')?.dataset.spoilsHomecoming;if(!raw)return false;const state=JSON.parse(raw);return !state.paused&&prior.marks.some(start=>state.marks.some(current=>current.order===start.order&&current.alpha>=.35&&current.age>=start.age+.04&&Math.abs(current.x-58)<Math.abs(start.x-58)-1));},observed,{timeout:Math.max(1,deadline-Date.now())});
+   const progressed=await page.locator('#pause').evaluate((button,prior)=>{const raw=document.querySelector('canvas')?.dataset.spoilsHomecoming;if(!raw)return null;const state=JSON.parse(raw);const moved=!state.paused&&prior.marks.some(start=>state.marks.some(current=>current.order===start.order&&current.alpha>=.35&&current.age>=start.age+.04&&Math.abs(current.x-58)<Math.abs(start.x-58)-1));if(!moved)return null;button.click();return state;},observed);
+   if(!progressed)continue;assertSpoilsHomecomingProgress(observed,progressed);
    await page.waitForFunction(()=>{const raw=document.querySelector('canvas')?.dataset.spoilsHomecoming;return raw&&JSON.parse(raw).paused===true;});
-   const paused=await page.locator('canvas').evaluate(node=>JSON.parse(node.dataset.spoilsHomecoming));assertSpoilsHomecomingPaused(observed,paused);return paused;
+   const paused=await page.locator('canvas').evaluate(node=>JSON.parse(node.dataset.spoilsHomecoming));assertSpoilsHomecomingPaused(progressed,paused);return paused;
   }
   await clickEnabled(page,page.locator('[data-skill="food"]'));await clickEnabled(page,page.locator('[data-unit="0"]'));await page.waitForTimeout(25);
  }
@@ -234,7 +237,8 @@ try{
  {
   const p=preparedChronicleProfile();p.coins=0;p.motion='system';p.speed=2;p.age=0;p.enemyAge=0;p.foodLevel=30;p.baseLevel=20;p.unlocked=[true,true,true];p.chronicle.route='road';p.chronicle.expedition=null;
   const f=await open('390-spoils-reduced',390,844,p,'reduce'),before=await f.page.locator('#coins').textContent();await f.page.locator('[data-command="start"]').click();await waitForCreditedCoin(f.page,before);await f.page.waitForTimeout(50);
-  assert.equal(await f.page.locator('canvas').getAttribute('data-spoils-homecoming'),null,'reduced motion must retain the numeric reward without a travelling token');await noOverflow(f.page);checks.push('390: reduced motion credits the same public combat reward without adding travelling spoils');await f.context.close();
+  const cue=await f.page.locator('canvas').evaluate(node=>JSON.parse(node.dataset.spoilsReward??'null'));validateSpoilsStaticReward(cue,true);
+  assert.equal(await f.page.locator('canvas').getAttribute('data-spoils-homecoming'),null,'reduced motion must retain the numeric reward without a travelling token');await noOverflow(f.page);await shot(f,'spoils-reduced');checks.push('390: reduced motion credits the same public combat reward, keeps the visible numeric cue, and adds no travelling spoils');await f.context.close();
  }
  {
   const p=preparedChronicleProfile();p.motion='system';p.speed=1;p.age=0;p.enemyAge=0;p.chronicle.route='road';p.chronicle.expedition=null;

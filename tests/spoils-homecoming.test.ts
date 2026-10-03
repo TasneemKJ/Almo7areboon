@@ -46,18 +46,26 @@ test('pause is byte-stable and active presentation time expires at nine tenths o
 });
 
 test('normal motion follows a finite bounded arc from reward to shelter while reduced motion adds no travel',async()=>{
- const m=await subject();const [mark]=m.rememberSpoilsHomecoming([],{x:360,amount:37});
- const first=m.spoilsHomecomingFrame(mark,300,false),middle=m.spoilsHomecomingFrame({...mark,age:.45},300,false),last=m.spoilsHomecomingFrame({...mark,age:.9},300,false);
- assert.ok(first&&middle&&last);
- assert.deepEqual({x:first.x,y:first.y},{x:360,y:249});
- assert.deepEqual({x:last.x,y:last.y},{x:58,y:228});
+ const m=await subject();const [mark]=m.rememberSpoilsHomecoming([],{x:360,y:261,amount:37});
+ const first=m.spoilsHomecomingFrame(mark,300,false),middle=m.spoilsHomecomingFrame({...mark,age:.36},300,false),arrival=m.spoilsHomecomingFrame({...mark,age:.72},300,false),fade=m.spoilsHomecomingFrame({...mark,age:.81},300,false);
+ assert.ok(first&&middle&&arrival&&fade);
+ assert.deepEqual({x:first.x,y:first.y},{x:360,y:261});
+ assert.deepEqual({x:arrival.x,y:arrival.y},{x:58,y:228});
  assert.ok(middle.x>58&&middle.x<360);
- assert.ok(middle.y<Math.min(first.y,last.y)-20,'the token must visibly arc above its straight path');
- for(const frame of [first,middle,last])for(const value of [frame.x,frame.y,frame.alpha,frame.size,frame.angle])assert.equal(Number.isFinite(value),true);
- assert.ok(first.alpha>=0&&middle.alpha>0&&last.alpha===0);
+ assert.ok(middle.y<Math.min(first.y,arrival.y)-20,'the token must visibly arc above its straight path');
+ for(const frame of [first,middle,arrival,fade])for(const value of [frame.x,frame.y,frame.alpha,frame.size,frame.angle])assert.equal(Number.isFinite(value),true);
+ assert.equal(arrival.alpha,1,'the token must visibly reach the shelter before its arrival dwell fades');
+ assert.deepEqual({x:fade.x,y:fade.y},{x:58,y:228},'the token must dwell at the shelter while fading');
+ assert.ok(fade.alpha>0&&fade.alpha<1);
  assert.ok(middle.size>=14&&middle.size<=20);
  assert.equal(m.spoilsHomecomingFrame(mark,300,true),null);
  assert.equal(Object.isFrozen(middle),true);
+});
+
+test('the token starts at the exact authoritative numeric reward origin',async()=>{
+ const m=await subject();const [mark]=m.rememberSpoilsHomecoming([],{x:360,y:261,amount:37});
+ const frame=m.spoilsHomecomingFrame(mark,300,false);assert.ok(frame);
+ assert.equal(frame.y,261);
 });
 
 test('direct malformed input fails finite without mutating caller data',async()=>{
