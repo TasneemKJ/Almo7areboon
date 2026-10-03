@@ -125,12 +125,10 @@ async function pauseAtLandmarkPhase(page,phase){
 // boundary before asserting that a paused presentation itself writes nothing.
 async function settledSaveAfterAutosave(page){await page.waitForTimeout(5250);return saved(page);}
 async function pauseAtWaveArrival(page,intent,onObserved){
- // The native 1024×768 fixture renders a 2× software framebuffer in Actions.
- // Match the other rendering-dependent stages' budget without advancing or
- // bypassing the authoritative simulation state that the assertion observes.
- // Later commander intents also need a real defending company: otherwise the
- // village is truthfully alarmed before its later wave and suppresses the relay.
- const deadline=Date.now()+120000,order=[0,1,0,2,1,2];let cursor=0;
+ // Every Chronicle commander owns the first authored wave. Observe that warning
+ // before troop or skill input can win the battle, alarm the village, or race the
+ // narrow animated relay window on a software-rendered Actions framebuffer.
+ const deadline=Date.now()+10000;
  while(Date.now()<deadline){
   const observed=await page.locator('canvas').evaluate((node,intent)=>{const raw=node.dataset.waveArrival,watchRaw=node.dataset.villageWatchfire;if(!raw||!watchRaw)return null;const arrival=JSON.parse(raw),watchfire=JSON.parse(watchRaw),ready=watchfire.reduced||watchfire.progress>=.75;return arrival.intent===intent&&watchfire.intent===intent&&ready&&arrival.progress===watchfire.progress&&arrival.nextIn>=0&&arrival.nextIn<=(watchfire.reduced?4:1)&&!arrival.paused&&!watchfire.paused?{arrival,watchfire}:null;},intent);
   if(observed){
@@ -142,8 +140,7 @@ async function pauseAtWaveArrival(page,intent,onObserved){
     validateArrivalSnapshot(before.arrival,intent);validateArrivalSnapshot(paused,intent);validateWatchfireSnapshot(watchfire,intent);validateWatchfireSnapshot(pausedWatchfire,intent);assertArrivalPaused(before.arrival,paused);assertWatchfirePaused(watchfire,pausedWatchfire);await onObserved?.(paused);return {before:before.arrival,paused,watchfire:pausedWatchfire};
    }
   }
-  await clickEnabled(page,page.locator('[data-skill="food"]'));await clickEnabled(page,page.locator('[data-skill="freeze"]'));await clickEnabled(page,page.locator('[data-skill="meteor"]'));
-  const kind=order[cursor%order.length];if(await clickEnabled(page,page.locator(`[data-unit="${kind}"]`)))cursor++;await page.waitForTimeout(25);
+  await page.waitForTimeout(25);
  }
  const diagnostic=await page.evaluate(()=>{const node=document.querySelector('canvas'),parse=raw=>{try{return raw?JSON.parse(raw):null;}catch{return {invalid:true};}},saved=parse(localStorage.getItem('almo7areboon.save.v1'));return {
   waveArrival:parse(node?.dataset.waveArrival),villageWatchfire:parse(node?.dataset.villageWatchfire),phase:document.querySelector('.world')?.dataset.phase??null,
@@ -242,7 +239,7 @@ try{
   checks.push(`disclosed restoration=${restoration} ready-state fixture renders the current painted settlement without presentation save writes`);await f.context.close();
  }
  for(const fixture of arrivalReviewFixtures()){
-  const p=preparedChronicleProfile();p.speed=2;p.age=fixture.age;p.enemyAge=fixture.age;p.furthestBattle=fixture.age;p.chronicle.clears[fixture.age]=1;p.chronicle.chapter=fixture.age;p.chronicle.route=fixture.route;p.chronicle.expedition=null;
+  const p=preparedChronicleProfile();p.speed=1;p.age=fixture.age;p.enemyAge=fixture.age;p.furthestBattle=fixture.age;p.chronicle.clears[fixture.age]=1;p.chronicle.chapter=fixture.age;p.chronicle.route=fixture.route;p.chronicle.expedition=null;
   const f=await open(fixture.name,fixture.width,fixture.height,p,fixture.reducedMotion);await f.page.locator('[data-command="start"]').click();
   const {paused,watchfire}=await pauseAtWaveArrival(f.page,fixture.intent,()=>renderedCanvasShot(f,'incoming-road')),reduced=fixture.reducedMotion==='reduce',expectedLights=reduced?fixture.authoredLights:null;assert.equal(paused.reduced,reduced);assert.equal(watchfire.reduced,reduced);if(expectedLights===null)assert.ok(watchfire.lights>=1&&watchfire.lights<=fixture.authoredLights);else assert.equal(watchfire.lights,expectedLights);assert.ok(paused.x>=340&&paused.x<=410);assert.ok(paused.y>120&&paused.y<430);
   const before=await settledSaveAfterAutosave(f.page);await noOverflow(f.page);await f.page.waitForTimeout(5250);

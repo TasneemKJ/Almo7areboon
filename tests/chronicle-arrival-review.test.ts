@@ -1,5 +1,7 @@
 import test from 'node:test';
 import assert from 'node:assert/strict';
+import {Game} from '../src/game/simulation.ts';
+import {preparedChronicleProfile} from '../scripts/simulate-chronicle.ts';
 
 const path='../scripts/chronicle-arrival-review.ts';
 async function subject(){
@@ -16,6 +18,15 @@ test('native review fixtures cover three intent shapes, all village plates and b
  ]);
  assert.deepEqual(fixtures.map((fixture:any)=>fixture.age),[0,1,2,3,4,5]);
  assert.ok(Object.isFrozen(fixtures)&&fixtures.every(Object.isFrozen));
+});
+
+test('each configured Chronicle fixture exposes its commander on the first authoritative wave',async()=>{
+ const m=await subject();
+ for(const fixture of m.arrivalReviewFixtures()){
+  const profile=preparedChronicleProfile();profile.age=fixture.age;profile.enemyAge=fixture.age;profile.furthestBattle=fixture.age;profile.chronicle!.clears[fixture.age]=1;profile.chronicle!.chapter=fixture.age;profile.chronicle!.route=fixture.route;profile.chronicle!.expedition=null;
+  const game=new Game(profile),preview=game.waveStatus().preview;
+  assert.equal(preview?.number,1);assert.equal(preview?.intent,fixture.intent);assert.ok(preview&&preview.nextIn>=3&&preview.nextIn<=4);
+ }
 });
 
 test('native diagnostic validation requires exact intent, role composition, geometry and depth',async()=>{
