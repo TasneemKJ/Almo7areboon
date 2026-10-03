@@ -5,6 +5,13 @@ export interface SoundscapePCM {sampleRate:number;duration:number;left:Float32Ar
 export const SOUNDSCAPE_SECONDS=24;
 export const soundscapeAge=(age:number)=>Number.isInteger(age)&&age>=0&&age<6?age:0;
 const TAU=Math.PI*2;
+const COURTYARD_INTERVALS=Object.freeze([[0,3],[-2,3],[-5,0],[0,5],[-3,2],[2,7]] as const);
+
+/** A short fictional answer authored from each chapter's score root. */
+export function courtyardAnswer(input:number):readonly [number,number] {
+ const age=soundscapeAge(input),root=CHAPTER_SCORES[age].root,[first,second]=COURTYARD_INTERVALS[age];
+ return Object.freeze([root*2**(first/12),root*2**(second/12)] as [number,number]);
+}
 
 /** Allocation is capped at 2 × 24 × 22050 floats (4,233,600 bytes). */
 export function synthesizeSoundscape(input:number,requestedRate=16000):SoundscapePCM {

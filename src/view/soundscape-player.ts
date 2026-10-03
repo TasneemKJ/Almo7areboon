@@ -1,11 +1,11 @@
-import {synthesizeSoundscape,soundscapeAge,type SoundscapePCM} from './soundscape.ts';
+import {courtyardAnswer,synthesizeSoundscape,soundscapeAge,type SoundscapePCM} from './soundscape.ts';
 import type {VillageMoodSnapshot} from './village-mood.ts';
-export type SoundscapeMood=Readonly<Pick<VillageMoodSnapshot,'alarmMix'|'alarmSerial'>>;
+export type SoundscapeMood=Readonly<Pick<VillageMoodSnapshot,'alarmMix'|'alarmSerial'|'recoverySerial'>>;
 interface AccentBudget {acquire():boolean;release():void}
 interface Accent {owner:AudioContext;source:OscillatorNode;gain:GainNode;end:number;closed:boolean}
 interface Ramp {from:number;to:number;at:number;end:number}
-const calm:SoundscapeMood={alarmMix:0,alarmSerial:0};
-const normalized=(mood:SoundscapeMood):SoundscapeMood=>({alarmMix:Number.isFinite(mood.alarmMix)?Math.max(0,Math.min(1,mood.alarmMix)):0,alarmSerial:Number.isFinite(mood.alarmSerial)?Math.max(0,Math.floor(mood.alarmSerial)):0});
+const calm:SoundscapeMood={alarmMix:0,alarmSerial:0,recoverySerial:0};
+const normalized=(mood:SoundscapeMood):Required<SoundscapeMood>=>({alarmMix:Number.isFinite(mood.alarmMix)?Math.max(0,Math.min(1,mood.alarmMix)):0,alarmSerial:Number.isFinite(mood.alarmSerial)?Math.max(0,Math.floor(mood.alarmSerial)):0,recoverySerial:Number.isFinite(mood.recoverySerial)?Math.max(0,Math.floor(mood.recoverySerial!)):0});
 interface Voice {owner:AudioContext;source:AudioBufferSourceNode;gain:GainNode;filter?:BiquadFilterNode;mix:number;volume:Ramp;cutoff:Ramp;age:number;stopped:boolean;closed:boolean}
 
 /** One live voice, at most one 60ms retiring fade, and only the current scene buffer. */
@@ -23,6 +23,7 @@ export class SoundscapePlayer {
  private lastKnock=-Infinity;
  private lastPulse=0;
  private serial=0;
+ private recoverySerial=0;
  private audible=false;
  private readonly synthesize:(age:number)=>SoundscapePCM|Promise<SoundscapePCM>;
  private readonly budget?:AccentBudget;
@@ -33,15 +34,15 @@ export class SoundscapePlayer {
   const destination=output??context?.destination;
   if(this.owner!==context||this.output!==destination){this.dispose();this.owner=context;this.output=destination;}
   const age=soundscapeAge(input),mix=normalized(mood);this.wanted={age,audible,mood:mix};
-  if(!context||context.state!=='running'||!audible){this.clearAccents();this.serial=mix.alarmSerial;this.audible=false;this.retire(context?.state==='running');return;}
+  if(!context||context.state!=='running'||!audible){this.clearAccents();this.serial=mix.alarmSerial;this.recoverySerial=mix.recoverySerial;this.audible=false;this.retire(context?.state==='running');return;}
   const continuing=this.audible&&this.active?.age===age;
   if(!continuing){this.clearAccents();this.lastPulse=context.currentTime;}
   if(this.active?.age===age){
    this.smooth(this.active,mix.alarmMix);
-   if(continuing)this.watch(context,mix);
-   this.serial=mix.alarmSerial;this.audible=true;return;
+   if(continuing)this.watch(context,age,mix);
+   this.serial=mix.alarmSerial;this.recoverySerial=mix.recoverySerial;this.audible=true;return;
   }
-  this.serial=mix.alarmSerial;this.audible=true;
+  this.serial=mix.alarmSerial;this.recoverySerial=mix.recoverySerial;this.audible=true;
   if(this.failedAge===age||this.pendingAge===age)return;
   this.retire(true);
   if(this.cached?.age===age){this.start(context,age);return;}
@@ -106,25 +107,32 @@ export class SoundscapePlayer {
   };
   try{voice.volume=ramp(voice.gain.gain,voice.volume,volume);if(voice.filter)voice.cutoff=ramp(voice.filter.frequency,voice.cutoff,cutoff);voice.mix=mix;}catch{/* Optional audio. */}
  }
- private watch(context:AudioContext,mood:SoundscapeMood):void {
+ private watch(context:AudioContext,age:number,mood:Required<SoundscapeMood>):void {
   const now=context.currentTime;
   for(const accent of this.accents)if(accent.end<=now)this.releaseAccent(accent);
-  if(mood.alarmSerial>this.serial){
+  if(mood.recoverySerial>this.recoverySerial){
+   this.lastPulse=now;this.accent(context,'answer',age);
+  }else if(mood.alarmSerial>this.serial){
    this.lastPulse=now;
-   if(now-this.lastKnock+1e-9>=8){this.lastKnock=now;this.accent(context,false);}
-  }else if(mood.alarmMix>=.99&&now-this.lastPulse+1e-9>=1.8){this.lastPulse=now;this.accent(context,true);}
+   if(now-this.lastKnock+1e-9>=8){this.lastKnock=now;this.accent(context,'knock',age);}
+  }else if(mood.alarmMix>=.99&&now-this.lastPulse+1e-9>=1.8){this.lastPulse=now;this.accent(context,'pulse',age);}
   // Recovery uses the same serial; mixing below full alarm stops its pulses.
   if(mood.alarmMix<.99)this.lastPulse=now;
  }
- private accent(context:AudioContext,pulse:boolean):void {
+ private accent(context:AudioContext,mode:'knock'|'pulse'|'answer',age:number):void {
   if(this.accents.size>=2||!context.createOscillator)return;
   if(this.budget&&!this.budget.acquire())return;
   let source:OscillatorNode|undefined,gain:GainNode|undefined,accent:Accent|undefined;
   try{
-   const now=context.currentTime,duration=pulse?.25:.12;
-   source=context.createOscillator();gain=context.createGain();source.type=pulse?'sine':'triangle';
-   source.frequency.setValueAtTime(pulse?55:180,now);source.frequency.exponentialRampToValueAtTime(pulse?50:80,now+duration);
-   gain.gain.setValueAtTime(pulse?.012:.015,now);gain.gain.exponentialRampToValueAtTime(.0001,now+duration);
+   const now=context.currentTime,duration=mode==='answer'?.46:mode==='pulse'?.25:.12;
+   source=context.createOscillator();gain=context.createGain();source.type=mode==='knock'?'triangle':'sine';
+   if(mode==='answer'){
+    const [first,second]=courtyardAnswer(age);source.frequency.setValueAtTime(first,now);source.frequency.setValueAtTime(second,now+.18);
+    gain.gain.setValueAtTime(.0001,now);gain.gain.linearRampToValueAtTime(.009,now+.035);gain.gain.exponentialRampToValueAtTime(.0025,now+.16);gain.gain.linearRampToValueAtTime(.008,now+.22);gain.gain.exponentialRampToValueAtTime(.0001,now+duration);
+   }else{
+    source.frequency.setValueAtTime(mode==='pulse'?55:180,now);source.frequency.exponentialRampToValueAtTime(mode==='pulse'?50:80,now+duration);
+    gain.gain.setValueAtTime(mode==='pulse'?.012:.015,now);gain.gain.exponentialRampToValueAtTime(.0001,now+duration);
+   }
    source.connect(gain);gain.connect(this.output??context.destination);accent={owner:context,source,gain,end:now+duration,closed:false};
    const owned=accent;source.onended=()=>this.releaseAccent(owned);this.accents.add(accent);source.start(now);source.stop(now+duration);
   }catch{
@@ -141,7 +149,7 @@ export class SoundscapePlayer {
  /** Combat may reclaim one of the shared eight slots. */
  dropAccent():boolean {const accent=this.accents.values().next().value;if(!accent)return false;this.releaseAccent(accent);return true;}
  dispose():void {
-  this.cancelPending();this.wanted={age:0,audible:false,mood:calm};this.audible=false;this.serial=0;this.lastKnock=-Infinity;this.lastPulse=0;
+  this.cancelPending();this.wanted={age:0,audible:false,mood:calm};this.audible=false;this.serial=0;this.recoverySerial=0;this.lastKnock=-Infinity;this.lastPulse=0;
   if(this.active)this.release(this.active);if(this.retiring)this.release(this.retiring);
   this.owner=undefined;this.output=undefined;this.cached=undefined;this.failedAge=undefined;
  }

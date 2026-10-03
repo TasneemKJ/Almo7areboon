@@ -2,13 +2,13 @@ import type {BattleState,GameEvent,Phase} from '../game/types.ts';
 
 export type VillageMoodName='quiet'|'alarmed'|'recovering';
 export interface VillageAlarmInterval {enteredAt:number;endedAt:number}
-export interface VillageMoodSnapshot {mood:VillageMoodName;alarmMix:number;alarmSerial:number;time:number;alarmEnteredAt:number|null;alarmHistory?:readonly Readonly<VillageAlarmInterval>[]}
+export interface VillageMoodSnapshot {mood:VillageMoodName;alarmMix:number;alarmSerial:number;recoverySerial?:number;time:number;alarmEnteredAt:number|null;alarmHistory?:readonly Readonly<VillageAlarmInterval>[]}
 export interface VillageMoodState extends VillageMoodSnapshot {alarmHistory:readonly Readonly<VillageAlarmInterval>[];pressureSeconds:number;quietSeconds:number;alarmSeconds:number;recoverySeconds:number;lastPhase:Phase}
 export interface VillageMoodInput {phase:Phase;hpFraction:number;nearestEnemyX:number;playerBaseHit:boolean;paused:boolean}
 export interface VillagePresentation {battle:Readonly<BattleState>;age:number;mood:VillageMoodState}
 
 export function createVillageMood():VillageMoodState {
- return {mood:'quiet',alarmMix:0,alarmSerial:0,time:0,alarmEnteredAt:null,alarmHistory:[],pressureSeconds:0,quietSeconds:0,alarmSeconds:0,recoverySeconds:0,lastPhase:'ready'};
+ return {mood:'quiet',alarmMix:0,alarmSerial:0,recoverySerial:0,time:0,alarmEnteredAt:null,alarmHistory:[],pressureSeconds:0,quietSeconds:0,alarmSeconds:0,recoverySeconds:0,lastPhase:'ready'};
 }
 const reached=(value:number,target:number)=>value+1e-9>=target;
 
@@ -42,7 +42,7 @@ export function advanceVillageMood(previous:Readonly<VillageMoodState>,input:Vil
    // At least six seconds separate completed alarms. Two closed intervals plus
    // the current alarm retain admission for every 7.5-second scheduled passage.
    if(next.alarmEnteredAt!==null)next.alarmHistory=[...next.alarmHistory.slice(-1),{enteredAt:next.alarmEnteredAt,endedAt:next.time}];
-   next.mood='recovering';next.recoverySeconds=0;next.pressureSeconds=0;
+   next.mood='recovering';next.recoverySerial=(next.recoverySerial??0)+1;next.recoverySeconds=0;next.pressureSeconds=0;
   }
  }else if(next.mood==='recovering'){
   next.recoverySeconds+=seconds;

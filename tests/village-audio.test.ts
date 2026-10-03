@@ -61,6 +61,22 @@ test('rapid re-alarm respects the entry cooldown, then permits its exact eight-s
  c.ctx.currentTime=9;player.update(c.ctx,0,true,{alarmMix:0,alarmSerial:3});assert.equal(c.nodes.filter(n=>n.frequency).length,2);
  player.dispose();
 });
+test('a fresh recovery serial plays one chapter answer while gated serials are consumed silently',()=>{
+ const c=context(),player=new SoundscapePlayer(samples);
+ player.update(c.ctx,0,true,{alarmMix:1,alarmSerial:1,recoverySerial:0});
+ c.ctx.currentTime=7;player.update(c.ctx,0,true,{alarmMix:.99,alarmSerial:1,recoverySerial:1});
+ let answers=c.nodes.filter(n=>n.frequency);assert.equal(answers.length,1);assert.equal(answers[0].type,'sine');
+ const notes=answers[0].frequency.events.filter((event:any[])=>event[0]==='set').map((event:any[])=>event[1]);
+ assert.equal(notes.length,2);assert.ok(notes.every((frequency:number)=>Number.isFinite(frequency)&&frequency>=80&&frequency<=700));assert.notEqual(notes[0],notes[1]);
+ for(let i=0;i<20;i++)player.update(c.ctx,0,true,{alarmMix:.5,alarmSerial:1,recoverySerial:1});
+ assert.equal(c.nodes.filter(n=>n.frequency).length,1,'one transition has one answer');
+ player.update(c.ctx,0,false,{alarmMix:0,alarmSerial:1,recoverySerial:2});
+ c.ctx.currentTime=20;player.update(c.ctx,0,true,{alarmMix:0,alarmSerial:1,recoverySerial:2});
+ assert.equal(c.nodes.filter(n=>n.frequency).length,1,'a hidden or paused answer never catches up');
+ player.update(c.ctx,0,true,{alarmMix:.9,alarmSerial:2,recoverySerial:3});answers=c.nodes.filter(n=>n.frequency);
+ assert.equal(answers.length,2);assert.deepEqual(answers[1].frequency.events.filter((event:any[])=>event[0]==='set').map((event:any[])=>event[1]),notes,'the same settlement keeps its authored answer');
+ player.dispose();assert.ok(c.nodes.every(n=>n.disconnects===1));
+});
 test('every production audibility gate releases accents immediately and consumes hidden serials',()=>{
  const base:Parameters<typeof ambienceAllowed>[0]={sound:true,atmosphere:true,paused:false,hidden:false,tab:'battle',modal:null,phase:'running'};
  for(const change of [{sound:false},{atmosphere:false},{paused:true},{hidden:true},{tab:'cards'},{modal:'settings'},{phase:'won' as const},{phase:'lost' as const}]){
