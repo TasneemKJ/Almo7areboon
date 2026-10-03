@@ -128,14 +128,14 @@ async function verifyPaintedWebkitBattlefield(browser){
  const tap=selector=>page.locator(selector).tap(),frames=()=>page.evaluate(()=>new Promise(resolve=>requestAnimationFrame(()=>requestAnimationFrame(resolve))));
  const painted=async(label,persist=false)=>{
   await frames();const file=`${out}/webkit-painted-${label}.png`,image=await page.screenshot(persist?{path:file}:{});
-  const sample=await page.evaluate(async({encoded,roi})=>{
+  const sample=await page.evaluate(async({encoded,roi,label})=>{
    const image=new Image();image.src=`data:image/png;base64,${encoded}`;await image.decode();
    const canvas=document.createElement('canvas');canvas.width=image.width;canvas.height=image.height;
    const context=canvas.getContext('2d',{willReadFrequently:true});context.drawImage(image,0,0);
    const pixels=context.getImageData(roi.x,roi.y,roi.width,roi.height).data;let count=0,sum=0,squares=0;
    for(let i=0;i<pixels.length;i+=4)for(const channel of [pixels[i],pixels[i+1],pixels[i+2]]){const value=channel/255;count++;sum+=value;squares+=value*value;}
    const mean=sum/count;return {label,rgbStddev:Math.sqrt(Math.max(0,squares/count-mean*mean))};
-  },{encoded:image.toString('base64'),roi:{x:45,y:180,width:300,height:220}});
+  },{encoded:image.toString('base64'),roi:{x:45,y:180,width:300,height:220},label});
   item.observations.push(sample);if(persist)item.screens.push(file.split('/').pop());
   assert.ok(sample.rgbStddev>=.15,`${label}: battlefield lost its painted scene (RGB stddev ${sample.rgbStddev})`);return sample;
  };
