@@ -57,6 +57,6 @@ export function spoilsHomecomingFrame(mark:Readonly<SpoilsHomecomingMark>,ground
 }
 
 export function spoilsRewardEvidence(reward:Readonly<SpoilsRewardFloater>|null,live:readonly Readonly<SpoilsRewardFloater>[],reduced:boolean):Readonly<SpoilsRewardEvidence>|null {
- if(!reward||reward.life<=0||!live.includes(reward)||!reward.text.active||!reward.text.visible||!Number.isFinite(reward.reward)||reward.reward!<=0||!Number.isFinite(reward.text.alpha)||reward.text.alpha<=0)return null;
+ if(!reward||!Number.isFinite(reward.life)||reward.life<=0||!live.includes(reward)||!reward.text.active||!reward.text.visible||!Number.isFinite(reward.reward)||reward.reward!<=0||!Number.isFinite(reward.text.alpha)||reward.text.alpha<=0)return null;
  return freeze({amount:reward.reward!,text:reward.text.text,alpha:reward.text.alpha,reduced});
 }
