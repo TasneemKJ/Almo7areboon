@@ -48,6 +48,17 @@ const xAt=(x:number)=>x*.45;
 const noise=(n:number)=>{const value=Math.sin(n*117.13)*43758.5453;return value-Math.floor(value);};
 const tint=(hex:string)=>parseInt(hex.slice(1),16);
 const stillReaction={x:0,y:0,angle:0} as const;
+/** Small painted medallion on the existing transient FX plane: no texture or scene-object allocation. */
+const paintSpoilsToken=(g:Phaser.GameObjects.Graphics,frame:{x:number;y:number;size:number;angle:number;alpha:number}):void=>{
+ const {x,y,size,alpha}=frame,r=size/2,angle=frame.angle*Math.PI/180,c=Math.cos(angle),s=Math.sin(angle),rotate=(dx:number,dy:number)=>({x:x+dx*c-dy*s,y:y+dx*s+dy*c});
+ g.fillStyle(0x291d19,alpha*.32);g.fillEllipse(x+1,y+2,size,size*.79);
+ g.fillStyle(0xc98a32,alpha);g.fillEllipse(x,y,size*.92,size*.83);
+ g.lineStyle(Math.max(1,size/12),0x553621,alpha*.95);g.strokeEllipse(x,y,size*.92,size*.83);
+ const glint=rotate(-r*.18,-r*.18);g.fillStyle(0xf2cb69,alpha);g.fillCircle(glint.x,glint.y,r*.27);
+ const a=rotate(r*.08,-r*.31),b=rotate(r*.34,-r*.13),d=rotate(r*.29,r*.2),e=rotate(r*.04,r*.32);
+ g.lineStyle(Math.max(1,size/16),0xffe6a0,alpha*.85);g.lineBetween(a.x,a.y,b.x,b.y);
+ g.lineStyle(Math.max(1,size/18),0x8e5928,alpha*.85);g.lineBetween(b.x,b.y,d.x,d.y);g.lineBetween(d.x,d.y,e.x,e.y);
+};
 
 /** Raster and SVG art share logical anchors; simulation remains the gameplay owner. */
 export function mountBattlefield(element:HTMLElement,game:GamePort,onFrame:()=>void,onEvents:(events:GameEvent[])=>void,options:{isVisible?:()=>boolean;villageMood?:()=>Readonly<VillageMoodSnapshot>;onPresentation?:(dt:number,events:readonly GameEvent[])=>void}={}):{destroy():void} {
@@ -93,7 +104,6 @@ export function mountBattlefield(element:HTMLElement,game:GamePort,onFrame:()=>v
   private battlefieldMemory:readonly BattlefieldMemoryMark[]=[];
   private battlefieldHudBounds:BattlefieldMemoryRegion[]=[];
   private spoilsHomecoming:readonly SpoilsHomecomingMark[]=[];
-  private spoilsTokens:Phaser.GameObjects.Image[]=[];
   private spoilsReward:Floater|null=null;
   private spoilsOrder=0;
   private floaters:Floater[]=[];
@@ -142,7 +152,6 @@ export function mountBattlefield(element:HTMLElement,game:GamePort,onFrame:()=>v
    this.world.add(this.foreground);
    this.mist=this.add.container();this.world.add(this.mist);
    this.fx=this.add.graphics();this.world.add(this.fx);
-   if(this.textures.exists('spoils-coin'))for(let i=0;i<SPOILS_HOMECOMING_CAP;i++){const token=this.add.image(0,0,'spoils-coin').setVisible(false);this.world.add(token);this.spoilsTokens.push(token);}
    this.glow=this.add.graphics().setBlendMode(Phaser.BlendModes.ADD);this.world.add(this.glow);
    this.bars=this.add.graphics();this.world.add(this.bars);
    for(let i=0;i<2;i++){
@@ -630,10 +639,9 @@ export function mountBattlefield(element:HTMLElement,game:GamePort,onFrame:()=>v
   }
   private drawSpoilsHomecoming():void {
    const diagnostics:{order:number;amount:number;age:number;x:number;y:number;alpha:number}[]=[];
-   for(let index=0;index<this.spoilsTokens.length;index++){
-    const token=this.spoilsTokens[index],mark=this.spoilsHomecoming[index],frame=mark?spoilsHomecomingFrame(mark,this.layout.groundY,this.reduce):null;
-    if(!mark||!frame){token.setVisible(false);continue;}
-    token.setVisible(true).setPosition(frame.x,frame.y).setDisplaySize(frame.size,frame.size).setAngle(frame.angle).setAlpha(frame.alpha);
+   for(const mark of this.spoilsHomecoming.slice(0,SPOILS_HOMECOMING_CAP)){
+    const frame=spoilsHomecomingFrame(mark,this.layout.groundY,this.reduce);if(!frame)continue;
+    paintSpoilsToken(this.fx,frame);
     diagnostics.push({order:mark.order,amount:mark.amount,age:mark.age,x:frame.x,y:frame.y,alpha:frame.alpha});
    }
    if(navigator.webdriver&&diagnostics.length)this.game.canvas.dataset.spoilsHomecoming=JSON.stringify({count:diagnostics.length,cap:SPOILS_HOMECOMING_CAP,height:this.layout.height,marks:diagnostics,reduced:this.reduce,paused:game.state.paused});
@@ -664,7 +672,7 @@ export function mountBattlefield(element:HTMLElement,game:GamePort,onFrame:()=>v
     else{this.impact(x,y-22,e.amount??0,e.source?.age??0,e.source?.kind??0,e.source?.side??'player');if(intent)this.rememberImpact(intent);}
    }
    if(e.type==='death'){this.emit(x,y-12,9,e.side==='player'?0x82cce8:0xe6b388,true,.52,e.lane??1);this.flare(x,y-14,18,e.side==='player'?0x5ccfff:0xff8a50,.3);}
-   if(e.type==='coin'&&e.amount){this.spoilsReward=this.floatText(x,y-51,`+${compactNumber(e.amount)}`,'#ffdf7f');this.spoilsReward.reward=e.amount;const intent=spoilsHomecomingIntentForEvent(e);if(intent&&!this.reduce&&this.spoilsTokens.length)this.spoilsHomecoming=rememberSpoilsHomecoming(this.spoilsHomecoming,{...intent,x:this.spoilsReward.text.x,y:this.spoilsReward.startY},++this.spoilsOrder,this.layout.height);}
+   if(e.type==='coin'&&e.amount){this.spoilsReward=this.floatText(x,y-51,`+${compactNumber(e.amount)}`,'#ffdf7f');this.spoilsReward.reward=e.amount;const intent=spoilsHomecomingIntentForEvent(e);if(intent&&!this.reduce)this.spoilsHomecoming=rememberSpoilsHomecoming(this.spoilsHomecoming,{...intent,x:this.spoilsReward.text.x,y:this.spoilsReward.startY},++this.spoilsOrder,this.layout.height);}
    if(e.type==='win'&&game.state.chronicle&&['escort','hold','rescue'].includes(game.state.chronicle.objective)){this.floatText(225,this.layout.groundY-70,'THE COMPANY RETURNS','#e5d4ad',true);this.ring(110,this.layout.groundY-12,0xd5bd89,24);return;}
    if(e.type==='win'){this.emit(408,this.layout.groundY-27,40,0xffd373,false,1.25);this.flare(411,this.layout.groundY-30,120,0xffd27a,1.1);if(!this.reduce){this.cameras.main.shake(100,.0015);this.cameras.main.flash(260,255,226,170);}}
    if(e.type==='lose')this.emit(39,this.layout.groundY-10,20,0xb6a484,true,.8);
@@ -716,7 +724,7 @@ export function mountBattlefield(element:HTMLElement,game:GamePort,onFrame:()=>v
    if(this.spoilsReward?.life&&this.spoilsReward.life>0&&navigator.webdriver)this.game.canvas.dataset.spoilsReward=JSON.stringify({amount:this.spoilsReward.reward,text:this.spoilsReward.text.text,alpha:this.spoilsReward.text.alpha,reduced:this.reduce});
    else {this.spoilsReward=null;if(navigator.webdriver)delete this.game.canvas.dataset.spoilsReward;}
   }
-  private resetEffects(reason:'motion'|'scene'='scene'):void {this.baseHit={player:0,enemy:0};this.battlefieldMemory=battlefieldMemoryAfterReset(this.battlefieldMemory,reason,this.bolts.flatMap(b=>b.memory?[b.memory]:[]));this.spoilsHomecoming=[];this.spoilsReward=null;delete this.game.canvas.dataset.battlefieldMemory;delete this.game.canvas.dataset.battlefieldMemoryPending;delete this.game.canvas.dataset.spoilsHomecoming;delete this.game.canvas.dataset.spoilsReward;for(const token of this.spoilsTokens)token.setVisible(false);for(const g of this.groundFx)g.clear();this.attackCues=[];this.impactCues=[];this.fallen.clear();for(const f of this.floaters)f.text.destroy();this.floaters=[];this.sparks=[];this.bolts=[];this.rings=[];this.flares=[];this.glow?.clear();}
+  private resetEffects(reason:'motion'|'scene'='scene'):void {this.baseHit={player:0,enemy:0};this.battlefieldMemory=battlefieldMemoryAfterReset(this.battlefieldMemory,reason,this.bolts.flatMap(b=>b.memory?[b.memory]:[]));this.spoilsHomecoming=[];this.spoilsReward=null;delete this.game.canvas.dataset.battlefieldMemory;delete this.game.canvas.dataset.battlefieldMemoryPending;delete this.game.canvas.dataset.spoilsHomecoming;delete this.game.canvas.dataset.spoilsReward;for(const g of this.groundFx)g.clear();this.attackCues=[];this.impactCues=[];this.fallen.clear();for(const f of this.floaters)f.text.destroy();this.floaters=[];this.sparks=[];this.bolts=[];this.rings=[];this.flares=[];this.glow?.clear();}
   update(_time:number,delta:number):void {
    if(disposed||!this.world)return;
    const dt=Math.min(.05,Math.max(0,delta/1000));game.step(dt);

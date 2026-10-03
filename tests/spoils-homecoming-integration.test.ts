@@ -6,9 +6,9 @@ import {spoilsHomecomingIntentForEvent} from '../src/view/spoils-homecoming.ts';
 import {visualAssets} from '../src/view/visual-assets.ts';
 import {readFile} from 'node:fs/promises';
 
-test('the existing painted coin is loaded once for the bounded battlefield pool',()=>{
+test('the bounded battlefield pool adds no decoded texture allocation',()=>{
  const assets=visualAssets().filter(asset=>asset.key==='spoils-coin');
- assert.deepEqual(assets,[{key:'spoils-coin',url:'/art/storybook/interface/coin-token.webp',width:48,height:48,format:'image'}]);
+ assert.deepEqual(assets,[]);
 });
 
 test('a real public battle credits coins before emitting the presentation intent',()=>{
@@ -27,9 +27,12 @@ test('a real public battle credits coins before emitting the presentation intent
  assert.ok(intent&&intent.x>=24&&intent.x<=426&&intent.amount===amount);
 });
 
-test('battlefield launches from the numeric cue and suppresses missing-texture placeholders',async()=>{
+test('battlefield launches from the numeric cue with capped painted geometry',async()=>{
  const source=await readFile(new URL('../src/view/battlefield.ts',import.meta.url),'utf8');
- assert.match(source,/textures\.exists\('spoils-coin'\).*SPOILS_HOMECOMING_CAP/s);
+ assert.match(source,/paintSpoilsToken\(this\.fx,frame\)/);
+ assert.match(source,/this\.spoilsHomecoming\.slice\(0,SPOILS_HOMECOMING_CAP\)/);
+ assert.doesNotMatch(source,/spoilsTokens/);
+ assert.doesNotMatch(source,/spoils-coin|coin-token\.webp/);
  assert.match(source,/private spoilsOrder=0/);
  assert.match(source,/rememberSpoilsHomecoming\(this\.spoilsHomecoming,\{\.\.\.intent,x:this\.spoilsReward\.text\.x,y:this\.spoilsReward\.startY\},\+\+this\.spoilsOrder,this\.layout\.height\)/);
  assert.match(source,/this\.spoilsOrder=0;this\.resetEffects\(\)/);

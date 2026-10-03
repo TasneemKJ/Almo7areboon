@@ -13,7 +13,7 @@ export interface VisualAsset {key:string;url:string;width:number;height:number;f
 let cached:readonly VisualAsset[]|undefined;
 export function visualAssets():readonly VisualAsset[] {
  if(cached)return cached;
- const entries:VisualAsset[]=[{key:'spoils-coin',url:'/art/storybook/interface/coin-token.webp',width:48,height:48,format:'image'}];
+ const entries:VisualAsset[]=[];
  for(let age=0;age<6;age++){
   const art=storybookArt(age);
   if(art){
