@@ -43,6 +43,32 @@ test('verdict response reuses ambience and light pools, exposes webdriver eviden
  assert.match(source,/while\(this\.stageLight\.length<6\)/);
  assert.doesNotMatch(source,/villageVerdict[^\n]*this\.add\.(?:graphics|image|container)/);
 });
+test('one authoritative wave frame drives both the road omen and pooled village watchfire',()=>{
+ const source=readFileSync(new URL('../src/view/battlefield.ts',import.meta.url),'utf8');
+ assert.match(source,/import \{waveArrivalForPort,type WaveArrivalFrame\} from '\.\/wave-arrival\.ts';/);
+ assert.match(source,/private waveArrival:WaveArrivalFrame\|null=null;/);
+ assert.equal(source.match(/waveArrivalForPort\(game,this\.reduce\)/g)?.length,1,'one read boundary must own the complete rendered frame');
+ assert.match(source,/this\.waveArrival=waveArrivalForPort\(game,this\.reduce\);\s*this\.drawAtmosphere\(\)/);
+ assert.match(source,/const frame=this\.waveArrival;if\(!frame\)return;/);
+ assert.match(source,/villageFrame\(\{[^}]*watch:this\.waveArrival/s);
+ assert.doesNotMatch(source,/setTimeout\([^)]*watchfire|Date\.now\(\)[^;]*watchfire/i);
+});
+test('watchfire reuses village ambience and light pools with bounded webdriver evidence and cleanup',()=>{
+ const source=readFileSync(new URL('../src/view/battlefield.ts',import.meta.url),'utf8');
+ const main=readFileSync(new URL('../src/main.ts',import.meta.url),'utf8');
+ assert.match(source,/private villageHudPhase:Phase\|null=null;/,'the HUD exclusion map needs an explicit phase owner');
+ assert.match(source,/onFrame:\(force\?:boolean\)=>void/,'the renderer must be able to request an immediate host-layout sync');
+ assert.match(source,/if\(this\.villageHudPhase!==game\.state\.phase\)\{const world=element\.closest<HTMLElement>\('\.world'\);if\(world\?\.dataset\.phase!==game\.state\.phase\)onFrame\(true\);this\.villageHudPhase=game\.state\.phase;this\.cacheVillageViewport\(\);\}/,'phase reflow must reach the DOM before HUD exclusions are measured and the village is painted');
+ assert.match(main,/mountBattlefield\(\$\('battlefield'\),port,force=>update\(force\),events/,'the host must honor a forced layout sync from the renderer');
+ assert.match(source,/for\(const stroke of frame\.watchStrokes\)\{g\.lineStyle\(stroke\.width,stroke\.color,stroke\.alpha\);g\.lineBetween\(stroke\.from\.x,stroke\.from\.y,stroke\.to\.x,stroke\.to\.y\);\}/);
+ assert.match(source,/const watchfireRegions=/);
+ assert.match(source,/frame\.watchStrokes\.map/);assert.match(source,/frame\.watchLights\.map/);
+ assert.match(source,/dataset\.villageWatchfire=JSON\.stringify\(\{number:this\.waveArrival\.number,intent:this\.waveArrival\.intent,progress:this\.waveArrival\.progress,lights:frame\.watchLights\.length,strokes:frame\.watchStrokes\.length,regions:watchfireRegions,reduced:this\.reduce,paused:game\.state\.paused\}\)/);
+ assert.match(source,/delete this\.game\.canvas\.dataset\.villageWatchfire/);
+ assert.match(source,/battlefieldReviewCanvasSnapshot/,'native watchfire evidence must use Phaser post-render pixels rather than a DOM screenshot clip');
+ assert.match(source,/while\(this\.stageLight\.length<6\)/);
+ assert.doesNotMatch(source,/watch(?:fire|Strokes|Lights)[^\n]*this\.add\.(?:graphics|image|container)/i);
+});
 test('chronicle renderer no longer paints abstract restoration bars beside the player base',()=>{
  const source=readFileSync(new URL('../src/view/chronicle-view.ts',import.meta.url),'utf8');
  assert.doesNotMatch(source,/restoration.*\n\s*for\(let i=0;i<3;i\)/);

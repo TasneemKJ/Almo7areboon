@@ -3,6 +3,7 @@ import {mkdir,writeFile} from 'node:fs/promises';
 import assert from 'node:assert/strict';
 import {simulateChronicle,preparedChronicleProfile} from './simulate-chronicle.ts';
 import {arrivalReviewFixtures,assertArrivalPaused,validateArrivalSnapshot} from './chronicle-arrival-review.ts';
+import {assertWatchfirePaused,validateWatchfireSnapshot} from './village-watchfire-review.ts';
 import {assertSpoilsHomecomingPaused,assertSpoilsHomecomingProgress,validateSpoilsHomecomingSnapshot,validateSpoilsStaticReward} from './spoils-homecoming-review.ts';
 const base=process.env.REVIEW_URL??'http://127.0.0.1:4173',out='artifacts/chronicle';await mkdir(out,{recursive:true});
 const browser=await chromium.launch({headless:true,...(process.env.CHROMIUM_PATH?{executablePath:process.env.CHROMIUM_PATH}:{}),args:['--enable-unsafe-swiftshader']});
@@ -14,6 +15,14 @@ async function open(name,width,height,profile,reducedMotion='reduce'){
  await page.goto(base,{waitUntil:'networkidle'});await page.waitForSelector('canvas');await page.waitForTimeout(500);return {page,context,name};
 }
 async function shot(fixture,state){const file=`${fixture.name}-${state}.png`;await fixture.page.screenshot({path:`${out}/${file}`});screens.push(file);}
+async function renderedCanvasShot(fixture,state){
+ const capture=await fixture.page.locator('canvas').evaluate(node=>new Promise((resolve,reject)=>{
+  if(typeof node.battlefieldReviewCanvasSnapshot!=='function'){reject(new Error('Phaser canvas snapshot is unavailable'));return;}
+  node.battlefieldReviewCanvasSnapshot(image=>{if(!(image instanceof HTMLImageElement)){reject(new Error('Phaser canvas snapshot did not return an image'));return;}resolve({encoded:image.src.split(',')[1],width:image.naturalWidth,height:image.naturalHeight});});
+ }));
+ const bytes=Buffer.from(capture.encoded,'base64');assert.deepEqual([...bytes.subarray(0,8)],[137,80,78,71,13,10,26,10]);assert.equal(bytes.readUInt32BE(16),capture.width);assert.equal(bytes.readUInt32BE(20),capture.height);
+ const file=`${fixture.name}-${state}.png`;await writeFile(`${out}/${file}`,bytes);screens.push(file);
+}
 async function armCanvasShot(fixture,expected){await fixture.page.locator('canvas').evaluate((node,phase)=>{
  if(typeof node.battlefieldReviewArm!=='function'||!node.battlefieldReviewArm(phase))throw new Error('Phaser post-render snapshot could not be armed');
 },expected);}
@@ -53,6 +62,15 @@ async function assertMemoryClearOfHud(page,state){
   return {boxes,collisions};
  },state.regions.map(region=>region));
  assert.deepEqual(geometry.collisions,[],'battlefield memory must remain clear of the rendered DOM HUD');return geometry;
+}
+async function assertWatchfireClearOfHud(page,state){
+ const geometry=await page.locator('canvas').evaluate((node,regions)=>{
+  const canvas=node.getBoundingClientRect(),scale=canvas.width/450,boxes=regions.map(bounds=>({left:canvas.left+bounds.left*scale,top:canvas.top+bounds.top*scale,right:canvas.left+bounds.right*scale,bottom:canvas.top+bounds.bottom*scale}));
+  const selectors='.resources .currency,.resources .game-wordmark,.stage .eyebrow,.stage h1,.stage .scene-name,.stage .battle-select,.world-tools button,.battle-meta span,.battle-meta button,.battle-skills button';
+  const collisions=[];for(const hud of document.querySelectorAll(selectors)){const style=getComputedStyle(hud),rect=hud.getBoundingClientRect();if(style.display==='none'||style.visibility==='hidden'||!rect.width||!rect.height)continue;if(boxes.some(box=>box.left<rect.right&&box.right>rect.left&&box.top<rect.bottom&&box.bottom>rect.top))collisions.push(hud instanceof HTMLElement?hud.id||hud.className||hud.tagName:hud.nodeName);}
+  return {boxes,collisions};
+ },state.regions);
+ assert.deepEqual(geometry.collisions,[],'village watchfire must remain clear of the rendered DOM HUD');return geometry;
 }
 async function pauseAtBattlefieldMemory(page,kind){
  const deadline=Date.now()+60000;
@@ -107,18 +125,29 @@ async function pauseAtLandmarkPhase(page,phase){
 // boundary before asserting that a paused presentation itself writes nothing.
 async function settledSaveAfterAutosave(page){await page.waitForTimeout(5250);return saved(page);}
 async function pauseAtWaveArrival(page,intent,onObserved){
- const deadline=Date.now()+30000;
+ // Every Chronicle commander owns the first authored wave. Observe that warning
+ // before troop or skill input can win the battle, alarm the village, or race the
+ // narrow animated relay window on a software-rendered Actions framebuffer.
+ const deadline=Date.now()+20000;
  while(Date.now()<deadline){
-  await page.waitForFunction(value=>{const raw=document.querySelector('canvas')?.dataset.waveArrival;if(!raw)return false;const state=JSON.parse(raw);return state.intent===value&&state.nextIn>=0&&state.nextIn<=4&&!state.paused;},intent,{timeout:Math.max(1,deadline-Date.now())});
-  const observed=await page.locator('canvas').evaluate((node,value)=>{const raw=node.dataset.waveArrival;if(!raw)return null;const state=JSON.parse(raw);return state.intent===value&&!state.paused?state:null;},intent);
-  if(!observed)continue;validateArrivalSnapshot(observed,intent);await onObserved?.(observed);
-  const before=await page.locator('#pause').evaluate((button,value)=>{const raw=document.querySelector('canvas')?.dataset.waveArrival;if(!raw)return null;const state=JSON.parse(raw);if(state.intent!==value||state.paused)return null;button.click();return state;},intent);
-  if(!before)continue;
-  await page.waitForFunction(()=>{const raw=document.querySelector('canvas')?.dataset.waveArrival;return raw&&JSON.parse(raw).paused===true;});
-  const paused=await page.locator('canvas').evaluate(node=>JSON.parse(node.dataset.waveArrival));
-  validateArrivalSnapshot(before,intent);validateArrivalSnapshot(paused,intent);assertArrivalPaused(before,paused);return {before,paused};
+  const observed=await page.locator('canvas').evaluate((node,intent)=>{const raw=node.dataset.waveArrival,watchRaw=node.dataset.villageWatchfire;if(!raw||!watchRaw)return null;const arrival=JSON.parse(raw),watchfire=JSON.parse(watchRaw),ready=watchfire.reduced||watchfire.progress>=.75;if(arrival.number!==1||watchfire.number!==1)return null;return arrival.intent===intent&&watchfire.intent===intent&&ready&&arrival.progress===watchfire.progress&&arrival.nextIn>=0&&arrival.nextIn<=(watchfire.reduced?4:1)&&!arrival.paused&&!watchfire.paused?{arrival,watchfire}:null;},intent);
+  if(observed){
+   validateArrivalSnapshot(observed.arrival,intent);validateWatchfireSnapshot(observed.watchfire,intent);await assertWatchfireClearOfHud(page,observed.watchfire);
+   const before=await page.locator('#pause').evaluate((button,value)=>{const node=document.querySelector('canvas'),raw=node?.dataset.waveArrival,watchRaw=node?.dataset.villageWatchfire;if(!raw||!watchRaw)return null;const arrival=JSON.parse(raw),watchfire=JSON.parse(watchRaw),ready=watchfire.reduced||watchfire.progress>=.75;if(arrival.number!==1||watchfire.number!==1||arrival.intent!==value||watchfire.intent!==value||!ready||arrival.progress!==watchfire.progress||arrival.nextIn<0||arrival.nextIn>(watchfire.reduced?4:1)||arrival.paused||watchfire.paused)return null;button.click();return {arrival,watchfire};},intent);
+   if(before){
+    await page.waitForFunction(()=>{const node=document.querySelector('canvas'),raw=node?.dataset.waveArrival,watchRaw=node?.dataset.villageWatchfire;return raw&&watchRaw&&JSON.parse(raw).paused===true&&JSON.parse(watchRaw).paused===true;});
+    const pausedFrames=await page.locator('canvas').evaluate(node=>({arrival:JSON.parse(node.dataset.waveArrival),watchfire:JSON.parse(node.dataset.villageWatchfire)})),paused=pausedFrames.arrival,watchfire=before.watchfire,pausedWatchfire=pausedFrames.watchfire;
+    validateArrivalSnapshot(before.arrival,intent);validateArrivalSnapshot(paused,intent);validateWatchfireSnapshot(watchfire,intent);validateWatchfireSnapshot(pausedWatchfire,intent);assertArrivalPaused(before.arrival,paused);assertWatchfirePaused(watchfire,pausedWatchfire);await onObserved?.(paused);return {before:before.arrival,paused,watchfire:pausedWatchfire};
+   }
+  }
+  await page.waitForTimeout(25);
  }
- throw new Error(`Timed out pausing at ${intent} wave arrival`);
+ const diagnostic=await page.evaluate(()=>{const node=document.querySelector('canvas'),parse=raw=>{try{return raw?JSON.parse(raw):null;}catch{return {invalid:true};}},saved=parse(localStorage.getItem('almo7areboon.save.v1'));return {
+  waveArrival:parse(node?.dataset.waveArrival),villageWatchfire:parse(node?.dataset.villageWatchfire),phase:document.querySelector('.world')?.dataset.phase??null,
+  profile:saved?{age:saved.age,enemyAge:saved.enemyAge,furthestBattle:saved.furthestBattle,chapter:saved.chronicle?.chapter,route:saved.chronicle?.route,clears:saved.chronicle?.clears}:null,
+  pausePressed:document.querySelector('#pause')?.getAttribute('aria-pressed')??null,waveLabel:document.querySelector('#wave-label')?.textContent??null,
+ };});
+ throw new Error(`Timed out pausing at ${intent} wave arrival; diagnostic=${JSON.stringify(diagnostic)}`);
 }
 async function pauseAtCatMode(page,mode){
  const deadline=Date.now()+60000;
@@ -210,13 +239,13 @@ try{
   checks.push(`disclosed restoration=${restoration} ready-state fixture renders the current painted settlement without presentation save writes`);await f.context.close();
  }
  for(const fixture of arrivalReviewFixtures()){
-  const p=preparedChronicleProfile();p.speed=1;p.enemyAge=0;p.furthestBattle=Math.max(0,p.furthestBattle);p.chronicle.chapter=0;p.chronicle.route=fixture.route;p.chronicle.expedition=null;
-  const f=await open(fixture.name,fixture.width,fixture.height,p);await f.page.locator('[data-command="start"]').click();
-  const {paused}=await pauseAtWaveArrival(f.page,fixture.intent,()=>shot(f,'incoming-road'));assert.equal(paused.reduced,true);assert.ok(paused.x>=340&&paused.x<=410);assert.ok(paused.y>120&&paused.y<430);
+  const p=preparedChronicleProfile();p.speed=1;p.timeline=fixture.timeline;p.mastery.timeline=fixture.timeline;p.chronicle.timeline=fixture.timeline;p.age=fixture.age;p.enemyAge=fixture.age;p.furthestBattle=fixture.age;p.chronicle.clears[fixture.age]=1;p.chronicle.chapter=fixture.age;p.chronicle.route=fixture.route;p.chronicle.expedition=null;
+  const f=await open(fixture.name,fixture.width,fixture.height,p,fixture.reducedMotion);await f.page.locator('[data-command="start"]').click();
+  const {paused,watchfire}=await pauseAtWaveArrival(f.page,fixture.intent,()=>renderedCanvasShot(f,'incoming-road')),reduced=fixture.reducedMotion==='reduce',expectedLights=reduced?fixture.authoredLights:null;assert.equal(paused.reduced,reduced);assert.equal(watchfire.reduced,reduced);if(expectedLights===null)assert.ok(watchfire.lights>=1&&watchfire.lights<=fixture.authoredLights);else assert.equal(watchfire.lights,expectedLights);assert.ok(paused.x>=340&&paused.x<=410);assert.ok(paused.y>120&&paused.y<430);
   const before=await settledSaveAfterAutosave(f.page);await noOverflow(f.page);await f.page.waitForTimeout(5250);
   assert.equal(await saved(f.page),before,'paused wave-arrival presentation must remain save-inert across the next autosave boundary');
   const still=await f.page.locator('canvas').evaluate(node=>JSON.parse(node.dataset.waveArrival));validateArrivalSnapshot(still,fixture.intent);assert.deepEqual(still,paused,'paused road omen must remain static');
-  checks.push(`${fixture.width}: real ${fixture.intent} commander preview renders the schedule-derived road omen behind actors and stays static/save-inert under public pause`);await f.context.close();
+  checks.push(`${fixture.width}: plate ${fixture.age} real ${fixture.intent} commander preview renders the schedule-derived road omen and ${fixture.reducedMotion} watchfire relay clear of the live HUD, then stays static/save-inert under public pause`);await f.context.close();
  }
  for(const [width,height] of [[320,568],[390,844],[1024,768]]){
   const p=preparedChronicleProfile();p.motion='system';p.speed=2;p.age=0;p.enemyAge=0;p.foodLevel=12;p.unlocked=[true,true,true];p.chronicle.route='road';p.chronicle.expedition=null;

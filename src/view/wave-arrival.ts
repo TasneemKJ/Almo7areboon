@@ -7,7 +7,7 @@ export interface WaveArrivalPoint {x:number;y:number}
 export interface WaveArrivalInput {phase:Phase;paused:boolean;reduced:boolean;preview:WavePreview|null|undefined}
 export interface WaveArrivalRoleMark {role:UnitKind;shape:WaveRoleShape;x:number;y:number;alpha:number}
 export interface WaveArrivalFrame {
- intent:WaveIntent;banner:{shape:WaveBannerShape;points:readonly WaveArrivalPoint[]};
+ number:number;intent:WaveIntent;banner:{shape:WaveBannerShape;points:readonly WaveArrivalPoint[]};
  counts:readonly [number,number,number];nextIn:number;progress:number;clothLift:number;
  roleMarks:readonly WaveArrivalRoleMark[];countdownKnots:readonly {x:number;y:number;filled:boolean}[];
  depthOffset:number;
@@ -47,7 +47,7 @@ export function waveArrivalFrame(input:WaveArrivalInput):WaveArrivalFrame|null {
  // This is derived only from battle-time preview progress. Pause owns that clock,
  // so the view cannot drift; reduced motion selects the fixed cloth pose.
  const clothLift=input.reduced?0:-2*Math.sin(progress*Math.PI);
- return freeze({intent,banner:banners[intent],counts,nextIn,progress,clothLift,roleMarks,countdownKnots,depthOffset:WAVE_ARRIVAL_DEPTH_OFFSET});
+ return freeze({number:integer(preview.number),intent,banner:banners[intent],counts,nextIn,progress,clothLift,roleMarks,countdownKnots,depthOffset:WAVE_ARRIVAL_DEPTH_OFFSET});
 }
 
 /** Optional read boundary keeps fixtures compatible and the simulation query authoritative. */

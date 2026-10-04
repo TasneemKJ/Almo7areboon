@@ -27,6 +27,7 @@ test('intent and troop roles use independently readable shapes',async()=>{
  const rush=m.waveArrivalFrame({...base,preview:preview(2,'rush',[1,0,0])});
  const volley=m.waveArrivalFrame({...base,preview:preview(2,'volley',[0,1,0])});
  const bulwark=m.waveArrivalFrame({...base,preview:preview(2,'bulwark',[0,0,1])});
+ assert.equal(rush.number,1);assert.equal(volley.number,1);assert.equal(bulwark.number,1);
  assert.equal(rush.banner.shape,'swallowtail');assert.deepEqual(rush.roleMarks.map((mark:any)=>mark.shape),['footprints']);
  assert.equal(volley.banner.shape,'split-pennant');assert.deepEqual(volley.roleMarks.map((mark:any)=>mark.shape),['sling-stitches']);
  assert.equal(bulwark.banner.shape,'weighted-square');assert.deepEqual(bulwark.roleMarks.map((mark:any)=>mark.shape),['block-tread']);
@@ -49,6 +50,7 @@ test('malformed preview values are finite, immutable, and capped at five role ma
  const m=await subject(),input={phase:'running',paused:false,reduced:false,preview:{number:NaN,total:Infinity,intent:'unknown',counts:[99,NaN,-8],nextIn:NaN}} as any;
  const empty=m.waveArrivalFrame(input);assert.equal(empty,null,'non-finite time must not fabricate a warning');
  input.preview.nextIn=-99;const frame=m.waveArrivalFrame(input);assert.ok(frame);
+ assert.equal(frame.number,0,'a malformed diagnostic wave number must not masquerade as the first authored wave');
  assert.equal(frame.intent,'rush');assert.deepEqual(frame.counts,[5,0,0]);assert.equal(frame.roleMarks.length,5);assert.equal(frame.nextIn,0);assert.equal(frame.progress,1);
  assert.ok(Object.isFrozen(frame)&&Object.isFrozen(frame.banner)&&Object.isFrozen(frame.roleMarks)&&frame.roleMarks.every((mark:any)=>Object.isFrozen(mark)));
  assert.throws(()=>{(frame.roleMarks as any[]).push({});},TypeError);
