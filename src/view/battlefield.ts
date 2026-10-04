@@ -5,7 +5,7 @@ import {storybookArt} from './storybook-art.ts';
 import {reducedMotion,projectileForHit,traitCueForHit} from './combat-feedback.ts';
 import {arenaLayout,foregroundPlacement,landscapePlacement,troopPose,visualEra} from './visual-theme.ts';
 import {atmosphereFrame} from './era-atmosphere.ts';
-import {ensureVillageLight,villageFrame,villageSkyPath,type Bounds,type VillageViewport} from './village-life.ts';
+import {ensureVillageLight,villageFrame,villageOrderHudChanged,villageSkyPath,type Bounds,type VillageViewport} from './village-life.ts';
 import {createVillageMood,type VillageMoodSnapshot} from './village-mood.ts';
 import {duskAtmosphereFrame,paintDuskAtmosphere} from './dusk-atmosphere.ts';
 import {lightingHierarchyFrame,paintLightingHierarchy} from './lighting-hierarchy.ts';
@@ -83,6 +83,7 @@ export function mountBattlefield(element:HTMLElement,game:GamePort,onFrame:(forc
   private stageLight!:Phaser.GameObjects.Container;
   private villageViewport!:VillageViewport;
   private villageHudPhase:Phase|null=null;
+  private villageHudPaused:boolean|null=null;
   private quietVillage=createVillageMood();
   private halos!:Phaser.GameObjects.Graphics;
   private glow!:Phaser.GameObjects.Graphics;
@@ -117,6 +118,7 @@ export function mountBattlefield(element:HTMLElement,game:GamePort,onFrame:(forc
   private clock=0;
   private reduce=false;
   private failed=false;
+  private orderFrame:ReturnType<typeof orderPresentationFrame>=null;
   private waveArrival:WaveArrivalFrame|null=null;
   constructor(){super('battlefield');}
   preload():void {
@@ -163,7 +165,7 @@ export function mountBattlefield(element:HTMLElement,game:GamePort,onFrame:(forc
     this.baseText.push(text);this.world.add(text);
    }
    this.scale.on('resize',this.resize,this);
-   this.events.once('shutdown',()=>{delete this.game.canvas.dataset.waveArrival;delete this.game.canvas.dataset.battleAftermath;delete this.game.canvas.dataset.villageVerdict;delete this.game.canvas.dataset.villageWatchfire;delete this.game.canvas.dataset.battlefieldMemory;delete this.game.canvas.dataset.spoilsHomecoming;delete this.game.canvas.dataset.spoilsReward;delete this.game.canvas.dataset.battlefieldReviewFrameReady;this.aftermath=null;this.waveArrival=null;this.scale.off('resize',this.resize,this);this.resetEffects();this.units.clear();this.idle=[];});
+   this.events.once('shutdown',()=>{delete this.game.canvas.dataset.waveArrival;delete this.game.canvas.dataset.battleAftermath;delete this.game.canvas.dataset.villageVerdict;delete this.game.canvas.dataset.villageWatchfire;delete this.game.canvas.dataset.villageOrderAnswer;delete this.game.canvas.dataset.battlefieldMemory;delete this.game.canvas.dataset.spoilsHomecoming;delete this.game.canvas.dataset.spoilsReward;delete this.game.canvas.dataset.battlefieldReviewFrameReady;this.aftermath=null;this.orderFrame=null;this.waveArrival=null;this.scale.off('resize',this.resize,this);this.resetEffects();this.units.clear();this.idle=[];});
    this.resize();this.syncEra();loading.remove();
    if(this.failed)element.dispatchEvent(new CustomEvent('visual-fallback',{bubbles:true}));
   }
@@ -180,14 +182,15 @@ export function mountBattlefield(element:HTMLElement,game:GamePort,onFrame:(forc
    const placement=landscapePlacement(450,this.layout.height,this.layout.groundY),cssWorldScale=(element.clientWidth||450)/450;
    const visibleSource:Bounds=[Math.max(0,-placement.x/placement.scale),Math.max(0,-placement.y/placement.scale),Math.min(900,(450-placement.x)/placement.scale),Math.min(1000,(this.layout.height-placement.y)/placement.scale)];
    const hudSourceBounds:Bounds[]=[],shell=element.closest<HTMLElement>('.game-shell'),origin=element.getBoundingClientRect();
-   if(shell)for(const node of Array.from(shell.querySelectorAll<HTMLElement>('.resources .currency,.resources .game-wordmark,.stage .eyebrow,.stage h1,.stage .scene-name,.stage .battle-select,.world-tools button,.battle-meta span,.battle-meta button'))){
-    const rect=node.getBoundingClientRect();if(!rect.width||!rect.height)continue;
+   if(shell)for(const node of Array.from(shell.querySelectorAll<HTMLElement>('.resources .currency,.resources .game-wordmark,.stage .eyebrow,.stage h1,.stage .scene-name,.stage .battle-select,.world-tools button,.battle-meta span,.battle-meta button,.battle-skills button,.pause-banner'))){
+    const rect=node.getBoundingClientRect(),style=getComputedStyle(node);if(style.display==='none'||style.visibility==='hidden'||!rect.width||!rect.height)continue;
     const sourceX=(x:number)=>((x-origin.left)/cssWorldScale-placement.x)/placement.scale;
     const sourceY=(y:number)=>((y-origin.top)/cssWorldScale-placement.y)/placement.scale;
     hudSourceBounds.push([sourceX(rect.left),sourceY(rect.top),sourceX(rect.right),sourceY(rect.bottom)]);
    }
    const viewport:VillageViewport={placement,cssWorldScale,visibleSource,hudSourceBounds};
    viewport.skyPath=villageSkyPath(game.profile.age,viewport);this.villageViewport=viewport;
+   this.villageHudPaused=game.state.paused;
    this.cacheBattlefieldHudBounds();
   }
   private cacheBattlefieldHudBounds():void {
@@ -379,15 +382,16 @@ export function mountBattlefield(element:HTMLElement,game:GamePort,onFrame:(forc
   }
   private drawAtmosphere():void {
    const g=this.ambience;g.clear();
-   if(navigator.webdriver){delete this.game.canvas.dataset.villageVerdict;delete this.game.canvas.dataset.villageWatchfire;}
+   if(navigator.webdriver){delete this.game.canvas.dataset.villageVerdict;delete this.game.canvas.dataset.villageWatchfire;delete this.game.canvas.dataset.villageOrderAnswer;}
    if(storybookArt(game.profile.age)){
     this.streak.clear();this.stars.setVisible(false);this.clouds.setVisible(false);this.mist.setVisible(false);this.stageLight.setVisible(true);
     const mood=options.villageMood?.()??this.quietVillage;
     const villageVerdict=this.aftermath?.phase===game.state.phase?villageVerdictFrame({phase:this.aftermath.phase,elapsed:Math.max(0,this.clock-this.aftermath.at),reduced:this.reduce}):null;
-    const frame=villageFrame({age:game.profile.age,time:options.villageMood?mood.time:this.clock,reduced:this.reduce,restoration:game.profile.chronicle?.restoration??0,mood,viewport:this.villageViewport,verdict:villageVerdict,watch:this.waveArrival});
+    const frame=villageFrame({age:game.profile.age,time:options.villageMood?mood.time:this.clock,reduced:this.reduce,restoration:game.profile.chronicle?.restoration??0,mood,viewport:this.villageViewport,verdict:villageVerdict,watch:this.waveArrival,order:this.orderFrame?.answer});
     for(const resident of frame.residents)for(const pane of resident.panes){g.fillStyle(pane.color,pane.alpha);g.fillPoints(pane.points as Phaser.Types.Math.Vector2Like[],true);}
     for(const stroke of frame.verdictStrokes){g.lineStyle(stroke.width,stroke.color,stroke.alpha);g.lineBetween(stroke.from.x,stroke.from.y,stroke.to.x,stroke.to.y);}
     for(const stroke of frame.watchStrokes){g.lineStyle(stroke.width,stroke.color,stroke.alpha);g.lineBetween(stroke.from.x,stroke.from.y,stroke.to.x,stroke.to.y);}
+    for(const stroke of frame.orderStrokes){g.lineStyle(stroke.width,stroke.color,stroke.alpha);g.lineBetween(stroke.from.x,stroke.from.y,stroke.to.x,stroke.to.y);}
     for(const mark of frame.water){g.lineStyle(mark.width,mark.color,mark.alpha);g.lineBetween(mark.from.x,mark.from.y,mark.to.x,mark.to.y);}
     if(frame.bird)for(const shape of frame.bird){g.fillStyle(shape.color,shape.alpha);g.fillPoints(shape.points as Phaser.Types.Math.Vector2Like[],true);}
     const lights=[...frame.lamps,...frame.restorationLights];
@@ -400,6 +404,10 @@ export function mountBattlefield(element:HTMLElement,game:GamePort,onFrame:(forc
      ...frame.watchStrokes.map(stroke=>({left:Math.min(stroke.from.x,stroke.to.x)-stroke.width,top:Math.min(stroke.from.y,stroke.to.y)-stroke.width,right:Math.max(stroke.from.x,stroke.to.x)+stroke.width,bottom:Math.max(stroke.from.y,stroke.to.y)+stroke.width})),
      ...frame.watchLights.map(mark=>({left:mark.center.x-mark.rx,top:mark.center.y-mark.ry,right:mark.center.x+mark.rx,bottom:mark.center.y+mark.ry})),
     ];
+    const orderRegions=[
+     ...frame.orderStrokes.map(stroke=>({left:Math.min(stroke.from.x,stroke.to.x)-stroke.width,top:Math.min(stroke.from.y,stroke.to.y)-stroke.width,right:Math.max(stroke.from.x,stroke.to.x)+stroke.width,bottom:Math.max(stroke.from.y,stroke.to.y)+stroke.width})),
+     ...frame.orderLights.map(mark=>({left:mark.center.x-mark.rx,top:mark.center.y-mark.ry,right:mark.center.x+mark.rx,bottom:mark.center.y+mark.ry})),
+    ];
     for(let i=0;i<this.stageLight.length;i++){
      const image=this.stageLight.getAt(i) as Phaser.GameObjects.Image,mark=lights[i];
      if(!mark){image.setVisible(false);continue;}
@@ -407,6 +415,7 @@ export function mountBattlefield(element:HTMLElement,game:GamePort,onFrame:(forc
     }
     if(navigator.webdriver&&villageVerdict)this.game.canvas.dataset.villageVerdict=JSON.stringify({mode:villageVerdict.mode,progress:villageVerdict.progress,witnesses:frame.verdictResidents.length,strokes:frame.verdictStrokes.length,lights:lights.length,affectedLights:frame.verdictLights.length,regions:verdictRegions,reduced:this.reduce,paused:game.state.paused});
     if(navigator.webdriver&&this.waveArrival&&frame.watchLights.length)this.game.canvas.dataset.villageWatchfire=JSON.stringify({number:this.waveArrival.number,intent:this.waveArrival.intent,progress:this.waveArrival.progress,lights:frame.watchLights.length,strokes:frame.watchStrokes.length,regions:watchfireRegions,reduced:this.reduce,paused:game.state.paused});
+    if(navigator.webdriver&&this.orderFrame?.answer&&frame.orderLights.length)this.game.canvas.dataset.villageOrderAnswer=JSON.stringify({kind:this.orderFrame.answer.kind,progress:this.orderFrame.answer.progress,lights:frame.orderLights.length,strokes:frame.orderStrokes.length,regions:orderRegions,reduced:this.reduce,paused:game.state.paused});
     return;
    }
    if(!storybookArt(game.profile.age)){
@@ -658,7 +667,7 @@ export function mountBattlefield(element:HTMLElement,game:GamePort,onFrame:(forc
    else if(navigator.webdriver)delete this.game.canvas.dataset.spoilsHomecoming;
   }
   private drawOrders():void {
-   const g=this.shadows;const frame=orderPresentationFrame(game.state,this.layout.groundY,this.reduce,this.layout.laneGap);
+   const g=this.shadows;const frame=this.orderFrame;
    if(!frame){delete this.game.canvas.dataset.battleOrder;return;}
    for(const mark of frame.marks){
     g.fillStyle(frame.color,.11*frame.pulse);g.fillEllipse(mark.x,mark.y,mark.radius*2.6,9);
@@ -754,14 +763,16 @@ export function mountBattlefield(element:HTMLElement,game:GamePort,onFrame:(forc
    if(disposed||!this.world)return;
    const dt=Math.min(.05,Math.max(0,delta/1000));game.step(dt);
    const events=game.drainEvents();options.onPresentation?.(dt,events);if(events.length)onEvents(events);
-   if(this.lastState!==game.state){this.lastState=game.state;this.aftermath=null;delete this.game.canvas.dataset.battleAftermath;delete this.game.canvas.dataset.villageVerdict;delete this.game.canvas.dataset.villageWatchfire;this.spoilsOrder=0;this.resetEffects();for(const view of this.units.values())view.body.destroy();this.units.clear();}
+   if(this.lastState!==game.state){this.lastState=game.state;this.aftermath=null;delete this.game.canvas.dataset.battleAftermath;delete this.game.canvas.dataset.villageVerdict;delete this.game.canvas.dataset.villageWatchfire;delete this.game.canvas.dataset.villageOrderAnswer;this.spoilsOrder=0;this.resetEffects();for(const view of this.units.values())view.body.destroy();this.units.clear();}
    const reduced=reducedMotion(game.profile.motion,motionQuery.matches);
    if(reduced&&!this.reduce)this.resetEffects('motion');this.reduce=reduced;
    this.syncEra();for(const event of events)this.event(event);
    if(options.isVisible&&!options.isVisible()){onFrame();return;}
    if(!game.state.paused&&!this.reduce)this.clock+=dt;
-   if(this.villageHudPhase!==game.state.phase){const world=element.closest<HTMLElement>('.world');if(world?.dataset.phase!==game.state.phase)onFrame(true);this.villageHudPhase=game.state.phase;this.cacheVillageViewport();}
+   this.orderFrame=orderPresentationFrame(game.state,this.layout.groundY,this.reduce,this.layout.laneGap);
    this.waveArrival=waveArrivalForPort(game,this.reduce);
+   const phaseHudChanged=this.villageHudPhase!==game.state.phase,orderHudChanged=villageOrderHudChanged(this.villageHudPaused,game.state.paused,!!this.orderFrame?.answer,!!this.waveArrival);
+   if(phaseHudChanged||orderHudChanged){const world=element.closest<HTMLElement>('.world');if(world?.dataset.phase!==game.state.phase||orderHudChanged)onFrame(true);this.villageHudPhase=game.state.phase;this.cacheVillageViewport();}
    this.drawAtmosphere();this.drawBaseDamage();this.drawArmy();this.drawOrders();this.healthBars();this.effects(game.state.paused?0:dt);onFrame();
   }
  }

@@ -7,8 +7,14 @@ export interface PaintedPolygon {points:readonly Point[];color:number;alpha:numb
 export interface VillageHalo {center:Point;rx:number;ry:number;color:number;alpha:number}
 export interface VillageStroke {from:Point;to:Point;width:number;color:number;alpha:number}
 export interface VillageViewport {placement:{x:number;y:number;scale:number};cssWorldScale:number;visibleSource:Bounds;hudSourceBounds:readonly Bounds[];skyPath?:Bounds|null}
-export interface VillageFrameInput {age:number;time:number;reduced:boolean;restoration?:number;mood:Readonly<VillageMoodSnapshot>;viewport:VillageViewport;verdict?:Readonly<VillageVerdictFrame>|null;watch?:Readonly<{progress:number;intent:string}>|null}
-export interface VillageFrame {residents:readonly {apertureId:string;panes:readonly PaintedPolygon[]}[];verdictResidents:readonly {apertureId:string;panes:readonly PaintedPolygon[]}[];lamps:readonly VillageHalo[];restorationLights:readonly VillageHalo[];verdictLights:readonly VillageHalo[];watchLights:readonly VillageHalo[];verdictStrokes:readonly VillageStroke[];watchStrokes:readonly VillageStroke[];water:readonly VillageStroke[];bird:readonly PaintedPolygon[]|null}
+export interface VillageFrameInput {age:number;time:number;reduced:boolean;restoration?:number;mood:Readonly<VillageMoodSnapshot>;viewport:VillageViewport;verdict?:Readonly<VillageVerdictFrame>|null;watch?:Readonly<{progress:number;intent:string}>|null;order?:Readonly<{kind:'advance'|'hold';progress:number}>|null}
+export interface VillageFrame {residents:readonly {apertureId:string;panes:readonly PaintedPolygon[]}[];verdictResidents:readonly {apertureId:string;panes:readonly PaintedPolygon[]}[];lamps:readonly VillageHalo[];restorationLights:readonly VillageHalo[];verdictLights:readonly VillageHalo[];watchLights:readonly VillageHalo[];orderLights:readonly VillageHalo[];verdictStrokes:readonly VillageStroke[];watchStrokes:readonly VillageStroke[];orderStrokes:readonly VillageStroke[];water:readonly VillageStroke[];bird:readonly PaintedPolygon[]|null}
+
+export function villageOrderHudChanged(measuredPaused:boolean|null,paused:boolean,hasAnswer:boolean,hasWatch:boolean):boolean {
+ if(measuredPaused===true&&!paused)return true;
+ return measuredPaused!==paused&&paused&&hasAnswer&&!hasWatch;
+}
+
 interface Aperture {id:string;bounds:Bounds;framing:readonly Bounds[];panes:readonly (readonly Point[])[];dark:boolean}
 type Lamp=readonly [number,number,number,number];
 interface Plate {path:string;sha256:string;width:900;height:1000;windows:readonly Aperture[];lamps:readonly Lamp[];sky:Bounds}
@@ -138,6 +144,9 @@ export function villageFrame(input:VillageFrameInput):VillageFrame {
  const watchProgress=!verdict&&input.mood.mood!=='alarmed'&&input.watch&&
   (watchIntent==='rush'||watchIntent==='volley'||watchIntent==='bulwark')&&
   Number.isFinite(input.watch.progress)&&input.watch.progress>=0&&input.watch.progress<=1?input.watch.progress:null;
+ const orderKind=!verdict&&watchProgress===null&&input.mood.mood!=='alarmed'&&input.order&&
+  (input.order.kind==='advance'||input.order.kind==='hold')&&Number.isFinite(input.order.progress)&&input.order.progress>=0&&input.order.progress<=1?input.order.kind:null;
+ const orderProgress=orderKind?(input.reduced?1:input.order!.progress):0;
  // Reduced motion uses discrete visual states; the shared long ramp remains intact for audio.
  const mix=input.reduced?(input.mood.mood==='alarmed'?1:0):sharedMix;
  const placement=safePlacement(input.viewport.placement);
@@ -196,13 +205,16 @@ export function villageFrame(input:VillageFrameInput):VillageFrame {
  const lightFactor=verdict?.mode==='celebrate'?1+.35*verdict.progress:verdict?.mode==='shelter'?1-.75*verdict.progress:1;
  const verdictLights:VillageHalo[]=[];
  const watchLights:VillageHalo[]=[],watchStrokes:VillageStroke[]=[];
+ const orderLights:VillageHalo[]=[],orderStrokes:VillageStroke[]=[];
  const watchCount=watchProgress===null?0:input.reduced?plate.lamps.length:Math.min(plate.lamps.length,1+Math.floor(watchProgress*plate.lamps.length+1e-9));
  const watchIndexes=[...plate.lamps.keys()].sort((a,b)=>plate.lamps[a][0]-plate.lamps[b][0]).slice(0,watchCount),watched=new Set(watchIndexes);
  const lamps=plate.lamps.map(([x,y,rx,ry],index)=>{
   const factor=verdict&&clearOfHud([x-rx,y-ry,x+rx,y+ry])?lightFactor:1;
   const watches=watched.has(index)&&clearOfHud([x-rx-4,y-ry-8,x+rx+4,y+ry+2]),watchFactor=watches?1.65:1;
-  const mark={center:project({x,y}),rx:rx*placement.scale,ry:ry*placement.scale,color:age===5&&index>=2?0x8edfc9:0xffd08a,alpha:Math.max(0,Math.min(1,(.12+index*.008+(input.reduced?0:.018*Math.sin(time*2*Math.PI/(3.7+index*.9)+age+index*2)))*(1-.55*mix)*factor*watchFactor))};
-  if(factor!==1)verdictLights.push(mark);return mark;
+  const answers=orderKind!==null&&clearOfHud([x-rx-4,y-ry-8,x+rx+4,y+ry+2]),orderFactor=answers?1.48:1;
+  const color=answers?(orderKind==='advance'?0xf2cf79:0xa9dfdc):age===5&&index>=2?0x8edfc9:0xffd08a;
+  const mark={center:project({x,y}),rx:rx*placement.scale,ry:ry*placement.scale,color,alpha:Math.max(0,Math.min(1,(.12+index*.008+(input.reduced?0:.018*Math.sin(time*2*Math.PI/(3.7+index*.9)+age+index*2)))*(1-.55*mix)*factor*watchFactor*orderFactor))};
+  if(factor!==1)verdictLights.push(mark);if(answers)orderLights.push({...mark,center:{...mark.center}});return mark;
  });
  const restorationLights:VillageHalo[]=[];
  const restoredLight=(index:number,color:number,alpha:number)=>{
@@ -233,5 +245,11 @@ export function villageFrame(input:VillageFrameInput):VillageFrame {
   const mark=lamps[index];watchLights.push({...mark,center:{...mark.center}});const color=age===5&&index>=2?0x8edfc9:0xf2cf79,width=Math.max(.75,1.05*placement.scale);
   for(const [dx,lean] of [[0,0],[-3,1],[3,-1]] as const)watchStrokes.push({from:project({x:x+dx,y:y-ry*.15}),to:project({x:x+dx+lean,y:y-ry*.85}),width,color,alpha:.62});
  }
- return {residents,verdictResidents,lamps,restorationLights,verdictLights,watchLights:freeze(watchLights),verdictStrokes,watchStrokes:freeze(watchStrokes),water,bird};
+ if(orderKind)for(const [index,[x,y,rx,ry]] of plate.lamps.entries()){
+  if(!clearOfHud([x-rx-4,y-ry-8,x+rx+4,y+ry+2]))continue;
+  const color=orderKind==='advance'?0xf2cf79:0xa9dfdc,width=Math.max(.8,1.1*placement.scale),alpha=.58+(input.reduced?0:.12*Math.sin(orderProgress*Math.PI));
+  if(orderKind==='advance')for(const side of [-1,1] as const)orderStrokes.push({from:project({x:x+side*2,y:y-ry*.15}),to:project({x:x+side*(6+2*orderProgress),y:y-ry*(.8+.2*orderProgress)}),width,color,alpha});
+  else for(const side of [-1,1] as const)orderStrokes.push({from:project({x:x+side*(7+orderProgress),y:y-ry*.82}),to:project({x:x+side*2,y:y-ry*.12}),width,color,alpha});
+ }
+ return {residents,verdictResidents,lamps,restorationLights,verdictLights,watchLights:freeze(watchLights),orderLights:freeze(orderLights),verdictStrokes,watchStrokes:freeze(watchStrokes),orderStrokes:freeze(orderStrokes),water,bird};
 }

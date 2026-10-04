@@ -14,3 +14,18 @@ test('reduced-motion order identity remains static and readable',()=>{
  const g=new Game();g.dispatch({type:'start'});g.state.orders!.charge=60;g.dispatch({type:'order',order:'hold'});g.state.food=99;g.dispatch({type:'spawn',kind:0});const a=orderPresentationFrame(g.state,300,true)!;g.state.time=2;const b=orderPresentationFrame(g.state,300,true)!;
  assert.deepEqual(a.marks,b.marks);assert.equal(a.pulse,1);assert.equal(b.pulse,1);assert.equal(b.order,'hold');assert(b.pennant.x>=110,'order identity clears the player gate silhouette');
 });
+
+test('one authoritative order frame owns a short village answer on simulation time',()=>{
+ const g=new Game();g.dispatch({type:'start'});g.state.time=12;g.state.orders!.charge=60;g.dispatch({type:'order',order:'advance'});
+ const opening=orderPresentationFrame(g.state,300,false)!;assert.deepEqual(opening.answer,{kind:'advance',progress:0});
+ g.state.time=13.2;const middle=orderPresentationFrame(g.state,300,false)!;assert.ok(middle.answer&&middle.answer.progress>.49&&middle.answer.progress<.51);
+ g.state.paused=true;const frozen=orderPresentationFrame(g.state,300,false)!.answer;assert.deepEqual(frozen,middle.answer,'pause freezes the simulation-owned answer');
+ g.state.time=14.4;assert.equal(orderPresentationFrame(g.state,300,false)!.answer,null,'the village settles while the ten-second order remains active');
+ assert.equal(orderPresentationFrame(g.state,300,false)!.order,'advance');
+});
+
+test('reduced motion keeps a static village answer without extending its lifetime',()=>{
+ const g=new Game();g.dispatch({type:'start'});g.state.orders!.charge=60;g.dispatch({type:'order',order:'hold'});
+ assert.deepEqual(orderPresentationFrame(g.state,300,true)!.answer,{kind:'hold',progress:1});
+ g.state.time=2.4;assert.equal(orderPresentationFrame(g.state,300,true)!.answer,null);
+});

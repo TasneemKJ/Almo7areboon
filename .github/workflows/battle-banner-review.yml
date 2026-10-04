@@ -2,7 +2,7 @@ name: Battle banner and Journey review
 on:
   pull_request:
   push:
-    branches: [feat/battle-banner-journey-20261004]
+    branches: [feat/battle-banner-journey-20261004, feat/village-orders-answer-20261004]
   workflow_dispatch:
 permissions:
   contents: read
