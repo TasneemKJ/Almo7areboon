@@ -109,11 +109,13 @@ test('first muster gathers measured witnesses and existing lamps without adding 
  }
 });
 
-test('danger wave orders and verdicts outrank muster without queuing it',async()=>{
+test('danger owns the lamps while alarm orders and verdicts suppress muster without queuing it',async()=>{
  const m=await life(),base={age:0,time:9,reduced:true,mood:quiet,viewport,muster:{progress:.4}};
+ const watch=m.villageFrame({...base,watch:{intent:'rush',progress:.5}});
+ assert.equal(watch.musterResidents.length,2);assert.equal(watch.musterStrokes.length,4);assert.deepEqual(watch.musterLights,[]);
+ assert.equal(watch.watchLights.length,m.VILLAGE_PLATES[0].lamps.length);assert.ok(watch.watchStrokes.length>0);
  const frames=[
   m.villageFrame({...base,mood:{...quiet,mood:'alarmed',alarmMix:1}}),
-  m.villageFrame({...base,watch:{intent:'rush',progress:.5}}),
   m.villageFrame({...base,order:{kind:'hold',progress:.5}}),
   m.villageFrame({...base,verdict:{mode:'celebrate',progress:1}}),
  ];
