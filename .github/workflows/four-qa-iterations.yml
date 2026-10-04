@@ -80,8 +80,8 @@ jobs:
       - name: 40-scenario stress — WebKit
         env:
           QA_ENGINE: webkit
-          QA_RANGE: 1-40
-          QA_OUT: artifacts/four-iterations/webkit
+          QA_RANGE: '39'
+          QA_OUT: artifacts/four-iterations/webkit-39
         run: node --experimental-strip-types scripts/qa40/campaign.mjs
       - name: Isolate WebKit iteration 39 three times
         env:
