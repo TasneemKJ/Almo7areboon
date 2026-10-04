@@ -245,3 +245,10 @@ test('an unavailable installation dependency retains the previous complete shell
   assert.equal(fixture.skipped, false);
   assert.equal(await (await fixture.cache.match('./'))!.text(), 'previous complete shell');
 });
+
+test('a cached content-hashed module makes no background network request',async()=>{
+ const w=worker({url:'https://game.test/assets/phaser-AB12cd34.js'});
+ assert.equal(await w.response,w.old);
+ assert.equal(w.fetches,0,'immutable modules must not start offline network retries');
+ await Promise.all(w.lifetimes);
+});

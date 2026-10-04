@@ -87,6 +87,21 @@ self.addEventListener('fetch', event => {
   const entryNavigation = navigation && url.href === SCOPE.href;
   // CacheStorage is optional: an unavailable cache must not block a healthy network request.
   const opened = Promise.resolve().then(() => caches.open(CACHE)).catch(() => null);
+  // Hashed modules cannot change at this URL. A cached module needs no refresh;
+  // offline retries can otherwise compete with first-return module loading.
+  if (!navigation && immutableBundle(url.href)) {
+    const result = opened.then(async cache => {
+      const cached = await match(cache, key);
+      return cached ? { response: cached, cache: null } : { response: await fetch(request), cache };
+    });
+    event.waitUntil(result.then(async ({ response, cache }) => {
+      if (!cache || !response.ok || response.type !== 'basic') return;
+      await cache.put(key, response.clone());
+      await trimBundles(cache);
+    }).catch(() => {}));
+    event.respondWith(result.then(({ response }) => response));
+    return;
+  }
   const refresh = Promise.resolve().then(() => fetch(request));
   const fallback = async () => {
     const cache = await opened;
