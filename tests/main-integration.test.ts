@@ -373,3 +373,8 @@ test('actual Journey open and card navigation preserve pending result rewards',(
  const h=harness(),c=h.context;c.game.state.phase='won';c.game.profile.pendingVictory={settlement:'legacy',timeline:1,battle:0,earned:42,seconds:12,playerHp:100};const receipt=JSON.stringify(c.game.profile.pendingVictory);c.modal='result';c.resultShown='won';
  h.click('journey');assert.equal(c.modal,'journey');h.clickData({journeyTab:'cards'});assert.equal(c.modal,null);assert.equal(c.activeTab,'cards');assert.equal(JSON.stringify(c.game.profile.pendingVictory),receipt);
 });
+test('Journey return restores a settled result without reissuing its rewards',()=>{
+ const h=settledHarness(),c=h.context,before=JSON.stringify(c.game.profile);
+ h.click('journey');assert.equal(c.modal,'journey');h.click('journey-result');
+ assert.equal(c.modal,'result');assert.equal(JSON.stringify(c.game.profile),before);
+});

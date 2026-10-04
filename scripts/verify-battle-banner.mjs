@@ -14,7 +14,7 @@ await new Promise(r=>server.listen(0,'127.0.0.1',r));const origin=`http://127.0.
 const browser=await ({chromium,webkit}[engine]).launch({headless:true});const report={revision:execFileSync('git',['rev-parse','HEAD'],{encoding:'utf8'}).trim(),engine,browser:browser.version(),scope:'Production build, real native touchscreen controls, isolated prepared profiles; no hardware acceptance',cases:[],errors:[]};
 const ready=p=>p.waitForFunction(()=>document.querySelector('#world')?.dataset.phase==='ready');
 const phase=(p,name)=>p.waitForFunction(name=>document.querySelector('#world')?.dataset.phase===name,name);
-const tap=(p,s)=>p.locator(`${s}:visible`).tap();const save=p=>p.evaluate(k=>JSON.parse(localStorage.getItem(k)),SAVE_KEY);
+const tap=async(p,s)=>{await p.locator(`${s}:visible`).tap();if(/journey|retreat|retry|settings|close-button|data-claim/.test(s))await p.waitForTimeout(360);};const save=p=>p.evaluate(k=>JSON.parse(localStorage.getItem(k)),SAVE_KEY);
 const shot=(p,name)=>p.screenshot({path:`${out}/${name}.png`,fullPage:true});
 async function layout(p){const m=await p.evaluate(()=>({w:innerWidth,scroll:document.documentElement.scrollWidth,canvas:[document.querySelector('canvas')?.width,document.querySelector('canvas')?.height]}));assert(m.scroll<=m.w+1);assert(m.canvas.every(v=>v>0));for(const selector of ['button[data-order="advance"]','button[data-order="hold"]']){const b=await p.locator(selector).boundingBox();assert(b.width>=44&&b.height>=44);}}
 async function navigation(p){
