@@ -1,0 +1,28 @@
+name: WebKit stress 39 diagnostic
+on:
+  push:
+    branches: [qa/webkit-stress-39]
+permissions: {contents: read}
+jobs:
+  diagnose:
+    runs-on: ubuntu-latest
+    timeout-minutes: 10
+    steps:
+      - uses: actions/checkout@v4
+        with: {persist-credentials: false}
+      - uses: actions/setup-node@v4
+        with: {node-version: 22, cache: npm}
+      - run: npm ci
+      - run: npm run build
+      - run: npx playwright install --with-deps webkit
+      - env:
+          QA_ENGINE: webkit
+          QA_RANGE: '39'
+          QA_OUT: artifacts/webkit-39
+        run: node --experimental-strip-types scripts/qa40/campaign.mjs
+      - uses: actions/upload-artifact@v4
+        if: always()
+        with:
+          name: webkit-stress-39
+          path: artifacts/webkit-39/
+          retention-days: 7
