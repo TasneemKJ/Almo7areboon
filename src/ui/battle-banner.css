@@ -51,3 +51,7 @@
 .order-banner button:not(:disabled):focus-visible { outline-offset:2px; }
 
 .journey-open { border:1px solid var(--craft-brass); border-radius:14px 10px; background:var(--navy); color:var(--paper); padding:10px 15px; min-height:44px; font-family:Georgia,serif; }
+/* Preserve room for chapter artwork and commander signals as the deck grows. */
+@media(min-height:701px) {
+ .world { min-height:clamp(200px,calc(100dvh - 330px),690px); }
+}
