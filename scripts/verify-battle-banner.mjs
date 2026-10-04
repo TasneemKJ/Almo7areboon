@@ -10,7 +10,9 @@ const engine=process.env.QA_ENGINE??'chromium',out=process.env.QA_OUT??`artifact
 assert(['chromium','webkit'].includes(engine));mkdirSync(out,{recursive:true});
 const root=resolve('dist'),mime={'.html':'text/html','.js':'text/javascript','.css':'text/css','.webp':'image/webp','.png':'image/png','.svg':'image/svg+xml','.webmanifest':'application/manifest+json'};let disconnected=false;
 const server=createServer((req,res)=>{if(disconnected){req.socket.destroy();return;}const path=new URL(req.url,'http://localhost').pathname;res.setHeader('Cache-Control','no-store');if(path==='/__seed'){res.setHeader('Content-Type','text/html');res.end('<!doctype html><title>Isolated fixture</title>');return;}const file=resolve(root,`.${path==='/'?'/index.html':path}`);if(!file.startsWith(root+sep)){res.writeHead(403);res.end();return;}try{res.setHeader('Content-Type',mime[extname(file)]??'application/octet-stream');res.end(readFileSync(file));}catch{res.writeHead(404);res.end();}});
-await new Promise(r=>server.listen(0,'127.0.0.1',r));const origin=`http://127.0.0.1:${server.address().port}`;
+await new Promise(r=>server.listen(0,'127.0.0.1',r));const port=server.address().port,origin=`http://127.0.0.1:${port}`;
+async function stopOrigin(){server.closeAllConnections();await new Promise(r=>server.close(r));}
+async function restoreOrigin(){if(!server.listening)await new Promise(r=>server.listen(port,'127.0.0.1',r));}
 const browser=await ({chromium,webkit}[engine]).launch({headless:true});const report={revision:execFileSync('git',['rev-parse','HEAD'],{encoding:'utf8'}).trim(),engine,browser:browser.version(),scope:'Production build, real native touchscreen controls, isolated prepared profiles; no hardware acceptance',cases:[],errors:[]};
 const ready=p=>p.waitForFunction(()=>document.querySelector('#world')?.dataset.phase==='ready');
 const phase=(p,name)=>p.waitForFunction(name=>document.querySelector('#world')?.dataset.phase===name,name);
@@ -36,7 +38,7 @@ async function session(name,viewport,fn,reduced='reduce'){
  const context=await browser.newContext({viewport,hasTouch:true,isMobile:true,reducedMotion:reduced});context.setDefaultTimeout(30000);const p=await context.newPage();const errors=[];p.on('pageerror',e=>errors.push(e.message));
  try{await p.goto(`${origin}/__seed`);const profile=defaultProfile();Object.assign(profile,{sound:false,motion:reduced==='reduce'?'reduced':'system',foodLevel:20,kills:10});profile.chronicle.enabled=false;
  await p.evaluate(({profile,k,b})=>{localStorage.setItem(k,JSON.stringify(profile));localStorage.setItem(b,JSON.stringify(profile));},{profile,k:SAVE_KEY,b:BACKUP_KEY});await p.goto(origin,{waitUntil:'networkidle'});await ready(p);await fn(p,context);assert.deepEqual(errors,[]);report.cases.push({name,viewport,status:'PASS'});
- }catch(e){report.cases.push({name,viewport,status:'FAIL',error:String(e),pageErrors:errors});await shot(p,`${name}-failure`).catch(()=>{});throw e;}finally{disconnected=false;await context.close();}}
+ }catch(e){report.cases.push({name,viewport,status:'FAIL',error:String(e),pageErrors:errors});await shot(p,`${name}-failure`).catch(()=>{});throw e;}finally{disconnected=false;await restoreOrigin();await context.close();}}
 try{
  for(const viewport of [{width:320,height:568},{width:390,height:844}])await session(`phone-${viewport.width}`,viewport,async p=>{
   await layout(p);await navigation(p);await shot(p,`${viewport.width}-ready`);await tap(p,'[data-command="journey"]');await p.getByRole('heading',{name:'Your journey',exact:true}).waitFor();const before=await save(p);await tap(p,'[data-claim="first-blood"]');assert.equal((await save(p)).gems,before.gems+50);assert.equal((await save(p)).claimed.filter(x=>x==='first-blood').length,1);await shot(p,`${viewport.width}-journey`);await tap(p,'.close-button');
@@ -48,8 +50,10 @@ try{
  await session('full-motion',{width:390,height:844},async p=>{await deployment(p);const info=await p.locator('canvas').getAttribute('data-battle-order');assert.equal(JSON.parse(info).reduced,false);await shot(p,'full-motion-advance');},'no-preference');
  await session('offline-return',{width:390,height:844},async(p,context)=>{
   await p.waitForFunction(()=>navigator.serviceWorker.controller?.state==='activated');await p.reload({waitUntil:'networkidle'});await ready(p);
-  // Stop actual origin access; independent uncached, worker-blocked control must fail.
-  disconnected=true;const control=await browser.newContext({serviceWorkers:'block'});try{const c=await control.newPage();await assert.rejects(c.goto(origin,{timeout:10000}));}finally{await control.close();}
+  // Close the listener and its connections; independent uncached, worker-blocked control must fail.
+  await p.waitForFunction(async()=>!!await (await caches.open('almo7areboon-runtime-v1')).match('/'));
+  report.offlineCache=await p.evaluate(async()=>({controller:navigator.serviceWorker.controller?.state,urls:(await (await caches.open('almo7areboon-runtime-v1')).keys()).map(r=>r.url)}));assert(report.offlineCache.urls.some(u=>u.endsWith('.js')));assert(report.offlineCache.urls.some(u=>u.endsWith('.css')));
+  await stopOrigin();const control=await browser.newContext({serviceWorkers:'block'});try{const c=await control.newPage();await assert.rejects(c.goto(origin,{timeout:10000}));}finally{await control.close();}
   const response=await p.reload({waitUntil:'networkidle'});assert(response.fromServiceWorker());await ready(p);await deployment(p);await shot(p,'offline-advance');
  });
  await session('twenty-cycles',{width:390,height:844},async p=>{
