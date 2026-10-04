@@ -40,7 +40,8 @@
 @media(max-height:620px) {
  html,body,#app { height:auto; min-height:100%; }
  body { display:block; overflow-y:auto; overscroll-behavior:auto; }
- .game-shell { height:620px; min-height:620px; max-height:none; }
+ .game-shell { height:620px; min-height:620px; max-height:none; padding-bottom:calc(58px + env(safe-area-inset-bottom,0px)); }
+ .bottom-nav { position:fixed; left:50%; bottom:0; transform:translateX(-50%); width:min(100%,480px); z-index:8; }
  .modal-layer { position:fixed; max-height:100dvh; }
 }
 /* Readiness lives on the frame; portraits keep their own clear silhouette band. */

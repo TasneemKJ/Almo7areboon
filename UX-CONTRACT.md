@@ -7,7 +7,7 @@ See DESIGN.md for visual intent. English/en-US numbers and device-local calendar
 | Controls | Native buttons/radios in main.ts and ui templates | guarded Game.dispatch | deployment, skill, order, reward | source integration and browser tap |
 | Modal | main showModal/closeModal, accessibility.ts | modal/pause ownership | result, Journey, Settings, session | focus/close hit tests and native playtest |
 | Toast | main toast/status live region | action result | info and recoverable errors | main tests and browser |
-| Scrollbar | style.css/continuation.css/battle-banner.css | shell + dialog viewport | short-phone shell scroll, independent dialog | narrow/rotated browser hit tests |
+| Scrollbar | style.css/continuation.css/battle-banner.css | shell + dialog viewport | short-phone shell scroll with fixed navigation and reserved space, independent dialog | narrow/rotated browser hit tests |
 | Navigation | main switchTab and modal dispatch | activeTab, pendingVictory | ready/result Journey → collection or Chronicle | receipt/manual-pause regressions |
 | Rewards | Game.dispatch claim/daily and data.ts | saved claimed IDs/localDay | Journey or Quests presentation | duplicate/roundtrip claims |
 
