@@ -13,7 +13,7 @@ const server=createServer((req,res)=>{if(disconnected){req.socket.destroy();retu
 await new Promise(r=>server.listen(0,'127.0.0.1',r));const port=server.address().port,origin=`http://127.0.0.1:${port}`;
 async function stopOrigin(){server.closeAllConnections();await new Promise(r=>server.close(r));}
 async function restoreOrigin(){if(!server.listening)await new Promise(r=>server.listen(port,'127.0.0.1',r));}
-const browser=await ({chromium,webkit}[engine]).launch({headless:true});const report={revision:execFileSync('git',['rev-parse','HEAD'],{encoding:'utf8'}).trim(),engine,browser:browser.version(),scope:'Production build, real native touchscreen controls, isolated prepared profiles; no hardware acceptance',cases:[],errors:[]};
+let browser=await ({chromium,webkit}[engine]).launch({headless:true});const report={revision:execFileSync('git',['rev-parse','HEAD'],{encoding:'utf8'}).trim(),engine,browser:browser.version(),scope:'Production build, native touch, isolated prepared profiles and browser processes; twenty stress cycles share one uninterrupted page; no hardware acceptance',cases:[],errors:[]};
 const ready=p=>p.waitForFunction(()=>document.querySelector('#world')?.dataset.phase==='ready');
 const phase=(p,name)=>p.waitForFunction(name=>document.querySelector('#world')?.dataset.phase===name,name);
 const tap=async(p,s)=>{await p.locator(`${s}:visible`).tap();if(/journey|retreat|retry|settings|close-button|data-claim/.test(s))await p.waitForTimeout(360);};const save=p=>p.evaluate(k=>JSON.parse(localStorage.getItem(k)),SAVE_KEY);
@@ -35,10 +35,11 @@ async function deployment(p,order='advance'){
 }
 async function retreat(p){await tap(p,'[data-command="settings"]');await tap(p,'[data-command="retreat"]');await p.getByRole('heading',{name:'REGROUP',exact:true}).waitFor();}
 async function session(name,viewport,fn,reduced='reduce'){
+ if(!browser)browser=await ({chromium,webkit}[engine]).launch({headless:true});
  const context=await browser.newContext({viewport,hasTouch:true,isMobile:true,reducedMotion:reduced});context.setDefaultTimeout(30000);const p=await context.newPage();const errors=[];p.on('pageerror',e=>errors.push(e.message));
  try{await p.goto(`${origin}/__seed`);const profile=defaultProfile();Object.assign(profile,{sound:false,motion:reduced==='reduce'?'reduced':'system',foodLevel:20,kills:10});profile.chronicle.enabled=false;
  await p.evaluate(({profile,k,b})=>{localStorage.setItem(k,JSON.stringify(profile));localStorage.setItem(b,JSON.stringify(profile));},{profile,k:SAVE_KEY,b:BACKUP_KEY});await p.goto(origin,{waitUntil:'networkidle'});await ready(p);await fn(p,context);assert.deepEqual(errors,[]);report.cases.push({name,viewport,status:'PASS'});
- }catch(e){report.cases.push({name,viewport,status:'FAIL',error:String(e),pageErrors:errors});await shot(p,`${name}-failure`).catch(()=>{});throw e;}finally{disconnected=false;await restoreOrigin();await context.close();}}
+ }catch(e){report.cases.push({name,viewport,status:'FAIL',error:String(e),pageErrors:errors});await shot(p,`${name}-failure`).catch(()=>{});throw e;}finally{disconnected=false;await restoreOrigin();await context.close();await browser.close();browser=null;}}
 try{
  for(const viewport of [{width:320,height:568},{width:390,height:844}])await session(`phone-${viewport.width}`,viewport,async p=>{
   await layout(p);await navigation(p);await shot(p,`${viewport.width}-ready`);await tap(p,'[data-command="journey"]');await p.getByRole('heading',{name:'Your journey',exact:true}).waitFor();const before=await save(p);await tap(p,'[data-claim="first-blood"]');assert.equal((await save(p)).gems,before.gems+50);assert.equal((await save(p)).claimed.filter(x=>x==='first-blood').length,1);await shot(p,`${viewport.width}-journey`);await tap(p,'.close-button');
@@ -60,4 +61,4 @@ try{
   for(let i=0;i<20;i++){await deployment(p,i%2?'hold':'advance');await retreat(p);await tap(p,'[data-command="retry"]');await ready(p);await p.waitForFunction(()=>!document.querySelector('canvas')?.dataset.battleOrder);assert.equal(await p.locator('canvas').getAttribute('data-battle-order'),null);if(i===9||i===19)await shot(p,`cycle-${i+1}`);}
  });
  report.status='PASS';console.log(`Battle banner ${engine}: ${report.cases.length} native sessions PASS;20 stress cycles`);
-}catch(e){report.status='FAIL';report.error=String(e);process.exitCode=1;console.error(e);}finally{writeFileSync(`${out}/report.json`,JSON.stringify(report,null,2));await browser.close();server.closeAllConnections();await new Promise(r=>server.close(r));}
+}catch(e){report.status='FAIL';report.error=String(e);process.exitCode=1;console.error(e);}finally{writeFileSync(`${out}/report.json`,JSON.stringify(report,null,2));await browser?.close();server.closeAllConnections();await new Promise(r=>server.close(r));}
