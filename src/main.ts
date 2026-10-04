@@ -264,6 +264,7 @@ function switchTab(tab:string){
   $('secondary-screen').hidden=tab==='battle';$('battle-view').inert=tab!=='battle';
   $('battle-view').setAttribute('aria-hidden',String(tab!=='battle'));
   syncPause();renderScreen();update(true);
+  if(tab==='battle'&&!modal&&(game.state.phase==='won'||game.state.phase==='lost')){resultShown=game.state.phase;showResult();}
   if(tab!=='battle')$('secondary-title')?.focus();
 }
 function renderScreen(legacyOnly=false){
