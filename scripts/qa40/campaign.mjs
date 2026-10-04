@@ -111,7 +111,46 @@ tests[21]=async()=>{for(let age=0;age<5;age++){const p=profile(age,{coins:ERAS[a
 tests[22]=async()=>{const p=profile(5,{timeline:2,coins:99999});p.legacy={rank:1,selected:'hearth'};p.mastery.chapters[5].earnedMask=1;await session(p,async({page})=>{await tap(page,'#battle-select');await tap(page,'[data-command="next"]');const before=await saved(page);const r=await geometry(page.locator('.prestige-reset summary'));ok(r.height>=44);await tap(page,'.prestige-reset summary');await shot(page,'prestige-disclosure');await tap(page,'.close-button');eq(await saved(page),before);await tap(page,'[data-command="next"]');await tap(page,'[data-command="confirm-prestige"]');await ready(page);const after=await saved(page);eq(after.timeline,3);eq(after.age,0);eq(after.coins,0);eq(after.cards,before.cards);});};
 tests[23]=async()=>{const p=profile(0,{timeline:2});p.legacy={rank:1,selected:'hearth'};await session(p,async({page})=>{await tap(page,'.bottom-nav [data-tab="evolution"]');for(const choice of ['watch','stillness','hearth']){const label=page.locator(`label[for="ready-${choice}"]`),r=await geometry(label);ok(r.width>=44&&r.height>=44);await label.tap();eq((await saved(page)).legacy.selected,choice);await shot(page,`legacy-${choice}`);}await tap(page,'.bottom-nav [data-tab="battle"]');await start(page);await manualPause(page);});};
 tests[24]=async()=>{for(const count of [1,10,50])for(const delta of [-1,0]){const p=defaultProfile();p.gems=cardPackCost(count)+delta;await session(p,async({page})=>{await tap(page,'.bottom-nav [data-tab="cards"]');eq(await page.locator(`[data-pack="${count}"]`).isDisabled(),delta<0);if(delta===0){await tap(page,`[data-pack="${count}"]`);eq((await saved(page)).gems,0);eq((await saved(page)).cards.reduce((a,b)=>a+b,0),count);}await shot(page,`pack-${count}-${delta}`);});}};
-tests[25]=async()=>{const p=defaultProfile();p.gems=1000;await session(p,async({page})=>{await tap(page,'.bottom-nav [data-tab="cards"]');const r=await geometry(page.locator('[data-pack="1"]'));await page.touchscreen.tap(r.x+r.width/2,r.y+r.height/2);await page.locator('.dialog').waitFor();const after=await saved(page);await page.touchscreen.tap(r.x+r.width/2,r.y+r.height/2);eq((await saved(page)).summonCount,after.summonCount,'second tap behind modal cannot buy again');eq(after.summonCount,1);await shot(page,'summon-modal');await page.locator('.close-button').dblclick();eq((await saved(page)).summonCount,1);});};
+tests[25]=()=>session({...defaultProfile(),gems:1000},async({page})=>{
+ const r=await geometry(page.locator('.bottom-nav [data-tab="cards"]'));
+ await tap(page,'.bottom-nav [data-tab="cards"]');
+ const pack=await geometry(page.locator('[data-pack="1"]'));
+ await page.touchscreen.tap(pack.x+pack.width/2,pack.y+pack.height/2);
+ await page.locator('.dialog').waitFor();
+ const summoned=await saved(page);
+ await page.touchscreen.tap(pack.x+pack.width/2,pack.y+pack.height/2);
+ eq((await saved(page)).summonCount,summoned.summonCount,'second tap behind modal cannot buy again');
+ eq(summoned.summonCount,1);await shot(page,'summon-modal');
+ await page.locator('.close-button').dblclick();
+ eq((await saved(page)).summonCount,1);
+ for(const eventStyle of ['pointer','legacy-mouse']){
+  await tap(page,'[data-pack="1"]');await page.locator('.dialog').waitFor();
+  const after=await saved(page);
+  // Controlled same-position touch sequence through the actual DOM handler.
+  // Native taps in the rest of the campaign cover hit testing; these events
+  // isolate both modern clicks and Safari-style MouseEvent compatibility.
+  const state=await page.evaluate(({eventStyle,x,y})=>{
+   const send=element=>{
+    element.dispatchEvent(new PointerEvent('pointerup',{bubbles:true,pointerType:'touch',clientX:x,clientY:y}));
+    const data={bubbles:true,detail:1,clientX:x,clientY:y,pointerType:'touch'};
+    element.dispatchEvent(eventStyle==='pointer'?new PointerEvent('click',data):new MouseEvent('click',data));
+   };
+   send(document.querySelector('.close-button'));
+   send(document.querySelector('.bottom-nav [data-tab="battle"]'));
+   return {closed:document.querySelector('#modal-layer').hidden,tab:document.querySelector('.bottom-nav .active').dataset.tab};
+  },{eventStyle,x:r.x+r.width/2,y:r.y+r.height/2});
+  eq(state,{closed:true,tab:'cards'},`${eventStyle}: dismissal cannot tap through to a different screen`);
+  eq((await saved(page)).summonCount,after.summonCount,'dismissal cannot spend again');
+  current.observations.push({fixture:'controlled touch events at shared coordinates',eventStyle});
+  await shot(page,`touch-dismiss-${eventStyle}`);
+ }
+ await tap(page,'.bottom-nav [data-tab="battle"]');await start(page,false);
+ const troop=await geometry(page.locator('[data-unit="0"]'));
+ await page.touchscreen.tap(troop.x+troop.width/2,troop.y+troop.height/2);
+ await page.touchscreen.tap(troop.x+troop.width/2,troop.y+troop.height/2);
+ eq((await saved(page)).deployed,2,'rapid native touch deployment stays responsive');
+ await manualPause(page);await shot(page,'rapid-native-deployment');
+});
 tests[26]=()=>session(defaultProfile(),async({page})=>{await tap(page,'.resources .gems');const b=page.locator('[data-daily]'),day=Number(await b.getAttribute('data-daily'));const before=await saved(page),reward=dailyReward(before,day).gems;await b.tap();const after=await saved(page);eq(after.gems,before.gems+reward);ok(await page.locator('[data-daily]').isDisabled());await shot(page,'daily-claimed');await page.reload({waitUntil:'networkidle'});await tap(page,'.resources .gems');ok(await page.locator('[data-daily]').isDisabled());eq((await saved(page)).gems,after.gems);const g=new Game(after);reject(g,{type:'daily',day});});
 tests[27]=async()=>{const p=defaultProfile();Object.assign(p,{kills:2500,wins:30,deployed:750});await session(p,async({page})=>{await tap(page,'.resources .gems');for(const q of QUESTS){await tap(page,`[data-claim="${q.id}"]`);ok(await page.locator(`[data-claim="${q.id}"]`).isDisabled());}const a=await saved(page);eq(a.claimed.length,QUESTS.length);eq(a.gems,p.gems+QUESTS.reduce((n,q)=>n+q.reward,0));await shot(page,'quests-claimed');await page.reload({waitUntil:'networkidle'});eq((await saved(page)).gems,a.gems);});};
 tests[28]=()=>session(defaultProfile(),async({page})=>{await settings(page);const original=await saved(page),p={...defaultProfile(),coins:321,gems:654};const file={name:'isolated-save.json',mimeType:'application/json',buffer:Buffer.from(exportBackup(p))};await page.locator('#import-save').setInputFiles(file);await page.getByRole('heading',{name:'Replace this save?',exact:true}).waitFor();await shot(page,'import-confirmation');await page.getByRole('button',{name:'CANCEL',exact:true}).tap();eq(await saved(page),original);await settings(page);await page.locator('#import-save').setInputFiles(file);await tap(page,'[data-command="confirm-import"]');await ready(page);eq((await saved(page)).coins,321);eq((await saved(page)).gems,654);});
