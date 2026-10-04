@@ -1,5 +1,7 @@
 /* Offline support: remember what the game has loaded so a returning player can start without a connection. */
 const CACHE = 'almo7areboon-runtime-v1';
+// Vite replaces this list with the shipped artwork and generated worker files.
+const INSTALL_ASSETS = [];
 const SCOPE = new URL(self.registration.scope);
 // Bound old bundles without evicting scripts/styles still required by the cached page.
 const KEEP_BUNDLES = 6;
@@ -47,6 +49,16 @@ async function precache() {
   const cache = await caches.open(CACHE);
   const page = await fetch(SCOPE.href, { cache: 'reload' });
   if (!page.ok) throw new Error(`Unable to cache ${SCOPE.href}`);
+  // First-page resources can load before clients.claim(), bypassing fetch events.
+  // Complete these dependencies before committing the entry page or activating.
+  await Promise.all(INSTALL_ASSETS.map(async path => {
+    const url = new URL(path, SCOPE);
+    if (!inScope(url)) throw new Error(`Out-of-scope installation asset ${url}`);
+    const response = await fetch(url.href, { cache: 'reload' });
+    if (!response.ok) throw new Error(`Unable to cache ${url}`);
+    await response.clone().arrayBuffer();
+    await cache.put(url.href, response);
+  }));
   await cacheShell(cache, page, false);
 }
 
@@ -75,6 +87,21 @@ self.addEventListener('fetch', event => {
   const entryNavigation = navigation && url.href === SCOPE.href;
   // CacheStorage is optional: an unavailable cache must not block a healthy network request.
   const opened = Promise.resolve().then(() => caches.open(CACHE)).catch(() => null);
+  // Hashed modules cannot change at this URL. A cached module needs no refresh;
+  // offline retries can otherwise compete with first-return module loading.
+  if (!navigation && immutableBundle(url.href)) {
+    const result = opened.then(async cache => {
+      const cached = await match(cache, key);
+      return cached ? { response: cached, cache: null } : { response: await fetch(request), cache };
+    });
+    event.waitUntil(result.then(async ({ response, cache }) => {
+      if (!cache || !response.ok || response.type !== 'basic') return;
+      await cache.put(key, response.clone());
+      await trimBundles(cache);
+    }).catch(() => {}));
+    event.respondWith(result.then(({ response }) => response));
+    return;
+  }
   const refresh = Promise.resolve().then(() => fetch(request));
   const fallback = async () => {
     const cache = await opened;

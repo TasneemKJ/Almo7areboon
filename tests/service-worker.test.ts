@@ -36,7 +36,7 @@ test('external and non-GET requests stay outside the game cache',async()=>{
 });
 
 /** Cache API adapter for production-worker tests. Replacements move to the end, as Cache.put does. */
-function cacheFixture(options: { failOpen?: boolean; failMatch?: boolean; failKeys?: boolean; failAsset?: string; shell?: string; status?: number; scope?: string } = {}) {
+function cacheFixture(options: { failOpen?: boolean; failMatch?: boolean; failKeys?: boolean; failAsset?: string; shell?: string; status?: number; scope?: string; installAssets?: string[] } = {}) {
   const scope = options.scope ?? 'https://game.test/';
   const handlers: Record<string, Function> = {};
   const entries = new Map<string, Response>();
@@ -70,7 +70,7 @@ function cacheFixture(options: { failOpen?: boolean; failMatch?: boolean; failKe
     async add(request: string | { url: string }) { if(href(request).includes(options.failAsset ?? '\0'))throw Error('asset unavailable');await this.put(request, basic('asset')); },
   };
   const fresh = () => basic('network response', options.status ?? 200);
-  runInNewContext(source, {
+  runInNewContext(options.installAssets ? source.replace(/const INSTALL_ASSETS = \[\];/, `const INSTALL_ASSETS = ${JSON.stringify(options.installAssets)};`) + (source.includes("const INSTALL_ASSETS") ? "" : `\nconst INSTALL_ASSETS = ${JSON.stringify(options.installAssets)};`) : source, {
     URL, Response,
     caches: {
       async open() { if (options.failOpen) throw Error('cache unavailable'); return cache; },
@@ -226,4 +226,29 @@ test('a scoped game worker leaves resources outside its directory to the browser
   const response = await fixture.request('https://game.test/another-game/assets/app.js', 'cors');
   assert.equal(response, undefined);
   assert.equal(fixture.fetches, 0);
+});
+
+// Removing install-time artwork caching must make these fail even when the
+// first page loaded its images before the service worker took control.
+test('first installation retains artwork and the generated audio worker', async () => {
+  const fixture = cacheFixture({ installAssets: ['./art/coin.webp', './assets/soundscape-worker-AB12cd34.js'] });
+  await fixture.install();
+  assert.ok(await fixture.cache.match('./art/coin.webp'), 'first-visit artwork must survive an offline reload');
+  assert.ok(await fixture.cache.match('./assets/soundscape-worker-AB12cd34.js'));
+  assert.equal(fixture.skipped, true);
+});
+
+test('an unavailable installation dependency retains the previous complete shell', async () => {
+  const fixture = cacheFixture({ installAssets: ['./art/coin.webp'], failAsset: '/art/coin.webp' });
+  await fixture.cache.put('./', fixture.basic('previous complete shell'));
+  await assert.rejects(fixture.install(), /asset unavailable/);
+  assert.equal(fixture.skipped, false);
+  assert.equal(await (await fixture.cache.match('./'))!.text(), 'previous complete shell');
+});
+
+test('a cached content-hashed module makes no background network request',async()=>{
+ const w=worker({url:'https://game.test/assets/phaser-AB12cd34.js'});
+ assert.equal(await w.response,w.old);
+ assert.equal(w.fetches,0,'immutable modules must not start offline network retries');
+ await Promise.all(w.lifetimes);
 });

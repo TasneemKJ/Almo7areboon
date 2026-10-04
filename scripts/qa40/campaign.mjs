@@ -35,9 +35,13 @@ const range=(process.env.QA_IDS??'1-40').split(',').flatMap(s=>{const [a,b=a]=s.
 assert.ok(range.every(id=>Number.isInteger(id)&&id>=1&&id<=40));
 const out=process.env.QA_OUT??`artifacts/qa40/${engine}`;mkdirSync(out,{recursive:true});
 const root=resolve('dist'),mime={'.html':'text/html','.js':'text/javascript','.css':'text/css','.svg':'image/svg+xml','.webp':'image/webp','.png':'image/png','.json':'application/json','.webmanifest':'application/manifest+json'};
-let navStatus=200;
+let navStatus=200,networkUnavailable=false;
 const server=createServer((req,res)=>{
+ if(networkUnavailable){req.socket.destroy();return;}
  const p=new URL(req.url,'http://localhost').pathname;res.setHeader('Cache-Control','no-store');
+ if(p==='/__qa40_probe/worker.js'){res.setHeader('Content-Type','text/javascript');res.end(`const urls=['./','./entry.js'];self.addEventListener('install',e=>e.waitUntil(caches.open('qa40-driver-probe').then(c=>c.addAll(urls)).then(()=>self.skipWaiting())));self.addEventListener('activate',e=>e.waitUntil(self.clients.claim()));self.addEventListener('fetch',e=>e.respondWith(caches.match(e.request).then(r=>r||fetch(e.request))));`);return;}
+ if(p==='/__qa40_probe/entry.js'){res.setHeader('Content-Type','text/javascript');res.end('window.qa40DriverProbe=true;');return;}
+ if(p==='/__qa40_probe/'){res.setHeader('Content-Type','text/html');res.end('<!doctype html><script type="module" src="./entry.js"></script><script>navigator.serviceWorker.register("./worker.js")</script>');return;}
  if(p==='/__qa40_seed'||p==='/__qa40_away'){res.setHeader('Content-Type','text/html');res.end('<!doctype html><title>Isolated QA fixture</title><p>Navigation fixture</p>');return;}
  if(p==='/'&&navStatus!==200){res.writeHead(navStatus);res.end('Controlled navigation response');return;}
  const file=resolve(root,`.${p==='/'?'/index.html':p}`);if(!file.startsWith(root+sep)){res.writeHead(403);res.end();return;}
@@ -76,16 +80,49 @@ async function session(p,fn,opts={}){
   await page.goto(origin,{waitUntil:'networkidle'});await page.waitForFunction(()=>['active','unavailable','unsupported','blocked','temporary'].includes(document.querySelector('#app')?.dataset.saveSession));
   await shot(page,'before');await fn({page,context,watch,replacePage:p=>{page=p;watch(page);}});await shot(page,'after');
   eq(errors,[],'no uncaught page errors');eq(responses,[],'no failed production art or bundle responses');
- }catch(error){await page.screenshot({path:`${out}/${String(current.id).padStart(2,'0')}-failure.png`}).catch(()=>{});throw error;}
- finally{navStatus=200;await context.close();}
+ }catch(error){current.observations.push({pageErrors:errors,failedResponses:responses});await page.screenshot({path:`${out}/${String(current.id).padStart(2,'0')}-failure.png`}).catch(()=>{});throw error;}
+ finally{navStatus=200;networkUnavailable=false;await context.close();}
 }
 async function start(page,deploy=true){await tap(page,'[data-command="start"]');await running(page);if(deploy)await tap(page,'[data-unit="0"]');}
 async function manualPause(page){if(await page.locator('#pause').getAttribute('aria-pressed')!=='true')await tap(page,'#pause');await paused(page);}
 async function settings(page){await tap(page,'[data-command="settings"]');await page.getByRole('heading',{name:'Settings',exact:true}).waitFor();}
 async function retreat(page){await settings(page);await tap(page,'[data-command="retreat"]');await page.getByRole('heading',{name:'REGROUP',exact:true}).waitFor();}
 async function retry(page){await tap(page,'[data-command="retry"]');await ready(page);}
-async function workerReady(page){if(!await page.evaluate(()=>!!navigator.serviceWorker)){const e=Error('Service-worker APIs are unavailable in this browser environment');e.code='QA_UNSUPPORTED';throw e;}await page.waitForFunction(()=>!!navigator.serviceWorker.controller,null,{timeout:30000});}
+async function workerReady(page){if(!await page.evaluate(()=>!!navigator.serviceWorker)){const e=Error('Service-worker APIs are unavailable in this browser environment');e.code='QA_UNSUPPORTED';throw e;}await page.waitForFunction(()=>navigator.serviceWorker.controller?.state==='activated',null,{timeout:30000});}
 async function keepStill(page){const before=await page.locator('#food-count').innerText();await page.waitForTimeout(350);eq(await page.locator('#food-count').innerText(),before,'paused resource display stable');}
+// Playwright WebKit's setOffline rejects service-worker responses before the
+// worker can fulfill them (microsoft/playwright#42775). Cut actual origin sockets
+// instead, and require an uncached/no-worker control to fail under that cutoff.
+async function disconnect(context,value){
+ if(engine!=='webkit'){await context.setOffline(value);return;}
+ networkUnavailable=value;
+ if(!value)return;
+ const control=await browser.newContext({serviceWorkers:'block'});
+ try{
+  const page=await control.newPage();
+  await assert.rejects(page.goto(origin,{timeout:10000}),/ERR_|Load failed|internal error|connect|network|socket/i);
+  current.assertions++;
+  current.observations.push({fixture:'origin sockets destroyed; uncached service-worker-blocked navigation fails'});
+ }finally{await control.close();}
+}
+// Independently check first-return module delivery in this driver, without any
+// production code. A capability limit is reported only if this tiny cached app
+// also fails; a working probe never excuses a production failure.
+async function firstOfflineModuleProbe(){
+ if(engine!=='webkit')return true;
+ const context=await browser.newContext({serviceWorkers:'allow'});
+ try{
+  const page=await context.newPage();const errors=[];page.on('pageerror',e=>errors.push(e.message));
+  await page.goto(`${origin}/__qa40_probe/`,{waitUntil:'networkidle'});
+  await page.waitForFunction(()=>navigator.serviceWorker.controller?.state==='activated');
+  await disconnect(context,true);
+  let response;try{response=await page.reload({waitUntil:'networkidle'});}catch(e){current.observations.push({driverProbe:'minimal cached module first-return navigation failed',error:String(e)});return false;}
+  if(!response?.fromServiceWorker())throw Error('Minimal probe navigation was not served by its worker');
+  try{await page.waitForFunction(()=>window.qa40DriverProbe===true,null,{timeout:3000});}
+  catch(e){current.observations.push({driverProbe:'minimal cached module did not execute on first offline return',errors});return false;}
+  current.observations.push({driverProbe:'minimal cached module executed on first offline return'});return true;
+ }finally{networkUnavailable=false;await context.close();}
+}
 const tests={};
 tests[1]=()=>session(defaultProfile(),async({page})=>{for(const size of [{width:320,height:480},{width:320,height:568},{width:390,height:550}]){await page.setViewportSize(size);await visibleLayout(page);const [a,b]=await page.evaluate(()=>['#battle-select','[data-command="start"]'].map(s=>{const r=document.querySelector(s).getBoundingClientRect();return {y:r.y,bottom:r.bottom};}));ok(a.bottom<=b.y||b.bottom<=a.y,'chapter and start vertical bands cannot overlap');await hit(page,'[data-command="start"]');await hit(page,'.story-open');await shot(page,`${size.width}x${size.height}`);}});
 tests[2]=()=>session(defaultProfile(),async({page})=>{for(const width of [360,375,390,414,430]){await page.setViewportSize({width,height:932});await visibleLayout(page);await hit(page,'.bottom-nav [data-tab="battle"]');await shot(page,`${width}-tall`);}await page.evaluate(()=>document.documentElement.style.fontSize='32px');await visibleLayout(page);await shot(page,'enlarged-text');});
@@ -111,7 +148,46 @@ tests[21]=async()=>{for(let age=0;age<5;age++){const p=profile(age,{coins:ERAS[a
 tests[22]=async()=>{const p=profile(5,{timeline:2,coins:99999});p.legacy={rank:1,selected:'hearth'};p.mastery.chapters[5].earnedMask=1;await session(p,async({page})=>{await tap(page,'#battle-select');await tap(page,'[data-command="next"]');const before=await saved(page);const r=await geometry(page.locator('.prestige-reset summary'));ok(r.height>=44);await tap(page,'.prestige-reset summary');await shot(page,'prestige-disclosure');await tap(page,'.close-button');eq(await saved(page),before);await tap(page,'[data-command="next"]');await tap(page,'[data-command="confirm-prestige"]');await ready(page);const after=await saved(page);eq(after.timeline,3);eq(after.age,0);eq(after.coins,0);eq(after.cards,before.cards);});};
 tests[23]=async()=>{const p=profile(0,{timeline:2});p.legacy={rank:1,selected:'hearth'};await session(p,async({page})=>{await tap(page,'.bottom-nav [data-tab="evolution"]');for(const choice of ['watch','stillness','hearth']){const label=page.locator(`label[for="ready-${choice}"]`),r=await geometry(label);ok(r.width>=44&&r.height>=44);await label.tap();eq((await saved(page)).legacy.selected,choice);await shot(page,`legacy-${choice}`);}await tap(page,'.bottom-nav [data-tab="battle"]');await start(page);await manualPause(page);});};
 tests[24]=async()=>{for(const count of [1,10,50])for(const delta of [-1,0]){const p=defaultProfile();p.gems=cardPackCost(count)+delta;await session(p,async({page})=>{await tap(page,'.bottom-nav [data-tab="cards"]');eq(await page.locator(`[data-pack="${count}"]`).isDisabled(),delta<0);if(delta===0){await tap(page,`[data-pack="${count}"]`);eq((await saved(page)).gems,0);eq((await saved(page)).cards.reduce((a,b)=>a+b,0),count);}await shot(page,`pack-${count}-${delta}`);});}};
-tests[25]=async()=>{const p=defaultProfile();p.gems=1000;await session(p,async({page})=>{await tap(page,'.bottom-nav [data-tab="cards"]');const r=await geometry(page.locator('[data-pack="1"]'));await page.touchscreen.tap(r.x+r.width/2,r.y+r.height/2);await page.locator('.dialog').waitFor();const after=await saved(page);await page.touchscreen.tap(r.x+r.width/2,r.y+r.height/2);eq((await saved(page)).summonCount,after.summonCount,'second tap behind modal cannot buy again');eq(after.summonCount,1);await shot(page,'summon-modal');await page.locator('.close-button').dblclick();eq((await saved(page)).summonCount,1);});};
+tests[25]=()=>session({...defaultProfile(),gems:1000},async({page})=>{
+ const r=await geometry(page.locator('.bottom-nav [data-tab="cards"]'));
+ await tap(page,'.bottom-nav [data-tab="cards"]');
+ const pack=await geometry(page.locator('[data-pack="1"]'));
+ await page.touchscreen.tap(pack.x+pack.width/2,pack.y+pack.height/2);
+ await page.locator('.dialog').waitFor();
+ const summoned=await saved(page);
+ await page.touchscreen.tap(pack.x+pack.width/2,pack.y+pack.height/2);
+ eq((await saved(page)).summonCount,summoned.summonCount,'second tap behind modal cannot buy again');
+ eq(summoned.summonCount,1);await shot(page,'summon-modal');
+ await page.locator('.close-button').dblclick();
+ eq((await saved(page)).summonCount,1);
+ for(const eventStyle of ['pointer','legacy-mouse']){
+  await tap(page,'[data-pack="1"]');await page.locator('.dialog').waitFor();
+  const after=await saved(page);
+  // Controlled same-position touch sequence through the actual DOM handler.
+  // Native taps in the rest of the campaign cover hit testing; these events
+  // isolate both modern clicks and Safari-style MouseEvent compatibility.
+  const state=await page.evaluate(({eventStyle,x,y})=>{
+   const send=element=>{
+    element.dispatchEvent(new PointerEvent('pointerup',{bubbles:true,pointerType:'touch',clientX:x,clientY:y}));
+    const data={bubbles:true,detail:1,clientX:x,clientY:y,pointerType:'touch'};
+    element.dispatchEvent(eventStyle==='pointer'?new PointerEvent('click',data):new MouseEvent('click',data));
+   };
+   send(document.querySelector('.close-button'));
+   send(document.querySelector('.bottom-nav [data-tab="battle"]'));
+   return {closed:document.querySelector('#modal-layer').hidden,tab:document.querySelector('.bottom-nav .active').dataset.tab};
+  },{eventStyle,x:r.x+r.width/2,y:r.y+r.height/2});
+  eq(state,{closed:true,tab:'cards'},`${eventStyle}: dismissal cannot tap through to a different screen`);
+  eq((await saved(page)).summonCount,after.summonCount,'dismissal cannot spend again');
+  current.observations.push({fixture:'controlled touch events at shared coordinates',eventStyle});
+  await shot(page,`touch-dismiss-${eventStyle}`);
+ }
+ await tap(page,'.bottom-nav [data-tab="battle"]');await start(page,false);
+ const troop=await geometry(page.locator('[data-unit="0"]'));
+ await page.touchscreen.tap(troop.x+troop.width/2,troop.y+troop.height/2);
+ await page.touchscreen.tap(troop.x+troop.width/2,troop.y+troop.height/2);
+ eq((await saved(page)).deployed,2,'rapid native touch deployment stays responsive');
+ await manualPause(page);await shot(page,'rapid-native-deployment');
+});
 tests[26]=()=>session(defaultProfile(),async({page})=>{await tap(page,'.resources .gems');const b=page.locator('[data-daily]'),day=Number(await b.getAttribute('data-daily'));const before=await saved(page),reward=dailyReward(before,day).gems;await b.tap();const after=await saved(page);eq(after.gems,before.gems+reward);ok(await page.locator('[data-daily]').isDisabled());await shot(page,'daily-claimed');await page.reload({waitUntil:'networkidle'});await tap(page,'.resources .gems');ok(await page.locator('[data-daily]').isDisabled());eq((await saved(page)).gems,after.gems);const g=new Game(after);reject(g,{type:'daily',day});});
 tests[27]=async()=>{const p=defaultProfile();Object.assign(p,{kills:2500,wins:30,deployed:750});await session(p,async({page})=>{await tap(page,'.resources .gems');for(const q of QUESTS){await tap(page,`[data-claim="${q.id}"]`);ok(await page.locator(`[data-claim="${q.id}"]`).isDisabled());}const a=await saved(page);eq(a.claimed.length,QUESTS.length);eq(a.gems,p.gems+QUESTS.reduce((n,q)=>n+q.reward,0));await shot(page,'quests-claimed');await page.reload({waitUntil:'networkidle'});eq((await saved(page)).gems,a.gems);});};
 tests[28]=()=>session(defaultProfile(),async({page})=>{await settings(page);const original=await saved(page),p={...defaultProfile(),coins:321,gems:654};const file={name:'isolated-save.json',mimeType:'application/json',buffer:Buffer.from(exportBackup(p))};await page.locator('#import-save').setInputFiles(file);await page.getByRole('heading',{name:'Replace this save?',exact:true}).waitFor();await shot(page,'import-confirmation');await page.getByRole('button',{name:'CANCEL',exact:true}).tap();eq(await saved(page),original);await settings(page);await page.locator('#import-save').setInputFiles(file);await tap(page,'[data-command="confirm-import"]');await ready(page);eq((await saved(page)).coins,321);eq((await saved(page)).gems,654);});
@@ -122,8 +198,8 @@ tests[32]=()=>session(defaultProfile(),async({page,context,replacePage})=>{await
 tests[33]=()=>session(defaultProfile(),async({page})=>{eq(await page.locator('#app').getAttribute('data-save-session'),'unavailable');const before=await raw(page);await tap(page,'[data-command="session-temporary"]');eq(await page.locator('#app').getAttribute('data-save-session'),'temporary');await start(page);await manualPause(page);await settings(page);ok(await page.locator('[data-command="import"]').isDisabled());ok(await page.locator('[data-command="reset"]').isDisabled());await shot(page,'temporary-settings');await tap(page,'.close-button');await page.setViewportSize({width:320,height:480});await visibleLayout(page);eq(await raw(page),before);},{init:()=>Object.defineProperty(navigator,'locks',{value:undefined,configurable:true}),fixture:'navigator.locks unavailable; protected stored profile'});
 tests[34]=()=>session(defaultProfile(),async({page})=>{await start(page);await manualPause(page);const before=await saved(page);await page.goto(`${origin}/__qa40_away`);await page.goBack({waitUntil:'networkidle'});await page.waitForFunction(()=>document.querySelector('#app')?.dataset.saveSession==='active');const after=await saved(page);eq(after.coins,before.coins);eq(after.deployed,before.deployed);ok(['ready','running'].includes(await page.locator('#world').getAttribute('data-phase')),'reload or BFCache returns a valid session');await shot(page,'history-return');if(await page.locator('#world').getAttribute('data-phase')==='ready')await start(page);await manualPause(page);});
 tests[35]=()=>session({...defaultProfile(),sound:true},async({page})=>{await start(page);ok(await page.evaluate(()=>window.qaAudio.length>0),'native audio context observed');await page.evaluate(()=>{Object.defineProperty(document,'hidden',{configurable:true,get:()=>true});document.dispatchEvent(new Event('visibilitychange'));});await keepStill(page);await page.waitForFunction(()=>window.qaAudio.every(c=>c.state!=='running'));current.observations.push({audio:await page.evaluate(()=>window.qaAudio.map(c=>c.state)),fixture:'synthetic visibilitychange, not OS backgrounding'});await page.evaluate(()=>{delete document.hidden;document.dispatchEvent(new Event('visibilitychange'));});await manualPause(page);await shot(page,'audio-resumed-paused');},{init:()=>{window.qaAudio=[];const C=window.AudioContext;if(C){window.AudioContext=new Proxy(C,{construct(target,args){const c=new target(...args);window.qaAudio.push(c);return c;}});}}});
-tests[36]=()=>session(defaultProfile(),async({page,context})=>{await workerReady(page);await page.waitForFunction(async()=>{const c=await caches.open('almo7areboon-runtime-v1');return !!await c.match('/');});const keys=await page.evaluate(async()=>(await (await caches.open('almo7areboon-runtime-v1')).keys()).map(r=>r.url));ok(keys.some(k=>k.endsWith('.js'))&&keys.some(k=>k.endsWith('.css')),'complete shell cached');await shot(page,'worker-active');await context.setOffline(true);await page.reload({waitUntil:'networkidle'});await ready(page);await visibleLayout(page);await start(page);await manualPause(page);await shot(page,'fresh-offline');});
-tests[37]=()=>session(profile(5,{foodLevel:30}),async({page,context})=>{await workerReady(page);await page.reload({waitUntil:'networkidle'});await ready(page);const before=await saved(page);await context.setOffline(true);await page.reload({waitUntil:'networkidle'});await ready(page);await start(page);await tap(page,'[data-skill="food"]');await tap(page,'[data-unit="1"]');await tap(page,'[data-unit="2"]');await tap(page,'[data-skill="freeze"]');await manualPause(page);eq((await saved(page)).deployed,before.deployed+3);await shot(page,'offline-all-roles');await context.setOffline(false);await page.reload({waitUntil:'networkidle'});await ready(page);eq((await saved(page)).deployed,before.deployed+3);});
+tests[36]=async()=>{if(!await firstOfflineModuleProbe()){current.status='BLOCKED';current.limit='WebKit cannot execute a cached module on its first offline return even in an independent two-file app; production first-return hardware acceptance remains unverified.';return;}return session(defaultProfile(),async({page,context})=>{await workerReady(page);await page.waitForFunction(async()=>{const c=await caches.open('almo7areboon-runtime-v1');return !!await c.match('/');});const keys=await page.evaluate(async()=>(await (await caches.open('almo7areboon-runtime-v1')).keys()).map(r=>r.url));ok(keys.some(k=>k.endsWith('.js'))&&keys.some(k=>k.endsWith('.css')),'complete shell cached');ok(keys.some(k=>k.endsWith('/art/storybook/interface/coin.webp'))&&keys.some(k=>/soundscape-worker.*\.js$/.test(k)),'first installation includes artwork and the audio worker');await shot(page,'worker-active');await disconnect(context,true);const offline=await page.reload({waitUntil:'networkidle'});ok(offline?.fromServiceWorker(),'offline entry is served by the production worker');await ready(page);await visibleLayout(page);await start(page);await manualPause(page);eq(await page.getByText('Some artwork could not load. The simplified battlefield is active.',{exact:true}).count(),0,'fresh offline return keeps production artwork');await shot(page,'fresh-offline');});};
+tests[37]=()=>session(profile(5,{foodLevel:30}),async({page,context})=>{await workerReady(page);await page.reload({waitUntil:'networkidle'});await ready(page);const before=await saved(page);await disconnect(context,true);const offline=await page.reload({waitUntil:'networkidle'});ok(offline?.fromServiceWorker(),'offline entry is served by the production worker');await ready(page);await start(page);await tap(page,'[data-skill="food"]');await tap(page,'[data-unit="1"]');await tap(page,'[data-unit="2"]');await tap(page,'[data-skill="freeze"]');await manualPause(page);eq((await saved(page)).deployed,before.deployed+3);await shot(page,'offline-all-roles');await disconnect(context,false);await page.reload({waitUntil:'networkidle'});await ready(page);eq((await saved(page)).deployed,before.deployed+3);});
 tests[38]=()=>session(defaultProfile(),async({page,context})=>{await workerReady(page);await page.reload({waitUntil:'networkidle'});navStatus=503;const response=await page.reload({waitUntil:'networkidle'});eq(response.status(),200,'temporary server failure falls back to healthy shell');await ready(page);await shot(page,'server-503-recovery');navStatus=200;if(engine==='chromium'){const w=context.serviceWorkers()[0];ok(w);await w.evaluate(()=>{self.qaOpen=CacheStorage.prototype.open;CacheStorage.prototype.open=()=>Promise.reject(Error('Controlled CacheStorage failure'));});await page.reload({waitUntil:'networkidle'});await ready(page);await w.evaluate(()=>{CacheStorage.prototype.open=self.qaOpen;});await shot(page,'cache-failure-network');}else current.observations.push({notExecuted:'worker inspection fault injection is Chromium-only; server fallback ran natively'});});
 tests[39]=()=>session(profile(),async({page})=>{const counts=async()=>({nodes:await page.locator('*').count(),canvases:await page.locator('canvas').count()});const cycle=async()=>{await start(page);await manualPause(page);for(const tab of ['cards','skills','evolution','battle'])await tap(page,`.bottom-nav [data-tab="${tab}"]`);await retreat(page);await retry(page);};await cycle();const before=await counts();for(let i=0;i<20;i++){await cycle();if(i===9)await shot(page,'cycle-10');}const after=await counts();eq(after.canvases,1);ok(after.nodes<=before.nodes+5,'no settled DOM accumulation');eq((await saved(page)).pendingVictory,null);current.observations.push({before,after,cycles:20});await shot(page,'cycle-20');await visibleLayout(page);});
 tests[40]=()=>session(profile(),async({page})=>{for(const size of [{width:320,height:568},{width:430,height:932},{width:844,height:390}]){await page.setViewportSize(size);await visibleLayout(page);await settings(page);for(let i=0;i<12;i++){await page.keyboard.press(i<8?'Tab':'Shift+Tab');ok(await focusUsable(page));ok(await page.evaluate(()=>!!document.activeElement.closest('.dialog')),'focus trapped');}await page.keyboard.press('Escape');ok(await focusUsable(page));await shot(page,`final-${size.width}`);}await start(page);await manualPause(page);await retreat(page);await retry(page);await visibleLayout(page);});

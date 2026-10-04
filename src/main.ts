@@ -42,6 +42,7 @@ import { createModalIsolation, modalFocusables, nextFocusIndex, isEditingTarget 
 import { pauseReason } from './ui/pause.ts';
 import { loadAtmosphere, saveAtmosphere, ambienceAllowed, loadAudioMix, normalizeAudioMix, saveAudioMix } from './ui/audio-preferences.ts';
 import { createLifetime } from './ui/lifetime.ts';
+import { createModalTapGuard } from './ui/modal-tap-guard.ts';
 import { textIfChanged, htmlIfChanged } from './ui/dom-state.ts';
 import { skillCue } from './ui/skill-cues.ts';
 
@@ -64,6 +65,7 @@ let evolutionFromResult=false;
 let prestigeOrigin:'result'|'battles'|null=null,prestigeDraft:LegacyChoice|null=null,prestigeExpectedTimeline:number|null=null;
 // A native multi-click that starts in a modal must not hit controls it reveals.
 let modalPointerSequence=false;
+const blockModalTap=createModalTapGuard();
 let sessionReady=false,pagePresent=true,resumeOwnership=false,acquisitionVersion=0,hasPlayed=false;
 let acquiring:Promise<void>|null=null;
 const money=(value:number)=>value>=10000?compactNumber(value):Math.floor(value).toLocaleString('en-US');
@@ -397,9 +399,11 @@ function exportSave(){
   }catch{toast('The backup could not be exported. Your current progress was not changed.');}
 }
 
+lifetime.listen<PointerEvent>(root,'pointerup',e=>blockModalTap.recordPointer(e,performance.now()));
 lifetime.listen<MouseEvent>(root,'click',e=>{
   const button=e.target instanceof Element?e.target.closest<HTMLButtonElement>('button'):null;
   if(!button||button.disabled)return;
+  if(blockModalTap.blocks(e,modal,performance.now())){e.preventDefault();return;}
   if(e.detail===1)modalPointerSequence=modal!==null;
   else if(e.detail>1&&modalPointerSequence){
     e.preventDefault();

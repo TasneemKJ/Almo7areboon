@@ -34,8 +34,29 @@ try{
    const item={viewport,...geometry,status};report.cases.push(item);
    await page.screenshot({path:`${out}/${viewport.width}-${status}.png`});
    console.log(JSON.stringify(item));
+   // Place a real range input under the sticky header's upper padding band.
+   // The negative control restores the observed leak and proves the hit-test
+   // assertion detects it, rather than merely accepting an inert screenshot.
+   await page.locator('.dialog').evaluate(el=>{
+    el.innerHTML=`<div class="dialog-dismiss"><button class="close-button">Close</button></div><div style="height:500px"></div><label class="audio-volume"><input id="covered-slider" type="range"></label><div style="height:1000px"></div>`;
+    const header=el.querySelector('.dialog-dismiss').getBoundingClientRect();
+    const slider=el.querySelector('input').getBoundingClientRect();
+    el.scrollTop=slider.top+slider.height/2-(header.top-14);
+   });
+   await page.evaluate(()=>new Promise(resolve=>requestAnimationFrame(()=>requestAnimationFrame(resolve))));
+   const covered=()=>page.evaluate(()=>{
+    const header=document.querySelector('.dialog-dismiss').getBoundingClientRect();
+    const target=document.elementFromPoint(header.x+header.width/2,header.top-14);
+    return {dismiss:!!target?.closest('.dialog-dismiss'),slider:target?.id==='covered-slider'};
+   });
+   const mask=await covered();
+   const control=await page.addStyleTag({content:'.dialog-dismiss::before{display:none!important}'});
+   const unmasked=await covered();await control.evaluate(el=>el.remove());
+   const paddingCase={viewport,kind:'scrolled-padding',mask,unmasked,status:mask.dismiss&&!mask.slider&&unmasked.slider?'PASS':'FAIL'};
+   report.cases.push(paddingCase);console.log(JSON.stringify(paddingCase));
+   await page.screenshot({path:`${out}/${viewport.width}-padding-${paddingCase.status}.png`});
   }finally{await page.close();}
  }
- assert.ok(report.cases.every(c=>c.status==='PASS'),'sticky dismiss header must not paint over caption or heading');
+ assert.ok(report.cases.every(c=>c.status==='PASS'),'sticky dismiss area reserves caption space and covers scrolled controls');
 }catch(error){report.error=error.stack;process.exitCode=1;}
 finally{writeFileSync(`${out}/report.json`,JSON.stringify(report,null,2));await browser.close();}
