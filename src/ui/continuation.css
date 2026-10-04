@@ -144,3 +144,9 @@
  border-bottom:1px solid var(--paper-edge);
 }
 .dialog-dismiss>.close-button { position:static; flex-shrink:0; }
+/* Overflow scrolling can paint controls inside the dialog's top padding.
+   Extend the sticky paper into that band and intercept taps on covered inputs. */
+.dialog-dismiss::before {
+ content:''; position:absolute; inset:-32px -24px 0; z-index:-1;
+ background:var(--paper);
+}
