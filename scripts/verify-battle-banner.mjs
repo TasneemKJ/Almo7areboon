@@ -50,7 +50,7 @@ try{
   await p.waitForFunction(()=>navigator.serviceWorker.controller?.state==='activated');await p.reload({waitUntil:'networkidle'});await ready(p);
   // Stop actual origin access; independent uncached, worker-blocked control must fail.
   disconnected=true;const control=await browser.newContext({serviceWorkers:'block'});try{const c=await control.newPage();await assert.rejects(c.goto(origin,{timeout:10000}));}finally{await control.close();}
-  const response=await p.reload({waitUntil:'domcontentloaded'});assert(response.fromServiceWorker());await ready(p);await deployment(p);await shot(p,'offline-advance');
+  const response=await p.reload({waitUntil:'networkidle'});assert(response.fromServiceWorker());await ready(p);await deployment(p);await shot(p,'offline-advance');
  });
  await session('twenty-cycles',{width:390,height:844},async p=>{
   for(let i=0;i<20;i++){await deployment(p,i%2?'hold':'advance');await retreat(p);await tap(p,'[data-command="retry"]');await ready(p);await p.waitForFunction(()=>!document.querySelector('canvas')?.dataset.battleOrder);assert.equal(await p.locator('canvas').getAttribute('data-battle-order'),null);if(i===9||i===19)await shot(p,`cycle-${i+1}`);}

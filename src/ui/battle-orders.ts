@@ -15,6 +15,6 @@ export function updateOrderBanner(root: HTMLElement, state: Readonly<BattleState
   button.disabled=!status.canCast;
   const order=button.dataset.order,active=status.active===order;
   button.setAttribute('aria-pressed',String(active));
-  button.setAttribute('aria-label',`${order==='advance'?'Advance: 20% more troop damage and 15% faster movement':'Hold: troops and gate take 25% less damage'}. Costs60 momentum, lasts10 seconds. ${status.label}.`);
+  button.setAttribute('aria-label',`${order==='advance'?'Advance: 20% more troop damage and 15% faster movement':'Hold: troops and gate take 25% less damage'}. Costs 60 momentum, lasts 10 seconds. ${status.label}.`);
  });
 }
