@@ -361,7 +361,7 @@ function returnToChapters(){
 }
 function dismissModal(){
   if(modal==='session')return;
-  if((modal==='chronicle'||modal==='journey')&&(game.state.phase==='won'||game.state.phase==='lost')){showResult();return;}
+  if((modal==='chronicle'||modal==='journey'||modal==='quests')&&(game.state.phase==='won'||game.state.phase==='lost')){showResult();return;}
   if(modal==='prestige'){returnFromPrestige();return;}
   if(modal==='result'){
     if(advanceStatus(game.profile,game.state).reason==='complete')returnToChapters();
