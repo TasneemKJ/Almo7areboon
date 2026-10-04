@@ -768,9 +768,10 @@ export function mountBattlefield(element:HTMLElement,game:GamePort,onFrame:(forc
    this.syncEra();for(const event of events)this.event(event);
    if(options.isVisible&&!options.isVisible()){onFrame();return;}
    if(!game.state.paused&&!this.reduce)this.clock+=dt;
-   if(this.villageHudPhase!==game.state.phase||this.villageHudPaused!==game.state.paused){const world=element.closest<HTMLElement>('.world');if(world?.dataset.phase!==game.state.phase||this.villageHudPaused!==game.state.paused)onFrame(true);this.villageHudPhase=game.state.phase;this.villageHudPaused=game.state.paused;this.cacheVillageViewport();}
    this.orderFrame=orderPresentationFrame(game.state,this.layout.groundY,this.reduce,this.layout.laneGap);
    this.waveArrival=waveArrivalForPort(game,this.reduce);
+   const phaseHudChanged=this.villageHudPhase!==game.state.phase,orderHudChanged=this.villageHudPaused!==game.state.paused&&!!this.orderFrame?.answer&&!this.waveArrival;
+   if(phaseHudChanged||orderHudChanged){const world=element.closest<HTMLElement>('.world');if(world?.dataset.phase!==game.state.phase||orderHudChanged)onFrame(true);this.villageHudPhase=game.state.phase;this.villageHudPaused=game.state.paused;this.cacheVillageViewport();}
    this.drawAtmosphere();this.drawBaseDamage();this.drawArmy();this.drawOrders();this.healthBars();this.effects(game.state.paused?0:dt);onFrame();
   }
  }
