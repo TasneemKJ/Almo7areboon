@@ -57,8 +57,10 @@ test('watchfire reuses village ambience and light pools with bounded webdriver e
  const source=readFileSync(new URL('../src/view/battlefield.ts',import.meta.url),'utf8');
  const main=readFileSync(new URL('../src/main.ts',import.meta.url),'utf8');
  assert.match(source,/private villageHudPhase:Phase\|null=null;/,'the HUD exclusion map needs an explicit phase owner');
+ assert.match(source,/private villageHudPaused:boolean\|null=null;/,'pause visibility needs an explicit HUD measurement owner');
  assert.match(source,/onFrame:\(force\?:boolean\)=>void/,'the renderer must be able to request an immediate host-layout sync');
- assert.match(source,/if\(this\.villageHudPhase!==game\.state\.phase\)\{const world=element\.closest<HTMLElement>\('\.world'\);if\(world\?\.dataset\.phase!==game\.state\.phase\)onFrame\(true\);this\.villageHudPhase=game\.state\.phase;this\.cacheVillageViewport\(\);\}/,'phase reflow must reach the DOM before HUD exclusions are measured and the village is painted');
+ assert.match(source,/if\(this\.villageHudPhase!==game\.state\.phase\|\|this\.villageHudPaused!==game\.state\.paused\)\{const world=element\.closest<HTMLElement>\('\.world'\);if\(world\?\.dataset\.phase!==game\.state\.phase\|\|this\.villageHudPaused!==game\.state\.paused\)onFrame\(true\);this\.villageHudPhase=game\.state\.phase;this\.villageHudPaused=game\.state\.paused;this\.cacheVillageViewport\(\);\}/,'phase and pause reflow must reach the DOM before HUD exclusions are measured and the village is painted');
+ assert.match(source,/\.battle-skills button,\.pause-banner/,'transient controls and the centered pause card must reserve their painted regions');
  assert.match(main,/mountBattlefield\(\$\('battlefield'\),port,force=>update\(force\),events/,'the host must honor a forced layout sync from the renderer');
  assert.match(source,/for\(const stroke of frame\.watchStrokes\)\{g\.lineStyle\(stroke\.width,stroke\.color,stroke\.alpha\);g\.lineBetween\(stroke\.from\.x,stroke\.from\.y,stroke\.to\.x,stroke\.to\.y\);\}/);
  assert.match(source,/const watchfireRegions=/);
@@ -80,10 +82,13 @@ test('one authoritative order frame drives troop marks and the bounded village a
 });
 test('order answer reuses village ambience and light pools with bounded webdriver evidence and cleanup',()=>{
  const source=readFileSync(new URL('../src/view/battlefield.ts',import.meta.url),'utf8');
+ const review=readFileSync(new URL('../scripts/verify-battle-banner.mjs',import.meta.url),'utf8');
  assert.match(source,/for\(const stroke of frame\.orderStrokes\)\{g\.lineStyle\(stroke\.width,stroke\.color,stroke\.alpha\);g\.lineBetween\(stroke\.from\.x,stroke\.from\.y,stroke\.to\.x,stroke\.to\.y\);\}/);
  assert.match(source,/const orderRegions=/);assert.match(source,/frame\.orderStrokes\.map/);assert.match(source,/frame\.orderLights\.map/);
  assert.match(source,/dataset\.villageOrderAnswer=JSON\.stringify\(\{kind:this\.orderFrame\.answer\.kind,progress:this\.orderFrame\.answer\.progress,lights:frame\.orderLights\.length,strokes:frame\.orderStrokes\.length,regions:orderRegions,reduced:this\.reduce,paused:game\.state\.paused\}\)/);
  assert.match(source,/delete this\.game\.canvas\.dataset\.villageOrderAnswer/);
+ assert.match(review,/waitForFunction\(\(\)=>JSON\.parse\(document\.querySelector\('canvas'\)\?\.dataset\.villageOrderAnswer\?\?'null'\)\?\.paused===true\)/,'native pause evidence must require a live paused village answer');
+ assert.match(review,/assertOrderRegionsClearOf\(p,'\.pause-banner'\)/,'native evidence must independently reject a pause-card overlap');
  assert.match(source,/while\(this\.stageLight\.length<6\)/);
  assert.doesNotMatch(source,/order(?:Strokes|Lights)[^\n]*this\.add\.(?:graphics|image|container)/i);
 });

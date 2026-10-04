@@ -83,6 +83,7 @@ export function mountBattlefield(element:HTMLElement,game:GamePort,onFrame:(forc
   private stageLight!:Phaser.GameObjects.Container;
   private villageViewport!:VillageViewport;
   private villageHudPhase:Phase|null=null;
+  private villageHudPaused:boolean|null=null;
   private quietVillage=createVillageMood();
   private halos!:Phaser.GameObjects.Graphics;
   private glow!:Phaser.GameObjects.Graphics;
@@ -181,8 +182,8 @@ export function mountBattlefield(element:HTMLElement,game:GamePort,onFrame:(forc
    const placement=landscapePlacement(450,this.layout.height,this.layout.groundY),cssWorldScale=(element.clientWidth||450)/450;
    const visibleSource:Bounds=[Math.max(0,-placement.x/placement.scale),Math.max(0,-placement.y/placement.scale),Math.min(900,(450-placement.x)/placement.scale),Math.min(1000,(this.layout.height-placement.y)/placement.scale)];
    const hudSourceBounds:Bounds[]=[],shell=element.closest<HTMLElement>('.game-shell'),origin=element.getBoundingClientRect();
-   if(shell)for(const node of Array.from(shell.querySelectorAll<HTMLElement>('.resources .currency,.resources .game-wordmark,.stage .eyebrow,.stage h1,.stage .scene-name,.stage .battle-select,.world-tools button,.battle-meta span,.battle-meta button'))){
-    const rect=node.getBoundingClientRect();if(!rect.width||!rect.height)continue;
+   if(shell)for(const node of Array.from(shell.querySelectorAll<HTMLElement>('.resources .currency,.resources .game-wordmark,.stage .eyebrow,.stage h1,.stage .scene-name,.stage .battle-select,.world-tools button,.battle-meta span,.battle-meta button,.battle-skills button,.pause-banner'))){
+    const rect=node.getBoundingClientRect(),style=getComputedStyle(node);if(style.display==='none'||style.visibility==='hidden'||!rect.width||!rect.height)continue;
     const sourceX=(x:number)=>((x-origin.left)/cssWorldScale-placement.x)/placement.scale;
     const sourceY=(y:number)=>((y-origin.top)/cssWorldScale-placement.y)/placement.scale;
     hudSourceBounds.push([sourceX(rect.left),sourceY(rect.top),sourceX(rect.right),sourceY(rect.bottom)]);
@@ -767,7 +768,7 @@ export function mountBattlefield(element:HTMLElement,game:GamePort,onFrame:(forc
    this.syncEra();for(const event of events)this.event(event);
    if(options.isVisible&&!options.isVisible()){onFrame();return;}
    if(!game.state.paused&&!this.reduce)this.clock+=dt;
-   if(this.villageHudPhase!==game.state.phase){const world=element.closest<HTMLElement>('.world');if(world?.dataset.phase!==game.state.phase)onFrame(true);this.villageHudPhase=game.state.phase;this.cacheVillageViewport();}
+   if(this.villageHudPhase!==game.state.phase||this.villageHudPaused!==game.state.paused){const world=element.closest<HTMLElement>('.world');if(world?.dataset.phase!==game.state.phase||this.villageHudPaused!==game.state.paused)onFrame(true);this.villageHudPhase=game.state.phase;this.villageHudPaused=game.state.paused;this.cacheVillageViewport();}
    this.orderFrame=orderPresentationFrame(game.state,this.layout.groundY,this.reduce,this.layout.laneGap);
    this.waveArrival=waveArrivalForPort(game,this.reduce);
    this.drawAtmosphere();this.drawBaseDamage();this.drawArmy();this.drawOrders();this.healthBars();this.effects(game.state.paused?0:dt);onFrame();
