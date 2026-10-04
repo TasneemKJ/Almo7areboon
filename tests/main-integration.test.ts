@@ -30,7 +30,7 @@ import { createModalTapGuard } from '../src/ui/modal-tap-guard.ts';
 // Execute the app's actual functions with a clock and minimal DOM boundary; no browser/debug hooks.
 const source = readFileSync(new URL('../src/main.ts', import.meta.url), 'utf8');
 const ast = ts.createSourceFile('main.ts', source, ts.ScriptTarget.Latest, true, ts.ScriptKind.TS);
-const names = new Set(['playable', 'guardAction', 'action', 'persist', 'update', 'renderScreen', 'sessionPresentation', 'showResult', 'acquireSession', 'dismissModal', 'returnToChapters', 'clearPrestigeContext', 'openPrestige', 'refreshPrestige', 'returnFromPrestige']);
+const names = new Set(['playable', 'guardAction', 'action', 'persist', 'update', 'renderScreen', 'sessionPresentation', 'showResult', 'acquireSession', 'dismissModal', 'returnToChapters', 'clearPrestigeContext', 'openPrestige', 'refreshPrestige', 'returnFromPrestige', 'dailyRow', 'showQuests']);
 const functions = ast.statements.filter(node => ts.isFunctionDeclaration(node) && node.name && names.has(node.name.text));
 assert.equal(functions.length, names.size);
 const click=ast.statements.find(node=>ts.isExpressionStatement(node)&&ts.isCallExpression(node.expression)&&node.expression.expression.getText(ast)==='lifetime.listen'&&node.expression.arguments[0]?.getText(ast)==='root'&&node.expression.arguments[1]?.getText(ast)==="'click'") as ts.ExpressionStatement;
@@ -379,4 +379,14 @@ test('Journey return restores a settled result without reissuing its rewards',()
  const h=settledHarness(),c=h.context,before=JSON.stringify(c.game.profile);
  h.click('journey');assert.equal(c.modal,'journey');h.click('journey-result');
  assert.equal(c.modal,'result');assert.equal(JSON.stringify(c.game.profile),before);
+});
+test('closing Quests opened from Journey restores the held result without reissuing rewards',()=>{
+ const h=settledHarness(),c=h.context,before=JSON.stringify(c.game.profile);
+ h.click('journey');assert.equal(c.modal,'journey');h.click('quests');assert.equal(c.modal,'quests');
+ c.api.dismissModal();assert.equal(c.modal,'result');assert.equal(JSON.stringify(c.game.profile),before);
+});
+test('closing Quests over a loss restores Regroup while ready-state Quests still closes normally',()=>{
+ const loss=harness(),c=loss.context;c.game.dispatch({type:'start'});c.game.dispatch({type:'retreat'});c.resultShown='lost';c.modal='result';
+ loss.click('journey');loss.click('quests');c.api.dismissModal();assert.equal(c.modal,'result');assert.match(c.dialogHtml,/REGROUP/);
+ const readyState=harness();readyState.context.modal='quests';readyState.context.api.dismissModal();assert.equal(readyState.context.modal,null);
 });
