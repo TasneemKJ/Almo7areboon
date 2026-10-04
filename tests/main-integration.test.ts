@@ -23,6 +23,7 @@ import { evolutionScreenHtml } from '../src/ui/evolution-screen.ts';
 import { skillCue } from '../src/ui/skill-cues.ts';
 import { troopUnlockMessage } from '../src/ui/army-screen.ts';
 import { waveInspectionHtml } from '../src/ui/wave-inspection.ts';
+import { createModalTapGuard } from '../src/ui/modal-tap-guard.ts';
 
 // Execute the app's actual functions with a clock and minimal DOM boundary; no browser/debug hooks.
 const source = readFileSync(new URL('../src/main.ts', import.meta.url), 'utf8');
@@ -57,6 +58,7 @@ function harness(motion = 'full') {
     acquiring: null, acquisitionVersion: 0, hasPlayed: true, manualPaused: false, savedWarning: false, pendingImport: null, modal: null, evolutionFromResult: false, modalPointerSequence: false,prestigeOrigin:null,prestigeDraft:null,prestigeExpectedTimeline:null,
     lastUpdate: 0, lastSave: 100, lastPhase: 'ready', resultDue: 0, resultShown: '', activeTab: 'battle', root,
     performance: { now: () => now }, document: { documentElement: { dataset: { motion } } },
+    blockModalTap:createModalTapGuard(),
     $: (id: string) => { if (!elements.has(id)) elements.set(id, node()); return elements.get(id); },
     chronicleScreenHtml,chronicleActionFromData,chronicleGuidance,CAPTAINS,routeDefinition,advanceStatus, battleSelectionHtml, evolutionDialogHtml, ERAS, QUESTS, foodRate, unlockCost, dailyReward, localDay, battleGuidance, baseHealthDisplay, compactNumber, waveLabel, waveAccessibleLabel, chapterPresentation, unitPresentationName, resultsHtml,isLegacyChoice,legacyEffects,prestigePreview,prestigeDetailsHtml,prestigeDialogHtml,legacyCurrentHtml,evolutionScreenHtml,saveSessionDialogHtml,temporarySessionNotice,skillCue,troopUnlockMessage,waveInspectionHtml,
     earlierChapter,storybookArt: () => false, money: String, coin: String, icon:()=>'',textIfChanged(target:any,value:string){target.textContent=value;},htmlIfChanged(target:any,value:string){target.innerHTML=value;},unlockAudio() {}, syncPause() {}, rebuildArmy() {}, syncMotion() {}, isolateModal(){}, toast() {},
@@ -69,8 +71,36 @@ function harness(motion = 'full') {
   };
   context.switchTab = (tab:string) => {context.activeTab=tab;context.update(true);};
   runInNewContext(`${code}\nthis.api = { update, action, acquireSession, dismissModal, returnToChapters, showResult, renderScreen }; this.update = update;`, context);
-  return { context, dialogs, click:(command:string,detail=0)=>context.handleClick({target:new BoundaryButton({command}),detail,preventDefault(){}}), clickData:(dataset:Record<string,string>,detail=0)=>context.handleClick({target:new BoundaryButton(dataset),detail,preventDefault(){}}), change:(name:string,value:string)=>context.handleChange({target:new BoundaryInput(name,value)}),clock: (value: number) => { now = value; }, foreign: () => { foreign = true; } };
+  return { context, dialogs, click:(command:string,detail=0)=>context.handleClick({target:new BoundaryButton({command}),detail,preventDefault(){}}), clickData:(dataset:Record<string,string>,detail=0,extra={})=>context.handleClick({target:new BoundaryButton(dataset),detail,preventDefault(){},...extra}), change:(name:string,value:string)=>context.handleChange({target:new BoundaryInput(name,value)}),clock: (value: number) => { now = value; }, foreign: () => { foreign = true; } };
 }
+test('rapid touch continuation cannot activate the navigation exposed under the result',()=>{
+ const h=harness(),c=h.context;
+ c.game.dispatch({type:'start'});c.game.dispatch({type:'retreat'});c.modal='result';
+ const touch={pointerType:'touch',clientX:200,clientY:720};
+ h.clickData({command:'retry'},1,touch);
+ assert.equal(c.modal,null);assert.equal(c.game.state.phase,'ready');
+ h.clock(200);h.clickData({tab:'cards'},1,touch);
+ assert.equal(c.activeTab,'battle','the second same-position tap belongs to result dismissal');
+ h.clock(700);h.clickData({tab:'cards'},1,touch);
+ assert.equal(c.activeTab,'cards','a later intentional tap works');
+});
+test('rapid touch deployment and a different-position follow-up remain responsive',()=>{
+ const h=harness(),c=h.context,touch={pointerType:'touch',clientX:60,clientY:600};
+ c.game.dispatch({type:'start'});
+ h.clickData({unit:'0'},1,touch);h.clock(180);h.clickData({unit:'0'},1,touch);
+ assert.equal(c.game.state.stats.deployed,2);
+ c.modal='settings';h.clickData({command:'close'},1,{...touch,clientY:100});
+ h.clock(220);h.clickData({tab:'cards'},1,{...touch,clientY:720});
+ assert.equal(c.activeTab,'cards');
+});
+test('legacy touch-generated MouseEvents also protect a dismissed modal',()=>{
+ const h=harness(),c=h.context;
+ c.modal='settings';
+ const touch={sourceCapabilities:{firesTouchEvents:true},clientX:200,clientY:720};
+ h.clickData({command:'close'},1,touch);h.clock(180);
+ h.clickData({tab:'cards'},1,touch);
+ assert.equal(c.activeTab,'battle');
+});
 test('loss recovery opens chapter choice without selecting, buying or starting and ignores duplicate invocation',()=>{
  const h=harness(),c=h.context;Object.assign(c.game.profile,{age:4,enemyAge:5,furthestBattle:5,coins:0,gems:0,chronicle:createChronicle(1,5)});
  c.game.dispatch({type:'start'});c.game.dispatch({type:'retreat'});c.modal='result';c.manualPaused=true;

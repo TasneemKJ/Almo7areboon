@@ -13,6 +13,7 @@ import { restoreBackup, restoreBackupWithSave } from '../src/game/backup.ts';
 import { startOverProfile } from '../src/game/reset.ts';
 import type { Profile } from '../src/game/types.ts';
 import { saveSessionDialogHtml, temporarySessionNotice } from '../src/ui/save-session-screen.ts';
+import { createModalTapGuard } from '../src/ui/modal-tap-guard.ts';
 
 // Run the actual UI handler and ownership presentation with the real guarded writer.
 const source = readFileSync(new URL('../src/main.ts', import.meta.url), 'utf8');
@@ -49,6 +50,7 @@ async function harness(mode = 'active') {
     pendingImport: null, hasPlayed: true, savedWarning: false, manualPaused: true, lastPhase: 'won', resultDue: 99, resultShown: 'old', modal: 'settings', atmosphereEnabled: false, audioMix: { effects: 100, atmosphere: 100 }, evolutionFromResult: false, modalPointerSequence: false,prestigeOrigin:null,prestigeDraft:null,prestigeExpectedTimeline:null,
     lifetime: { disposed: false, listen: (_root: unknown, _event: string, handler: Function) => { context.click = handler; } },
     $: node, textIfChanged() {}, syncPause() {}, isolateModal() {}, icon: () => '', unlockAudio() {},
+    blockModalTap:createModalTapGuard(),performance:{now:()=>100},
     saveSessionDialogHtml, temporarySessionNotice, restoreBackup, restoreBackupWithSave, startOverProfile,
     toast: (message: string) => messages.push(message), showModal: (id: string, html: string) => { context.modal = id; context.html = html; dialogs.push(id); },
     closeModal: () => { context.modal = null; }, rebuildArmy() {}, syncMotion() {}, switchTab: (tab: string) => { context.activeTab = tab; },
