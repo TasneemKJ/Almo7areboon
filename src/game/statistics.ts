@@ -1,7 +1,7 @@
 import type { BattleStats } from './types.ts';
 
 export function battleStats(value?: unknown): BattleStats {
-  const result: BattleStats = { deployed: 0, kills: 0, foodSpent: 0, peakArmy: 0, damageDealt: 0, damageTaken: 0, skillsCast: 0, gateDamageTaken: 0, deployedByKind: [0,0,0], maxFreezeTargets: 0, meteorKills: 0 };
+  const result: BattleStats = { ordersCast: 0, deployed: 0, kills: 0, foodSpent: 0, peakArmy: 0, damageDealt: 0, damageTaken: 0, skillsCast: 0, gateDamageTaken: 0, deployedByKind: [0,0,0], maxFreezeTargets: 0, meteorKills: 0 };
   if (!value || typeof value !== 'object' || Array.isArray(value)) return result;
   const source = value as Record<string, unknown>;
   const count = (number: unknown) => typeof number === 'number' && Number.isFinite(number) ? Math.max(0,Math.min(Number.MAX_SAFE_INTEGER,Math.floor(number))) : 0;

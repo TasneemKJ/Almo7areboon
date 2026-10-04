@@ -1,3 +1,5 @@
+import { updateOrderBanner } from './ui/battle-orders.ts';
+import { journeyScreenHtml } from './ui/journey-screen.ts';
 import './ui/chronicle.css';
 import { chronicleScreenHtml, chronicleActionFromData } from './ui/chronicle-screen.ts';
 import { chronicleGuidance } from './game/chronicle-combat.ts';
@@ -11,6 +13,7 @@ import './ui/era-glow.css';
 import './ui/readability.css';
 import './ui/layout-polish.css';
 import './ui/skill-cues.css';
+import './ui/battle-banner.css';
 import { Game } from './game/simulation.ts';
 import { createBattlefieldPort } from './game/battlefield-port.ts';
 import { advanceStatus } from './game/mastery.ts';
@@ -79,12 +82,12 @@ root.innerHTML = `
       <div class="stage"><div id="timeline" class="eyebrow"></div><h1 id="age-title"></h1><p id="scene-name" class="scene-name"></p><button id="battle-select" class="battle-select" data-command="battles" aria-label="Choose a battle"><span class="stage-progress" id="stage-progress"></span></button></div>
       <div class="world-tools"><button id="quests" class="square-button" data-command="quests" aria-label="Quests">${icon('quest')}<i class="notification"></i></button><button class="square-button" data-command="settings" aria-label="Settings">${icon('gear')}</button></div>
       <div class="battle-meta"><button id="wave-label" class="wave-inspect" data-command="wave-help"></button><div class="battle-toggles"><button id="speed" data-command="speed" aria-label="Change battle speed">1×</button><button id="pause" data-command="pause" aria-label="Pause battle">Ⅱ</button></div></div>
-      <div id="ready" class="ready"><div class="ready-title">YOUR ARMY. YOUR ERA.</div><button class="big-button green" data-command="start">BATTLE ${icon('battle')}</button><p id="story-ready-rule">Destroy the enemy base!</p><button class="story-open" data-command="chronicle">Open the storybook</button></div>
+      <div id="ready" class="ready"><div class="ready-title">YOUR ARMY. YOUR ERA.</div><button class="big-button green" data-command="start">BATTLE ${icon('battle')}</button><p id="story-ready-rule">Destroy the enemy base!</p><div class="ready-paths"><button class="story-open" data-command="chronicle">Open the storybook</button><button class="journey-open" data-command="journey">Your journey</button></div></div>
       <p id="base-status" class="sr-only"></p><p id="game-status" class="sr-only" role="status" aria-live="polite"></p><div id="pause-banner" class="pause-banner" hidden>PAUSED</div>
       <div class="battle-skills" id="battle-skills"></div>
     </section>
     <section class="deployment" aria-label="Deploy your army">
-      <div class="food-line"><div class="food-total">${icon('food')}<strong id="food-count">6</strong><div class="food-meter"><i id="food-fill"></i></div></div><span id="production"></span></div>
+      <div class="order-banner" id="order-banner"><div class="order-charge"><span class="order-status">Deploy troops to build momentum</span><div class="order-meter" aria-hidden="true"><i></i></div></div><button data-order="advance" aria-label="Advance" disabled><span aria-hidden="true">+20% strike</span> Advance</button><button data-order="hold" aria-label="Hold" disabled><span aria-hidden="true">−25% damage</span> Hold</button></div><div class="food-line"><div class="food-total">${icon('food')}<strong id="food-count">6</strong><div class="food-meter"><i id="food-fill"></i></div></div><span id="production"></span></div>
       <div class="unit-cards" id="unit-cards"></div>
       <div class="chronicle-command-row"><div class="deploy-hint" id="deploy-hint">Tap a troop to send it into battle</div><button id="story-rally" class="story-rally" data-command="story-rally" aria-pressed="false" aria-label="Gather newly deployed troops, then release them together">Gather</button></div>
     </section>
@@ -188,6 +191,7 @@ function update(force=false){
   const now=performance.now();if(!force&&now-lastUpdate<80)return;lastUpdate=now;
  const p=game.profile,s=game.state;
  $('world').dataset.phase=s.phase;
+ updateOrderBanner($('order-banner'),s);
  const artStyle=storybookArt(p.age)?'storybook':'legacy';
  if(root!.dataset.artStyle!==artStyle)root!.dataset.artStyle=artStyle;
   textIfChanged($('coins'),money(p.coins));textIfChanged($('gems'),money(p.gems));
@@ -260,6 +264,7 @@ function switchTab(tab:string){
   $('secondary-screen').hidden=tab==='battle';$('battle-view').inert=tab!=='battle';
   $('battle-view').setAttribute('aria-hidden',String(tab!=='battle'));
   syncPause();renderScreen();update(true);
+  if(tab==='battle'&&!modal&&(game.state.phase==='won'||game.state.phase==='lost')){resultShown=game.state.phase;showResult();}
   if(tab!=='battle')$('secondary-title')?.focus();
 }
 function renderScreen(legacyOnly=false){
@@ -356,7 +361,7 @@ function returnToChapters(){
 }
 function dismissModal(){
   if(modal==='session')return;
-  if(modal==='chronicle'&&(game.state.phase==='won'||game.state.phase==='lost')){showResult();return;}
+  if((modal==='chronicle'||modal==='journey')&&(game.state.phase==='won'||game.state.phase==='lost')){showResult();return;}
   if(modal==='prestige'){returnFromPrestige();return;}
   if(modal==='result'){
     if(advanceStatus(game.profile,game.state).reason==='complete')returnToChapters();
@@ -376,7 +381,7 @@ function showSettings(){
   <button class="setting-row" data-command="motion" aria-pressed="${game.profile.motion==='reduced'}">Motion <b>${game.profile.motion==='reduced'?'REDUCED':'SYSTEM'}</b></button>
   ${game.state.phase==='running'?'<button class="big-button secondary retreat-button" data-command="retreat">RETREAT FROM THIS BATTLE</button><p class="save-note">Retreating counts as a loss. Coins you already earned are kept.</p>':''}
   <div class="backup-actions"><button class="big-button blue" data-command="export">EXPORT SAVE</button><button class="big-button secondary" data-command="import" ${session.status!=='active'?'disabled':''}>IMPORT SAVE</button><button class="big-button secondary" data-command="reset" ${session.status!=='active'?'disabled':''}>START OVER</button><input id="import-save" type="file" accept=".json,application/json" hidden></div>
-  <details class="help-box"><summary>How to play</summary><p>Tap Battle, collect food and deploy troops. Your army fights automatically.</p><p>Keep ranged troops behind a melee or heavy front line. Spend earned coins on food production and new troops.</p><p>Battle victories unlock opponents. Evolution upgrades your own army and resets coins and upgrades. Your selected opponent, unlocked battles and chapter seals stay.</p><small>1–3 troops · Q / W / E skills · Space pause · Escape closes menus.</small></details>
+  <details class="help-box"><summary>How to play</summary><p>Tap Battle, collect food and deploy troops. Your army fights automatically.</p><p>Deployments and defeated enemies earn momentum. At 60, choose a 10-second order: Advance adds 20% troop damage and 15% movement; Hold reduces incoming troop and gate damage by 25%.</p><p>Keep ranged troops behind a melee or heavy front line. Spend earned coins on food production and new troops.</p><p>Battle victories unlock opponents. Evolution upgrades your own army and resets coins and upgrades. Your selected opponent, unlocked battles and chapter seals stay.</p><small>1–3 troops · Q / W / E skills · Space pause · Escape closes menus.</small></details>
   <p class="save-note">${session.status==='temporary'?temporarySessionNotice:savedWarning?'Saving is unavailable. Export a backup before closing.':'Progress saves on this browser. Export a backup to keep a separate copy.'}</p>`);
 }
 function dailyRow(p:Profile){
@@ -387,7 +392,7 @@ function dailyRow(p:Profile){
 }
 function showQuests(){
   const p=game.profile;
-  showModal('quests',`<span class="eyebrow">EARN YOUR GLORY</span><h2 id="dialog-title">Quests</h2><p>Complete milestones to earn gems for cards.</p><div class="quest-list">${dailyRow(p)}${QUESTS.map(q=>{const count=p[q.stat],done=count>=q.target,claimed=p.claimed.includes(q.id);return `<div class="quest-row"><div><h3>${q.title}</h3><div class="quest-meter"><i style="width:${Math.min(100,count/q.target*100)}%"></i></div><small>${Math.min(count,q.target).toLocaleString('en-US')} / ${q.target.toLocaleString('en-US')}</small></div><button class="buy-button" data-claim="${q.id}" aria-label="${claimed?'Claimed':`Claim ${q.reward} gems for ${q.title}`}" ${!done||claimed?'disabled':''}>${claimed?'✓':icon('gem')+q.reward}</button></div>`;}).join('')}</div>`);
+  showModal('quests',`<span class="eyebrow">EARN YOUR GLORY</span><h2 id="dialog-title">Quests</h2><p>Complete milestones to earn gems for cards.</p><button class="big-button secondary" data-command="journey">Your journey and next goal</button><div class="quest-list">${dailyRow(p)}${QUESTS.map(q=>{const count=p[q.stat],done=count>=q.target,claimed=p.claimed.includes(q.id);return `<div class="quest-row"><div><h3>${q.title}</h3><div class="quest-meter"><i style="width:${Math.min(100,count/q.target*100)}%"></i></div><small>${Math.min(count,q.target).toLocaleString('en-US')} / ${q.target.toLocaleString('en-US')}</small></div><button class="buy-button" data-claim="${q.id}" aria-label="${claimed?'Claimed':`Claim ${q.reward} gems for ${q.title}`}" ${!done||claimed?'disabled':''}>${claimed?'✓':icon('gem')+q.reward}</button></div>`;}).join('')}</div>`);
 }
 function exportSave(){
   try{
@@ -423,6 +428,10 @@ lifetime.listen<MouseEvent>(root,'click',e=>{
   if(!guardAction())return;
   if(modal&&!button.closest('#modal-layer'))return;
   unlockAudio(game.profile.sound);
+  if(command==='journey'){showModal('journey',journeyScreenHtml(game.profile,game.state));return;}
+  if(command==='journey-result'){if(modal==='journey'&&(game.state.phase==='won'||game.state.phase==='lost'))showResult();return;}
+  if(button.dataset.journeyTab){if(modal==='journey'&&['cards','battle'].includes(button.dataset.journeyTab)){closeModal(false);switchTab(button.dataset.journeyTab);}return;}
+  if(button.dataset.order){action({type:'order',order:button.dataset.order as 'advance'|'hold'});return;}
   if(command==='chronicle'){showModal('chronicle',chronicleScreenHtml(game.profile,game.state));return;}
   if(button.dataset.storyPage!==undefined){
     const page=Number(button.dataset.storyPage);if(Number.isInteger(page)&&page>=0&&page<=game.profile.furthestBattle)showModal('chronicle',chronicleScreenHtml(game.profile,game.state,page));return;
@@ -445,7 +454,7 @@ lifetime.listen<MouseEvent>(root,'click',e=>{
   if(button.dataset.unit!==undefined){const kind=Number(button.dataset.unit) as UnitKind;if(!game.profile.unlocked[kind]){if(action({type:'unlock',kind})&&playable()&&!savedWarning)toast(troopUnlockMessage(game.profile,game.state.phase,kind,game.deploymentStatus(kind)),7000);}else action({type:'spawn',kind});return;}
   if(button.dataset.skill){action({type:'skill',skill:button.dataset.skill as Skill});return;}
   if(button.dataset.daily){if(action({type:'daily',day:Number(button.dataset.daily)}))showQuests();return;}
-  if(button.dataset.claim){if(action({type:'claim',id:button.dataset.claim}))showQuests();return;}
+  if(button.dataset.claim){const fromJourney=modal==='journey';if(action({type:'claim',id:button.dataset.claim})){if(fromJourney&&playable()&&modal!=='session')showModal('journey',journeyScreenHtml(game.profile,game.state));else showQuests();}return;}
   if(button.dataset.battle!==undefined){if(action({type:'select-battle',battle:Number(button.dataset.battle)}))closeModal();return;}
   if(button.dataset.pack!==undefined){
     const before=[...game.profile.cards],count=Number(button.dataset.pack) as 1|10|50;

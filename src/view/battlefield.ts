@@ -1,3 +1,4 @@
+import { orderPresentationFrame } from './order-presentation.ts';
 import Phaser from 'phaser';
 import {ChronicleView} from './chronicle-view.ts';
 import {storybookArt} from './storybook-art.ts';
@@ -656,8 +657,22 @@ export function mountBattlefield(element:HTMLElement,game:GamePort,onFrame:(forc
    if(navigator.webdriver&&diagnostics.length)this.game.canvas.dataset.spoilsHomecoming=JSON.stringify({count:diagnostics.length,cap:SPOILS_HOMECOMING_CAP,height:this.layout.height,marks:diagnostics,reduced:this.reduce,paused:game.state.paused});
    else if(navigator.webdriver)delete this.game.canvas.dataset.spoilsHomecoming;
   }
+  private drawOrders():void {
+   const g=this.shadows;const frame=orderPresentationFrame(game.state,this.layout.groundY,this.reduce,this.layout.laneGap);
+   if(!frame){delete this.game.canvas.dataset.battleOrder;return;}
+   for(const mark of frame.marks){
+    g.fillStyle(frame.color,.11*frame.pulse);g.fillEllipse(mark.x,mark.y,mark.radius*2.6,9);
+    g.lineStyle(1.5,frame.color,.65*frame.pulse);g.strokeEllipse(mark.x,mark.y,mark.radius*2.4,8);
+    if(frame.order==='advance'){g.lineStyle(1.5,frame.color,.85);g.beginPath();g.moveTo(mark.x-4,mark.y-2);g.lineTo(mark.x+2,mark.y);g.lineTo(mark.x-4,mark.y+2);g.strokePath();}
+   }
+   const {x,y}=frame.pennant;g.lineStyle(2,0xb7955f,1);g.lineBetween(x,y,x,y+44);
+   g.fillStyle(frame.color,.9);g.fillTriangle(x+1,y,x+22,y+5,x+1,y+13);
+   g.lineStyle(1,0x16394b,1);g.lineBetween(x+4,y+5,x+11,y+8);
+   if(navigator.webdriver)this.game.canvas.dataset.battleOrder=JSON.stringify({order:frame.order,count:frame.marks.length,reduced:this.reduce,pulse:frame.pulse});
+  }
   private event(e:GameEvent):void {
    const x=xAt(e.x??500),y=this.yAt(e.lane??1);
+   if(e.type==='order'){this.floatText(106,this.layout.groundY-58,e.order==='advance'?'ADVANCE':'HOLD THE LINE',e.order==='advance'?'#f0ce87':'#a9dfdc',false);return;}
    if(e.type==='win'||e.type==='lose')this.aftermath={phase:e.type==='win'?'won':'lost',at:this.clock};
    if(e.storyCue){
     const words:Partial<Record<NonNullable<GameEvent['storyCue']>,string>>={'bell-warning':'THE BELL WAKES','bell-stilled':'STILLED',shatter:'SHATTER',captain:game.profile.chronicle?.captain==='gatekeeper'?'STAND TOGETHER':'BORROWED DAWN',rally:'TOGETHER',rescued:'COME HOME'};
@@ -734,7 +749,7 @@ export function mountBattlefield(element:HTMLElement,game:GamePort,onFrame:(forc
    if(rewardEvidence)this.game.canvas.dataset.spoilsReward=JSON.stringify(rewardEvidence);
    else {this.spoilsReward=null;if(navigator.webdriver)delete this.game.canvas.dataset.spoilsReward;}
   }
-  private resetEffects(reason:'motion'|'scene'='scene'):void {this.baseHit={player:0,enemy:0};this.battlefieldMemory=battlefieldMemoryAfterReset(this.battlefieldMemory,reason,this.bolts.flatMap(b=>b.memory?[b.memory]:[]));this.spoilsHomecoming=[];this.spoilsReward=null;delete this.game.canvas.dataset.battlefieldMemory;delete this.game.canvas.dataset.battlefieldMemoryPending;delete this.game.canvas.dataset.spoilsHomecoming;delete this.game.canvas.dataset.spoilsReward;for(const g of this.groundFx)g.clear();this.attackCues=[];this.impactCues=[];this.fallen.clear();for(const f of this.floaters)f.text.destroy();this.floaters=[];this.sparks=[];this.bolts=[];this.rings=[];this.flares=[];this.glow?.clear();}
+  private resetEffects(reason:'motion'|'scene'='scene'):void {delete this.game.canvas.dataset.battleOrder;this.baseHit={player:0,enemy:0};this.battlefieldMemory=battlefieldMemoryAfterReset(this.battlefieldMemory,reason,this.bolts.flatMap(b=>b.memory?[b.memory]:[]));this.spoilsHomecoming=[];this.spoilsReward=null;delete this.game.canvas.dataset.battlefieldMemory;delete this.game.canvas.dataset.battlefieldMemoryPending;delete this.game.canvas.dataset.spoilsHomecoming;delete this.game.canvas.dataset.spoilsReward;for(const g of this.groundFx)g.clear();this.attackCues=[];this.impactCues=[];this.fallen.clear();for(const f of this.floaters)f.text.destroy();this.floaters=[];this.sparks=[];this.bolts=[];this.rings=[];this.flares=[];this.glow?.clear();}
   update(_time:number,delta:number):void {
    if(disposed||!this.world)return;
    const dt=Math.min(.05,Math.max(0,delta/1000));game.step(dt);
@@ -747,7 +762,7 @@ export function mountBattlefield(element:HTMLElement,game:GamePort,onFrame:(forc
    if(!game.state.paused&&!this.reduce)this.clock+=dt;
    if(this.villageHudPhase!==game.state.phase){const world=element.closest<HTMLElement>('.world');if(world?.dataset.phase!==game.state.phase)onFrame(true);this.villageHudPhase=game.state.phase;this.cacheVillageViewport();}
    this.waveArrival=waveArrivalForPort(game,this.reduce);
-   this.drawAtmosphere();this.drawBaseDamage();this.drawArmy();this.healthBars();this.effects(game.state.paused?0:dt);onFrame();
+   this.drawAtmosphere();this.drawBaseDamage();this.drawArmy();this.drawOrders();this.healthBars();this.effects(game.state.paused?0:dt);onFrame();
   }
  }
  let renderer:Phaser.Game;

@@ -283,7 +283,7 @@ try{
  }
  {
   const p=preparedChronicleProfile();p.motion='system';p.speed=1;p.age=0;p.enemyAge=0;p.chronicle.route='road';p.chronicle.expedition=null;
-  const f=await open('390-memory-reduced',390,844,p,'reduce');await f.page.locator('[data-command="start"]').click();await f.page.waitForTimeout(5000);await f.page.getByRole('button',{name:/Meteor/i}).click();
+  const f=await open('390-memory-reduced',390,844,p,'reduce');await f.page.locator('[data-command="start"]').click();await waitForBattlefieldStage(f.page,'enemy view ready',()=>Number(document.querySelector('canvas')?.dataset.battlefieldEnemyViews??0)>0,null,{timeout:60000});await waitForMeteorControl(f.page);await f.page.getByRole('button',{name:/Meteor/i}).click();
   const aging=await observeReducedBattlefieldMemory(f.page,'meteor');validateBattlefieldMemory(aging,'meteor',true,false);assert.ok(aging.alphas.every(alpha=>alpha===.26));
   const state=await pauseAtBattlefieldMemory(f.page,'meteor');validateBattlefieldMemory(state,'meteor',true,true);await assertMemoryClearOfHud(f.page,state);await noOverflow(f.page);await shot(f,'battlefield-memory-meteor');
   await f.page.waitForTimeout(450);const still=await f.page.locator('canvas').evaluate(node=>JSON.parse(node.dataset.battlefieldMemory));assert.deepEqual(still,state,'reduced-motion battlefield memory must remain static');await f.page.locator('#pause').click();await f.page.waitForFunction(()=>!document.querySelector('canvas')?.dataset.battlefieldMemory,null,{timeout:6000});checks.push('390: accepted public Meteor leaves a constant-alpha reduced-motion rosette past the normal fade boundary, freezes under pause, and expires after active time resumes');await f.context.close();

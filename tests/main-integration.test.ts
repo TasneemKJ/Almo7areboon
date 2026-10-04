@@ -1,3 +1,5 @@
+import {journeyScreenHtml} from '../src/ui/journey-screen.ts';
+import {updateOrderBanner} from '../src/ui/battle-orders.ts';
 import {chronicleScreenHtml,chronicleActionFromData} from '../src/ui/chronicle-screen.ts';
 import {chronicleGuidance} from '../src/game/chronicle-combat.ts';
 import {CAPTAINS,routeDefinition,createChronicle} from '../src/game/chronicle.ts';
@@ -58,7 +60,7 @@ function harness(motion = 'full') {
     acquiring: null, acquisitionVersion: 0, hasPlayed: true, manualPaused: false, savedWarning: false, pendingImport: null, modal: null, evolutionFromResult: false, modalPointerSequence: false,prestigeOrigin:null,prestigeDraft:null,prestigeExpectedTimeline:null,
     lastUpdate: 0, lastSave: 100, lastPhase: 'ready', resultDue: 0, resultShown: '', activeTab: 'battle', root,
     performance: { now: () => now }, document: { documentElement: { dataset: { motion } } },
-    blockModalTap:createModalTapGuard(),
+    blockModalTap:createModalTapGuard(),journeyScreenHtml,updateOrderBanner,
     $: (id: string) => { if (!elements.has(id)) elements.set(id, node()); return elements.get(id); },
     chronicleScreenHtml,chronicleActionFromData,chronicleGuidance,CAPTAINS,routeDefinition,advanceStatus, battleSelectionHtml, evolutionDialogHtml, ERAS, QUESTS, foodRate, unlockCost, dailyReward, localDay, battleGuidance, baseHealthDisplay, compactNumber, waveLabel, waveAccessibleLabel, chapterPresentation, unitPresentationName, resultsHtml,isLegacyChoice,legacyEffects,prestigePreview,prestigeDetailsHtml,prestigeDialogHtml,legacyCurrentHtml,evolutionScreenHtml,saveSessionDialogHtml,temporarySessionNotice,skillCue,troopUnlockMessage,waveInspectionHtml,
     earlierChapter,storybookArt: () => false, money: String, coin: String, icon:()=>'',textIfChanged(target:any,value:string){target.textContent=value;},htmlIfChanged(target:any,value:string){target.innerHTML=value;},unlockAudio() {}, syncPause() {}, rebuildArmy() {}, syncMotion() {}, isolateModal(){}, toast() {},
@@ -360,3 +362,21 @@ test('actual optional-probe evolution route retains Battle 5 and seals while res
 test('closing a storybook opened from a settled victory returns to its result without losing the receipt',()=>{const h=settledHarness(),c=h.context,before=JSON.stringify(c.game.profile);h.click('chronicle');assert.equal(c.modal,'chronicle');c.api.dismissModal();assert.equal(c.modal,'result');assert.equal(JSON.stringify(c.game.profile),before);});
 test('storybook writes yield to save ownership recovery before a route is selected',()=>{const h=harness(),c=h.context;h.click('chronicle');const before=JSON.stringify(c.game.profile);h.foreign();h.clickData({storyRoute:'escort',storyBattle:'0'});assert.equal(c.modal,'session');assert.equal(JSON.stringify(c.game.profile),before);});
 test('the skills page explains the selected captain instead of advertising Food Drop',()=>{const h=harness(),c=h.context;c.game.dispatch({type:'chronicle-captain',captain:'gatekeeper'});c.activeTab='skills';c.api.renderScreen();const html=c.$('secondary-screen').innerHTML;assert.match(html,/Stand together/);assert.doesNotMatch(html,/Gain up to 10 food instantly/);});
+
+test('actual order controls respect charge and guarded session ownership',()=>{
+ const h=harness(),c=h.context;c.game.dispatch({type:'start'});c.game.state.orders.charge=60;
+ h.clickData({order:'advance'});assert.equal(c.game.state.orders.active,'advance');assert.equal(c.game.state.orders.charge,0);
+ const paused=harness();paused.context.game.dispatch({type:'start'});paused.context.game.state.orders.charge=60;paused.context.game.dispatch({type:'pause'});paused.clickData({order:'hold'});assert.equal(paused.context.game.state.orders.active,null);
+ const foreign=harness();foreign.context.game.dispatch({type:'start'});foreign.context.game.state.orders.charge=60;foreign.foreign();foreign.clickData({order:'hold'});assert.equal(foreign.context.game.state.orders.charge,60);
+});
+test('actual Journey open and card navigation preserve pending result rewards',()=>{
+ const h=harness(),c=h.context;
+ const tabFunction=ast.statements.find(n=>ts.isFunctionDeclaration(n)&&n.name?.text==='switchTab')!;runInNewContext(ts.transpile(tabFunction.getText(ast)),c);c.renderScreen=()=>{};c.$('secondary-title').focus=()=>{};
+ c.game.state.phase='won';c.game.profile.pendingVictory={settlement:'legacy',timeline:1,battle:0,earned:42,seconds:12,playerHp:100};const receipt=JSON.stringify(c.game.profile.pendingVictory);c.modal='result';c.resultShown='won';
+ h.click('journey');assert.equal(c.modal,'journey');h.clickData({journeyTab:'cards'});assert.equal(c.modal,null);assert.equal(c.activeTab,'cards');assert.equal(JSON.stringify(c.game.profile.pendingVictory),receipt);h.clickData({tab:'battle'});assert.equal(c.modal,'result');assert.equal(JSON.stringify(c.game.profile.pendingVictory),receipt);
+});
+test('Journey return restores a settled result without reissuing its rewards',()=>{
+ const h=settledHarness(),c=h.context,before=JSON.stringify(c.game.profile);
+ h.click('journey');assert.equal(c.modal,'journey');h.click('journey-result');
+ assert.equal(c.modal,'result');assert.equal(JSON.stringify(c.game.profile),before);
+});
