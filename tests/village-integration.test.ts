@@ -119,6 +119,9 @@ test('muster response reuses village ambience and light pools with bounded webdr
  assert.match(review,/data-village-muster-answer/);
  assert.match(review,/\$\{viewport\.width\}-muster/);assert.match(review,/width:320,height:568/);assert.match(review,/width:390,height:844/);assert.match(review,/full-motion-muster/);
  assert.match(review,/assertMusterRegionsClearOfHud/);
+ for(const selector of ['.stage .eyebrow','.stage .battle-select','.world-tools button','.battle-meta button'])assert.ok(review.includes(selector),`native muster review must cover ${selector}`);
+ assert.match(review,/dataset\.villageWatchfire/,'native muster review must positively observe the concurrent opening watchfire');
+ assert.match(review,/watchfire\.lights>0/,'native muster review must prove the concurrent watchfire owns practical lamps');
 });
 test('chronicle renderer no longer paints abstract restoration bars beside the player base',()=>{
  const source=readFileSync(new URL('../src/view/chronicle-view.ts',import.meta.url),'utf8');
