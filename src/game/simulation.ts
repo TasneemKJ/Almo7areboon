@@ -1,3 +1,4 @@
+import { createBattleOrders, earnMomentum, issueBattleOrder, activeBattleOrder, ORDER_EFFECTS } from './battle-orders.ts';
 import { normalizeChronicle, chronicleEncounter, recordChronicleWin, type ChronicleAction } from './chronicle.ts';
 import { planChronicleAction } from './chronicle-actions.ts';
 import { createChronicleBattle, chronicleStartingFood, chronicleGateFactor, chronicleSpawn, toggleRally, chronicleMovementLimit, chronicleDamage, chronicleBaseDamage, chronicleAfterHit, chronicleSkill, captainSkill, chronicleTick, chronicleOutcome, type ChronicleHost } from './chronicle-combat.ts';
@@ -73,7 +74,7 @@ export class Game implements GamePort {
     this.rewardRemainder = 0;
     this.playerLane = 0;
     this.enemyLane = 0;
-    return { chronicle: createChronicleBattle(this.profile), stats: battleStats(), phase: 'ready', paused: false, time: 0, food: Math.min(99,legacyEffects(this.profile.legacy).startingFood+chronicleStartingFood(this.profile)), playerHp, playerMaxHp: playerHp, enemyHp, enemyMaxHp: enemyHp, units: [], wave: 0, totalWaves: this.encounter.waves.length, earned: 0, freezeUntil: 0, skillsUsed: [] };
+    return { orders: createBattleOrders(), chronicle: createChronicleBattle(this.profile), stats: battleStats(), phase: 'ready', paused: false, time: 0, food: Math.min(99,legacyEffects(this.profile.legacy).startingFood+chronicleStartingFood(this.profile)), playerHp, playerMaxHp: playerHp, enemyHp, enemyMaxHp: enemyHp, units: [], wave: 0, totalWaves: this.encounter.waves.length, earned: 0, freezeUntil: 0, skillsUsed: [] };
   }
 
   private baseHealth(): number { return Math.round(180 * 1.65 ** this.profile.age * (1 + this.profile.baseLevel * 0.4) * this.bonuses().base * legacyEffects(this.profile.legacy).gateFactor * chronicleGateFactor(this.profile)); }
@@ -102,6 +103,10 @@ export class Game implements GamePort {
     }
     if(this.profile.chronicle?.expedition&&['next','prestige','select-battle','evolve'].includes(action.type))return false;
     switch (action.type) {
+      case 'order':
+        if (!issueBattleOrder(this.state, action.order)) return false;
+        this.events.push({type:'order',order:action.order,x:235});
+        return true;
       case 'start':
         if (this.state.phase !== 'ready') return false;
         this.state.phase = 'running';
@@ -123,6 +128,7 @@ export class Game implements GamePort {
         if (!this.spawn('player', action.kind)) return false;
         this.state.food -= ERAS[this.profile.age].units[action.kind].cost;
         chronicleSpawn(this.profile,this.state,this.state.units[this.state.units.length-1]);
+        earnMomentum(this.state,12);
         this.profile.deployed++;
         this.state.stats.deployed++;
         this.state.stats.deployedByKind[action.kind]++;
@@ -385,7 +391,7 @@ export class Game implements GamePort {
         if (unit.attackTimer <= 0) {
           unit.attackTimer = def.interval;
           const power = unit.side === 'player' ? this.bonuses().damage : this.timelinePower() * 0.94;
-          const damage = def.damage * power;
+          const damage = def.damage * power * (unit.side === 'player' && activeBattleOrder(this.state,this.state.time) === 'advance' ? ORDER_EFFECTS.advance.damage : 1);
           const source = { id: unit.id, x: unit.x, lane: unit.lane, side: unit.side, age: unit.age, kind: unit.kind };
           const hit = (targetUnit: Unit, secondary = false) => {
             const resolved = resolveRoleHit(unit.kind, targetUnit.kind, damage, secondary);
@@ -405,7 +411,7 @@ export class Game implements GamePort {
           }
         }
       } else {
-        let nextX = unit.x + def.speed * direction * dt;
+        let nextX = unit.x + def.speed * direction * dt * (unit.side === 'player' && activeBattleOrder(this.state,this.state.time) === 'advance' ? ORDER_EFFECTS.advance.movement : 1);
         const rallyLimit=chronicleMovementLimit(this.state,unit);
         if(rallyLimit!==null)nextX=Math.min(nextX,rallyLimit);
         for (const friend of this.state.units) {
@@ -423,6 +429,7 @@ export class Game implements GamePort {
 
   private hurt(unit: Unit, damage: number): number {
     if (unit.hp <= 0) return 0;
+    if (unit.side === 'player' && activeBattleOrder(this.state,this.state.time) === 'hold') damage *= ORDER_EFFECTS.hold.received;
     const actual = Math.min(unit.hp, damage);
     if (unit.side === 'enemy') this.state.stats.damageDealt += actual;
     else this.state.stats.damageTaken += actual;
@@ -431,6 +438,7 @@ export class Game implements GamePort {
     if (unit.hp === 0) {
       this.events.push({ type: 'death', x: unit.x, lane: unit.lane, side: unit.side });
       if (unit.side === 'enemy') {
+        earnMomentum(this.state,8);
         this.profile.kills++;
         this.state.stats.kills++;
         this.reward(Math.round((12 + unit.kind * 9) * (1 + unit.age * 0.5)), unit.x);
@@ -441,6 +449,7 @@ export class Game implements GamePort {
 
   private hurtBase(attacker: Side, damage: number): number {
     damage=chronicleBaseDamage(this.state,attacker,damage);
+    if (attacker === 'enemy' && activeBattleOrder(this.state,this.state.time) === 'hold') damage *= ORDER_EFFECTS.hold.received;
     if (attacker === 'player') {
       const actual = Math.min(this.state.enemyHp, damage);
       this.state.enemyHp = Math.max(0, this.state.enemyHp - actual);
