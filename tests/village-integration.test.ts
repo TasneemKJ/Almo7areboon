@@ -69,6 +69,24 @@ test('watchfire reuses village ambience and light pools with bounded webdriver e
  assert.match(source,/while\(this\.stageLight\.length<6\)/);
  assert.doesNotMatch(source,/watch(?:fire|Strokes|Lights)[^\n]*this\.add\.(?:graphics|image|container)/i);
 });
+test('one authoritative order frame drives troop marks and the bounded village answer',()=>{
+ const source=readFileSync(new URL('../src/view/battlefield.ts',import.meta.url),'utf8');
+ assert.match(source,/private orderFrame:ReturnType<typeof orderPresentationFrame>=null;/);
+ assert.equal(source.match(/orderPresentationFrame\(game\.state,this\.layout\.groundY,this\.reduce,this\.layout\.laneGap\)/g)?.length,1,'one read boundary must own troop and village presentation');
+ assert.match(source,/this\.orderFrame=orderPresentationFrame\(game\.state,this\.layout\.groundY,this\.reduce,this\.layout\.laneGap\);\s*this\.waveArrival=/);
+ assert.match(source,/villageFrame\(\{[^}]*order:this\.orderFrame\?\.answer/s);
+ assert.match(source,/const frame=this\.orderFrame;/);
+ assert.doesNotMatch(source,/setTimeout\([^)]*villageOrder|Date\.now\(\)[^;]*villageOrder/i);
+});
+test('order answer reuses village ambience and light pools with bounded webdriver evidence and cleanup',()=>{
+ const source=readFileSync(new URL('../src/view/battlefield.ts',import.meta.url),'utf8');
+ assert.match(source,/for\(const stroke of frame\.orderStrokes\)\{g\.lineStyle\(stroke\.width,stroke\.color,stroke\.alpha\);g\.lineBetween\(stroke\.from\.x,stroke\.from\.y,stroke\.to\.x,stroke\.to\.y\);\}/);
+ assert.match(source,/const orderRegions=/);assert.match(source,/frame\.orderStrokes\.map/);assert.match(source,/frame\.orderLights\.map/);
+ assert.match(source,/dataset\.villageOrderAnswer=JSON\.stringify\(\{kind:this\.orderFrame\.answer\.kind,progress:this\.orderFrame\.answer\.progress,lights:frame\.orderLights\.length,strokes:frame\.orderStrokes\.length,regions:orderRegions,reduced:this\.reduce,paused:game\.state\.paused\}\)/);
+ assert.match(source,/delete this\.game\.canvas\.dataset\.villageOrderAnswer/);
+ assert.match(source,/while\(this\.stageLight\.length<6\)/);
+ assert.doesNotMatch(source,/order(?:Strokes|Lights)[^\n]*this\.add\.(?:graphics|image|container)/i);
+});
 test('chronicle renderer no longer paints abstract restoration bars beside the player base',()=>{
  const source=readFileSync(new URL('../src/view/chronicle-view.ts',import.meta.url),'utf8');
  assert.doesNotMatch(source,/restoration.*\n\s*for\(let i=0;i<3;i\)/);

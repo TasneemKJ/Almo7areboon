@@ -1,7 +1,7 @@
 name: Mobile QA - forty recorded iterations
 on:
   push:
-    branches: [qa/mobile-40-iterations, fix/mobile-touch-audit-20261004, feat/battle-banner-journey-20261004]
+    branches: [qa/mobile-40-iterations, fix/mobile-touch-audit-20261004, feat/battle-banner-journey-20261004, feat/village-orders-answer-20261004]
   workflow_dispatch:
 permissions:
   contents: read

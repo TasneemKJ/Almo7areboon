@@ -263,3 +263,43 @@ test('reduced-motion watchfire is a still immutable full relay and leaves caller
  assert.ok(opening.watchLights.every((light:any)=>Object.isFrozen(light)&&Object.isFrozen(light.center)));
  assert.ok(opening.watchStrokes.every((stroke:any)=>Object.isFrozen(stroke)&&Object.isFrozen(stroke.from)&&Object.isFrozen(stroke.to)));
 });
+
+test('advance and hold make every clear authored lamp answer with distinct shape and pigment',async()=>{
+ const m=await life();
+ for(let age=0;age<6;age++)for(const kind of ['advance','hold'] as const){
+  const frame=m.villageFrame({age,time:4,reduced:false,mood:quiet,viewport,order:{kind,progress:.45}} as any) as any;
+  assert.equal(frame.orderLights.length,m.VILLAGE_PLATES[age].lamps.length);
+  assert.equal(frame.orderStrokes.length,m.VILLAGE_PLATES[age].lamps.length*2);
+  assert.deepEqual(frame.orderLights.map((light:any)=>[light.center.x,light.center.y]),m.VILLAGE_PLATES[age].lamps.map((lamp:readonly number[])=>lamp.slice(0,2)));
+  assert.ok(frame.orderStrokes.every((stroke:any)=>stroke.color===(kind==='advance'?0xf2cf79:0xa9dfdc)));
+  for(let index=0;index<frame.orderStrokes.length;index++){
+   const stroke=frame.orderStrokes[index],center=frame.orderLights[Math.floor(index/2)].center;
+   if(kind==='advance'){assert.ok(stroke.to.y<stroke.from.y);assert.ok(Math.abs(stroke.to.x-center.x)>Math.abs(stroke.from.x-center.x),'advance fans outward');}
+   else {assert.ok(stroke.to.y>stroke.from.y);assert.ok(Math.abs(stroke.to.x-center.x)<Math.abs(stroke.from.x-center.x),'hold braces inward');}
+  }
+ }
+});
+
+test('village order answer fails closed around malformed, covered, alarm, watchfire and verdict states',async()=>{
+ const m=await life(),base:any={age:3,time:4,reduced:false,mood:quiet,viewport,order:{kind:'advance',progress:.5}};
+ for(const order of [null,{kind:'advance',progress:NaN},{kind:'hold',progress:Infinity},{kind:'advance',progress:-.01},{kind:'hold',progress:1.01},{kind:'unknown',progress:.5}]){
+  const frame=m.villageFrame({...base,order});assert.deepEqual(frame.orderLights,[]);assert.deepEqual(frame.orderStrokes,[]);
+ }
+ const first=m.VILLAGE_PLATES[3].lamps[0],covered=m.villageFrame({...base,viewport:{...viewport,hudSourceBounds:[[first[0]-first[2]-4,first[1]-first[3]-8,first[0]+first[2]+4,first[1]+first[3]+2]]}}) as any;
+ assert.equal(covered.orderLights.length,m.VILLAGE_PLATES[3].lamps.length-1,'covered authored lamps are skipped without inventing replacements');
+ for(const overrides of [
+  {mood:{...quiet,mood:'alarmed',alarmMix:1}},
+  {watch:{progress:.5,intent:'rush'}},
+  {verdict:{mode:'celebrate',progress:.5}},
+  {verdict:{mode:'shelter',progress:.5}},
+ ]){const frame=m.villageFrame({...base,...overrides}) as any;assert.deepEqual(frame.orderLights,[]);assert.deepEqual(frame.orderStrokes,[]);}
+});
+
+test('reduced-motion order answer is still immutable and does not mutate caller input',async()=>{
+ const m=await life(),input:any={age:5,time:99,reduced:true,mood:{...quiet},viewport:{...viewport,placement:{...viewport.placement},hudSourceBounds:[]},order:{kind:'hold',progress:0}},before=structuredClone(input);
+ const opening=m.villageFrame(input) as any,ending=m.villageFrame({...input,order:{kind:'hold',progress:1}}) as any;
+ assert.deepEqual(input,before);assert.deepEqual(opening.orderLights,ending.orderLights);assert.deepEqual(opening.orderStrokes,ending.orderStrokes);
+ assert.ok(Object.isFrozen(opening.orderLights)&&Object.isFrozen(opening.orderStrokes));
+ assert.ok(opening.orderLights.every((light:any)=>Object.isFrozen(light)&&Object.isFrozen(light.center)));
+ assert.ok(opening.orderStrokes.every((stroke:any)=>Object.isFrozen(stroke)&&Object.isFrozen(stroke.from)&&Object.isFrozen(stroke.to)));
+});
