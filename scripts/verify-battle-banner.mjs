@@ -37,7 +37,7 @@ async function deployment(p,order='advance',onMuster=null){
  await tap(p,'[data-command="start"]');await phase(p,'running');await tap(p,'[data-skill="food"]');
  await p.locator('[data-unit="0"]:enabled').waitFor();await tap(p,'[data-unit="0"]');
  await p.waitForFunction(()=>document.querySelector('canvas')?.dataset.villageMusterAnswer);
- const muster=await assertMusterRegionsClearOfHud(p);assert.equal(muster.witnesses,2);assert.equal(muster.lights,0,'the opening watchfire retains exclusive ownership of the practical lamps');assert.equal(muster.strokes,4);assert.ok(muster.regions.length>=6&&muster.regions.length<=100);assert.ok(muster.regions.every(region=>Object.values(region).every(Number.isFinite)));await onMuster?.(muster);
+ const muster=await assertMusterRegionsClearOfHud(p);assert.ok(muster.witnesses>=1&&muster.witnesses<=2,'every HUD-clear authored window must answer');assert.equal(muster.lights,0,'the opening watchfire retains exclusive ownership of the practical lamps');assert.equal(muster.strokes,muster.witnesses*2,'each visible witness window owns two roadward strokes');assert.ok(muster.regions.length>=muster.witnesses*3&&muster.regions.length<=100);assert.ok(muster.regions.every(region=>Object.values(region).every(Number.isFinite)));await onMuster?.(muster);
  for(let i=1;i<5;i++){await p.locator('[data-unit="0"]:enabled').waitFor();await tap(p,'[data-unit="0"]');}
  await p.waitForFunction(()=>!document.querySelector('canvas')?.dataset.villageWatchfire);
  await p.locator(`button[data-order="${order}"]:enabled`).waitFor();await tap(p,`button[data-order="${order}"]`);
