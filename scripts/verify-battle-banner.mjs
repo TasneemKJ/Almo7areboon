@@ -16,7 +16,7 @@ const ready=p=>p.waitForFunction(()=>document.querySelector('#world')?.dataset.p
 const phase=(p,name)=>p.waitForFunction(name=>document.querySelector('#world')?.dataset.phase===name,name);
 const tap=async(p,s)=>{await p.locator(`${s}:visible`).tap();if(/journey|retreat|retry|settings|close-button|data-claim/.test(s))await p.waitForTimeout(360);};const save=p=>p.evaluate(k=>JSON.parse(localStorage.getItem(k)),SAVE_KEY);
 const shot=(p,name)=>p.screenshot({path:`${out}/${name}.png`,fullPage:true});
-async function layout(p){const m=await p.evaluate(()=>({w:innerWidth,scroll:document.documentElement.scrollWidth,canvas:[document.querySelector('canvas')?.width,document.querySelector('canvas')?.height]}));assert(m.scroll<=m.w+1);assert(m.canvas.every(v=>v>0));for(const selector of ['button[data-order="advance"]','button[data-order="hold"]']){const b=await p.locator(selector).boundingBox();assert(b.width>=44&&b.height>=44);}}
+async function layout(p){const m=await p.evaluate(()=>({w:innerWidth,scroll:document.documentElement.scrollWidth,canvas:[document.querySelector('canvas')?.width,document.querySelector('canvas')?.height]}));assert(m.scroll<=m.w+1);assert(m.canvas.every(v=>v>0));const sizes=[];for(const selector of ['button[data-order="advance"]','button[data-order="hold"]']){const b=await p.locator(selector).boundingBox();assert(b.width>=44&&b.height>=44);sizes.push(b.height);}assert(Math.abs(sizes[0]-sizes[1])<=1,'order benefits keep an equal-height command row');}
 async function navigation(p){
  for(const tab of ['cards','battle']){
   const locator=p.locator(`.bottom-nav [data-tab="${tab}"]`);await locator.scrollIntoViewIfNeeded();
