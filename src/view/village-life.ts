@@ -148,7 +148,7 @@ export function villageFrame(input:VillageFrameInput):VillageFrame {
  const orderKind=!verdict&&watchProgress===null&&input.mood.mood!=='alarmed'&&input.order&&
   (input.order.kind==='advance'||input.order.kind==='hold')&&Number.isFinite(input.order.progress)&&input.order.progress>=0&&input.order.progress<=1?input.order.kind:null;
  const orderProgress=orderKind?(input.reduced?1:input.order!.progress):0;
- const musterProgress=!verdict&&watchProgress===null&&orderKind===null&&input.mood.mood!=='alarmed'&&input.muster&&
+ const musterProgress=!verdict&&orderKind===null&&input.mood.mood!=='alarmed'&&input.muster&&
   Number.isFinite(input.muster.progress)&&input.muster.progress>=0&&input.muster.progress<=1?(input.reduced?1:input.muster.progress):null;
  // Reduced motion uses discrete visual states; the shared long ramp remains intact for audio.
  const mix=input.reduced?(input.mood.mood==='alarmed'?1:0):sharedMix;
@@ -224,7 +224,7 @@ export function villageFrame(input:VillageFrameInput):VillageFrame {
   const factor=verdict&&clearOfHud([x-rx,y-ry,x+rx,y+ry])?lightFactor:1;
   const watches=watched.has(index)&&clearOfHud([x-rx-4,y-ry-8,x+rx+4,y+ry+2]),watchFactor=watches?1.65:1;
   const answers=orderKind!==null&&clearOfHud([x-rx-4,y-ry-8,x+rx+4,y+ry+2]),orderFactor=answers?1.48:1;
-  const musters=musterProgress!==null&&clearOfHud([x-rx-4,y-ry-8,x+rx+4,y+ry+2]);
+  const musters=musterProgress!==null&&watchProgress===null&&clearOfHud([x-rx-4,y-ry-8,x+rx+4,y+ry+2]);
   const musterRank=[...plate.lamps.keys()].sort((a,b)=>plate.lamps[b][0]-plate.lamps[a][0]).indexOf(index),musterWave=musterProgress===null?0:Math.max(0,Math.min(1,musterProgress*1.45-musterRank*.12));
   const musterFactor=musters?1.24+.26*Math.sin(musterWave*Math.PI):1;
   const color=answers?(orderKind==='advance'?0xf2cf79:0xa9dfdc):age===5&&index>=2?0x8edfc9:0xffd08a;
