@@ -9,6 +9,12 @@ export interface VillageStroke {from:Point;to:Point;width:number;color:number;al
 export interface VillageViewport {placement:{x:number;y:number;scale:number};cssWorldScale:number;visibleSource:Bounds;hudSourceBounds:readonly Bounds[];skyPath?:Bounds|null}
 export interface VillageFrameInput {age:number;time:number;reduced:boolean;restoration?:number;mood:Readonly<VillageMoodSnapshot>;viewport:VillageViewport;verdict?:Readonly<VillageVerdictFrame>|null;watch?:Readonly<{progress:number;intent:string}>|null;order?:Readonly<{kind:'advance'|'hold';progress:number}>|null}
 export interface VillageFrame {residents:readonly {apertureId:string;panes:readonly PaintedPolygon[]}[];verdictResidents:readonly {apertureId:string;panes:readonly PaintedPolygon[]}[];lamps:readonly VillageHalo[];restorationLights:readonly VillageHalo[];verdictLights:readonly VillageHalo[];watchLights:readonly VillageHalo[];orderLights:readonly VillageHalo[];verdictStrokes:readonly VillageStroke[];watchStrokes:readonly VillageStroke[];orderStrokes:readonly VillageStroke[];water:readonly VillageStroke[];bird:readonly PaintedPolygon[]|null}
+
+export function villageOrderHudChanged(measuredPaused:boolean|null,paused:boolean,hasAnswer:boolean,hasWatch:boolean):boolean {
+ if(measuredPaused===true&&!paused)return true;
+ return measuredPaused!==paused&&paused&&hasAnswer&&!hasWatch;
+}
+
 interface Aperture {id:string;bounds:Bounds;framing:readonly Bounds[];panes:readonly (readonly Point[])[];dark:boolean}
 type Lamp=readonly [number,number,number,number];
 interface Plate {path:string;sha256:string;width:900;height:1000;windows:readonly Aperture[];lamps:readonly Lamp[];sky:Bounds}

@@ -59,7 +59,7 @@ test('watchfire reuses village ambience and light pools with bounded webdriver e
  assert.match(source,/private villageHudPhase:Phase\|null=null;/,'the HUD exclusion map needs an explicit phase owner');
  assert.match(source,/private villageHudPaused:boolean\|null=null;/,'pause visibility needs an explicit HUD measurement owner');
  assert.match(source,/onFrame:\(force\?:boolean\)=>void/,'the renderer must be able to request an immediate host-layout sync');
- assert.match(source,/const phaseHudChanged=this\.villageHudPhase!==game\.state\.phase,orderHudChanged=this\.villageHudPaused!==game\.state\.paused&&!!this\.orderFrame\?\.answer&&!this\.waveArrival;/,'pause-only HUD remeasurement must be scoped to an unobscured order answer');
+ assert.match(source,/orderHudChanged=villageOrderHudChanged\(this\.villageHudPaused,game\.state\.paused,!!this\.orderFrame\?\.answer,!!this\.waveArrival\)/,'the tested HUD owner must decide pause-side measurement and resume-side cleanup');
  assert.match(source,/if\(phaseHudChanged\|\|orderHudChanged\)\{const world=element\.closest<HTMLElement>\('\.world'\);if\(world\?\.dataset\.phase!==game\.state\.phase\|\|orderHudChanged\)onFrame\(true\);this\.villageHudPhase=game\.state\.phase;this\.villageHudPaused=game\.state\.paused;this\.cacheVillageViewport\(\);\}/,'phase and relevant order-pause reflow must reach the DOM before HUD exclusions are measured and the village is painted');
  assert.match(source,/\.battle-skills button,\.pause-banner/,'transient controls and the centered pause card must reserve their painted regions');
  assert.match(main,/mountBattlefield\(\$\('battlefield'\),port,force=>update\(force\),events/,'the host must honor a forced layout sync from the renderer');

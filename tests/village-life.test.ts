@@ -264,6 +264,16 @@ test('reduced-motion watchfire is a still immutable full relay and leaves caller
  assert.ok(opening.watchStrokes.every((stroke:any)=>Object.isFrozen(stroke)&&Object.isFrozen(stroke.from)&&Object.isFrozen(stroke.to)));
 });
 
+test('order HUD measurement clears pause-owned bounds on resume without remeasuring a paused watchfire',async()=>{
+ const m=await life();
+ assert.equal(m.villageOrderHudChanged(false,true,true,false),true,'an active clear order may measure the visible pause card');
+ assert.equal(m.villageOrderHudChanged(false,true,true,true),false,'pausing a watchfire must preserve its existing frozen geometry');
+ assert.equal(m.villageOrderHudChanged(false,true,false,false),false,'pause alone does not disturb the shared village viewport');
+ assert.equal(m.villageOrderHudChanged(true,false,false,true),true,'resume clears pause-owned bounds even when a watchfire begins on that frame');
+ assert.equal(m.villageOrderHudChanged(true,false,false,false),true,'resume clears pause-owned bounds after the order answer expires');
+ assert.equal(m.villageOrderHudChanged(false,false,true,false),false,'steady unpaused play keeps the cached viewport');
+});
+
 test('advance and hold make every clear authored lamp answer with distinct shape and pigment',async()=>{
  const m=await life();
  for(let age=0;age<6;age++)for(const kind of ['advance','hold'] as const){

@@ -5,7 +5,7 @@ import {storybookArt} from './storybook-art.ts';
 import {reducedMotion,projectileForHit,traitCueForHit} from './combat-feedback.ts';
 import {arenaLayout,foregroundPlacement,landscapePlacement,troopPose,visualEra} from './visual-theme.ts';
 import {atmosphereFrame} from './era-atmosphere.ts';
-import {ensureVillageLight,villageFrame,villageSkyPath,type Bounds,type VillageViewport} from './village-life.ts';
+import {ensureVillageLight,villageFrame,villageOrderHudChanged,villageSkyPath,type Bounds,type VillageViewport} from './village-life.ts';
 import {createVillageMood,type VillageMoodSnapshot} from './village-mood.ts';
 import {duskAtmosphereFrame,paintDuskAtmosphere} from './dusk-atmosphere.ts';
 import {lightingHierarchyFrame,paintLightingHierarchy} from './lighting-hierarchy.ts';
@@ -770,7 +770,7 @@ export function mountBattlefield(element:HTMLElement,game:GamePort,onFrame:(forc
    if(!game.state.paused&&!this.reduce)this.clock+=dt;
    this.orderFrame=orderPresentationFrame(game.state,this.layout.groundY,this.reduce,this.layout.laneGap);
    this.waveArrival=waveArrivalForPort(game,this.reduce);
-   const phaseHudChanged=this.villageHudPhase!==game.state.phase,orderHudChanged=this.villageHudPaused!==game.state.paused&&!!this.orderFrame?.answer&&!this.waveArrival;
+   const phaseHudChanged=this.villageHudPhase!==game.state.phase,orderHudChanged=villageOrderHudChanged(this.villageHudPaused,game.state.paused,!!this.orderFrame?.answer,!!this.waveArrival);
    if(phaseHudChanged||orderHudChanged){const world=element.closest<HTMLElement>('.world');if(world?.dataset.phase!==game.state.phase||orderHudChanged)onFrame(true);this.villageHudPhase=game.state.phase;this.villageHudPaused=game.state.paused;this.cacheVillageViewport();}
    this.drawAtmosphere();this.drawBaseDamage();this.drawArmy();this.drawOrders();this.healthBars();this.effects(game.state.paused?0:dt);onFrame();
   }
