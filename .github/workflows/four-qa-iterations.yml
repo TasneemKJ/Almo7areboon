@@ -83,6 +83,12 @@ jobs:
           QA_RANGE: 1-40
           QA_OUT: artifacts/four-iterations/webkit
         run: node --experimental-strip-types scripts/qa40/campaign.mjs
+      - name: Isolate WebKit iteration 39 three times
+        env:
+          QA_ENGINE: webkit
+          QA_RANGE: '39'
+        run: |
+          for n in 1 2 3; do QA_OUT=artifacts/four-iterations/repro39-$n node --experimental-strip-types scripts/qa40/repro-39.mjs || true; done
       - uses: actions/upload-artifact@v4
         if: always()
         with:
