@@ -30,3 +30,12 @@ test('banner distinguishes readiness, charge, paused and active countdown',()=>{
  g.dispatch({type:'order',order:'hold'});assert.match(orderStatus(g.state).label,/Hold.*10s/);assert.equal(orderStatus(g.state).canCast,false);
  g.dispatch({type:'pause'});assert.match(orderStatus(g.state).label,/Paused/);
 });
+test('completed chapter recommends affordable troop preparation with a reachable destination',()=>{
+ const p=defaultProfile();p.mastery.chapters[0].earnedMask=7;p.coins=150;
+ const g=new Game(p),html=journeyScreenHtml(g.profile,g.state);
+ assert.match(html,/Unlock.*troop/i);assert.match(html,/data-journey-tab="battle"/);
+});
+test('terminal chapter guidance does not promise a nonexistent chapter',()=>{
+ const p=defaultProfile();p.enemyAge=5;p.age=5;p.mastery.chapters[5].earnedMask=7;p.coins=0;
+ const g=new Game(p);assert.doesNotMatch(journeyScreenHtml(g.profile,g.state),/prepare a new chapter/);
+});

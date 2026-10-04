@@ -1,4 +1,3 @@
-import './ui/battle-banner.css';
 import { updateOrderBanner } from './ui/battle-orders.ts';
 import { journeyScreenHtml } from './ui/journey-screen.ts';
 import './ui/chronicle.css';
@@ -14,6 +13,7 @@ import './ui/era-glow.css';
 import './ui/readability.css';
 import './ui/layout-polish.css';
 import './ui/skill-cues.css';
+import './ui/battle-banner.css';
 import { Game } from './game/simulation.ts';
 import { createBattlefieldPort } from './game/battlefield-port.ts';
 import { advanceStatus } from './game/mastery.ts';
@@ -82,7 +82,7 @@ root.innerHTML = `
       <div class="stage"><div id="timeline" class="eyebrow"></div><h1 id="age-title"></h1><p id="scene-name" class="scene-name"></p><button id="battle-select" class="battle-select" data-command="battles" aria-label="Choose a battle"><span class="stage-progress" id="stage-progress"></span></button></div>
       <div class="world-tools"><button id="quests" class="square-button" data-command="quests" aria-label="Quests">${icon('quest')}<i class="notification"></i></button><button class="square-button" data-command="settings" aria-label="Settings">${icon('gear')}</button></div>
       <div class="battle-meta"><button id="wave-label" class="wave-inspect" data-command="wave-help"></button><div class="battle-toggles"><button id="speed" data-command="speed" aria-label="Change battle speed">1×</button><button id="pause" data-command="pause" aria-label="Pause battle">Ⅱ</button></div></div>
-      <div id="ready" class="ready"><div class="ready-title">YOUR ARMY. YOUR ERA.</div><button class="big-button green" data-command="start">BATTLE ${icon('battle')}</button><p id="story-ready-rule">Destroy the enemy base!</p><div class="ready-paths"><button class="story-open" data-command="chronicle">Open the storybook</button><button class="story-open journey-open" data-command="journey">Your journey</button></div></div>
+      <div id="ready" class="ready"><div class="ready-title">YOUR ARMY. YOUR ERA.</div><button class="big-button green" data-command="start">BATTLE ${icon('battle')}</button><p id="story-ready-rule">Destroy the enemy base!</p><div class="ready-paths"><button class="story-open" data-command="chronicle">Open the storybook</button><button class="journey-open" data-command="journey">Your journey</button></div></div>
       <p id="base-status" class="sr-only"></p><p id="game-status" class="sr-only" role="status" aria-live="polite"></p><div id="pause-banner" class="pause-banner" hidden>PAUSED</div>
       <div class="battle-skills" id="battle-skills"></div>
     </section>
@@ -429,7 +429,7 @@ lifetime.listen<MouseEvent>(root,'click',e=>{
   unlockAudio(game.profile.sound);
   if(command==='journey'){showModal('journey',journeyScreenHtml(game.profile,game.state));return;}
   if(command==='journey-result'){if(modal==='journey'&&(game.state.phase==='won'||game.state.phase==='lost'))showResult();return;}
-  if(button.dataset.journeyTab){if(modal==='journey'&&button.dataset.journeyTab==='cards'){closeModal(false);switchTab('cards');}return;}
+  if(button.dataset.journeyTab){if(modal==='journey'&&['cards','battle'].includes(button.dataset.journeyTab)){closeModal(false);switchTab(button.dataset.journeyTab);}return;}
   if(button.dataset.order){action({type:'order',order:button.dataset.order as 'advance'|'hold'});return;}
   if(command==='chronicle'){showModal('chronicle',chronicleScreenHtml(game.profile,game.state));return;}
   if(button.dataset.storyPage!==undefined){

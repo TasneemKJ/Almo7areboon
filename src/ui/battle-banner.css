@@ -10,7 +10,7 @@
 .order-banner button[aria-pressed=true] { opacity:1; background:var(--blue); border-color:var(--gold); }
 .order-banner[data-order=advance] .order-status,.order-banner[data-order=hold] .order-status { color:var(--gold); }
 .ready-paths { display:flex; gap:8px; align-items:center; justify-content:center; flex-wrap:wrap; }
-.ready-paths .story-open { margin-top:4px; font-size:11px; }
+.ready-paths .story-open,.ready-paths .journey-open { margin-top:4px; font-size:11px; }
 .journey-landscape { position:relative; min-height:140px; display:flex; align-items:flex-end; overflow:hidden; border-radius:12px; background:var(--navy); text-align:left; margin:14px 0; color:var(--paper); }
 .journey-landscape img { position:absolute; width:100%; height:100%; object-fit:cover; object-position:center 43%; }
 .journey-landscape::after { content:''; position:absolute; inset:0; background:linear-gradient(transparent,var(--navy)); }
@@ -49,3 +49,5 @@
 .unit-card:not(.locked):disabled .unit-price { opacity:.8; }
 .order-banner button:not(:disabled) { border-color:var(--gold); background:var(--blue); }
 .order-banner button:not(:disabled):focus-visible { outline-offset:2px; }
+
+.journey-open { border:1px solid var(--craft-brass); border-radius:14px 10px; background:var(--navy); color:var(--paper); padding:10px 15px; min-height:44px; font-family:Georgia,serif; }
