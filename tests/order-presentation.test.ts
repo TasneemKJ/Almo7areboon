@@ -12,5 +12,5 @@ test('order marks exclude dead and enemy units and cap the pool',()=>{
 });
 test('reduced-motion order identity remains static and readable',()=>{
  const g=new Game();g.dispatch({type:'start'});g.state.orders!.charge=60;g.dispatch({type:'order',order:'hold'});g.state.food=99;g.dispatch({type:'spawn',kind:0});const a=orderPresentationFrame(g.state,300,true)!;g.state.time=2;const b=orderPresentationFrame(g.state,300,true)!;
- assert.deepEqual(a.marks,b.marks);assert.equal(a.pulse,1);assert.equal(b.pulse,1);assert.equal(b.order,'hold');
+ assert.deepEqual(a.marks,b.marks);assert.equal(a.pulse,1);assert.equal(b.pulse,1);assert.equal(b.order,'hold');assert(b.pennant.x>=110,'order identity clears the player gate silhouette');
 });
