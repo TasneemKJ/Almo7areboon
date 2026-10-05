@@ -25,3 +25,8 @@ test('weekly workflow reuses the manual heavy workflows and never deploys', () =
     assert.match(read(`${f}.yml`), /workflow_call:/);
   }
 });
+test('every workflow uses the current action majors', () => {
+  for (const file of readdirSync(dir).filter(f => f.endsWith('.yml'))) {
+    for (const [, name, major] of read(file).matchAll(/uses: actions\/([\w-]+)@v(\d+)/g)) assert.ok(Number(major) >= 7, `${file}: actions/${name}@v${major}`);
+  }
+});

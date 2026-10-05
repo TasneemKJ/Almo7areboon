@@ -118,3 +118,13 @@ test('forty-pass storybook refinement exposes eight five-pass groups',async()=>{
  assert.deepEqual(stillA.motion,stillB.motion);
  for(const v of groups.flatMap((k:any)=>full[k]))assert.ok(Number.isFinite(v));
 });
+test('refinement strengths are bounded, deterministic and calm for bad input',async()=>{
+ const m=await dusk();
+ for(let age=-2;age<9;age++)for(const time of [0,12,1e9,NaN,-5,Infinity])for(const reduced of [false,true]){
+  const r=m.duskRefinement40(age,time,reduced);
+  assert.deepEqual(Object.keys(r),[...m.DUSK_REFINEMENT_GROUPS]);
+  for(const group of m.DUSK_REFINEMENT_GROUPS){assert.equal(r[group].length,5);for(const v of r[group])assert.ok(Number.isFinite(v)&&v>=0&&v<=1,`${group} ${v}`);}
+ }
+ assert.deepEqual(m.duskRefinement40(3,12,false),m.duskRefinement40(3,12,false));
+ assert.notDeepEqual(m.duskRefinement40(0,12,false).depth,m.duskRefinement40(5,12,false).depth);
+});

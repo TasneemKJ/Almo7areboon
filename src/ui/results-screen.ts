@@ -10,9 +10,18 @@ import { compactNumber } from './battle-hud.ts';
 import { masteryMarksHtml, masteryAttemptText, masteryAdvice } from './mastery-presentation.ts';
 import { villageVoice, villageMoment } from './chapter-scouting.ts';
 import { earlierChapter, regroupLearningHtml } from './regroup-learning.ts';
+import { nextGoalLabel } from './next-goal.ts';
+import { localDay } from '../game/data.ts';
 
 export const timelineResetText='Preview the next timeline before you begin. In this harder timeline, your age, coins, upgrades and troop unlocks reset; seals and their rewards start afresh. Cards, gems, quests and lifetime records stay. Review the reset, actual gem credit and one lasting legacy before confirming.';
 const amount=(value:number)=>Math.floor(value).toLocaleString('en-US');
+
+/** The result's Journey button names the next real reward, so the end of a battle points at a reason to play on. */
+function journeyButton(profile:Profile):string {
+ const goal=nextGoalLabel(profile,localDay());
+ const text=goal.text==='Your journey'?'goals and rewards':goal.text;
+ return `<button class="big-button secondary" data-command="journey" aria-label="${goal.label}">Your journey · ${text}</button>`;
+}
 
 export function resultsHtml(profile: Profile, state: BattleState): string {
  const won=state.phase==='won',stats=battleStats(state.stats),advance=advanceStatus(profile,state),view=chapterMastery(profile,profile.enemyAge);
@@ -31,7 +40,7 @@ export function resultsHtml(profile: Profile, state: BattleState): string {
  ${regroupLearningHtml(profile,state)}
  ${state.phase==='lost'&&earlierChapter(profile)!==null?'<button class="big-button secondary" data-command="regroup-chapters">Choose an earlier chapter</button>':''}
  <div class="reward"><span>TOTAL BATTLE EARNINGS</span><strong>${icon('coin')}${compactNumber(state.earned)}</strong><small>Already added to your coins${won?' · victory bonus: up to 10 gems':''}</small>${settled?`<small>Normal combat: ${amount(state.earned-settled.masteryCoins)} coins</small><small>Mastery credited: ${amount(settled.masteryCoins)} coins · ${amount(settled.masteryGems)} gems</small>`:''}</div>
- <div class="result-mastery">${masteryMarksHtml(profile,profile.enemyAge)}${settled?`<p>New seals: ${newTitles.length?newTitles.join(', '):'none · previously earned seals stay earned'}.</p>`:''}<p>${masteryAttemptText(profile,state)}</p>${settled?`<small>Gate damage this attempt: ${amount(stats.gateDamageTaken)}</small>`:''}</div>
+ <div class="result-mastery">${masteryMarksHtml(profile,profile.enemyAge)}${settled?`<p>New seals: ${newTitles.length?newTitles.join(', '):'none · previously earned seals stay earned'}.</p>`:''}<p>${masteryAttemptText(profile,state,false)}</p>${settled?`<small>Gate damage this attempt: ${amount(stats.gateDamageTaken)}</small>`:''}</div>
  <dl class="battle-statistics"><div><dt>Battle time</dt><dd>${battleClock(state.time)}</dd></div><div><dt>Warriors deployed</dt><dd>${stats.deployed}</dd></div><div><dt>Enemies defeated</dt><dd>${stats.kills}</dd></div><div><dt>Food spent</dt><dd>${compactNumber(stats.foodSpent)}</dd></div><div><dt>Damage dealt</dt><dd>${compactNumber(stats.damageDealt)}</dd></div><div><dt>Largest army</dt><dd>${stats.peakArmy}</dd></div><div><dt>Orders issued</dt><dd>${stats.ordersCast??0}</dd></div></dl>
- ${!won&&advance.target==='timeline'?`<p>${timelineResetText}</p>`:''}${chronicleResultHtml(profile,state)}${continuation}${retry}${evolve}<button class="big-button secondary" data-command="journey">Your journey · goals and rewards</button>${terminal?'<button class="big-button blue" data-command="return-chapters">Return to chapters</button>':''}`;
+ ${!won&&advance.target==='timeline'?`<p>${timelineResetText}</p>`:''}${chronicleResultHtml(profile,state)}${continuation}${retry}${evolve}${journeyButton(profile)}${terminal?'<button class="big-button blue" data-command="return-chapters">Return to chapters</button>':''}`;
 }

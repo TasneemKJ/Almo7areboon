@@ -15,6 +15,7 @@ import './ui/readability.css';
 import './ui/layout-polish.css';
 import './ui/skill-cues.css';
 import './ui/battle-banner.css';
+import './ui/landscape-rail.css';
 import { Game } from './game/simulation.ts';
 import { createBattlefieldPort } from './game/battlefield-port.ts';
 import { advanceStatus } from './game/mastery.ts';
@@ -27,7 +28,6 @@ import { saveSessionDialogHtml, temporarySessionNotice } from './ui/save-session
 import { startOverProfile } from './game/reset.ts';
 import { exportBackup, importBackup, restoreBackupWithSave } from './game/backup.ts';
 import type { Action, GameEvent, LegacyChoice, Profile, Skill, UnitKind } from './game/types.ts';
-import { mountBattlefield } from './view/battlefield.ts';
 import {advanceVillagePresentation,type VillagePresentation} from './view/village-mood.ts';
 import { unitPortrait } from './view/unit-illustrations.ts';
 import { chapterPresentation } from './ui/chapter-presentation.ts';
@@ -636,8 +636,15 @@ function events(batch:GameEvent[]){
 }
 const port=createBattlefieldPort(()=>game,action,dt=>{syncPause();if(playable())game.step(dt*game.profile.speed);});
 rebuildArmy();syncMotion();syncPause();update(true);
-const renderer=mountBattlefield($('battlefield'),port,force=>update(force),events,{isVisible:()=>activeTab==='battle'&&!document.hidden,villageMood:()=>villagePresentation!.mood,onPresentation:syncVillagePresentation});
-lifetime.add(()=>renderer.destroy());lifetime.add(disposeAudio);
+// Phaser (about 1.2 MB) loads after the shell is interactive, so weak phones see the game at once.
+let renderer:{destroy():void}|null=null,rendererClosed=false;
+$('battlefield').dataset.renderer='loading';
+void import('./view/battlefield.ts').then(({mountBattlefield})=>{
+  if(rendererClosed)return;
+  renderer=mountBattlefield($('battlefield'),port,force=>update(force),events,{isVisible:()=>activeTab==='battle'&&!document.hidden,villageMood:()=>villagePresentation!.mood,onPresentation:syncVillagePresentation});
+  $('battlefield').dataset.renderer='ready';
+}).catch(()=>{$('battlefield').dataset.renderer='failed';toast('The battlefield could not load. Check your connection and reload.');});
+lifetime.add(()=>{rendererClosed=true;renderer?.destroy();});lifetime.add(disposeAudio);
 lifetime.add(()=>{window.clearTimeout(toastTimer);window.cancelAnimationFrame(focusFrame);isolateModal(false);});
 lifetime.add(()=>{acquisitionVersion++;sessionReady=false;session.dispose();});
 if(import.meta.hot)import.meta.hot.dispose(()=>{suspendSession();lifetime.dispose();});
