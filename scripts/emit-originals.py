@@ -11,9 +11,9 @@ import sys
 MAX_JOB_BYTES = 3_932_160  # Strictly below 3.75 MiB including timestamp estimates and reserved workflow output.
 RESERVED_OTHER_LOG_BYTES = 524_288
 MAX_TRANSPORT_BYTES = MAX_JOB_BYTES - RESERVED_OTHER_LOG_BYTES
-CASE_VIEWPORT = {'compare-390': '390x844', 'small-320-rotate': '320x568'}
+CASE_VIEWPORT = {'field-390': '390x844', 'field-320-rotate': '320x568'}
 DIMENSIONS = {'390x844': {(390, 844)}, '320x568': {(320, 568), (844, 390)}}
-BASELINE_SHA = 'd9dd1dcd1c5c4a4bb6cdd44641e73f8dd07f4003'
+BASELINE_SHA = 'bf79938e26ed2d963a76fa4db3102dd4e30fe822'
 
 def require(condition, message):
     if not condition:
@@ -43,7 +43,7 @@ def encode_batch(roots, env):
         for row in manifest['images']:
             if row.get('transport'):
                 selected.append((root, manifest, row))
-    expected_revisions = ['baseline', 'candidate'] if case == 'compare-390' else ['candidate']
+    expected_revisions = ['baseline', 'candidate'] if case == 'field-390' else ['candidate']
     require(revisions == expected_revisions, 'Expected one exact batch of job manifests in baseline/candidate order.')
     require(1 <= len(selected) <= 3, 'Expected one to three selected originals across the whole job.')
     require(len({row['path'] for _, _, row in selected}) == len(selected), 'Duplicate image name across the job.')
@@ -57,7 +57,7 @@ def encode_batch(roots, env):
         width, height = struct.unpack('>II', data[16:24])
         allowed = DIMENSIONS[manifest['viewportName']]
         require((width, height) in allowed, 'Image dimensions are not on the explicit job rotation allowlist.')
-        require(case == 'small-320-rotate' or (width, height) == (390, 844), 'Unexpected rotation.')
+        require(case == 'field-320-rotate' or (width, height) == (390, 844), 'Unexpected rotation.')
         require(row['viewport'] == {'width': width, 'height': height} and row['screenshotScale'] == 'css', 'CSS-pixel dimension mismatch.')
         require(hashlib.sha256(data).hexdigest() == row['sha256'] and len(data) == row['bytes'], 'Original bytes changed after capture.')
         encoded = base64.b64encode(data).decode('ascii')

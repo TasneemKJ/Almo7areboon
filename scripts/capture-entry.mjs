@@ -151,7 +151,7 @@ async function ordinaryField(){
  await fieldGeometry(page,'first-recruit-one-chrome-control');
  await capture(page,'active-after','Ordinary empty-profile first deployment, actual painted world and native controls');
  // Native keyboard takes the same physical recruit path, with no hidden-action shortcut.
- await tabTo(page,recruit);assert((await page.locator(recruit).evaluate(inspectControl)).focusVisible);
+ await key(page,'Tab');await tabTo(page,recruit);assert((await page.locator(recruit).evaluate(inspectControl)).focusVisible);
  const keyboardBefore=(await observe(page)).saved.deployed;
  await key(page,'Enter');await page.waitForFunction(({key,n})=>JSON.parse(localStorage.getItem(key)||'{}').deployed===n+1,{key:SAVE_KEY,n:keyboardBefore});
  const gather='#field-standard';await tap(page,gather);assert.equal(await page.locator(gather).getAttribute('aria-pressed'),'true');

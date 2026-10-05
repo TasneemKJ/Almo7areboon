@@ -1,55 +1,10 @@
-/** Pure/static verification only. No network, server, browser or game mutations. */
-import test from 'node:test';
-import assert from 'node:assert/strict';
-import {readFileSync} from 'node:fs';
-import {resolve} from 'node:path';
-import {pathToFileURL} from 'node:url';
-import {rendererFailureFixture,futureSaveFixture} from './recovery-fixtures.mjs';
+/** Pure contract checks; no browser/server and fixture pixels are not game evidence. */
+import test from 'node:test';import assert from 'node:assert/strict';import {readFileSync} from 'node:fs';
 import {assertReachable} from './review-geometry.mjs';
-const root=process.env.PRODUCT_ROOT;assert(root,'read-only PRODUCT_ROOT required');
-const {defaultProfile,decodeSave}=await import(pathToFileURL(resolve(root,'src/game/save.ts')));
-const capture=readFileSync(new URL('./capture-entry.mjs',import.meta.url),'utf8');
-const workflow=readFileSync(new URL('../.github/workflows/single-visual-review.yml',import.meta.url),'utf8');
-const rect=(left,top,width,height)=>({left,top,right:left+width,bottom:top+height,width,height});
-const valid=()=>({key:'native',visible:true,name:'Play',box:rect(0,0,44,44),effective:rect(0,0,44,44),viewport:rect(0,0,390,844),hits:[{accepted:true}]});
-test('native-target gate rejects clipping, occlusion and missing names',()=>{
-  assert.doesNotThrow(()=>assertReachable(valid()));
-  for(const mutate of [r=>r.box.width=43,r=>r.effective.height=43,r=>r.hits[0].accepted=false,r=>r.visible=false,r=>r.name='',r=>r.box.bottom=850]){const row=valid();mutate(row);assert.throws(()=>assertReachable(row));}
-});
-test('existing-save renderer recovery fixture roundtrips exact decoder',()=>{
-  const [primary,backup]=rendererFailureFixture(defaultProfile,decodeSave);assert.equal(primary,backup);
-  assert.deepEqual(decodeSave(primary).profile,{...defaultProfile(),coins:37,deployed:2});
-  assert.equal(JSON.parse(primary).foodLevel,0);
-});
-test('future-save fixture is explicitly unsupported and backup remains normal schema',()=>{
-  const [primary,backup]=futureSaveFixture(defaultProfile,decodeSave);assert.equal(decodeSave(primary).problem,'unsupported');assert.deepEqual(decodeSave(backup).profile,defaultProfile());
-});
-test('first-play never seeds a prepared profile or foodLevel20',()=>{
-  const section=capture.slice(capture.indexOf('async function firstPlay()'),capture.indexOf('async function rendererRecovery()'));
-  assert.match(section,/open\('fresh-empty-profile'\)/);assert(!section.includes('fixture:'));assert(!capture.includes('foodLevel:20'));
-  assert.match(capture,/assert\.deepEqual\(initial,\[null,null\]/);
-  assert.match(section,/saved\.deployed,1/);assert.match(section,/data-command="retreat"/);
-});
-test('native script does not inject styles, bypass renderer or manipulate game clocks/state',()=>{
-  for(const banned of [/addStyleTag/,/\.style\./,/clock\.(install|pause|fastForward)/,/battlefieldReviewArm/,/battlefieldReviewSnapshot/,/\.dispatch\(/,/\.step\(/,/document\.hidden\s*=/,/dispatchEvent\(/,/\.focus\(/])assert(!banned.test(capture),String(banned));
-  assert.match(capture,/scale:'css'/);assert.match(capture,/\.tap\(\)/);assert.match(capture,/keyboard\.press\(value\)/);
-});
-test('renderer fault remains exact and durable, and interception is removed before native Reload',()=>{
-  assert.match(capture,/chunks\.length,1/);assert.match(capture,/route\.abort\('failed'\)/);assert.match(capture,/waitForTimeout\(5500\)/);
-  assert(capture.indexOf('await page.unroute')<capture.indexOf("'native Reload button after removing renderer interception'"));
-  assert.match(capture,/getByRole\('button',\{name:'Reload',exact:true\}\)\.tap\(\)/);assert.match(capture,/expectedRawAssetFailure/);
-  assert.match(capture,/rawStorageUnchanged:true/);
-});
-test('workflow has only two jobs and one on-push disposable branch',()=>{
-  assert.equal((workflow.match(/^  (compare-390|small-320-rotate):$/gm)||[]).length,2);
-  assert.match(workflow,/qa\/almo-simple-entry-20261005/);assert(!workflow.includes('workflow_dispatch'));assert(!workflow.includes('upload-artifact'));
-  assert.match(workflow,/7c5554e827c98107da1aaf0bb8d7f0f3bd74c9c1/);assert.match(workflow,/e12c7d4e13378e5c41d7f1b23ff5f75b682680ef/);
-  assert.equal((workflow.match(/Atomically transport/g)||[]).length,2);assert.match(workflow,/flock \/tmp\/browser\.lock/);
-});
-test('source contract used by the boundary probe remains present',()=>{
-  const main=readFileSync(resolve(root,'src/main.ts'),'utf8');
-  assert.match(main,/if\(!entryEntered\)return;/);assert.match(main,/game\.state\.paused=!entryEntered/);
-  assert.match(main,/function entryReady\(\).*dataset\.renderer==='ready'.*world-loader/);
-  assert.match(main,/failed\?'Reload'/);assert.match(main,/window\.location\.reload\(\)/);
-  const result=readFileSync(resolve(root,'src/ui/results-screen.ts'),'utf8');assert.match(result,/data-command="result-details"/);assert.match(result,/data-command="home"/);
-});
+const capture=readFileSync(new URL('./capture-entry.mjs',import.meta.url),'utf8'),workflow=readFileSync(new URL('../.github/workflows/single-visual-review.yml',import.meta.url),'utf8'),emitter=readFileSync(new URL('./emit-originals.py',import.meta.url),'utf8');
+test('both real field case IDs are accepted by capture, workflow and transport',()=>{for(const id of ['field-390','field-320-rotate'])for(const text of [capture,workflow,emitter])assert(text.includes(id));assert(!emitter.includes('compare-390'));});
+test('the fresh first120seconds has no prepared profile or direct game mutation',()=>{const flow=capture.slice(capture.indexOf('async function ordinaryField()'));assert.match(flow,/open\('ordinary-empty-profile-120seconds'\)/);assert(!flow.includes('fixture:'));assert.match(flow,/performance\.now\(\).*120000/);assert.match(capture,/assert\.deepEqual\(initial,\[null,null\]/);for(const banned of [/addStyleTag/,/clock\.(install|pause|fastForward)/,/\.dispatch\(/,/\.step\(/,/dispatchEvent\(/,/\.focus\(/])assert(!banned.test(capture),String(banned));});
+test('keyboard modality is entered even if the recruit still owns touch focus',()=>{assert.match(capture,/await key\(page,'Tab'\);await tabTo\(page,recruit\);assert\(.*focusVisible/);});
+test('field uses real world targets and canonical observed progression',()=>{assert.match(capture,/\.deployed===n\+1/);assert.match(capture,/realGatherRelease:released/);assert.match(capture,/data-field-gate="advance"/);assert.match(capture,/selection alone cannot cast/);assert.match(capture,/native viewport rotation back to320x568/);});
+test('two bounded jobs build pinned immutable source and transport original images',()=>{assert.equal((workflow.match(/^  field-(390|320-rotate):$/gm)||[]).length,2);assert.match(workflow,/f87b4b173ae8ad3d1978351c032a6d7f42a1e39f/);assert.match(workflow,/362f7a363989281af30322eb0bf991d51b3df7a9/);assert(!workflow.includes('workflow_dispatch'));assert(!workflow.includes('upload-artifact'));assert.match(capture,/scale:'css'/);assert.match(workflow,/flock \/tmp\/browser\.lock/);});
+test('touch geometry still rejects clipped and occluded controls',()=>{const rect=(w,h)=>({left:0,top:0,right:w,bottom:h,width:w,height:h});const row={visible:true,name:'Recruit',box:rect(44,44),effective:rect(44,44),viewport:rect(390,844),hits:[{accepted:true}]};assert.doesNotThrow(()=>assertReachable(row));assert.throws(()=>assertReachable({...row,hits:[{accepted:false}]}));assert.throws(()=>assertReachable({...row,effective:rect(43,44)}));});

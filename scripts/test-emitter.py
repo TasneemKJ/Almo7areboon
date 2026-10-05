@@ -16,9 +16,9 @@ spec.loader.exec_module(emitter)
 verify_spec = importlib.util.spec_from_file_location('verify_log', Path(__file__).with_name('verify-job-log.py'))
 verifier = importlib.util.module_from_spec(verify_spec)
 verify_spec.loader.exec_module(verifier)
-CANDIDATE = '7c5554e827c98107da1aaf0bb8d7f0f3bd74c9c1'
+CANDIDATE = 'f87b4b173ae8ad3d1978351c032a6d7f42a1e39f'
 WORKFLOW = 'b' * 40
-ENV = {'SOURCE_SHA': CANDIDATE, 'REVIEW_CASE': 'compare-390', 'GITHUB_SHA': WORKFLOW, 'GITHUB_RUN_ID': 'unit-only'}
+ENV = {'SOURCE_SHA': CANDIDATE, 'REVIEW_CASE': 'field-390', 'GITHUB_SHA': WORKFLOW, 'GITHUB_RUN_ID': 'unit-only'}
 
 def png(width=390, height=844, noisy=False):
     def chunk(kind, data):
@@ -26,9 +26,9 @@ def png(width=390, height=844, noisy=False):
     raw = b''.join(b'\x00' + (os.urandom(width * 4) if noisy else bytes(width * 4)) for _ in range(height))
     return b'\x89PNG\r\n\x1a\n' + chunk(b'IHDR', struct.pack('>IIBBBBB', width, height, 8, 6, 0, 0, 0)) + chunk(b'IDAT', zlib.compress(raw)) + chunk(b'IEND', b'')
 
-def prepare(root, revision, count, case='compare-390', dimensions=None, noisy=False):
+def prepare(root, revision, count, case='field-390', dimensions=None, noisy=False):
     root.mkdir()
-    dimensions = dimensions or ([(390, 844)] * count if case == 'compare-390' else [(320, 568)] * count)
+    dimensions = dimensions or ([(390, 844)] * count if case == 'field-390' else [(320, 568)] * count)
     rows = []
     for index, (width, height) in enumerate(dimensions):
         data = png(width, height, noisy)
@@ -82,8 +82,8 @@ class TransportTests(unittest.TestCase):
             emitter.encode_batch(roots, ENV)
     def test_one_explicit_320_to_844_rotation_is_preserved(self):
         root = self.root / 'candidate'
-        prepare(root, 'candidate', 3, case='small-320-rotate', dimensions=[(320,568),(320,568),(844,390)])
-        output = emitter.encode_batch([root], {**ENV, 'REVIEW_CASE': 'small-320-rotate'})
+        prepare(root, 'candidate', 3, case='field-320-rotate', dimensions=[(320,568),(320,568),(844,390)])
+        output = emitter.encode_batch([root], {**ENV, 'REVIEW_CASE': 'field-320-rotate'})
         self.assertIn('"width":844,"height":390', output)
         self.assertEqual(output.count('SCENE_IMAGE_BEGIN '), 3)
     def test_comparison_rotation_is_rejected(self):
