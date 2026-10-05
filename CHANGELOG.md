@@ -2,6 +2,10 @@
 
 Semantic versioning. Each merged batch adds an entry and a `vX.Y.Z` tag.
 
+## 0.3.2 - 2026-10-05
+- First-Freeze cue: when three enemies gather and Freeze is unused, the deploy hint says so (first five wins only).
+- Evolving plays a one-shot flare across the new army's cards (static with reduced motion).
+
 ## 0.3.1 - 2026-10-05
 - The incoming-wave label moved out of the lane into the sky band under the title (it covered the marching army at 320x568 and in landscape).
 - Dialogs in short landscape lose the empty header band.

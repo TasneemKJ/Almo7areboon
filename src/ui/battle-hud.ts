@@ -25,6 +25,8 @@ export function battleGuidance(profile: Profile, state: BattleState, preview?: W
   if (state.playerHp / state.playerMaxHp <= 0.3) return 'Your base is in danger. Deploy reinforcements or use a skill.';
   if (state.stats.deployed === 0 && state.food >= ERAS[profile.age].units[0].cost) return 'Deploy a melee warrior. Save some food for the next wave.';
   const captain=profile.chronicle?.enabled&&profile.chronicle.captain!=='none'?CAPTAINS.find(c=>c.id===profile.chronicle!.captain):undefined;
+  // First-Freeze cue: teach the skill at the moment it pays off, while three or more enemies gather.
+  if (profile.wins < 5 && state.stats.skillsCast === 0 && !state.skillsUsed.includes('freeze') && state.units.filter(unit => unit.side === 'enemy' && unit.hp > 0).length >= 3) return 'Enemies are gathering. Tap Freeze to hold them while your army strikes.';
   const wait = Math.ceil((ERAS[profile.age].units[0].cost - state.food) / foodRate(profile));
   if (wait > 0) return profile.wins<3&&!captain&&!state.skillsUsed.includes('food')
     ? `Food Drop adds 10 now, once per battle; or wait ${wait}s.`

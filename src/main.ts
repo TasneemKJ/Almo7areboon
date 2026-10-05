@@ -491,6 +491,7 @@ lifetime.listen<MouseEvent>(root,'click',e=>{
       if(!playable()||modal==='session')break;
       if(ok){
         evolutionFromResult=false;
+        {const deck=$('unit-cards');deck.dataset.evolveReveal=deck.dataset.evolveReveal==='a'?'b':'a';}
         if(returnToResult)showResult();else{closeModal(false);switchTab('battle');}
         if(!savedWarning)toast(`Entering ${chapterPresentation(game.profile.age).title}.`);
       }else{
