@@ -1,0 +1,320 @@
+# First wave only during the hosted-runner incident. Full matrix staged locally.
+name: Arena-first bounded visual first wave
+'on':
+  push:
+    branches:
+    - qa/almo-arena-first-20261005
+permissions:
+  contents: read
+concurrency:
+  group: almo-arena-first-${{ github.ref }}
+  cancel-in-progress: false
+jobs:
+  compare-390x844:
+    name: Matched 390x844 before and after
+    runs-on: ubuntu-latest
+    timeout-minutes: 20
+    env:
+      SOURCE_SHA: c7d0fa22dd5abaf3b237ccd0ce558aa33daeba9c
+      REVIEW_REVISION: candidate
+      REVIEW_REDUCED: 'false'
+      REVIEW_VIEWPORT: 390x844
+    steps:
+    - uses: actions/checkout@v7
+      with:
+        path: harness
+        persist-credentials: false
+    - uses: actions/checkout@v7
+      with:
+        path: candidate
+        ref: c7d0fa22dd5abaf3b237ccd0ce558aa33daeba9c
+        persist-credentials: false
+    - uses: actions/checkout@v7
+      with:
+        path: baseline
+        ref: 1374320f117df4a5e9f7a9da988998cd8c09f173
+        persist-credentials: false
+    - uses: actions/setup-node@v7
+      with:
+        node-version: '22'
+        cache: npm
+        cache-dependency-path: candidate/package-lock.json
+    - name: Install and build immutable candidate
+      working-directory: candidate
+      run: 'test "$(git rev-parse HEAD)" = "$SOURCE_SHA"
+
+        git diff --exit-code HEAD --
+
+        npm ci --ignore-scripts
+
+        npm run build
+
+        npx playwright install --with-deps chromium'
+      id: candidate-build
+    - name: Install and build immutable baseline
+      working-directory: baseline
+      env:
+        SOURCE_SHA: 1374320f117df4a5e9f7a9da988998cd8c09f173
+      run: 'test "$(git rev-parse HEAD)" = "$SOURCE_SHA"
+
+        git diff --exit-code HEAD --
+
+        npm ci --ignore-scripts
+
+        npm run build'
+      id: baseline-build
+    - name: baseline original scene and keyboard capture
+      working-directory: baseline
+      env:
+        SOURCE_SHA: 1374320f117df4a5e9f7a9da988998cd8c09f173
+        REVIEW_REVISION: baseline
+      run: flock /tmp/browser.lock node --experimental-strip-types ../harness/scripts/capture-review.mjs
+      if: ${{ !cancelled() && steps.baseline-build.outcome == 'success' }}
+    - name: baseline source-stamped untouched originals
+      if: ${{ !cancelled() }}
+      working-directory: baseline
+      env:
+        SOURCE_SHA: 1374320f117df4a5e9f7a9da988998cd8c09f173
+        REVIEW_REVISION: baseline
+      run: python3 ../harness/scripts/emit-originals.py artifacts/single-review
+    - name: candidate original scene and keyboard capture
+      working-directory: candidate
+      env:
+        SOURCE_SHA: c7d0fa22dd5abaf3b237ccd0ce558aa33daeba9c
+        REVIEW_REVISION: candidate
+      run: flock /tmp/browser.lock node --experimental-strip-types ../harness/scripts/capture-review.mjs
+      if: ${{ !cancelled() && steps.candidate-build.outcome == 'success' }}
+    - name: candidate source-stamped untouched originals
+      if: ${{ !cancelled() }}
+      working-directory: candidate
+      env:
+        SOURCE_SHA: c7d0fa22dd5abaf3b237ccd0ce558aa33daeba9c
+        REVIEW_REVISION: candidate
+      run: python3 ../harness/scripts/emit-originals.py artifacts/single-review
+  compare-844x390:
+    name: Matched 844x390 before and after
+    runs-on: ubuntu-latest
+    timeout-minutes: 20
+    env:
+      SOURCE_SHA: c7d0fa22dd5abaf3b237ccd0ce558aa33daeba9c
+      REVIEW_REVISION: candidate
+      REVIEW_REDUCED: 'false'
+      REVIEW_VIEWPORT: 844x390
+    steps:
+    - uses: actions/checkout@v7
+      with:
+        path: harness
+        persist-credentials: false
+    - uses: actions/checkout@v7
+      with:
+        path: candidate
+        ref: c7d0fa22dd5abaf3b237ccd0ce558aa33daeba9c
+        persist-credentials: false
+    - uses: actions/checkout@v7
+      with:
+        path: baseline
+        ref: 1374320f117df4a5e9f7a9da988998cd8c09f173
+        persist-credentials: false
+    - uses: actions/setup-node@v7
+      with:
+        node-version: '22'
+        cache: npm
+        cache-dependency-path: candidate/package-lock.json
+    - name: Install and build immutable candidate
+      working-directory: candidate
+      run: 'test "$(git rev-parse HEAD)" = "$SOURCE_SHA"
+
+        git diff --exit-code HEAD --
+
+        npm ci --ignore-scripts
+
+        npm run build
+
+        npx playwright install --with-deps chromium'
+      id: candidate-build
+    - name: Install and build immutable baseline
+      working-directory: baseline
+      env:
+        SOURCE_SHA: 1374320f117df4a5e9f7a9da988998cd8c09f173
+      run: 'test "$(git rev-parse HEAD)" = "$SOURCE_SHA"
+
+        git diff --exit-code HEAD --
+
+        npm ci --ignore-scripts
+
+        npm run build'
+      id: baseline-build
+    - name: baseline original scene and keyboard capture
+      working-directory: baseline
+      env:
+        SOURCE_SHA: 1374320f117df4a5e9f7a9da988998cd8c09f173
+        REVIEW_REVISION: baseline
+      run: flock /tmp/browser.lock node --experimental-strip-types ../harness/scripts/capture-review.mjs
+      if: ${{ !cancelled() && steps.baseline-build.outcome == 'success' }}
+    - name: baseline source-stamped untouched originals
+      if: ${{ !cancelled() }}
+      working-directory: baseline
+      env:
+        SOURCE_SHA: 1374320f117df4a5e9f7a9da988998cd8c09f173
+        REVIEW_REVISION: baseline
+      run: python3 ../harness/scripts/emit-originals.py artifacts/single-review
+    - name: candidate original scene and keyboard capture
+      working-directory: candidate
+      env:
+        SOURCE_SHA: c7d0fa22dd5abaf3b237ccd0ce558aa33daeba9c
+        REVIEW_REVISION: candidate
+      run: flock /tmp/browser.lock node --experimental-strip-types ../harness/scripts/capture-review.mjs
+      if: ${{ !cancelled() && steps.candidate-build.outcome == 'success' }}
+    - name: candidate source-stamped untouched originals
+      if: ${{ !cancelled() }}
+      working-directory: candidate
+      env:
+        SOURCE_SHA: c7d0fa22dd5abaf3b237ccd0ce558aa33daeba9c
+        REVIEW_REVISION: candidate
+      run: python3 ../harness/scripts/emit-originals.py artifacts/single-review
+  small-phone:
+    name: 320px roster, Gather and temporary session
+    runs-on: ubuntu-latest
+    timeout-minutes: 20
+    env:
+      SOURCE_SHA: c7d0fa22dd5abaf3b237ccd0ce558aa33daeba9c
+      REVIEW_REVISION: candidate
+      REVIEW_REDUCED: 'false'
+      REVIEW_VIEWPORT: 320x568
+    steps:
+    - uses: actions/checkout@v7
+      with:
+        path: harness
+        persist-credentials: false
+    - uses: actions/checkout@v7
+      with:
+        path: candidate
+        ref: c7d0fa22dd5abaf3b237ccd0ce558aa33daeba9c
+        persist-credentials: false
+    - uses: actions/setup-node@v7
+      with:
+        node-version: '22'
+        cache: npm
+        cache-dependency-path: candidate/package-lock.json
+    - name: Install and build immutable candidate
+      working-directory: candidate
+      run: 'test "$(git rev-parse HEAD)" = "$SOURCE_SHA"
+
+        git diff --exit-code HEAD --
+
+        npm ci --ignore-scripts
+
+        npm run build
+
+        npx playwright install --with-deps chromium'
+      id: candidate-build
+    - name: candidate original scene and keyboard capture
+      working-directory: candidate
+      env:
+        SOURCE_SHA: c7d0fa22dd5abaf3b237ccd0ce558aa33daeba9c
+        REVIEW_REVISION: candidate
+      run: flock /tmp/browser.lock node --experimental-strip-types ../harness/scripts/capture-review.mjs
+      if: ${{ !cancelled() && steps.candidate-build.outcome == 'success' }}
+    - name: candidate source-stamped untouched originals
+      if: ${{ !cancelled() }}
+      working-directory: candidate
+      env:
+        SOURCE_SHA: c7d0fa22dd5abaf3b237ccd0ce558aa33daeba9c
+        REVIEW_REVISION: candidate
+      run: python3 ../harness/scripts/emit-originals.py artifacts/single-review
+    - name: chronicle native controls and boundaries
+      working-directory: candidate
+      env:
+        REVIEW_CASE: chronicle
+      run: flock /tmp/browser.lock node --experimental-strip-types ../harness/scripts/capture-acceptance.mjs
+      if: ${{ !cancelled() && steps.candidate-build.outcome == 'success' }}
+    - name: chronicle verified original evidence
+      if: ${{ !cancelled() }}
+      working-directory: candidate
+      env:
+        REVIEW_CASE: chronicle
+      run: python3 ../harness/scripts/emit-originals.py artifacts/supplemental-review
+    - name: temporary native controls and boundaries
+      working-directory: candidate
+      env:
+        REVIEW_CASE: temporary
+      run: flock /tmp/browser.lock node --experimental-strip-types ../harness/scripts/capture-acceptance.mjs
+      if: ${{ !cancelled() && steps.candidate-build.outcome == 'success' }}
+    - name: temporary verified original evidence
+      if: ${{ !cancelled() }}
+      working-directory: candidate
+      env:
+        REVIEW_CASE: temporary
+      run: python3 ../harness/scripts/emit-originals.py artifacts/supplemental-review
+  phone-boundaries:
+    name: 390px temporary, Gather and orientation
+    runs-on: ubuntu-latest
+    timeout-minutes: 20
+    env:
+      SOURCE_SHA: c7d0fa22dd5abaf3b237ccd0ce558aa33daeba9c
+      REVIEW_REVISION: candidate
+      REVIEW_REDUCED: 'false'
+      REVIEW_VIEWPORT: 390x844
+    steps:
+    - uses: actions/checkout@v7
+      with:
+        path: harness
+        persist-credentials: false
+    - uses: actions/checkout@v7
+      with:
+        path: candidate
+        ref: c7d0fa22dd5abaf3b237ccd0ce558aa33daeba9c
+        persist-credentials: false
+    - uses: actions/setup-node@v7
+      with:
+        node-version: '22'
+        cache: npm
+        cache-dependency-path: candidate/package-lock.json
+    - name: Install and build immutable candidate
+      working-directory: candidate
+      run: 'test "$(git rev-parse HEAD)" = "$SOURCE_SHA"
+
+        git diff --exit-code HEAD --
+
+        npm ci --ignore-scripts
+
+        npm run build
+
+        npx playwright install --with-deps chromium'
+      id: candidate-build
+    - name: temporary native controls and boundaries
+      working-directory: candidate
+      env:
+        REVIEW_CASE: temporary
+      run: flock /tmp/browser.lock node --experimental-strip-types ../harness/scripts/capture-acceptance.mjs
+      if: ${{ !cancelled() && steps.candidate-build.outcome == 'success' }}
+    - name: temporary verified original evidence
+      if: ${{ !cancelled() }}
+      working-directory: candidate
+      env:
+        REVIEW_CASE: temporary
+      run: python3 ../harness/scripts/emit-originals.py artifacts/supplemental-review
+    - name: chronicle native controls and boundaries
+      working-directory: candidate
+      env:
+        REVIEW_CASE: chronicle
+      run: flock /tmp/browser.lock node --experimental-strip-types ../harness/scripts/capture-acceptance.mjs
+      if: ${{ !cancelled() && steps.candidate-build.outcome == 'success' }}
+    - name: chronicle verified original evidence
+      if: ${{ !cancelled() }}
+      working-directory: candidate
+      env:
+        REVIEW_CASE: chronicle
+      run: python3 ../harness/scripts/emit-originals.py artifacts/supplemental-review
+    - name: orientation-background native controls and boundaries
+      working-directory: candidate
+      env:
+        REVIEW_CASE: orientation-background
+      run: flock /tmp/browser.lock node --experimental-strip-types ../harness/scripts/capture-acceptance.mjs
+      if: ${{ !cancelled() && steps.candidate-build.outcome == 'success' }}
+    - name: orientation-background verified original evidence
+      if: ${{ !cancelled() }}
+      working-directory: candidate
+      env:
+        REVIEW_CASE: orientation-background
+      run: python3 ../harness/scripts/emit-originals.py artifacts/supplemental-review
