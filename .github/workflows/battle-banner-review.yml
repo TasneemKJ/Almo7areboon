@@ -34,7 +34,6 @@ jobs:
         run: bash scripts/trim-evidence.sh evidence artifacts/battle-banner
       - name: Publish failure evidence
         if: failure()
-        continue-on-error: true
         uses: actions/upload-artifact@v4
         with:
           name: battle-banner-failure-${{ matrix.engine }}

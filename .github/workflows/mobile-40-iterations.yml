@@ -64,7 +64,6 @@ jobs:
         run: bash scripts/trim-evidence.sh evidence artifacts/qa40
       - name: Publish failure evidence
         if: failure()
-        continue-on-error: true
         uses: actions/upload-artifact@v4
         with:
           name: qa40-failure-${{ matrix.engine }}-${{ matrix.ids }}

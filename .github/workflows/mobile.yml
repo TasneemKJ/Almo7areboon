@@ -42,7 +42,6 @@ jobs:
         run: bash scripts/trim-evidence.sh evidence artifacts/mobile artifacts/save-session-review artifacts/browser-review/offline-game
       - name: Publish failure evidence
         if: failure()
-        continue-on-error: true
         uses: actions/upload-artifact@v4
         with:
           name: mobile-failure-evidence

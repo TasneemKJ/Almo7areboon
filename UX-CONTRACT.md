@@ -18,3 +18,5 @@ Journey reads current profile only and never awards by rendering. Claim dispatch
 Menus pause simulation without clearing manual pause. Hidden tabs, orientation, save conflicts, future saves and temporary sessions preserve existing lifecycle policies. The game asks before import replacement/start-over/prestige; user preferences on that established flow remain.
 
 All new controls have semantic names,44px minimum, visible keyboard focus and non-color state labels. Gauge/countdowns are not noisy live regions; successful state changes use existing feedback. Reduced motion keeps strength/duration and static order identity. Offline first-return acceptance records actual worker responses and driver limitations separately from physical iOS/Android acceptance.
+
+The ready-screen Journey button label (`ui/next-goal.ts`) is derived from the current profile only: daily reward, then a claimable milestone, then the nearest unfinished milestone. It never claims, spends or saves, and its accessible name starts with "Your journey".
