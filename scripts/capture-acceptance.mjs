@@ -74,14 +74,17 @@ async function pause(page){if(await page.locator('#pause').getAttribute('aria-pr
 async function state(page){return page.evaluate(key=>({phase:document.querySelector('#world')?.dataset.phase,session:document.querySelector('#app')?.dataset.saveSession,paused:document.querySelector('#pause')?.getAttribute('aria-pressed'),status:document.querySelector('#game-status')?.textContent,
   saved:JSON.parse(localStorage.getItem(key)),hidden:document.hidden,visibility:document.visibilityState,viewport:{width:innerWidth,height:innerHeight},active:document.activeElement?.id||document.activeElement?.getAttribute('data-tab'),canvas:document.querySelector('canvas')?{width:document.querySelector('canvas').width,height:document.querySelector('canvas').height}:null}),SAVE_KEY);}
 async function capture(page,name,purpose='native-supplemental',transport=true){
-  const before=await state(page),path=`${viewportName}-${reviewCase}-${name}.png`;
+  const before=await state(page),path=`${before.viewport.width}x${before.viewport.height}-${reviewCase}-${name}.png`;
   const png=await page.screenshot({path:resolve(out,path),scale:'css',fullPage:false});
   assert.equal(png.readUInt32BE(16),before.viewport.width);assert.equal(png.readUInt32BE(20),before.viewport.height);
   manifest.images.push({path,bytes:png.length,sha256:hash(png),screenshotScale:'css',viewport:before.viewport,purpose,transport,observationBefore:before,observationAfter:await state(page)});persist();
 }
 const battleControls='#unit-cards [data-unit],.bottom-nav [data-tab],.order-banner [data-order],#food-upgrade,#base-upgrade,[data-skill],#story-rally';
 async function geometry(page,name){
-  const rows=await reachableControls(page,battleControls),cards=await troopLabels(page);assertTroopLabels(cards);
+  const cards=await troopLabels(page);
+  (manifest.measurements??=[]).push({name,viewport:page.viewportSize(),cards});persist();
+  assertTroopLabels(cards);
+  const rows=await reachableControls(page,battleControls);
   const actual=rows.map(row=>row.after.key);
   assert.equal(rows.filter(row=>['battle','evolution','cards','skills'].includes(row.after.key)).length,4,'all four nav controls checked');
   assert.equal(rows.filter(row=>['freeze','meteor','food'].includes(row.after.key)).length,3,'all three visible skills checked');
@@ -210,7 +213,9 @@ try{
   const failedPage=[...contexts].flatMap(context=>context.pages()).find(page=>!page.isClosed()&&page.url()!=='about:blank');
   if(failedPage){
     const viewport=failedPage.viewportSize();
-    const transport=manifest.images.filter(row=>row.transport).length<3&&viewport?.width===width&&viewport?.height===height;
+    const expectedViewport=viewport?.width===width&&viewport?.height===height;
+    const expectedRotation=reviewCase==='orientation-background'&&viewport?.width===844&&viewport?.height===390;
+    const transport=manifest.images.filter(row=>row.transport).length<3&&(expectedViewport||expectedRotation);
     await capture(failedPage,'failure',reviewCase==='large-text'?'large-text-diagnostic-failure':'native-failure',transport).catch(captureError=>manifest.errors.push({failureCaptureError:String(captureError)}));
   }
 }finally{

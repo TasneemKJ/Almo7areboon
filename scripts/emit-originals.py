@@ -39,7 +39,10 @@ for row in selected:
     if len(data) < 24 or len(data) > 3 * 1024 * 1024 or data[:8] != b'\x89PNG\r\n\x1a\n':
         raise SystemExit('Original PNG is invalid or exceeds the bounded transport budget.')
     width, height = struct.unpack('>II', data[16:24])
-    if (width, height) != VIEWPORTS[viewport] or row.get('screenshotScale') != 'css':
+    allowed_dimensions = {VIEWPORTS[viewport]}
+    if manifest.get('reviewCase') == 'orientation-background' and viewport == '390x844':
+        allowed_dimensions.add((844, 390))
+    if (width, height) not in allowed_dimensions or row.get('screenshotScale') != 'css':
         raise SystemExit('Original PNG must match the exact CSS-pixel viewport.')
     if row['viewport'] != {'width': width, 'height': height}:
         raise SystemExit('Original PNG viewport metadata does not match its dimensions.')
