@@ -52,3 +52,11 @@ Ordered tasks. Tick a task when it is done and never delete finished tasks. This
 - [x] Verify source registration and actual Phaser triangle-command decoding; run combined source tests and the unchanged engine-inclusive 500 KiB JS budget
 - [ ] Capture and inspect exact-payload after views plus Canvas/WebGL, touch, crop/chapter changes and same-scenario 4× CPU evidence before visual release
 - [ ] Complete browser OfflineAudioContext checks, listening review and physical mobile acceptance for First Fires spatial audio
+
+## Arena-first active command deck — 2026-10-05
+
+- [x] Inspect exact 8086b00 gameplay captures at 320, 360, 390, 412 portrait, 844 landscape and desktop; preserve the existing storybook identity.
+- [x] Record IDEAL/5Ws and twenty candidates in docs/audits/2026-10-05-arena-first-controls.md.
+- [x] Reproduce absent compact-live CSS contracts before implementation; preserve original troop markup in every chapter.
+- [x] Compact the existing active roster/food/nav surfaces and narrow the landscape rail without changing actions or gameplay.
+- [ ] Verify full source/build, independent review and same-scene native before/after gains, touch/focus/scroll, cost/lock/warning and repeated state transitions before release.

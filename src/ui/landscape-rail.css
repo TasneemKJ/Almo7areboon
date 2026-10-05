@@ -10,7 +10,7 @@
  :root, :root body, :root #app { height:100%; min-height:0; max-height:none; overflow:hidden; }
  :root body { display:block; overscroll-behavior:none; }
  :root .game-shell {
-  --rail:clamp(300px,42vw,400px);
+  --rail:clamp(300px,36vw,340px);
   max-width:none; height:100dvh; min-height:0; max-height:none; padding-bottom:0; border-radius:0;
   display:grid; grid-template-columns:minmax(0,1fr); grid-template-rows:minmax(0,1fr) auto;
  }
@@ -65,4 +65,35 @@
  .dialog>.dialog-dismiss { margin-bottom:2px; border-bottom:0; }
  .dialog>.dialog-dismiss+.eyebrow { margin-top:0; }
  .dialog h2 { margin:4px 0 8px; font-size:24px; }
+}
+
+/* Arena first during an active fight. Reuse the existing phase attribute;
+   keep the original buttons, names, roles, prices and all input semantics.
+   The roster is a compact strip of the same illustrated characters, rather
+   than three large cards competing with the characters in the world. */
+.battle-view:has(.world:is([data-phase="running"],[data-phase="paused"])) .deployment { padding-block:5px; }
+.battle-view:has(.world:is([data-phase="running"],[data-phase="paused"])) .unit-card {
+ height:88px; min-height:88px; --portrait-top:30px; --portrait-bottom:24px;
+}
+.battle-view:has(.world:is([data-phase="running"],[data-phase="paused"])) .unit-card::before { width:48px; height:48px; top:23px; }
+.battle-view:has(.world:is([data-phase="running"],[data-phase="paused"])) .unit-name { top:4px; font-size:12px; line-height:14px; }
+.battle-view:has(.world:is([data-phase="running"],[data-phase="paused"])) .unit-role { top:18px; font-size:10px; line-height:12px; }
+.battle-view:has(.world:is([data-phase="running"],[data-phase="paused"])) .unit-price { height:24px; font-size:12px; }
+.battle-view:has(.world:is([data-phase="running"],[data-phase="paused"])) .unit-fill { bottom:23px; }
+.battle-view:has(.world:is([data-phase="running"],[data-phase="paused"])) .food-line { margin-bottom:3px; }
+.battle-view:has(.world:is([data-phase="running"],[data-phase="paused"])) .food-total>.icon { width:22px; height:22px; }
+.battle-view:has(.world:is([data-phase="running"],[data-phase="paused"])) .food-total strong { font-size:22px; }
+.battle-view:has(.world:is([data-phase="running"],[data-phase="paused"])) .order-banner { padding-bottom:4px; }
+
+/* Labeled navigation remains directly reachable, now in one thumb-height row.
+   Match its overlay boundary so secondary screens do not leave a dead gap. */
+.game-shell:has(.world:is([data-phase="running"],[data-phase="paused"])) .bottom-nav { height:calc(44px + env(safe-area-inset-bottom,0px)); border-top-width:0px; box-shadow:inset 0 1px var(--paper-edge); }
+.game-shell:has(.world:is([data-phase="running"],[data-phase="paused"])) .nav-item { min-height:44px; flex-direction:row; gap:4px; padding:4px 2px; }
+.game-shell:has(.world:is([data-phase="running"],[data-phase="paused"])) .nav-item .icon { width:20px; height:20px; }
+.game-shell:has(.world:is([data-phase="running"],[data-phase="paused"])) .secondary-screen { bottom:calc(44px + env(safe-area-inset-bottom,0px)); }
+[data-save-session="temporary"] .game-shell:has(.world:is([data-phase="running"],[data-phase="paused"])) .secondary-screen { bottom:calc(72px + env(safe-area-inset-bottom,0px)); }
+@media (max-height:620px) and (orientation:portrait) {
+ /* The short-phone nav is fixed. Reserve its real compact height so its
+    former 58px inset does not leave fourteen pixels of unused deck space. */
+ .game-shell:has(.world:is([data-phase="running"],[data-phase="paused"])) { padding-bottom:calc(44px + env(safe-area-inset-bottom,0px)); }
 }
