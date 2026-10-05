@@ -78,9 +78,9 @@ async function capture(page,name,purpose){const before=await observe(page),viewp
   const png=await page.screenshot({path:resolve(out,path),fullPage:false,scale:'css',timeout:30000});
   assert.equal(png.readUInt32BE(16),viewport.width);assert.equal(png.readUInt32BE(20),viewport.height);
   manifest.images.push({path,bytes:png.length,sha256:hash(png),screenshotScale:'css',viewport,purpose,transport:true,capturedAt:now(),observationBefore:before,observationAfter:await observe(page)});persist();}
-async function open(caseName,{fixture=null,rendererFailure=false}={}){
-  const context=await browser.newContext(contextOptions);contexts.add(context);context.setDefaultTimeout(30000);
-  const row={name:caseName,startedAt:now(),pageErrors:[],consoleErrors:[],requestFailures:[],assetFailures:[],blockedAssets:[]};manifest.cases.push(row);
+async function open(caseName,{fixture=null,rendererFailure=false,dpr=null}={}){
+  const context=await browser.newContext({...contextOptions,deviceScaleFactor:dpr??contextOptions.deviceScaleFactor});contexts.add(context);context.setDefaultTimeout(30000);
+  const row={deviceScaleFactor:dpr??contextOptions.deviceScaleFactor,name:caseName,startedAt:now(),pageErrors:[],consoleErrors:[],requestFailures:[],assetFailures:[],blockedAssets:[]};manifest.cases.push(row);
   await context.exposeBinding('__entryQAInput',({page},event)=>manifest.nativeInputs.push({case:caseName,receivedAt:now(),...event}));
   await context.addInitScript(()=>{for(const type of ['pointerdown','pointerup','click','keydown'])document.addEventListener(type,event=>{
     const target=event.target instanceof Element?event.target.closest('button,input,summary,[tabindex]'):null;
@@ -126,12 +126,34 @@ async function assertFrozenHome(page,name){const before=await observe(page);awai
   assert.equal(before.entry,'home');assert.equal(after.entry,'home');assert.notEqual(after.phase,'running');assert.equal(after.phase,before.phase);
   assert.equal(after.saved?.deployed??0,before.saved?.deployed??0);assert.equal(after.saved?.wins??0,before.saved?.wins??0);
   manifest.checks.push({name,passed:true,before,after,limitation:'Home hides battle HUD; unchanged/absent world phase is a native no-unintended-start check, not a direct simulation-clock reading. Source regression tests establish freeze.'});persist();}
+async function tapPaintedRecruit(page,selector){
+ await page.waitForFunction(()=>{const raw=document.querySelector('canvas')?.dataset.fieldCamp;if(!raw)return false;return JSON.parse(raw).rendered.some(actor=>actor.kind===0);});
+ await action(page,'native touch on the actual painted recruit body',async()=>{
+  const point=await page.locator(selector).evaluate(node=>{
+   const canvas=document.querySelector('canvas'),origin=canvas.getBoundingClientRect(),report=JSON.parse(canvas.dataset.fieldCamp),actor=report.rendered.find(actor=>actor.kind===Number(node.dataset.fieldRecruit));
+   if(!actor)return null;const b=actor.bounds,r=node.getBoundingClientRect(),paint={left:b.left+origin.left,right:b.right+origin.left,top:b.top+origin.top,bottom:b.bottom+origin.top};
+   const x=(paint.left+paint.right)/2,y=(paint.top+paint.bottom)/2,hit=document.elementFromPoint(x,y);
+   const intersection=Math.max(0,Math.min(paint.right,r.right)-Math.max(paint.left,r.left))*Math.max(0,Math.min(paint.bottom,r.bottom)-Math.max(paint.top,r.top));
+   return {x,y,paint,target:{left:r.left,right:r.right,top:r.top,bottom:r.bottom},coverage:intersection/((paint.right-paint.left)*(paint.bottom-paint.top)),owns:hit===node||node.contains(hit),pixelRatio:report.pixelRatio};
+  });
+  assert(point&&point.owns&&point.coverage>=.88,'painted recruit must overlap and own its native target');
+  manifest.checks.push({name:'painted-recruit-owns-native-contact',passed:true,point});await page.touchscreen.tap(point.x,point.y);
+ });
+}
+async function tapMovingEnemy(page){
+ await action(page,'native touch on live enemy body without stability wait',async()=>{
+  const row=await page.locator('#field-enemy').evaluate(inspectControl);assertReachable(row);
+  const x=(row.box.left+row.box.right)/2,y=(row.box.top+row.box.bottom)/2;
+  manifest.checks.push({name:'live-enemy-native-contact',passed:true,x,y,row});await page.touchscreen.tap(x,y);
+ });
+}
 async function fieldGeometry(page,label){
  const rows=await page.locator('button,input,select,summary,a[href]').evaluateAll(nodes=>nodes.filter(n=>n.checkVisibility()&&!n.closest('[hidden],[inert]')).map(n=>({world:!!n.closest('#field-targets'),id:n.id,command:n.dataset.command,text:n.getAttribute('aria-label')||n.textContent})));
  const ui=rows.filter(r=>!r.world);assert(ui.length<=3,`${label}: ${ui.length} visible chrome controls`);
- for(const node of await page.locator('#field-targets button,.field-chrome button').all()){
-  if(await node.isVisible())assertReachable(await node.evaluate(inspectControl));
- }
+ const measured=[];for(const node of await page.locator('#field-targets button,.field-chrome button').all()){if(await node.isVisible())measured.push(await node.evaluate(inspectControl));}
+ const scrollOwners=await page.locator('#app,.game-shell,#world,#field-targets').evaluateAll(nodes=>nodes.map(n=>({id:n.id,cls:n.className,left:n.scrollLeft,top:n.scrollTop,width:n.clientWidth,height:n.clientHeight,scrollWidth:n.scrollWidth,scrollHeight:n.scrollHeight})));
+ (manifest.geometryAttempts??=[]).push({label,measured,scrollOwners});persist();
+ for(const row of measured)assertReachable(row);
  const bounds=await page.evaluate(()=>({width:innerWidth,height:innerHeight,scrollWidth:document.documentElement.scrollWidth,scrollHeight:document.documentElement.scrollHeight,world:document.querySelector('#world').getBoundingClientRect().toJSON()}));
  assert(bounds.scrollWidth<=bounds.width+1&&bounds.scrollHeight<=bounds.height+1,'active field must fit viewport');
  assert(bounds.world.height>=bounds.height-30,'field should own nearly all available height');
@@ -143,7 +165,7 @@ async function ordinaryField(){
  await readyHome(page);await tap(page,'#entry-play');
  await page.waitForFunction(()=>document.querySelector('#world')?.dataset.phase==='running');
  const recruit=revision==='baseline'?'#unit-cards [data-unit="0"]':'[data-field-recruit="0"]';
- await tap(page,recruit);await page.waitForFunction(key=>JSON.parse(localStorage.getItem(key)||'{}').deployed===1,SAVE_KEY);
+ if(revision==='baseline')await tap(page,recruit);else await tapPaintedRecruit(page,recruit);await page.waitForFunction(key=>JSON.parse(localStorage.getItem(key)||'{}').deployed===1,SAVE_KEY);
  const first=await observe(page);assert.equal(first.saved.foodLevel,0);assert.equal(first.saved.deployed,1);
  if(revision==='baseline'){
   await capture(page,'active-before','Ordinary empty-profile first deployment before physical-play replacement');runtimeClean(session.row);await close(session);return;
@@ -171,12 +193,12 @@ async function ordinaryField(){
   if(state.phase==='running'){
    if(!selected&&await page.locator('#field-enemy').isVisible()){
     const skills=()=>page.locator('#battle-skills [data-skill]').evaluateAll(nodes=>nodes.filter(n=>n.classList.contains('used')).map(n=>n.dataset.skill));
-    const before=await skills();await tap(page,'#field-enemy');
+    const before=await skills();await tapMovingEnemy(page);
     assert.deepEqual(await skills(),before,'selection alone cannot cast any skill; ordinary combat remains running');
     await fieldGeometry(page,'selected-enemy-at-most-three-chrome');await key(page,'Escape');selected=true;
    }
    if(Date.now()-lastRecruit>4200&&await page.locator(recruit).getAttribute('aria-disabled')==='false'){
-    const count=(await observe(page)).saved.deployed;await tap(page,recruit);lastRecruit=Date.now();
+    const count=(await observe(page)).saved.deployed;await tapPaintedRecruit(page,recruit);lastRecruit=Date.now();
     await page.waitForFunction(({key,n})=>JSON.parse(localStorage.getItem(key)||'{}').deployed===n+1,{key:SAVE_KEY,n:count});gathered=true;
    }
    if(gathered&&!released&&await page.locator(gather).getAttribute('aria-label').then(s=>/Release [1-6]/.test(s||''))){await tap(page,gather);assert.equal(await page.locator(gather).getAttribute('aria-pressed'),'false');released=true;}
@@ -190,10 +212,25 @@ async function ordinaryField(){
  manifest.checks.push({name:'ordinary-empty-profile-first120seconds',passed:true,first,final,samples,selectedEnemy:selected,canonicalOrderIssued:order,realGatherRelease:released,note:'No advanced state injected. This is one ordinary recruitment policy, not retention or difficulty proof.'});
  await capture(page,'after120','Actual outcome or continuing battle after ordinary first120seconds');runtimeClean(session.row);await close(session);
 }
+async function dprOneContact(){
+ const session=await open('ordinary-empty-profile-DPR1',{dpr:1}),{page}=session;
+ await readyHome(page);await tap(page,'#entry-play');await page.waitForFunction(()=>document.querySelector('#world')?.dataset.phase==='running');
+ await tapPaintedRecruit(page,'[data-field-recruit="0"]');await page.waitForFunction(key=>JSON.parse(localStorage.getItem(key)||'{}').deployed===1,SAVE_KEY);
+ await fieldGeometry(page,'DPR1-rendered-recruit-owns-touch');const actual=await observe(page);assert.equal(actual.viewport.dpr,1);
+ manifest.checks.push({name:'DPR1-actual-world-contact',passed:true,actual});runtimeClean(session.row);await close(session);
+}
+async function temporaryFieldNotice(){
+ const fixture=futureSaveFixture(defaultProfile,decodeSave),session=await open('explicit-future-save-temporary-field',{fixture}),{page}=session;
+ await page.getByRole('heading',{name:'This save needs a newer game version',exact:true}).waitFor();await tap(page,'[data-command="session-temporary"]');await readyHome(page,'temporary');await tap(page,'#entry-play');
+ const notice=await page.locator('#session-notice').evaluate(node=>{const r=node.getBoundingClientRect(),world=document.querySelector('#world').getBoundingClientRect();return {hidden:node.hidden,text:node.textContent,top:r.top,bottom:r.bottom,height:r.height,width:r.width,viewportHeight:innerHeight,worldBottom:world.bottom};});
+ (manifest.temporaryMeasurements??=[]).push(notice);persist();
+ assert(!notice.hidden&&/progress is not saved/.test(notice.text));assert(notice.top>=0&&notice.bottom<=notice.viewportHeight&&notice.height>=28,'temporary-session warning must remain inside visible viewport');assert(notice.worldBottom<=notice.top+1,'field must not cover temporary-session warning');
+ await page.waitForTimeout(5500);assert.deepEqual(await storage(page),fixture,'temporary play never writes future primary or backup');manifest.checks.push({name:'temporary-field-notice-and-safe-storage',passed:true,notice});runtimeClean(session.row);await close(session);
+}
 try{
  await new Promise((resolve,reject)=>{server.once('error',reject);server.listen(0,'127.0.0.1',resolve);});origin=`http://127.0.0.1:${server.address().port}`;
  browser=await chromium.launch({headless:true,args:['--enable-unsafe-swiftshader']});manifest.browser={engine:'chromium',version:browser.version(),playwright:sourceRequire('playwright/package.json').version};
- await ordinaryField();assert(manifest.nativeInputs.every(event=>event.isTrusted),'all actual input must be browser-trusted');git(['diff','--exit-code','HEAD','--']);manifest.executionStatus='passed-awaiting-original-pixel-review';
+ await ordinaryField();if(revision==='candidate'){if(reviewCase==='field-390')await dprOneContact();else await temporaryFieldNotice();}assert(manifest.nativeInputs.every(event=>event.isTrusted),'all actual input must be browser-trusted');git(['diff','--exit-code','HEAD','--']);manifest.executionStatus='passed-awaiting-original-pixel-review';
 }catch(error){manifest.errors.push({at:now(),error:String(error),stack:error.stack});manifest.executionStatus='failed';process.exitCode=1;
  const limit=revision==='baseline'?1:reviewCase==='field-390'?2:3;
  if(activePage&&!activePage.isClosed()){
