@@ -16,6 +16,7 @@ test('live troop controls give the arena space without hiding name, role or pric
  const card=declarations(`${live} .unit-card`);
  assert.equal(card.height,'88px');assert.equal(card['min-height'],'88px');
  assert.equal(declarations(`${live} .unit-role`)['font-size'],'10px');
+ assert.equal(declarations(`${live} .unit-role`)['text-transform'],'none');
  assert.equal(declarations(`${live} .unit-name`)['font-size'],'12px');
  assert.equal(declarations(`${live} .unit-price`).height,'24px');
  for(const suffix of ['.unit-name','.unit-role','.unit-price'])assert.notEqual(declarations(`${live} ${suffix}`).display,'none');

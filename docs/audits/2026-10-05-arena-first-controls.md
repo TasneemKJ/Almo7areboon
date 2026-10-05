@@ -45,3 +45,5 @@ Checked against DESIGN_RULES.md; no design-rule violations found.
 ## Evidence status
 Baseline source: main 1374320f117df4a5e9f7a9da988998cd8c09f173, identical tree to inspected 8086b00.
 Before files frozen outside the repository. Three CSS wiring tests failed for absent compact rules, while the all-chapter native markup invariant passed. Actual after-image, viewport gain, touch/focus/scroll and physical-device acceptance remain pending.
+
+Native first-wave correction: the 390px temporary-session and Chronicle/Gather checks passed on c7d0fa2, but rotating into 844px landscape exposed clipping of the ranged role caption in the narrower rail. Keep its authored wording and 10px size, and preserve the specialty's natural title case instead of applying the inherited all-caps transform. The wiring regression failed before this correction; exact native rotation and measured label bounds still need a fresh run. This is not a font-size reduction or a hidden/truncated label.
