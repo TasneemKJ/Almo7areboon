@@ -26,7 +26,5 @@ jobs:
     uses: ./.github/workflows/chronicle-review.yml
   mobile:
     uses: ./.github/workflows/mobile.yml
-  mobile-40:
-    uses: ./.github/workflows/mobile-40-iterations.yml
   reliability:
     uses: ./.github/workflows/reliability.yml

@@ -20,7 +20,7 @@ test('fast gate keeps the required job name and stays out of the slow suites', (
 test('weekly workflow reuses the manual heavy workflows and never deploys', () => {
   const w = read('weekly-full.yml');
   assert.match(w, /schedule:/); assert.match(w, /workflow_dispatch:/); assert.doesNotMatch(w, /pull_request:|push:|upload-artifact/);
-  for (const f of ['full-verify', 'battle-banner-review', 'chronicle-review', 'mobile', 'mobile-40-iterations', 'reliability']) {
+  for (const f of ['full-verify', 'battle-banner-review', 'chronicle-review', 'mobile', 'reliability']) {
     assert.match(w, new RegExp(`uses: \\./\\.github/workflows/${f}\\.yml`));
     assert.match(read(`${f}.yml`), /workflow_call:/);
   }

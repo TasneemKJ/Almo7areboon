@@ -52,8 +52,8 @@ The pull-request and `main` gate (`verify` workflow) is deliberately fast: `npm 
 
 - `npm test` runs every unit test, including the slow campaign simulations. Run it before pushing a batch.
 - `npm run preview -- --port <free port>` then `npm run review:monkey`, `review:save-sessions`, `review:contrast`, `review:clip`, `review:overlap` and `review:layering` for browser checks. Run them after UI, save or layout changes.
-- `node --experimental-strip-types scripts/verify-battle-banner.mjs`, `scripts/review-chronicle.mjs`, `scripts/verify-mobile.mjs`, `scripts/verify-reliability.mjs` and `scripts/qa40/campaign.mjs` are the multi-engine suites behind the manual workflows.
-- On GitHub, run the **Full verification (manual)**, **Battle banner and Journey review**, **Folktale tactics review**, **Mobile reliability**, **Mobile QA** or **Reliability checks** workflows with *Run workflow*.
+- `node --experimental-strip-types scripts/verify-battle-banner.mjs`, `scripts/review-chronicle.mjs`, `scripts/verify-mobile.mjs`, `scripts/verify-reliability.mjs` are the multi-engine suites behind the manual workflows. The finished forty-iteration campaign (`scripts/qa40/campaign.mjs`, `scripts/qa40/dialog-layout.mjs`) has no workflow any more; run it locally with `QA_ENGINE=chromium QA_IDS=1-10 node --experimental-strip-types scripts/qa40/campaign.mjs` against a preview.
+- On GitHub, run the **Full verification (manual)**, **Battle banner and Journey review**, **Folktale tactics review**, **Mobile reliability**, **Reliability checks** workflows with *Run workflow*.
 - The **Weekly full suite** workflow runs all of the above once a week (Mondays, on `main`) and can also be started by hand. It never deploys. Failing runs upload one small evidence artifact (log tails, JSON, up to four 800px JPEGs, one-day retention).
 
 ## Saves
