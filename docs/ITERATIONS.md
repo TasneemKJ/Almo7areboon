@@ -62,3 +62,8 @@ These are 40 tracked implementation/recovery/review scopes, not 40 independent v
 ## Deferred limitations
 
 Rendered mobile/browser QA, independent review, low-end frame-rate measurements and Phaser vendor-size reduction remain open. Full reference live-service content and hidden balance equivalence are outside this core delivery. Nothing was merged or deployed by this work.
+
+
+## Development & Visuals — 2026-10-05 / Iteration 1
+
+**Direct battlefield orders (candidate).** Base `32d050951e4bf47f1288408c62ae9100c4cf5622`. Adds a neutral-center, bounded-tap path from the painted battlefield to the already-authoritative Hold/Advance action while keeping buttons as accessible fallbacks. The regression was observed red on test-first head `30f652e504c44b8d23cf880bd73b72708022dfe8`. Final exact-head Actions/browser evidence and merge confirmation remain required before this entry can be called delivered; see `docs/designs/2026-10-05-direct-battlefield-orders.md`.

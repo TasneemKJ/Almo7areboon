@@ -4,7 +4,7 @@ import { textIfChanged } from './dom-state.ts';
 export function orderStatus(state: Readonly<BattleState>) {
  const active=activeBattleOrder(state,state.time),seconds=active?Math.max(0,Math.ceil((state.orders?.until??0)-state.time)):0;
  const charge=state.orders?.charge??0;
- const label=state.paused?'Paused · orders wait':active?`${active==='advance'?'Advance':'Hold'} · ${seconds}s`:state.phase==='ready'?'Deploy troops to build momentum':state.phase!=='running'?'Company stands down':charge>=ORDER_COST?'Momentum ready · choose an order':`Momentum ${charge}/${ORDER_COST}`;
+ const label=state.paused?'Paused · orders wait':active?`${active==='advance'?'Advance':'Hold'} · ${seconds}s`:state.phase==='ready'?'Deploy troops to build momentum':state.phase!=='running'?'Company stands down':charge>=ORDER_COST?'Momentum ready · tap a gate or choose an order':`Momentum ${charge}/${ORDER_COST}`;
  return {charge,active,seconds,label,canCast:canIssueOrder(state,'advance')};
 }
 export function updateOrderBanner(root: HTMLElement, state: Readonly<BattleState>): void {
