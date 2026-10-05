@@ -1,0 +1,97 @@
+name: Current First Fires frames 3436810
+# Disposable capture-only branch. Never merge this harness into a product branch.
+on:
+  push:
+    branches: ['qa/almo-current-3436810-20261005']
+permissions:
+  contents: read
+concurrency:
+  group: almo-current-frames-${{ github.ref }}
+  cancel-in-progress: false
+jobs:
+  review:
+    name: First Fires ${{ matrix.viewport }}
+    runs-on: ubuntu-latest
+    timeout-minutes: 15
+    strategy:
+      fail-fast: false
+      max-parallel: 3
+      matrix:
+        viewport: ['390x844', '844x390', '1280x800']
+    defaults:
+      run:
+        shell: bash
+        working-directory: source
+    env:
+      SOURCE_SHA: 3436810726aae06b728160b8f8c797fdb2fbae15
+      REVIEW_REVISION: baseline
+      REVIEW_VIEWPORT: ${{ matrix.viewport }}
+      PYTHONUNBUFFERED: '1'
+    steps:
+      - name: Check out disposable harness
+        uses: actions/checkout@v7
+        with:
+          persist-credentials: false
+          path: harness
+      - name: Check out immutable current source
+        id: checkout
+        uses: actions/checkout@v7
+        with:
+          ref: 3436810726aae06b728160b8f8c797fdb2fbae15
+          persist-credentials: false
+          path: source
+      - uses: actions/setup-node@v7
+        with:
+          node-version: '22'
+          cache: npm
+          cache-dependency-path: source/package-lock.json
+      - name: Verify source identity
+        id: identity
+        run: |
+          test "$(git rev-parse HEAD)" = "$SOURCE_SHA"
+          git diff --exit-code HEAD --
+          printf 'PRODUCT_SOURCE baseline %s\n' "$SOURCE_SHA"
+          git rev-parse 'HEAD^{tree}'
+      - name: Install exact locked dependencies
+        id: install
+        run: npm ci --ignore-scripts
+      - name: Build exact source once
+        id: build
+        run: npm run build
+      - name: Install pinned screenshot browser
+        id: browser
+        run: npx playwright install --with-deps chromium
+      - name: Capture opening, command-ready and accepted Advance
+        id: captures
+        timeout-minutes: 4
+        run: flock /tmp/browser.lock node --experimental-strip-types ../harness/scripts/capture-review.mjs
+      - name: Emit at most three hash-verified original PNGs
+        id: originals
+        if: ${{ !cancelled() && steps.browser.outcome == 'success' }}
+        run: python3 ../harness/scripts/emit-originals.py artifacts/single-review
+      - name: Explicit bounded outcome
+        if: ${{ always() }}
+        working-directory: ${{ github.workspace }}
+        env:
+          OUTCOMES: ${{ toJSON(steps) }}
+        run: |
+          python3 - <<'PYTHON'
+          import json, os
+          from pathlib import Path
+          steps = json.loads(os.environ['OUTCOMES'])
+          outcome = {name: steps.get(name, {}).get('outcome', 'not-run')
+                     for name in ('checkout', 'identity', 'install', 'build', 'browser', 'captures', 'originals')}
+          result = {'sourceCommit': os.environ['SOURCE_SHA'], 'revision': 'baseline',
+                    'viewport': os.environ['REVIEW_VIEWPORT'], 'outcomes': outcome}
+          manifest = Path('source/artifacts/single-review/review-manifest.json')
+          if manifest.is_file():
+              data = json.loads(manifest.read_text())
+              result.update(sourceTree=data['sourceTree'], images=len(data['images']),
+                            errors=data['errors'], checks=data['checks'])
+          print('REVIEW_OUTCOMES ' + json.dumps(result))
+          with open(os.environ['GITHUB_STEP_SUMMARY'], 'a') as output:
+              output.write('Exact current source: ' + result['sourceCommit'] + '\n\n')
+              output.write('Viewport: ' + result['viewport'] + '\n\n')
+              output.write('\n'.join('- ' + name + ': ' + state for name, state in outcome.items()) + '\n')
+              output.write('\nCapture-only baseline. No full test suites, artifact uploads, deploys or product edits. Phone and landscape contexts use touch/mobile, DPR 2 and 4x CPU; screenshots are untouched browser CSS-pixel PNGs. This is not physical-device, Safari, listening or performance acceptance.\n')
+          PYTHON
