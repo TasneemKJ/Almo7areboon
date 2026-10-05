@@ -1,4 +1,4 @@
-import {campLayout,campRecruits} from './world-camp.ts';
+import {campRenderProjection,campRecruits} from './world-camp.ts';
 import { orderPresentationFrame } from './order-presentation.ts';
 import Phaser from 'phaser';
 import {ChronicleView} from './chronicle-view.ts';
@@ -388,7 +388,7 @@ export function mountBattlefield(element:HTMLElement,game:GamePort,onFrame:(forc
   }
   private drawCamp():void {
    const visible=game.state.phase==='running'&&element.closest<HTMLElement>('#app')?.dataset.fieldMode==='field';
-   const plan=campLayout(this.scale.width,this.scale.height),scale=this.layout.scale,g=this.campProps.clear();
+   const {plan,cssScale:scale}=campRenderProjection(this.scale.width,this.scale.height,pixelRatio),g=this.campProps.clear();
    const unlocked=campRecruits(game.profile);
    this.campActors.forEach((actor,kind)=>{
     actor.setVisible(visible&&unlocked.includes(kind as 0|1|2));
@@ -399,6 +399,10 @@ export function mountBattlefield(element:HTMLElement,game:GamePort,onFrame:(forc
     else {actor.setScale(.75/scale);drawTroop(actor,game.profile.age,kind as 0|1|2,'player',0,false);}
     if(unlocked.includes(kind as 0|1|2)){this.shadows.fillStyle(0x192c25,.3);this.shadows.fillEllipse(x,y+2/scale,28/scale,7/scale);}
    });
+   if(navigator.webdriver){
+    const rendered=this.campActors.flatMap((actor,kind)=>{if(!actor.visible||!(actor instanceof Phaser.GameObjects.Image))return [];const b=actor.getBounds();return [{kind,bounds:{left:b.left/pixelRatio,top:b.top/pixelRatio,right:b.right/pixelRatio,bottom:b.bottom/pixelRatio,width:b.width/pixelRatio,height:b.height/pixelRatio}}];});
+    const report=JSON.stringify({pixelRatio,width:this.scale.width/pixelRatio,height:this.scale.height/pixelRatio,rendered});if(this.game.canvas.dataset.fieldCamp!==report)this.game.canvas.dataset.fieldCamp=report;
+   }
    if(!visible||game.state.stats.deployed===0)return;
    // Objects are painted on the ground plane, with no button plates or card frames.
    const flag=plan.standard,basket=plan.supplies,x=flag.footX/scale,y=flag.footY/scale,k=1/scale;

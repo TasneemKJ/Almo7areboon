@@ -14,3 +14,9 @@ export function campLayout(width:number,height:number){
  return {recruits:[target(span*.16,h*.86),target(span*.39,h*.92),target(span*.62,h*.86)],standard:target(span*.86,h*.79),supplies:target(span*.86,h*.96)};
 }
 export function campRecruits(profile:Readonly<Profile>):UnitKind[]{return ([0,1,2] as const).filter(kind=>profile.unlocked[kind]);}
+/** Phaser's backing store is DPR-scaled; DOM targets and camp art are CSS-sized. */
+export function campRenderProjection(renderWidth:number,renderHeight:number,pixelRatio:number){
+ const ratio=Number.isFinite(pixelRatio)&&pixelRatio>0?pixelRatio:1;
+ const width=renderWidth/ratio,height=renderHeight/ratio;
+ return {plan:campLayout(width,height),cssScale:width/450};
+}

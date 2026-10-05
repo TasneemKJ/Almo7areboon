@@ -42,7 +42,8 @@ export function createFieldController(root:HTMLElement){
     node.disabled=false;node.setAttribute('aria-disabled',String(!status.allowed));
     node.setAttribute('aria-label',troopControlLabel(p,kind,status));node.title=troopControlLabel(p,kind,status);
     const cost=node.querySelector<HTMLElement>('.recruit-cost')!;
-    textIfChanged(cost,`${ERAS[p.age].units[kind].cost} food`);
+    const wait=status.reason==='food'?` · ${Math.ceil(status.waitSeconds)}s`:['blocked','capacity'].includes(status.reason)?' · wait':'';
+    textIfChanged(cost,`${ERAS[p.age].units[kind].cost} food${wait}`);
     node.classList.toggle('recruit-ready',status.allowed);
    }
    for(const node of gates){
@@ -74,7 +75,7 @@ export function createFieldController(root:HTMLElement){
    context.hidden=selected===null;enemy.classList.toggle('selected',typeof selected==='number');
    context.querySelectorAll<HTMLButtonElement>('[data-skill]').forEach(button=>{const skill=button.dataset.skill as Skill;button.disabled=!game.canUseSkill(skill);button.setAttribute('aria-label',skillCue(p,s,skill,!button.disabled).label);});
    const status=game.deploymentStatus(0);
-   const message=!running?'':s.stats.deployed===0?`Tap the waiting defender. ${ERAS[p.age].units[0].cost} food.`:status.reason==='food'?`The camp needs food. Ready in ${Math.ceil(status.waitSeconds)}s.`:p.wins<5&&!s.skillsUsed.includes('freeze')&&s.units.filter(u=>u.side==='enemy'&&u.hp>0).length>=3?'Enemies are gathering. Select one, then Freeze.':orders.canCast?'Momentum ready. Your gate holds; their gate advances.':'';
+   const message=!running?'':s.stats.deployed===0?`Tap the waiting defender. ${ERAS[p.age].units[0].cost} food.`:status.reason==='food'?`The camp needs food. Ready in ${Math.ceil(status.waitSeconds)}s.`:p.wins===0&&s.stats.deployed<3?'Tap the defender again when their ground lights.':p.wins<5&&!s.skillsUsed.includes('freeze')&&s.units.filter(u=>u.side==='enemy'&&u.hp>0).length>=3?'Enemies are gathering. Select one, then Freeze.':orders.canCast?'Momentum ready. Your gate holds; their gate advances.':'';
    textIfChanged(cue,message);cue.hidden=!message;
   },
  };

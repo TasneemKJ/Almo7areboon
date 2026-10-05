@@ -27,3 +27,13 @@ for(const [width,height] of [[320,568],[390,844],[844,390],[667,375],[1280,800]]
  const plan=campLayout(width,height),enemyFoot=height*.66+24*width/450;
  for(const target of [...plan.recruits,plan.standard,plan.supplies])assert.ok(target.y>=enemyFoot+2,`camp begins${target.y}, enemy envelope ends${enemyFoot}`);
 });
+for(const dpr of [1,1.5,2])for(const [width,height] of [[390,844],[844,390]])test(`painted camp projection matches CSS targets at DPR${dpr},${width}×${height}`,async()=>{
+ const {campRenderProjection}=await import('../src/view/world-camp.ts');
+ const {plan,cssScale}=campRenderProjection(width*dpr,height*dpr,dpr),dom=campLayout(width,height);
+ assert.deepEqual(plan,dom);assert.equal(cssScale,width/450);
+ for(const target of [...plan.recruits,plan.standard,plan.supplies]){
+  const logicalX=target.footX/cssScale,logicalY=target.footY/cssScale;
+  assert.ok(Math.abs(logicalX*(width*dpr/450)/dpr-target.footX)<1e-8);
+  assert.ok(Math.abs(logicalY*(width*dpr/450)/dpr-target.footY)<1e-8);
+ }
+});
