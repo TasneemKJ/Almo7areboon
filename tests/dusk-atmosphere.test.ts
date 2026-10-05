@@ -80,3 +80,13 @@ test('harbor ripples remain below the painted boat hulls rather than washing ove
   if(mark.kind==='ripple')assert.ok(mark.y-mark.ry>527,'ripples intersect the authored hull band');
  }
 });
+test('ultra dusk frame adds two bounded chapter-specific depth marks',async()=>{
+ const m=await dusk(),signatures=[];
+ for(let age=0;age<6;age++){
+  const frame=m.duskAtmosphereFrame(age,12,false),depth=frame.filter((mark:any)=>mark.kind==='depth');
+  assert.equal(depth.length,2);
+  for(const mark of depth){assert.ok(mark.y+mark.ry<605);assert.ok(mark.alpha>0&&mark.alpha<=.18);assert.ok(mark.rx<=180);}
+  signatures.push(depth.map((mark:any)=>mark.color).join(':'));
+ }
+ assert.ok(new Set(signatures).size>=4);
+});
