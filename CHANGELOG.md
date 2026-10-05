@@ -6,6 +6,11 @@ Semantic versioning. Each merged batch adds an entry and a `vX.Y.Z` tag.
 - First-Freeze cue: when three enemies gather and Freeze is unused, the deploy hint says so (first five wins only).
 - Evolving plays a one-shot flare across the new army's cards (static with reduced motion).
 
+## Unreleased — First Fires depth
+- First Fires gains two source-registered distant-air pockets and two masonry reflections on the existing ambience layer, with static reduced motion and bounded cached geometry.
+- Its original soundscape gains restrained near-hearth and distant-valley separation without adding an audio voice or changing other chapters.
+- Source tests and build are verified; exact-payload native-render, listening and physical-device acceptance remain separate release gates.
+
 ## 0.3.1 - 2026-10-05
 - The incoming-wave label moved out of the lane into the sky band under the title (it covered the marching army at 320x568 and in landscape).
 - Dialogs in short landscape lose the empty header band.

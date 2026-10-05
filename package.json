@@ -8,7 +8,7 @@
     "review:mastery": "node --experimental-strip-types scripts/capture-mastery-review.mjs",
     "review:upgrade-text": "node --experimental-strip-types scripts/capture-upgrade-text-review.mjs",
     "dev": "vite --host 0.0.0.0",
-    "build": "tsc --noEmit && vite build",
+    "build": "tsc --noEmit && vite build && node scripts/check-size.mjs",
     "preview": "vite preview --host 0.0.0.0",
     "test": "node --experimental-strip-types --test tests/*.test.ts",
     "review:browser": "node scripts/capture-browser-review.mjs",

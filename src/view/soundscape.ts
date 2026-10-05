@@ -1,4 +1,4 @@
-import {CHAPTER_SCORES} from './chapter-score.ts';
+import {CHAPTER_SCORES,FIRST_FIRES_HEARTH_CRACKLES} from './chapter-score.ts';
 /** Original fictional score: plucked strings, breath-like tones and environmental noise.
  * No sampled performances, borrowed melody, or claim of historical instrumentation. */
 export interface SoundscapePCM {sampleRate:number;duration:number;left:Float32Array;right:Float32Array}
@@ -18,6 +18,7 @@ export function synthesizeSoundscape(input:number,requestedRate=16000):Soundscap
  const age=soundscapeAge(input),scene=CHAPTER_SCORES[age];
  const sampleRate=Number.isFinite(requestedRate)&&requestedRate>0?Math.max(8000,Math.min(22050,Math.round(requestedRate))):16000;
  const length=SOUNDSCAPE_SECONDS*sampleRate,left=new Float32Array(length),right=new Float32Array(length);
+ const valleyFilter=1-Math.exp(-TAU*230/sampleRate),hearthFilter=1-Math.exp(-TAU*1100/sampleRate),noiseScale=Math.sqrt(sampleRate/16000);
  const channels=[left,right];
  for(let channel=0;channel<2;channel++){
   const output=channels[channel];let seed=scene.seed+channel*1709,low=0,slow=0;
@@ -25,13 +26,32 @@ export function synthesizeSoundscape(input:number,requestedRate=16000):Soundscap
    const t=i/sampleRate;
    seed=(Math.imul(seed,1664525)+1013904223)>>>0;
    const white=seed/0x80000000-1;
-   low+=.045*(white-low);slow+=.003*(white-slow);
-   const gust=.58+.24*Math.sin(TAU*t/12+channel*.3)+.12*Math.sin(TAU*t/7.7+age);
-   const tide=.45+.4*Math.sin(TAU*t/9+age)*Math.sin(TAU*t/9+age);
    // A quiet low tone, with slow beating, supplies tension without a loud jump cue.
    const drone=.006*Math.sin(TAU*scene.root*.5*t)+.0027*Math.sin(TAU*(scene.root*.5+.16)*t+channel*.16);
-   output[i]=drone+scene.air*(low*4+slow*8)*gust+scene.water*low*3*tide;
-   if(age===0){const ember=Math.max(0,white-.995);output[i]+=ember*2.5;}
+   if(age===0){
+    // Two offline low-pass stages soften the valley; independent ears and slow
+    // overlapping gusts give it width without anti-phase tricks or a new voice.
+    low+=valleyFilter*(white-low);slow+=valleyFilter*(low-slow);
+    const gust=.58+.18*Math.sin(TAU*t/24+channel*.9)+.08*Math.sin(TAU*t/12+channel*1.4);
+    output[i]=drone+scene.air*5.2*noiseScale*slow*gust;
+   }else{
+    low+=.045*(white-low);slow+=.003*(white-slow);
+    const gust=.58+.24*Math.sin(TAU*t/12+channel*.3)+.12*Math.sin(TAU*t/7.7+age);
+    const tide=.45+.4*Math.sin(TAU*t/9+age)*Math.sin(TAU*t/9+age);
+    output[i]=drone+scene.air*(low*4+slow*8)*gust+scene.water*low*3*tide;
+   }
+  }
+  if(age===0)for(let event=0;event<FIRST_FIRES_HEARTH_CRACKLES.length;event++){
+   const crackle=FIRST_FIRES_HEARTH_CRACKLES[event],start=Math.floor(crackle.at*sampleRate),span=Math.floor(crackle.duration*sampleRate);
+   // The same seeded texture reaches both ears, slightly left of centre. The
+   // rounded envelope replaces isolated white-noise spikes with warm crackles.
+   let emberSeed=scene.seed+event*7919,ember=0;
+   for(let j=0;j<span&&start+j<length;j++){
+    emberSeed=(Math.imul(emberSeed,1664525)+1013904223)>>>0;
+    ember+=hearthFilter*(emberSeed/0x80000000-1-ember);
+    const envelope=Math.sin(Math.PI*j/(span-1))**2*Math.exp(-j/sampleRate*12);
+    output[start+j]+=.035*crackle.strength*(channel===0?1:.76)*noiseScale*ember*envelope;
+   }
   }
   for(let note=0;note<scene.plucks.length;note++){
    const position=scene.plucks[note],frequency=scene.root*2**(position.semitones/12);

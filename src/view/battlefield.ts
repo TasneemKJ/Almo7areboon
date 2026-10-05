@@ -2,6 +2,7 @@ import { orderPresentationFrame } from './order-presentation.ts';
 import Phaser from 'phaser';
 import {ChronicleView} from './chronicle-view.ts';
 import {storybookArt} from './storybook-art.ts';
+import {cacheStorybookDepth,paintStorybookDepth,type StorybookDepthTriangle} from './storybook-depth.ts';
 import {reducedMotion,projectileForHit,traitCueForHit} from './combat-feedback.ts';
 import {arenaLayout,foregroundPlacement,landscapePlacement,troopPose,visualEra} from './visual-theme.ts';
 import {atmosphereFrame} from './era-atmosphere.ts';
@@ -83,6 +84,7 @@ export function mountBattlefield(element:HTMLElement,game:GamePort,onFrame:(forc
   private bars!:Phaser.GameObjects.Graphics;
   private stageLight!:Phaser.GameObjects.Container;
   private villageViewport!:VillageViewport;
+  private storybookDepth:readonly StorybookDepthTriangle[]=[];
   private villageHudPhase:Phase|null=null;
   private villageHudPaused:boolean|null=null;
   private quietVillage=createVillageMood();
@@ -193,6 +195,7 @@ export function mountBattlefield(element:HTMLElement,game:GamePort,onFrame:(forc
    }
    const viewport:VillageViewport={placement,cssWorldScale,visibleSource,hudSourceBounds};
    viewport.skyPath=villageSkyPath(game.profile.age,viewport);this.villageViewport=viewport;
+   this.storybookDepth=cacheStorybookDepth(game.profile.age,viewport);
    this.villageHudPaused=game.state.paused;
    this.cacheBattlefieldHudBounds();
   }
@@ -391,6 +394,7 @@ export function mountBattlefield(element:HTMLElement,game:GamePort,onFrame:(forc
     const mood=options.villageMood?.()??this.quietVillage;
     const villageVerdict=this.aftermath?.phase===game.state.phase?villageVerdictFrame({phase:this.aftermath.phase,elapsed:Math.max(0,this.clock-this.aftermath.at),reduced:this.reduce}):null;
     const frame=villageFrame({age:game.profile.age,time:options.villageMood?mood.time:this.clock,reduced:this.reduce,restoration:game.profile.chronicle?.restoration??0,mood,viewport:this.villageViewport,verdict:villageVerdict,watch:this.waveArrival,order:this.orderFrame?.answer,muster:this.musterFrame});
+    paintStorybookDepth(g,this.storybookDepth,options.villageMood?mood.time:this.clock,this.reduce,frame.lamps.map(lamp=>lamp.alpha));
     for(const resident of frame.residents)for(const pane of resident.panes){g.fillStyle(pane.color,pane.alpha);g.fillPoints(pane.points as Phaser.Types.Math.Vector2Like[],true);}
     for(const stroke of frame.verdictStrokes){g.lineStyle(stroke.width,stroke.color,stroke.alpha);g.lineBetween(stroke.from.x,stroke.from.y,stroke.to.x,stroke.to.y);}
     for(const stroke of frame.watchStrokes){g.lineStyle(stroke.width,stroke.color,stroke.alpha);g.lineBetween(stroke.from.x,stroke.from.y,stroke.to.x,stroke.to.y);}
@@ -684,10 +688,10 @@ export function mountBattlefield(element:HTMLElement,game:GamePort,onFrame:(forc
     g.lineStyle(1.5,frame.color,.65*frame.pulse);g.strokeEllipse(mark.x,mark.y,mark.radius*2.4,8);
     if(frame.order==='advance'){g.lineStyle(1.5,frame.color,.85);g.beginPath();g.moveTo(mark.x-4,mark.y-2);g.lineTo(mark.x+2,mark.y);g.lineTo(mark.x-4,mark.y+2);g.strokePath();}
    }
-   const {x,y}=frame.pennant;g.lineStyle(2,0xb7955f,1);g.lineBetween(x,y,x,y+44);
-   g.fillStyle(frame.color,.9);g.fillTriangle(x+1,y,x+22,y+5,x+1,y+13);
-   g.lineStyle(1,0x16394b,1);g.lineBetween(x+4,y+5,x+11,y+8);
-   if(navigator.webdriver)this.game.canvas.dataset.battleOrder=JSON.stringify({order:frame.order,count:frame.marks.length,reduced:this.reduce,pulse:frame.pulse});
+   const {x,y,width,alpha,tipOffset}=frame.pennant;g.lineStyle(2,0xb7955f,frame.ready?.6:1);g.lineBetween(x,y,x,y+44);
+   g.fillStyle(frame.color,alpha);g.fillTriangle(x+1,y,x+width,y+5+tipOffset,x+1,y+13);
+   g.lineStyle(1,0x16394b,frame.ready?.7:1);g.lineBetween(x+4,y+5,x+11,y+8);
+   if(navigator.webdriver)this.game.canvas.dataset.battleOrder=JSON.stringify({order:frame.order,ready:frame.ready,count:frame.marks.length,reduced:this.reduce,pulse:frame.pulse});
   }
   private event(e:GameEvent):void {
    this.villageMuster=rememberVillageMuster(this.villageMuster,e,game.state.time);

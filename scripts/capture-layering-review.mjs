@@ -33,6 +33,25 @@ function assertVillage(diagnostic, fixture) {
     assert.equal(lamp.tint,diagnostic.age===5&&index>=2?0x8edfc9:0xffd08a);
     assert.ok(lamp.paintIndex>v.ambience.paintIndex&&lamp.paintIndex<v.shadows.paintIndex);
   }
+  const triangles=v.paths.triangles;
+  assert.ok(triangles.length<=120,'cached depth never exceeds its fill cap');
+  if(diagnostic.age!==0)assert.equal(triangles.length,0,'other chapters retain their original painting');
+  else if(fixture.crop!==220)assert.ok(triangles.length>=20,'First Fires depth is present in actual Graphics commands');
+  for(const triangle of triangles){
+    assert.ok(Number.isFinite(triangle.alpha)&&triangle.alpha>0&&triangle.alpha<=.25);
+    assert.ok([0x92b9c6,0xffd28a].includes(triangle.color),'depth uses only chapter-authored air and reflected warmth');
+    const points=triangle.points.map(inverse);
+    assert.ok(points.every(point=>inside(point,visibleSource)),'actual triangle remains inside the current source crop');
+    assert.ok(v.depth.some(mark=>mark.points.every((point,index)=>Math.abs(point.x-triangle.points[index][0])<1e-5&&Math.abs(point.y-triangle.points[index][1])<1e-5)),'Graphics output uses cached source-registered geometry');
+    for(const rect of hudSourceBounds){
+      let polygon=points;
+      for(const [axis,value,sign] of [[0,rect[0],1],[1,rect[1],1],[0,rect[2],-1],[1,rect[3],-1]]){
+        const next=[];for(let i=0;i<polygon.length;i++){const a=polygon[i],b=polygon[(i+1)%polygon.length],aa=(a[axis]-value)*sign,bb=(b[axis]-value)*sign;if(aa>=0)next.push(a);if((aa>=0)!==(bb>=0)){const t=aa/(aa-bb);next.push([a[0]+(b[0]-a[0])*t,a[1]+(b[1]-a[1])*t]);}}polygon=next;
+      }
+      const area=polygon.length<3?0:Math.abs(polygon.reduce((sum,p,i)=>sum+p[0]*polygon[(i+1)%polygon.length][1]-p[1]*polygon[(i+1)%polygon.length][0],0))/2;
+      assert.ok(area<1e-5,'actual depth triangles exclude occupied HUD interiors');
+    }
+  }
   const bird=[];const occupied=new Set();
   for(const polygon of v.paths.fills) {
     const points=polygon.points.map(inverse);
@@ -132,6 +151,7 @@ try {
         const second=await page.evaluate(()=>window.layeringReview.setClock(5));assertVillage(second,fixture);
         await page.screenshot({path:`${output}/${name}-time-5.png`});
         assert.equal(second.village.objects,diagnostic.village.objects,'no frame creates scene objects');
+        assert.equal(second.village.depthBuilds,diagnostic.village.depthBuilds,'clock changes reuse cached clipping and triangulation');
         if(fixture.reduced){assert.deepEqual(second.village.paths,diagnostic.village.paths);assert.deepEqual(second.village.lamps,diagnostic.village.lamps,'reduced atmosphere remains still');}
         if(fixture.mood==='quiet'&&!fixture.reduced) {
           const flightTime=10+fixture.age*.7;

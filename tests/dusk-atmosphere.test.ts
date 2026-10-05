@@ -107,16 +107,71 @@ test('depth marks stay in the middle of the field, clear of the #158 tap zones a
   }
  }
 });
-test('forty-pass storybook refinement exposes eight five-pass groups',async()=>{
+// Observe the real Graphics boundary, rather than a prospective forty-value API.
+function duskPainter(){
+ const shapes:{kind:string;args:number[];style:number[]}[]=[];
+ let fill:number[]=[],line:number[]=[];
+ return {shapes,
+  fillStyle(color:number,alpha:number){fill=[color,alpha];},
+  lineStyle(width:number,color:number,alpha:number){line=[width,color,alpha];},
+  fillEllipse(...args:number[]){shapes.push({kind:'fill',args,style:fill});},
+  strokeEllipse(...args:number[]){shapes.push({kind:'stroke',args,style:line});},
+ };
+}
+
+test('painting applies the landscape translation and scale to actual depth and ripple geometry',async()=>{
+ const m=await dusk(),painter=duskPainter();
+ const marks=Object.freeze([
+  Object.freeze({kind:'depth',x:200,y:300,rx:80,ry:20,color:0xabcdee,alpha:.1}),
+  Object.freeze({kind:'ripple',x:240,y:540,rx:30,ry:2,color:0x123456,alpha:.12}),
+ ]),placement=Object.freeze({x:13,y:-7,scale:.5});
+ const before=JSON.stringify({marks,placement});
+ m.paintDuskAtmosphere(painter,marks,placement);
+ // Independent half-scale fixture: centre (200,300) becomes (113,143).
+ const depth=painter.shapes.filter(s=>s.kind==='fill');
+ assert.equal(depth.length,2);
+ assert.deepEqual(depth[0].args,[113,143,80,20]);
+ assert.equal(depth[1].args[0],113);assert.equal(depth[1].args[1],143);
+ assert.ok(depth[1].args[2]>0&&depth[1].args[2]<80);
+ assert.ok(depth[1].args[3]>0&&depth[1].args[3]<20);
+ for(const shape of depth){assert.equal(shape.style[0],0xabcdee);assert.ok(shape.style[1]>0&&shape.style[1]<.1);}
+ const ripple=painter.shapes.filter(s=>s.kind==='stroke');
+ assert.equal(ripple.length,1);assert.deepEqual(ripple[0].args,[133,263,30,2]);
+ assert.deepEqual(ripple[0].style,[.5,0x123456,.12]);
+ assert.equal(JSON.stringify({marks,placement}),before);
+});
+
+test('each painted mark supplies its own style without reusing a preceding glow or ripple style',async()=>{
+ const m=await dusk(),painter=duskPainter();
+ m.paintDuskAtmosphere(painter,[
+  {kind:'glow',x:20,y:30,rx:8,ry:6,color:0xfedcba,alpha:.16},
+  {kind:'ripple',x:40,y:50,rx:12,ry:2,color:0x456789,alpha:.09},
+  {kind:'depth',x:60,y:70,rx:30,ry:10,color:0xabcdef,alpha:.05},
+ ],{x:0,y:0,scale:2});
+ assert.equal(painter.shapes.length,6);
+ const [g1,g2,g3,r,d1,d2]=painter.shapes;
+ for(const glow of [g1,g2,g3]){assert.equal(glow.kind,'fill');assert.equal(glow.style[0],0xfedcba);}
+ assert.equal(r.kind,'stroke');assert.deepEqual(r.style,[1.8,0x456789,.09]);
+ for(const depth of [d1,d2]){assert.equal(depth.kind,'fill');assert.equal(depth.style[0],0xabcdef);assert.ok(depth.style[1]>0&&depth.style[1]<.05);}
+});
+
+test('the rendered six-chapter composition freezes in reduced motion and keeps finite phone geometry',async()=>{
  const m=await dusk();
- assert.equal(typeof m.duskRefinement40,'function');
- if(typeof m.duskRefinement40!=='function')return;
- const full=m.duskRefinement40(3,12,false),stillA=m.duskRefinement40(3,1,true),stillB=m.duskRefinement40(3,99,true);
- const groups=['depth','light','materials','air','motion','grounding','mobile','signature'];
- assert.equal(groups.flatMap((k:any)=>full[k]).length,40);
- for(const k of groups)assert.equal(full[k].length,5);
- assert.deepEqual(stillA.motion,stillB.motion);
- for(const v of groups.flatMap((k:any)=>full[k]))assert.ok(Number.isFinite(v));
+ const render=(age:number,time:number,reduced:boolean,width:number,height:number)=>{
+  const painter=duskPainter();
+  m.paintDuskAtmosphere(painter,m.duskAtmosphereFrame(age,time,reduced),landscapePlacement(width,height));
+  return painter.shapes;
+ };
+ for(let age=0;age<6;age++)for(const [width,height] of [[320,520],[450,300],[450,620]]){
+  const a=render(age,1,true,width,height),b=render(age,99,true,width,height);
+  assert.ok(a.length>0);assert.deepEqual(a,b);
+  assert.notDeepEqual(render(age,1,false,width,height),render(age,99,false,width,height));
+  for(const shape of a){
+   for(const value of [...shape.args,...shape.style])assert.ok(Number.isFinite(value));
+   assert.ok(shape.args[2]>0&&shape.args[3]>0);
+   const alpha=shape.style.at(-1)!;assert.ok(alpha>0&&alpha<=.18);
+  }
+ }
 });
 test('refinement strengths are bounded, deterministic and calm for bad input',async()=>{
  const m=await dusk();
