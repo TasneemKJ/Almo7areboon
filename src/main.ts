@@ -39,6 +39,7 @@ import { playCombatEvents, playSummonAudio, stopCombatAudio, unlockAudio, suspen
 import { createArmyUpdater, troopControlLabel, troopUnlockMessage } from './ui/army-screen.ts';
 import { cardsScreenHtml, summonedCardsHtml } from './ui/cards-screen.ts';
 import { compactResultsHtml, expeditionChoiceHtml, resultsHtml } from './ui/results-screen.ts';
+import { startCountUp } from './ui/count-up.ts';
 import { earlierChapter } from './ui/regroup-learning.ts';
 import { legacyCurrentHtml, prestigeDetailsHtml, prestigeDialogHtml } from './ui/prestige-presentation.ts';
 import { battleGuidance, baseHealthDisplay, compactNumber, waveLabel, waveAccessibleLabel } from './ui/battle-hud.ts';
@@ -359,7 +360,9 @@ function showResult(focusCommand?:string){
   if(game.state.phase!=='won'&&game.state.phase!=='lost')return;
   persist();
   // A failed ownership check/save may synchronously replace this modal with recovery.
+  const fresh=modal!=='result';
   if(playable()&&modal!=='session'){resultDetailsOpen=false;showModal('result',compactResultsHtml(game.profile,game.state),focusCommand);}
+  if(fresh&&modal==='result')startCountUp($('modal-layer'),compactNumber,document.documentElement.dataset.motion==='reduced');
 }
 function showResultDetails(){
   if(!guardAction()||modal!=='result')return;
@@ -548,6 +551,7 @@ lifetime.listen<MouseEvent>(root,'click',e=>{
       if(!playable()||modal==='session')break;
       if(ok){
         evolutionFromResult=false;
+        {const deck=$('unit-cards');deck.dataset.evolveReveal=deck.dataset.evolveReveal==='a'?'b':'a';}
         if(returnToResult)showResult();else{closeModal(false);switchTab('battle');}
         if(!savedWarning)toast(`Entering ${chapterPresentation(game.profile.age).title}.`);
       }else{

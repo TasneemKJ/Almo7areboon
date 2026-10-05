@@ -27,6 +27,11 @@
 @media(prefers-reduced-motion:reduce){.entry-screen *{animation:none!important;transition:none!important}}
 
 /* Ordinary results fit in one view; the original complete receipt is deliberate. */
+/* A fixed dialog owns scrolling. Do not leave the short-phone command deck's
+   620px minimum as an independently scrollable page behind its modal surface. */
+html:has(#modal-layer:not([hidden])),body:has(#modal-layer:not([hidden])),
+#app:has(#modal-layer:not([hidden])){height:100dvh;min-height:0;overflow:hidden}
+.game-shell:has(#modal-layer:not([hidden])){height:100dvh;min-height:0;max-height:none}
 .dialog:has(>.compact-result){max-width:390px;padding:24px 20px;overflow:auto}
 .compact-result>.eyebrow{display:block;font-size:10px;letter-spacing:.16em;color:var(--muted)}
 .result-dialog .compact-result h2{font-size:34px;line-height:1.1;margin:10px 0 14px}
