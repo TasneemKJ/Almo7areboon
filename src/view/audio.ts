@@ -73,6 +73,9 @@ type Point=readonly [seconds:number,value:number];
 interface CueDefinition {readonly wave:OscillatorType;readonly duration:number;readonly frequency:readonly Point[];readonly envelope:readonly Point[]}
 // Original short contours; these initial levels await perceptual/device review.
 const definitions:Readonly<Record<CombatCueId,CueDefinition>>={
+ // A dry gate tap / muted brass rise, softened by a short cloth-like tail.
+ 'order-hold':{wave:'triangle',duration:.24,frequency:[[0,180],[.035,90],[.09,150],[.24,110]],envelope:[[.003,.026],[.035,.004],[.075,.012],[.12,.006],[.16,.009],[.24,0]]},
+ 'order-advance':{wave:'triangle',duration:.30,frequency:[[0,165],[.035,120],[.08,262],[.19,349],[.30,392]],envelope:[[.003,.022],[.04,.004],[.085,.024],[.15,.011],[.21,.018],[.30,0]]},
  'story-rally':{wave:'triangle',duration:.28,frequency:[[0,240],[.10,320],[.2,400]],envelope:[[.005,.032],[.08,.012],[.14,.026],[.28,0]]},
  'story-bell':{wave:'sine',duration:.65,frequency:[[0,392],[.3,390],[.65,388]],envelope:[[.005,.043],[.12,.022],[.38,.012],[.65,0]]},
  'story-shatter':{wave:'triangle',duration:.16,frequency:[[0,1550],[.035,890],[.16,310]],envelope:[[.003,.022],[.04,.008],[.065,.015],[.16,0]]},

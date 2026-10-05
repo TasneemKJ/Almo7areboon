@@ -4,10 +4,40 @@ import * as audio from '../src/view/audio.ts';
 import type {GameEvent} from '../src/game/types.ts';
 import type {CombatCueId} from '../src/view/combat-cues.ts';
 import {recordedContext,installContext} from './helpers/audio-context.ts';
+import {Game} from '../src/game/simulation.ts';
 const hit:GameEvent={type:'hit'},skill:GameEvent={type:'skill',skill:'freeze'};
 const tick=()=>new Promise(resolve=>setImmediate(resolve));
 function harness(){audio.disposeAudio();const c=recordedContext(),restore=installContext(c);audio.unlockAudio();return {...c,close(){audio.disposeAudio();restore();}};}
-const cueIds:CombatCueId[]=['story-rally','story-bell','story-shatter','story-protect','story-cover','story-breach','story-landmark','story-rescue','deploy','hit-neutral','hit-blunt','hit-flick','hit-hollow','base-player','base-enemy','coin','freeze','meteor','food','upgrade','evolve','win','lose','death','summon'];
+const cueIds:CombatCueId[]=['order-hold','order-advance','story-rally','story-bell','story-shatter','story-protect','story-cover','story-breach','story-landmark','story-rescue','deploy','hit-neutral','hit-blunt','hit-flick','hit-hollow','base-player','base-enemy','coin','freeze','meteor','food','upgrade','evolve','win','lose','death','summon'];
+
+test('accepted command audio is a quiet finite effects voice, with distinct Hold and Advance contours',()=>{
+ const shapes:string[]=[];
+ for(const order of ['hold','advance'] as const){
+  const h=harness();try{
+   const g=new Game();g.dispatch({type:'start'});g.drainEvents();g.state.orders!.charge=60;
+   assert.equal(g.dispatch({type:'order',order}),true);audio.playCombatEvents(g.drainEvents(),true);
+   assert.equal(h.oscillators.length,1);assert.equal(h.live(),1);
+   const osc=h.oscillators[0],gain=h.gains.at(-1);
+   assert.equal(gain.connections[0],h.gains[0],'command accents respect the existing effects mix');
+   assert.ok(osc.stops[0]-osc.starts[0]<=.32);assert.ok(Math.max(...gain.gain.events.map((e:any[])=>e[1]))<=.03);
+   shapes.push(JSON.stringify([osc.type,osc.frequency.events,gain.gain.events]));
+   audio.playCombatEvents(g.drainEvents(),true);assert.equal(h.oscillators.length,1);
+   assert.equal(g.dispatch({type:'order',order}),false);audio.playCombatEvents(g.drainEvents(),true);assert.equal(h.oscillators.length,1);
+   audio.suspendAudio();assert.equal(h.live(),0,'pause/hidden ownership releases the accent immediately');
+  }finally{h.close();}
+ }
+ assert.notEqual(shapes[0],shapes[1]);
+});
+
+test('command accents respect mute and the existing ordinary voice ceiling',()=>{
+ const h=harness();try{
+  audio.playCombatEvents([{type:'order',order:'hold'}],false);assert.equal(h.live(),0);
+  audio.updateAudioMix({effects:0,atmosphere:100});audio.playCombatEvents([{type:'order',order:'advance'}],true);assert.equal(h.live(),0);
+  audio.updateAudioMix({effects:100,atmosphere:100});
+  for(let i=0;i<8;i++)audio.playCombatEvents([{type:'order',order:i%2?'hold':'advance'}],true);
+  assert.equal(h.live(),6,'commands cannot consume critical reserved voices');
+ }finally{h.close();audio.updateAudioMix({effects:100,atmosphere:100});}
+});
 test('audioClockCooldownBoundaries',()=>{
  for(const [event,other,interval] of [
   [{type:'spawn',side:'player'},{type:'spawn',side:'player'},.120],
