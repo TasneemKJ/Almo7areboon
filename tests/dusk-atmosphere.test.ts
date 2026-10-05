@@ -96,3 +96,14 @@ test('depth marks use a quieter two-fill hierarchy than practical glows',async()
  m.paintDuskAtmosphere(painter,[{kind:'depth',x:200,y:300,rx:80,ry:20,color:0xabcdee,alpha:.1}],{x:0,y:0,scale:1});
  assert.equal(fills.length,2);
 });
+test('depth marks stay in the middle of the field, clear of the #158 tap zones and the HUD band',async()=>{
+ const m=await dusk(),{DIRECT_ORDER_EDGE_FRACTION}=await import('../src/ui/battlefield-orders.ts');
+ const width=900,left=width*DIRECT_ORDER_EDGE_FRACTION,right=width*(1-DIRECT_ORDER_EDGE_FRACTION),tolerance=width*.05;
+ for(let age=0;age<6;age++)for(const time of [0,12,31.4,62.8,125.6,1e6])for(const reduced of [false,true]){
+  for(const mark of m.duskAtmosphereFrame(age,time,reduced).filter((mark:any)=>mark.kind==='depth')){
+   assert.ok(mark.x>=left&&mark.x<=right,`chapter ${age} depth centre ${mark.x} must sit between the Hold and Advance tap zones`);
+   assert.ok(left-(mark.x-mark.rx)<=tolerance&&(mark.x+mark.rx)-right<=tolerance,`chapter ${age} depth haze reaches too far into an edge tap zone`);
+   assert.ok(mark.y-mark.ry>=300,`chapter ${age} depth haze must stay below the sky band behind the HUD and title`);
+  }
+ }
+});
