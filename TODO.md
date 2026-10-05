@@ -36,3 +36,4 @@ Ordered tasks. Tick a task when it is done and never delete finished tasks. This
 - [ ] One live cue per first use of Freeze and Advance (lesson 3)
 - [ ] Small hit-stop and knockback on heavy hits and base strikes, absent with reduced motion (lesson 5)
 - [ ] Unearned seals shown on the chapter picker (lesson 6)
+- [ ] RUSH wave panel covers the army in the lane at 320x568 while running; move it out of the lane band
