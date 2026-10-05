@@ -1,24 +1,24 @@
 # Disposable QA branch only. Exactly two bounded entry/result jobs; no manual dispatch or artifact quota gate.
-name: Almo Home and short-result boundary
+name: Almo physical-play first120seconds
 'on':
   push:
     branches:
-      - qa/almo-simple-entry-20261005
+      - qa/almo-world-play-20261005
 permissions:
   contents: read
 concurrency:
-  group: almo-simple-entry-${{ github.ref }}
+  group: almo-world-play-${{ github.ref }}
   cancel-in-progress: false
 env:
-  SOURCE_SHA: bf79938e26ed2d963a76fa4db3102dd4e30fe822
+  SOURCE_SHA: f87b4b173ae8ad3d1978351c032a6d7f42a1e39f
   REVIEW_REVISION: candidate
 jobs:
-  compare-390:
-    name: Empty-profile before and after Home plus real defeat result at 390
+  field-390:
+    name: Matched first deployment and ordinary120seconds at390
     runs-on: ubuntu-latest
     timeout-minutes: 15
     env:
-      REVIEW_CASE: compare-390
+      REVIEW_CASE: field-390
     steps:
       - uses: actions/checkout@v7
         with:
@@ -32,7 +32,7 @@ jobs:
       - uses: actions/checkout@v7
         with:
           path: baseline
-          ref: d9dd1dcd1c5c4a4bb6cdd44641e73f8dd07f4003
+          ref: bf79938e26ed2d963a76fa4db3102dd4e30fe822
           persist-credentials: false
       - uses: actions/setup-node@v7
         with:
@@ -47,8 +47,8 @@ jobs:
             if "$@" >"$log" 2>&1; then tail -c 12000 "$log"; else tail -c 24000 "$log"; return 1; fi
           }
           test "$(git -C candidate rev-parse HEAD)" = "$SOURCE_SHA"
-          test "$(git -C candidate rev-parse HEAD^{tree})" = 90b3d59e04d445323d7c8cca0434ad43c9758d3e
-          test "$(git -C baseline rev-parse HEAD)" = d9dd1dcd1c5c4a4bb6cdd44641e73f8dd07f4003
+          test "$(git -C candidate rev-parse HEAD^{tree})" = 362f7a363989281af30322eb0bf991d51b3df7a9
+          test "$(git -C baseline rev-parse HEAD)" = bf79938e26ed2d963a76fa4db3102dd4e30fe822
           git -C candidate diff --exit-code HEAD --
           git -C baseline diff --exit-code HEAD --
           (cd candidate; bounded npm ci --ignore-scripts; bounded npm run build; bounded npx playwright install --with-deps chromium)
@@ -57,23 +57,22 @@ jobs:
         if: ${{ !cancelled() && steps.build.outcome == 'success' }}
         working-directory: baseline
         env:
-          SOURCE_SHA: d9dd1dcd1c5c4a4bb6cdd44641e73f8dd07f4003
+          SOURCE_SHA: bf79938e26ed2d963a76fa4db3102dd4e30fe822
           REVIEW_REVISION: baseline
         run: flock /tmp/browser.lock node --experimental-strip-types ../harness/scripts/capture-entry.mjs
-      - name: Candidate native Home Settings Play deployment Retreat and result
+      - name: Candidate physical recruitment and ordinary120seconds
         if: ${{ !cancelled() && steps.build.outcome == 'success' }}
         working-directory: candidate
         run: flock /tmp/browser.lock node --experimental-strip-types ../harness/scripts/capture-entry.mjs
       - name: Atomically transport at most three untouched originals for whole job
         if: ${{ !cancelled() && steps.build.outcome == 'success' }}
         run: python3 harness/scripts/emit-originals.py baseline/artifacts/entry-review candidate/artifacts/entry-review
-  small-320-rotate:
-    if: ${{ false }} # Exact-source320/rotation/recovery already passed37384366998; only390 needs settled-geometry follow-through.
-    name: Small Home Settings result rotation and renderer/save recovery
+  field-320-rotate:
+    name: Physical targets, Gather and rotation during120seconds at320
     runs-on: ubuntu-latest
     timeout-minutes: 15
     env:
-      REVIEW_CASE: small-320-rotate
+      REVIEW_CASE: field-320-rotate
     steps:
       - uses: actions/checkout@v7
         with:
@@ -97,13 +96,13 @@ jobs:
             if "$@" >"$log" 2>&1; then tail -c 12000 "$log"; else tail -c 24000 "$log"; return 1; fi
           }
           test "$(git -C candidate rev-parse HEAD)" = "$SOURCE_SHA"
-          test "$(git -C candidate rev-parse HEAD^{tree})" = 90b3d59e04d445323d7c8cca0434ad43c9758d3e
+          test "$(git -C candidate rev-parse HEAD^{tree})" = 362f7a363989281af30322eb0bf991d51b3df7a9
           git -C candidate diff --exit-code HEAD --
           cd candidate
           bounded npm ci --ignore-scripts
           bounded npm run build
           bounded npx playwright install --with-deps chromium
-      - name: Candidate native entry result rotation durable Reload and future-save cases
+      - name: Candidate physical targets, Gather, commands and rotation
         if: ${{ !cancelled() && steps.build.outcome == 'success' }}
         working-directory: candidate
         run: flock /tmp/browser.lock node --experimental-strip-types ../harness/scripts/capture-entry.mjs
