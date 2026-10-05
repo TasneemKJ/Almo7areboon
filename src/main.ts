@@ -47,6 +47,7 @@ import { loadAtmosphere, saveAtmosphere, ambienceAllowed, loadAudioMix, normaliz
 import { createLifetime } from './ui/lifetime.ts';
 import { createModalTapGuard } from './ui/modal-tap-guard.ts';
 import { textIfChanged, htmlIfChanged } from './ui/dom-state.ts';
+import { nextGoalLabel } from './ui/next-goal.ts';
 import { skillCue } from './ui/skill-cues.ts';
 
 // The initial render is a non-playable default. Only ownership makes a loaded Game authoritative.
@@ -82,7 +83,7 @@ root.innerHTML = `
       <div class="stage"><div id="timeline" class="eyebrow"></div><h1 id="age-title"></h1><p id="scene-name" class="scene-name"></p><button id="battle-select" class="battle-select" data-command="battles" aria-label="Choose a battle"><span class="stage-progress" id="stage-progress"></span></button></div>
       <div class="world-tools"><button id="quests" class="square-button" data-command="quests" aria-label="Quests">${icon('quest')}<i class="notification"></i></button><button class="square-button" data-command="settings" aria-label="Settings">${icon('gear')}</button></div>
       <div class="battle-meta"><button id="wave-label" class="wave-inspect" data-command="wave-help"></button><div class="battle-toggles"><button id="speed" data-command="speed" aria-label="Change battle speed">1×</button><button id="pause" data-command="pause" aria-label="Pause battle">Ⅱ</button></div></div>
-      <div id="ready" class="ready"><div class="ready-title">YOUR ARMY. YOUR ERA.</div><button class="big-button green" data-command="start">BATTLE ${icon('battle')}</button><p id="story-ready-rule">Destroy the enemy base!</p><div class="ready-paths"><button class="story-open" data-command="chronicle">Open the storybook</button><button class="journey-open" data-command="journey">Your journey</button></div></div>
+      <div id="ready" class="ready"><div class="ready-title">YOUR ARMY. YOUR ERA.</div><button class="big-button green" data-command="start">BATTLE ${icon('battle')}</button><p id="story-ready-rule">Destroy the enemy base!</p><div class="ready-paths"><button class="story-open" data-command="chronicle">Open the storybook</button><button class="journey-open" id="journey-open" data-command="journey">Your journey</button></div></div>
       <p id="base-status" class="sr-only"></p><p id="game-status" class="sr-only" role="status" aria-live="polite"></p><div id="pause-banner" class="pause-banner" hidden>PAUSED</div>
       <div class="battle-skills" id="battle-skills"></div>
     </section>
@@ -239,6 +240,7 @@ function update(force=false){
   });
   const notification=$('quests').querySelector<HTMLElement>('.notification');
   if(notification)notification.hidden=!(dailyReward(p,localDay()).available||QUESTS.some(q=>p[q.stat]>=q.target&&!p.claimed.includes(q.id)));
+  {const goal=nextGoalLabel(p,localDay()),journeyOpen=$('journey-open');textIfChanged(journeyOpen,goal.text);journeyOpen.setAttribute('aria-label',goal.label);}
   const story=s.chronicle;
   $('story-rally').hidden=!story?.enabled;
   $('story-rally').toggleAttribute('disabled',s.phase!=='running'||s.paused);

@@ -31,8 +31,8 @@ test('draw boundaries remain inside available pools after card storage caps',()=
  }
 });
 test('P39: CI is read-only and publishes a build only after a successful production build',()=>{
- const workflow=readFileSync(new URL('../.github/workflows/verify.yml',import.meta.url),'utf8');
- assert.match(workflow,/contents: read/);assert.match(workflow,/persist-credentials: false/);assert.match(workflow,/almo7areboon-web-build/);assert.match(workflow,/if: steps\.tests\.outcome == 'success' && steps\.build\.outcome == 'success'/);assert.doesNotMatch(workflow,/contents: write|git push/);
+ const workflow=readFileSync(new URL('../.github/workflows/full-verify.yml',import.meta.url),'utf8');
+ assert.match(workflow,/contents: read/);assert.match(workflow,/persist-credentials: false/);assert.doesNotMatch(workflow,/almo7areboon-web-build|path: dist\//);assert.match(workflow,/compression-level: 9/);assert.match(workflow,/retention-days: 1/);assert.doesNotMatch(workflow,/contents: write|git push/);
 });
 test('P40: integrated combat remains finite, bounded and saveable across extreme valid profiles',()=>{
  for(let scenario=0;scenario<12;scenario++){

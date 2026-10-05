@@ -1,9 +1,7 @@
 name: Battle banner and Journey review
 on:
-  pull_request:
-  push:
-    branches: [feat/battle-banner-journey-20261004, feat/village-orders-answer-20261004]
   workflow_dispatch:
+  workflow_call:
 permissions:
   contents: read
 concurrency:
@@ -31,9 +29,16 @@ jobs:
         env:
           QA_ENGINE: ${{ matrix.engine }}
         run: node --experimental-strip-types scripts/verify-battle-banner.mjs
-      - uses: actions/upload-artifact@v4
-        if: always()
+      - name: Trim failure evidence
+        if: failure()
+        run: bash scripts/trim-evidence.sh evidence artifacts/battle-banner
+      - name: Publish failure evidence
+        if: failure()
+        continue-on-error: true
+        uses: actions/upload-artifact@v4
         with:
-          name: battle-banner-${{ matrix.engine }}
-          path: artifacts/battle-banner/
+          name: battle-banner-failure-${{ matrix.engine }}
+          path: evidence/
+          if-no-files-found: ignore
+          compression-level: 9
           retention-days: 1
