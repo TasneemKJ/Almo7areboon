@@ -47,7 +47,7 @@ jobs:
           path: |
             artifacts/audio-review/browser/
             verification-audio-browser.log
-          retention-days: 7
+          retention-days: 1
       - name: Verify enlarged upgrade text in production
         id: upgrade_text
         if: steps.tests.outcome == 'success' && steps.build.outcome == 'success'
@@ -60,7 +60,7 @@ jobs:
           name: upgrade-text-browser-review
           path: artifacts/browser-review/upgrade-text/
 
-          retention-days: 7
+          retention-days: 1
       - name: Publish focused upgrade evidence
         if: always() && steps.upgrade_text.outcome != 'skipped'
         uses: actions/upload-artifact@v4
@@ -69,7 +69,7 @@ jobs:
           path: |
             artifacts/browser-review/upgrade-text/diagnostics.json
             artifacts/browser-review/upgrade-text/*focused.png
-          retention-days: 7
+          retention-days: 1
       - name: Verify production offline audio waveforms
         id: offline_audio
         if: steps.tests.outcome == 'success' && steps.build.outcome == 'success'
@@ -85,7 +85,7 @@ jobs:
           path: |
             artifacts/audio-review/task-1/
             verification-audio.log
-          retention-days: 7
+          retention-days: 1
       - name: Verify production offline return and deployment
         id: offline_game
         if: steps.tests.outcome == 'success' && steps.build.outcome == 'success'
@@ -97,7 +97,7 @@ jobs:
         with:
           name: offline-game-browser-review
           path: artifacts/browser-review/offline-game/
-          retention-days: 7
+          retention-days: 1
       - name: Verify troop unlock teaching in production
         id: troop_unlock
         if: steps.tests.outcome == 'success' && steps.build.outcome == 'success'
@@ -109,7 +109,7 @@ jobs:
         with:
           name: troop-unlock-browser-review
           path: artifacts/browser-review/troop-unlock/
-          retention-days: 7
+          retention-days: 1
       - name: Verify optional wave inspection in production
         id: wave_help
         if: steps.tests.outcome == 'success' && steps.build.outcome == 'success'
@@ -121,7 +121,7 @@ jobs:
         with:
           name: wave-inspection-browser-review
           path: artifacts/browser-review/wave-inspection/
-          retention-days: 7
+          retention-days: 1
       - name: Verify optional legacy learning in production
         id: legacy_learning
         if: steps.tests.outcome == 'success' && steps.build.outcome == 'success'
@@ -134,7 +134,7 @@ jobs:
         with:
           name: legacy-learning-browser-review
           path: artifacts/browser-review/legacy-learning/
-          retention-days: 7
+          retention-days: 1
       - name: Verify Food Drop teaching in production
         id: food_teaching
         if: steps.tests.outcome == 'success' && steps.build.outcome == 'success'
@@ -147,7 +147,7 @@ jobs:
         with:
           name: food-drop-browser-review
           path: artifacts/browser-review/food-drop/
-          retention-days: 7
+          retention-days: 1
       - name: Verify card summon learning in production
         id: card_learning
         if: steps.tests.outcome == 'success' && steps.build.outcome == 'success'
@@ -160,7 +160,7 @@ jobs:
         with:
           name: card-learning-browser-review
           path: artifacts/browser-review/card-learning/
-          retention-days: 7
+          retention-days: 1
       - name: Verify live formation teaching in production
         id: formation_learning
         if: steps.tests.outcome == 'success' && steps.build.outcome == 'success'
@@ -173,7 +173,7 @@ jobs:
         with:
           name: formation-learning-browser-review
           path: artifacts/browser-review/formation-learning/
-          retention-days: 7
+          retention-days: 1
       - name: Verify accessible troop timing in production
         id: troop_status
         if: steps.tests.outcome == 'success' && steps.build.outcome == 'success'
@@ -186,7 +186,7 @@ jobs:
         with:
           name: troop-status-browser-review
           path: artifacts/browser-review/troop-status/
-          retention-days: 7
+          retention-days: 1
       - name: Verify native skill timing cues
         id: skill_cues
         if: steps.tests.outcome == 'success' && steps.build.outcome == 'success'
@@ -198,7 +198,7 @@ jobs:
         with:
           name: skill-cues-browser-review
           path: artifacts/browser-review/skill-cues/
-          retention-days: 7
+          retention-days: 1
       - name: Verify regroup learning in production
         id: regroup
         if: steps.tests.outcome == 'success' && steps.build.outcome == 'success'
@@ -210,7 +210,7 @@ jobs:
         with:
           name: regroup-browser-review
           path: artifacts/browser-review/regroup/
-          retention-days: 7
+          retention-days: 1
       - name: Publish focused village reaction evidence
         if: always() && steps.regroup.outcome != 'skipped'
         uses: actions/upload-artifact@v4
@@ -219,7 +219,7 @@ jobs:
           path: |
             artifacts/browser-review/regroup/diagnostics.json
             artifacts/browser-review/regroup/village*.png
-          retention-days: 7
+          retention-days: 1
       - name: Capture portrait browser states
         id: browser
         if: steps.tests.outcome == 'success' && steps.build.outcome == 'success'
@@ -243,7 +243,7 @@ jobs:
           path: |
             artifacts/save-session-review/diagnostics.json
             artifacts/save-session-review/evolution*.png
-          retention-days: 7
+          retention-days: 1
       - name: Verify mastery progression and guarded result routes
         id: mastery
         if: steps.tests.outcome == 'success' && steps.build.outcome == 'success'
@@ -255,7 +255,7 @@ jobs:
         with:
           name: mastery-browser-review
           path: artifacts/browser-review/mastery/
-          retention-days: 7
+          retention-days: 1
       - name: Publish focused scouting evidence
         if: always() && steps.mastery.outcome != 'skipped'
         uses: actions/upload-artifact@v4
@@ -264,28 +264,28 @@ jobs:
           path: |
             artifacts/browser-review/mastery/diagnostics.json
             artifacts/browser-review/mastery/scouting*.png
-          retention-days: 7
+          retention-days: 1
       - name: Publish save-session screenshots and diagnostics
         if: always() && steps.save_sessions.outcome != 'skipped'
         uses: actions/upload-artifact@v4
         with:
           name: save-session-browser-review
           path: artifacts/save-session-review/
-          retention-days: 7
+          retention-days: 1
       - name: Publish layering screenshots and diagnostics
         if: always() && steps.layering.outcome != 'skipped'
         uses: actions/upload-artifact@v4
         with:
           name: layering-browser-review
           path: artifacts/browser-review/layering/
-          retention-days: 7
+          retention-days: 1
       - name: Publish browser screenshots
         if: always() && steps.browser.outcome != 'skipped'
         uses: actions/upload-artifact@v4
         with:
           name: portrait-browser-review
           path: artifacts/browser-review/*.png
-          retention-days: 7
+          retention-days: 1
       - name: Publish Lantern screenshots
         # Chapter-specific screenshots keep individual downloads small.
         if: always() && steps.browser.outcome != 'skipped'
@@ -293,28 +293,28 @@ jobs:
         with:
           name: lantern-browser-review
           path: artifacts/browser-review/lantern/*.png
-          retention-days: 7
+          retention-days: 1
       - name: Publish Hillside screenshots
         if: always() && steps.browser.outcome != 'skipped'
         uses: actions/upload-artifact@v4
         with:
           name: hillside-browser-review
           path: artifacts/browser-review/hillside/*.png
-          retention-days: 7
+          retention-days: 1
       - name: Publish Courtyards screenshots
         if: always() && steps.browser.outcome != 'skipped'
         uses: actions/upload-artifact@v4
         with:
           name: courtyards-browser-review
           path: artifacts/browser-review/courtyards/*.png
-          retention-days: 7
+          retention-days: 1
       - name: Publish verified web build
         if: steps.tests.outcome == 'success' && steps.build.outcome == 'success'
         uses: actions/upload-artifact@v4
         with:
           name: almo7areboon-web-build
           path: dist/
-          retention-days: 7
+          retention-days: 1
       - name: Package reproducible verification workspace
         if: always()
         run: |
@@ -324,7 +324,7 @@ jobs:
         with:
           name: game-workspace
           path: ${{ runner.temp }}/game-workspace.tar.gz
-          retention-days: 3
+          retention-days: 1
       - name: Require passing checks
         if: always()
         env:

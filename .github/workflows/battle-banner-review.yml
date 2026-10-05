@@ -36,4 +36,4 @@ jobs:
         with:
           name: battle-banner-${{ matrix.engine }}
           path: artifacts/battle-banner/
-          retention-days: 7
+          retention-days: 1

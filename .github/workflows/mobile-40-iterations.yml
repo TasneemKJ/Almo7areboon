@@ -36,7 +36,7 @@ jobs:
         with:
           name: qa40-source
           path: artifacts/qa40-source/
-          retention-days: 7
+          retention-days: 1
   iterations:
     runs-on: ubuntu-latest
     timeout-minutes: 15
@@ -76,4 +76,4 @@ jobs:
         with:
           name: qa40-${{ matrix.engine }}-${{ matrix.ids }}
           path: artifacts/qa40/
-          retention-days: 7
+          retention-days: 1

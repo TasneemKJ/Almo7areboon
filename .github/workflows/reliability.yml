@@ -54,10 +54,10 @@ jobs:
             artifacts/save-session-review/
             artifacts/browser-review/offline-game/
             /tmp/reliability-preview.log
-          retention-days: 7
+          retention-days: 1
       - uses: actions/upload-artifact@v4
         if: success()
         with:
           name: reliability-web-build
           path: dist/
-          retention-days: 7
+          retention-days: 1
