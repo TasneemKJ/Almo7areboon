@@ -46,6 +46,16 @@ The default skills are Freeze, Meteor and Food Drop, each usable once per battle
 
 Settings include sound, 1x/2x speed, reduced motion, JSON save export and confirmed import. Keyboard: **1/2/3** deploy; **Q/W/E** use skills; **Space** starts or pauses outside a button; **Escape** closes ordinary dialogs. Menus, other screens and hidden tabs pause combat without canceling a manual pause.
 
+## Running the full suite
+
+The pull-request and `main` gate (`verify` workflow) is deliberately fast: `npm run build` (type check plus production build) and `npm run test:fast`, which skips six slow simulation suites. Everything heavy is manual or weekly and keeps its scripts:
+
+- `npm test` runs every unit test, including the slow campaign simulations. Run it before pushing a batch.
+- `npm run preview -- --port <free port>` then `npm run review:monkey`, `review:save-sessions`, `review:contrast`, `review:clip`, `review:overlap` and `review:layering` for browser checks. Run them after UI, save or layout changes.
+- `node --experimental-strip-types scripts/verify-battle-banner.mjs`, `scripts/review-chronicle.mjs`, `scripts/verify-mobile.mjs`, `scripts/verify-reliability.mjs` are the multi-engine suites behind the manual workflows. The finished forty-iteration campaign (`scripts/qa40/campaign.mjs`, `scripts/qa40/dialog-layout.mjs`) has no workflow any more; run it locally with `QA_ENGINE=chromium QA_IDS=1-10 node --experimental-strip-types scripts/qa40/campaign.mjs` against a preview.
+- On GitHub, run the **Full verification (manual)**, **Battle banner and Journey review**, **Folktale tactics review**, **Mobile reliability**, **Reliability checks** workflows with *Run workflow*.
+- The **Weekly full suite** workflow runs all of the above once a week (Mondays, on `main`) and can also be started by hand. It never deploys. Failing runs upload one small evidence artifact (log tails, JSON, up to four 800px JPEGs, one-day retention).
+
 ## Saves
 
 The storage key remains `almo7areboon.save.v1` for compatibility, but its profile schema is version 5. Six-card prototype saves migrate to the 30-card collection. A separate validated backup can recover a corrupt primary save. Unknown future save versions are protected from overwrite.
@@ -68,7 +78,9 @@ An unfinished battle reloads ready while preserving already earned coins. An una
 
 The browser probes are summarised in [docs/quality-probes.md](docs/quality-probes.md). `npm run review:monkey` (against a running preview) starts the game on seven damaged or missing saves and then feeds it random taps and keys, failing on any uncaught page error; set `CHROMIUM_PATH` to reuse an installed Chromium. `npm run review:contrast` screenshots the area behind every text element on each screen and dialog and lists candidates below WCAG AA (read the list: partly hidden elements and containers with icons can be false positives). `npm run review:clip` measures every text run on each screen and dialog at 320 and 390px and fails if an `overflow: hidden` ancestor cuts it off or it runs past the viewport (text inside scrolling containers is fine). `npm run review:overlap` checks that the main HUD elements never overlap at six phone and tablet sizes, even with very large coin and gem totals.
 
-GitHub Actions runs tests and the production build with read-only repository permissions. The `almo7areboon-web-build` artifact is published only when both checks succeed; this is a downloadable artifact, not a deployment.
+GitHub Actions runs tests and the production build with read-only repository permissions. Workflows upload one small evidence artifact (trimmed log tails, JSON and at most four 800px JPEGs, one-day retention) only when a run fails; no build output is published.
+
+See [CREDITS.md](CREDITS.md) for licences and the privacy note, and [docs/performance-budgets.md](docs/performance-budgets.md) for load and size budgets.
 
 ## Fidelity and limits
 

@@ -9,3 +9,6 @@
 .battle-meta>.wave-inspect { font-size:11px; }
 /* Troop role and specialty captions (e.g. RANGED · PIERCE) fit their cards at 10px with tight tracking. */
 .unit-role { font-size:10px; letter-spacing:0; }
+
+/* Dialog titles take programmatic focus for screen readers; show a ring only for keyboard users, never a boxed heading after a tap or battle end. */
+#dialog-title:focus:not(:focus-visible) { outline:none; }

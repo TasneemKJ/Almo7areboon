@@ -3,7 +3,7 @@ import assert from 'node:assert/strict';
 import { spawnSync } from 'node:child_process';
 import { readFileSync } from 'node:fs';
 
-const workflow = readFileSync(new URL('../.github/workflows/verify.yml', import.meta.url), 'utf8');
+const workflow = readFileSync(new URL('../.github/workflows/full-verify.yml', import.meta.url), 'utf8');
 const ids = [...workflow.matchAll(/id: (\w+)\n(?:[^\n]*\n)*?        continue-on-error: true/g)].map(match => match[1]);
 const gate = new URL('../scripts/require-verification.mjs', import.meta.url);
 function run(steps: unknown) {
