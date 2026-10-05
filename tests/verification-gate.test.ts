@@ -4,6 +4,7 @@ import { spawnSync } from 'node:child_process';
 import { readFileSync } from 'node:fs';
 
 const workflow = readFileSync(new URL('../.github/workflows/verify.yml', import.meta.url), 'utf8');
+const mobileReview = readFileSync(new URL('../scripts/verify-mobile.mjs', import.meta.url), 'utf8');
 const ids = [...workflow.matchAll(/id: (\w+)\n(?:[^\n]*\n)*?        continue-on-error: true/g)].map(match => match[1]);
 const gate = new URL('../scripts/require-verification.mjs', import.meta.url);
 function run(steps: unknown) {
@@ -51,4 +52,9 @@ test('deep verification is manual-only', () => {
   assert.match(triggers, /\n  workflow_dispatch:\s*$/m);
   assert.doesNotMatch(triggers, /\n  push:/);
   assert.doesNotMatch(triggers, /\n  pull_request:/);
+});
+
+
+test('mobile browser gate audits every enabled visible control for a 44px target', () => {
+  assert.match(mobileReview, /for\(const c of screen\.controls\.filter\(c=>!c\.disabled\)\)check\(c\.width>=44&&c\.height>=44,/);
 });
