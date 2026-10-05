@@ -2,6 +2,10 @@
 
 Semantic versioning. Each merged batch adds an entry and a `vX.Y.Z` tag.
 
+## 0.3.1 - 2026-10-05
+- The incoming-wave label moved out of the lane into the sky band under the title (it covered the marching army at 320x568 and in landscape).
+- Dialogs in short landscape lose the empty header band.
+
 ## 0.3.0 - 2026-10-05
 - Landscape phones: side rail layout; the battlefield stays in view while deploying.
 - Portrait: Gather has its own space; tall phones no longer push upgrades under the navigation.

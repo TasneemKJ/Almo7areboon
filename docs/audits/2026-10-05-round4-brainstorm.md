@@ -26,3 +26,6 @@ IDEAL + 5Ws. Who: a phone player mid-battle. Priority from the art-director revi
 
 ## Chosen
 1 and 2 (blocking visual defects found in review). Further picks below if verified this round.
+
+## Look back
+Screenshots viewed at 320x568, 390x844 and 844x390: the wave label clears the army everywhere; Settings in landscape starts about 40 px higher. Idea 5 (seals on the chapter picker) already existed. The rest stay in TODO.md; this round stayed small on purpose because the two reviewed defects were the priority.
