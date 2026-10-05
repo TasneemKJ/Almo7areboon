@@ -34,7 +34,7 @@ Serve the generated `dist/` directory on a static HTTP host. Opening `index.html
 
 ## Play
 
-Tap **Battle**, accumulate food, then tap a troop to deploy it. Troops march, fight and attack bases automatically. Combine melee or heavy troops with ranged support. Coins earned during defeat remain available for production, base health and troop upgrades.
+Tap **Battle**, accumulate food, then tap a troop to deploy it. Troops march, fight and attack bases automatically. Combine melee or heavy troops with ranged support. Deployments and defeated enemies build momentum; at 60, tap near your gate to **Hold** or near the enemy gate to **Advance**, or use the command buttons. Coins earned during defeat remain available for production, base health and troop upgrades.
 
 Victory unlocks the next opponent. **Choose a battle** replays unlocked opponents while ready. **Evolution** strengthens your own army and clears coins, upgrades and troop unlocks. Your selected opponent, unlocked chapters and earned seals stay; its confirmation explains exactly what resets. Finishing the final opponent begins a harder timeline.
 

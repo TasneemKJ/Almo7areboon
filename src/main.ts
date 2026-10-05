@@ -1,4 +1,5 @@
 import { updateOrderBanner } from './ui/battle-orders.ts';
+import { battlefieldOrderFromGesture } from './ui/battlefield-orders.ts';
 import { journeyScreenHtml } from './ui/journey-screen.ts';
 import './ui/chronicle.css';
 import { chronicleScreenHtml, chronicleActionFromData } from './ui/chronicle-screen.ts';
@@ -55,6 +56,7 @@ const root=document.querySelector<HTMLDivElement>('#app');
 if(!root)throw new Error('The game mount element is missing.');
 const lifetime=createLifetime();
 let activeTab='battle',modal:string|null=null,manualPaused=false;
+let battlefieldPointer:{id:number;x:number;y:number}|null=null;
 let villagePresentation:VillagePresentation|null=null;
 let atmosphereEnabled=loadAtmosphere();
 let audioMix=loadAudioMix();
@@ -381,7 +383,7 @@ function showSettings(){
   <button class="setting-row" data-command="motion" aria-pressed="${game.profile.motion==='reduced'}">Motion <b>${game.profile.motion==='reduced'?'REDUCED':'SYSTEM'}</b></button>
   ${game.state.phase==='running'?'<button class="big-button secondary retreat-button" data-command="retreat">RETREAT FROM THIS BATTLE</button><p class="save-note">Retreating counts as a loss. Coins you already earned are kept.</p>':''}
   <div class="backup-actions"><button class="big-button blue" data-command="export">EXPORT SAVE</button><button class="big-button secondary" data-command="import" ${session.status!=='active'?'disabled':''}>IMPORT SAVE</button><button class="big-button secondary" data-command="reset" ${session.status!=='active'?'disabled':''}>START OVER</button><input id="import-save" type="file" accept=".json,application/json" hidden></div>
-  <details class="help-box"><summary>How to play</summary><p>Tap Battle, collect food and deploy troops. Your army fights automatically.</p><p>Deployments and defeated enemies earn momentum. At 60, choose a 10-second order: Advance adds 20% troop damage and 15% movement; Hold reduces incoming troop and gate damage by 25%.</p><p>Keep ranged troops behind a melee or heavy front line. Spend earned coins on food production and new troops.</p><p>Battle victories unlock opponents. Evolution upgrades your own army and resets coins and upgrades. Your selected opponent, unlocked battles and chapter seals stay.</p><small>1–3 troops · Q / W / E skills · Space pause · Escape closes menus.</small></details>
+  <details class="help-box"><summary>How to play</summary><p>Tap Battle, collect food and deploy troops. Your army fights automatically.</p><p>Deployments and defeated enemies earn momentum. At 60, tap near your gate to Hold or near the enemy gate to Advance; the command buttons remain available. Advance adds 20% troop damage and 15% movement for 10 seconds; Hold reduces incoming troop and gate damage by 25% for 10 seconds.</p><p>Keep ranged troops behind a melee or heavy front line. Spend earned coins on food production and new troops.</p><p>Battle victories unlock opponents. Evolution upgrades your own army and resets coins and upgrades. Your selected opponent, unlocked battles and chapter seals stay.</p><small>1–3 troops · Q / W / E skills · Space pause · Escape closes menus.</small></details>
   <p class="save-note">${session.status==='temporary'?temporarySessionNotice:savedWarning?'Saving is unavailable. Export a backup before closing.':'Progress saves on this browser. Export a backup to keep a separate copy.'}</p>`);
 }
 function dailyRow(p:Profile){
@@ -404,6 +406,19 @@ function exportSave(){
   }catch{toast('The backup could not be exported. Your current progress was not changed.');}
 }
 
+lifetime.listen<PointerEvent>($('battlefield'),'pointerdown',e=>{
+ if(!e.isPrimary||e.button!==0){battlefieldPointer=null;return;}
+ battlefieldPointer={id:e.pointerId,x:e.clientX,y:e.clientY};
+});
+lifetime.listen<PointerEvent>($('battlefield'),'pointercancel',()=>{battlefieldPointer=null;});
+lifetime.listen<PointerEvent>($('battlefield'),'pointerup',e=>{
+ const start=battlefieldPointer;battlefieldPointer=null;
+ if(!start||!e.isPrimary||e.pointerId!==start.id||modal||activeTab!=='battle'||game.state.phase!=='running'||game.state.paused||!playable())return;
+ const rect=$('battlefield').getBoundingClientRect();
+ const order=battlefieldOrderFromGesture({startX:start.x,startY:start.y,endX:e.clientX,endY:e.clientY},{left:rect.left,top:rect.top,width:rect.width,height:rect.height});
+ if(order)action({type:'order',order});
+});
+lifetime.listen(window,'blur',()=>{battlefieldPointer=null;});
 lifetime.listen<PointerEvent>(root,'pointerup',e=>blockModalTap.recordPointer(e,performance.now()));
 lifetime.listen<MouseEvent>(root,'click',e=>{
   const button=e.target instanceof Element?e.target.closest<HTMLButtonElement>('button'):null;

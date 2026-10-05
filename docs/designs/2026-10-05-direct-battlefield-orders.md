@@ -57,3 +57,7 @@ These are current storybook assets and mechanics; no retired art is reintroduced
 - Final diff receives an explicit documented review. Self-review must be labeled as such.
 - Merge uses an expected-head guard only after refreshed main/head/CI/reviews/ownership are clear.
 - Claims remain bounded: browser fixtures are not physical-device, Safari, performance or measured-retention evidence.
+
+## Observed red gate
+
+Before implementation, draft head `30f652e504c44b8d23cf880bd73b72708022dfe8` ran in GitHub Actions. `npm test` failed as intended in Folktale tactics run `37282295281` and both Battle banner review jobs in run `37282295369`; build/browser steps were skipped after the source gate. This is the expected test-first failure for the not-yet-created direct-order helper, not an accepted build.
