@@ -137,8 +137,9 @@ test('native battle-memory journeys use public actions and prove HUD-safe paused
  assert.match(script,/waitForFunction\(\(\)=>!document\.querySelector\('canvas'\)\?\.dataset\.battlefieldMemory/,'the native journey must prove active-time expiry after the paused check');
 });
 
-test('battlefield memory publishes focused original screenshot evidence',()=>{
+test('chronicle CI keeps one small failure-only evidence artifact',()=>{
  const ci=workflow();
- assert.match(ci,/name: battlefield-memory-review/);
- for(const file of ['320-memory-heavy-battlefield-memory-heavy.png','390-memory-heavy-battlefield-memory-heavy.png','1024-memory-heavy-battlefield-memory-heavy.png','390-memory-reduced-battlefield-memory-meteor.png','report.json'])assert.ok(ci.includes(file),`focused artifact must include ${file}`);
+ assert.equal((ci.match(/upload-artifact@v\d+/g)??[]).length,1);
+ assert.match(ci,/if: failure\(\)/);assert.match(ci,/trim-evidence\.sh evidence artifacts\/chronicle/);
+ assert.match(ci,/compression-level: 9/);assert.match(ci,/retention-days: 1/);assert.match(ci,/if-no-files-found: ignore/);
 });

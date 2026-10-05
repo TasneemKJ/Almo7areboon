@@ -1,18 +1,21 @@
 name: Folktale tactics review
 on:
-  pull_request:
   workflow_dispatch:
+  workflow_call:
 permissions:
   contents: read
+concurrency:
+  group: chronicle-${{ github.ref }}
+  cancel-in-progress: true
 jobs:
   chronicle:
     runs-on: ubuntu-latest
     timeout-minutes: 35
     steps:
-      - uses: actions/checkout@v4
+      - uses: actions/checkout@v7
         with:
           persist-credentials: false
-      - uses: actions/setup-node@v4
+      - uses: actions/setup-node@v7
         with:
           node-version: '22'
           cache: npm
@@ -25,31 +28,15 @@ jobs:
           npm run preview -- --port 4173 > /tmp/chronicle-preview.log 2>&1 &
           for i in $(seq 1 30); do curl -fsS http://127.0.0.1:4173/ >/dev/null && break || sleep 1; done
           node --experimental-strip-types scripts/review-chronicle.mjs
-      - uses: actions/upload-artifact@v4
-        if: always()
+      - name: Trim failure evidence
+        if: failure()
+        run: bash scripts/trim-evidence.sh evidence artifacts/chronicle
+      - name: Publish failure evidence
+        if: failure()
+        uses: actions/upload-artifact@v7
         with:
-          name: folktale-tactics-review
-          path: artifacts/chronicle
-          retention-days: 1
-      - uses: actions/upload-artifact@v4
-        if: always()
-        with:
-          name: battlefield-memory-review
-          path: |
-            artifacts/chronicle/320-memory-heavy-battlefield-memory-heavy.png
-            artifacts/chronicle/390-memory-heavy-battlefield-memory-heavy.png
-            artifacts/chronicle/1024-memory-heavy-battlefield-memory-heavy.png
-            artifacts/chronicle/390-memory-reduced-battlefield-memory-meteor.png
-            artifacts/chronicle/report.json
-          retention-days: 1
-      - uses: actions/upload-artifact@v4
-        if: always()
-        with:
-          name: spoils-homecoming-review
-          path: |
-            artifacts/chronicle/320-spoils-home-spoils-home.png
-            artifacts/chronicle/390-spoils-home-spoils-home.png
-            artifacts/chronicle/1024-spoils-home-spoils-home.png
-            artifacts/chronicle/390-spoils-reduced-spoils-reduced.png
-            artifacts/chronicle/report.json
+          name: chronicle-failure-evidence
+          path: evidence/
+          if-no-files-found: ignore
+          compression-level: 9
           retention-days: 1
