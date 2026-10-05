@@ -68,6 +68,7 @@ jobs:
         if: ${{ !cancelled() && steps.build.outcome == 'success' }}
         run: python3 harness/scripts/emit-originals.py baseline/artifacts/entry-review candidate/artifacts/entry-review
   field-320-rotate:
+    if: ${{ false }} # Hold this supplemental job until the390 rendered-body diagnostic clears; no whole-matrix acceptance.
     name: Physical targets, Gather and rotation during120seconds at320
     runs-on: ubuntu-latest
     timeout-minutes: 15

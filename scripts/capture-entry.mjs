@@ -127,15 +127,16 @@ async function assertFrozenHome(page,name){const before=await observe(page);awai
   assert.equal(after.saved?.deployed??0,before.saved?.deployed??0);assert.equal(after.saved?.wins??0,before.saved?.wins??0);
   manifest.checks.push({name,passed:true,before,after,limitation:'Home hides battle HUD; unchanged/absent world phase is a native no-unintended-start check, not a direct simulation-clock reading. Source regression tests establish freeze.'});persist();}
 async function tapPaintedRecruit(page,selector){
- await page.waitForFunction(()=>{const raw=document.querySelector('canvas')?.dataset.fieldCamp;if(!raw)return false;return JSON.parse(raw).rendered.some(actor=>actor.kind===0);});
+ await page.waitForFunction(()=>{const raw=document.querySelector('canvas')?.dataset.fieldCamp,world=document.querySelector('#world');if(!raw||!world)return false;const frame=JSON.parse(raw);return Math.abs(frame.width-world.clientWidth)<1&&Math.abs(frame.height-world.clientHeight)<1&&frame.rendered.some(actor=>actor.kind===0);});
  await action(page,'native touch on the actual painted recruit body',async()=>{
   const point=await page.locator(selector).evaluate(node=>{
    const canvas=document.querySelector('canvas'),origin=canvas.getBoundingClientRect(),report=JSON.parse(canvas.dataset.fieldCamp),actor=report.rendered.find(actor=>actor.kind===Number(node.dataset.fieldRecruit));
    if(!actor)return null;const b=actor.bounds,r=node.getBoundingClientRect(),paint={left:b.left+origin.left,right:b.right+origin.left,top:b.top+origin.top,bottom:b.bottom+origin.top};
    const x=(paint.left+paint.right)/2,y=(paint.top+paint.bottom)/2,hit=document.elementFromPoint(x,y);
    const intersection=Math.max(0,Math.min(paint.right,r.right)-Math.max(paint.left,r.left))*Math.max(0,Math.min(paint.bottom,r.bottom)-Math.max(paint.top,r.top));
-   return {x,y,paint,target:{left:r.left,right:r.right,top:r.top,bottom:r.bottom},coverage:intersection/((paint.right-paint.left)*(paint.bottom-paint.top)),owns:hit===node||node.contains(hit),pixelRatio:report.pixelRatio};
+   return {x,y,paint,frame:{width:report.width,height:report.height},canvas:{left:origin.left,top:origin.top,width:origin.width,height:origin.height},target:{left:r.left,right:r.right,top:r.top,bottom:r.bottom},coverage:intersection/((paint.right-paint.left)*(paint.bottom-paint.top)),owns:hit===node||node.contains(hit),pixelRatio:report.pixelRatio};
   });
+  (manifest.renderedContactAttempts??=[]).push({at:now(),point});persist();
   assert(point&&point.owns&&point.coverage>=.88,'painted recruit must overlap and own its native target');
   manifest.checks.push({name:'painted-recruit-owns-native-contact',passed:true,point});await page.touchscreen.tap(point.x,point.y);
  });
