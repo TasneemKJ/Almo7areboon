@@ -2,6 +2,10 @@
 
 Semantic versioning. Each merged batch adds an entry and a `vX.Y.Z` tag.
 
+## 0.3.3 - 2026-10-05
+- Short-landscape dialogs (Settings, Quests, Journey): the close button floats top-right on an opaque tile and the title starts at the top, removing the empty band of about 70px.
+- The result's battle earnings count up over 0.8 s (static with reduced motion; the full total stays in the accessible label).
+
 ## 0.3.2 - 2026-10-05
 - First-Freeze cue: when three enemies gather and Freeze is unused, the deploy hint says so (first five wins only).
 - Evolving plays a one-shot flare across the new army's cards (static with reduced motion).
