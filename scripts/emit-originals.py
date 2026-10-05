@@ -8,8 +8,8 @@ import re
 import struct
 import sys
 
-EXPECTED_SOURCE = '3436810726aae06b728160b8f8c797fdb2fbae15'
-VIEWPORTS = {'390x844': (390, 844), '844x390': (844, 390), '1280x800': (1280, 800)}
+EXPECTED_SOURCE = '8086b009caf5351d9badd090612c676c1360b325'
+VIEWPORTS = {'390x844': (390, 844), '844x390': (844, 390), '1280x800': (1280, 800), '320x568': (320, 568), '360x640': (360, 640), '412x915': (412, 915)}
 MAX_TEXT_BYTES = 3_932_160  # 3.75 MiB; leave headroom below the connector's 4 MiB job-log cap.
 root = Path(sys.argv[1]).resolve()
 manifest_path = root / 'review-manifest.json'
@@ -17,11 +17,11 @@ if not manifest_path.is_file():
     raise SystemExit('No canonical screenshot manifest was produced.')
 manifest = json.loads(manifest_path.read_text())
 if manifest['sourceCommit'] != EXPECTED_SOURCE or os.environ['SOURCE_SHA'] != EXPECTED_SOURCE:
-    raise SystemExit('Screenshot source is not the requested immutable baseline.')
+    raise SystemExit('Screenshot source is not the requested immutable candidate.')
 if not re.fullmatch('[0-9a-f]{40}', manifest['sourceTree']):
     raise SystemExit('Missing exact source tree identity.')
 viewport = os.environ['REVIEW_VIEWPORT']
-if viewport not in VIEWPORTS or manifest['viewportName'] != viewport or manifest['revision'] != 'baseline':
+if viewport not in VIEWPORTS or manifest['viewportName'] != viewport or manifest['revision'] != 'candidate':
     raise SystemExit('Screenshot job identity is inconsistent.')
 selected = [row for row in manifest['images'] if row.get('transport')]
 if not selected or len(selected) > 3 or len({row['path'] for row in selected}) != len(selected):
