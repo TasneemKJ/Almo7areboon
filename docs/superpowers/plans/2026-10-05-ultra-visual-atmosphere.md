@@ -37,3 +37,5 @@
 - [ ] Give depth marks separate soft opacity treatment while reusing the same Graphics object.
 - [ ] Run `npm test`, `npm run build`, `npm run review:browser`, `npm run review:overlap`, `npm run review:contrast`.
 - [ ] Commit.
+
+RED gate trigger: PR synchronization only; no production code in this commit.
