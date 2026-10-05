@@ -30,7 +30,7 @@ jobs:
         with:
           name: folktale-tactics-review
           path: artifacts/chronicle
-          retention-days: 7
+          retention-days: 1
       - uses: actions/upload-artifact@v4
         if: always()
         with:
@@ -41,7 +41,7 @@ jobs:
             artifacts/chronicle/1024-memory-heavy-battlefield-memory-heavy.png
             artifacts/chronicle/390-memory-reduced-battlefield-memory-meteor.png
             artifacts/chronicle/report.json
-          retention-days: 7
+          retention-days: 1
       - uses: actions/upload-artifact@v4
         if: always()
         with:
@@ -52,4 +52,4 @@ jobs:
             artifacts/chronicle/1024-spoils-home-spoils-home.png
             artifacts/chronicle/390-spoils-reduced-spoils-reduced.png
             artifacts/chronicle/report.json
-          retention-days: 7
+          retention-days: 1
