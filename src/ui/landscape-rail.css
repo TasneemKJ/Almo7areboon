@@ -1,0 +1,68 @@
+/* Mobile-first command spacing and the landscape side rail.
+   Loaded last so it settles the viewport rules from the earlier sheets. */
+
+/* Gather and the hint get their own breathing room under the troop cards' foot. */
+.chronicle-command-row { margin-top:6px; }
+
+/* Phone landscape: battlefield on the left, the whole command deck in a rail on the right,
+   navigation along the bottom. Playing never needs page scrolling, so the fight stays in view. */
+@media (orientation:landscape) and (max-height:540px) and (min-width:600px) {
+ :root, :root body, :root #app { height:100%; min-height:0; max-height:none; overflow:hidden; }
+ :root body { display:block; overscroll-behavior:none; }
+ :root .game-shell {
+  --rail:clamp(300px,42vw,400px);
+  max-width:none; height:100dvh; min-height:0; max-height:none; padding-bottom:0; border-radius:0;
+  display:grid; grid-template-columns:minmax(0,1fr); grid-template-rows:minmax(0,1fr) auto;
+ }
+ :root .battle-view {
+  grid-row:1; min-height:0; overflow:hidden;
+  display:grid; grid-template-columns:minmax(0,1fr) var(--rail); grid-template-rows:minmax(0,1fr) auto;
+ }
+ :root .world { grid-column:1; grid-row:1 / -1; min-height:0; }
+ :root .deployment {
+  grid-column:2; grid-row:1; min-height:0; overflow-y:auto; overscroll-behavior:contain;
+  display:flex; flex-direction:column; justify-content:center; border-top:0; border-left:2px solid #b3b99b;
+ }
+ :root .upgrades { grid-column:2; grid-row:2; border-left:2px solid #b3b99b; }
+ :root .bottom-nav {
+  grid-row:2; position:relative; left:auto; bottom:auto; transform:none; width:auto;
+  height:calc(52px + env(safe-area-inset-bottom,0px));
+  padding-inline:max(8px,env(safe-area-inset-left,0px)) max(8px,env(safe-area-inset-right,0px));
+ }
+ :root .secondary-screen {
+  bottom:calc(52px + env(safe-area-inset-bottom,0px));
+  padding-inline:max(18px,calc((100% - 560px) / 2));
+ }
+ :root .resources { left:max(12px,env(safe-area-inset-left,0px)); right:auto; }
+ :root .world-tools, :root .battle-meta { right:max(10px,env(safe-area-inset-right,0px)); }
+ /* The rail is short: compact the deck slightly; every control stays at least 44px. */
+ :root .unit-card { height:96px; --portrait-top:26px; --portrait-bottom:20px; }
+ :root .world[data-phase="ready"] .stage { margin-top:calc(54px + env(safe-area-inset-top,0px)); }
+ :root .world[data-phase="ready"] .ready { margin-bottom:8px; }
+}
+
+/* Two-line hints break evenly instead of leaving a single orphaned word. */
+.deploy-hint { text-wrap:balance; }
+
+/* While the battlefield renderer downloads, the shell is already usable; the world shows the same
+   quiet loading plate the renderer uses until its first frame. */
+#battlefield[data-renderer="loading"]::before { content:'Preparing the battlefield…'; position:absolute; inset:0; display:grid; place-items:center; padding:48px; background:#214953; color:#fff1ca; font-size:14px; letter-spacing:.4px; }
+
+/* The incoming-wave label sits in the sky band under the chapter title, centred, so it never covers the army
+   in the lane (it used to hang above the skill row, over the marching units on short screens). */
+.battle-meta { top:0; align-items:flex-end; }
+.battle-meta>.wave-inspect {
+ left:50%; bottom:auto; transform:translateX(-50%);
+ top:calc(100px + env(safe-area-inset-top,0px));
+ max-width:calc(100% - 24px);
+}
+@media(max-height:700px) { .battle-meta>.wave-inspect { top:calc(88px + env(safe-area-inset-top,0px)); } }
+
+/* Short landscape dialogs: the close header sits at the top edge instead of under 27px of padding
+   plus an empty 44px band, so Settings and Journey show content on the first screen. */
+@media (orientation:landscape) and (max-height:540px) {
+ .dialog:has(>.dialog-dismiss) { padding-top:4px; }
+ .dialog>.dialog-dismiss { margin-bottom:2px; border-bottom:0; }
+ .dialog>.dialog-dismiss+.eyebrow { margin-top:0; }
+ .dialog h2 { margin:4px 0 8px; font-size:24px; }
+}

@@ -53,7 +53,7 @@ No gameplay constants, duration, rewards, save format, profile data, controls, n
 - The broader original cinematic spec remains pending: authored-plate atmospheric perspective, dusk hierarchy, living sky, foreground composition, contact dust and chapter-wide before/after audit. This batch does not claim those were completed.
 - Source observation for the next batch: `drawAtmosphere()` returns from the authored storybook branch before fallback `paintDuskAtmosphere` and `paintLightingHierarchy` calls. Future depth work must verify the actually displayed branch.
 
-### Final source verification
+### Initial source verification (before main reconciliation)
 
 - `npm ci --ignore-scripts --cache /tmp/almo-command-npm`: succeeded, 22 packages. The first attempt failed because the default home cache was unavailable; a writable temporary cache resolved that setup issue.
 - `node --experimental-strip-types --test tests/order-presentation.test.ts tests/combat-cues.test.ts tests/combat-audio.test.ts`: 32 passed, zero failed.
@@ -62,3 +62,29 @@ No gameplay constants, duration, rewards, save format, profile data, controls, n
 - `npm run build`: exit 0, TypeScript check and Vite production build succeeded. The existing Phaser chunk-size warning remains.
 - Manifest comparison: only the four scoped production files, three scoped test files, DESIGN, UX-CONTRACT and TODO differ from the provided snapshot; this audit is the only new source file. No save, simulation, dependency manifest or workflow files changed.
 - Browser, physical-device, RTL and perceptual audio acceptance: unverified, not claimed. Full suite and fast gate remain RED pending genuine resolution of the original cinematic roadmap test.
+
+
+## Reconciliation with main `00a75cb8d6705926103e746f81fc8495945630cb`
+
+The command batch was reconciled after main advanced to version 0.3.1. All 24 changed upstream blobs and the five overlap ancestors were fetched at exact revisions and checked against their Git blob SHA. All 578 non-owned upstream blobs match the new main exactly after reconciliation. The four command production files have no upstream overlap and retain their reviewed source.
+
+- Kept upstream lazy Phaser loading, landscape side rail, Gather spacing, compact landscape dialog header, wave-panel positioning, new Journey result wording, Open Graph image, mobile touch harness, dependency metadata and CI rules.
+- Merged both additive TODO/UX sections. Preserved main's 0.3.1 version and `review:mobile-touch` script; appended the shared size checker to its existing build command. Package-lock remains byte-identical to new main.
+- Retained upstream browser timing and unmet 8–14 fps software-WebGL evidence in performance budgets. The single 500 KiB aggregate gzip ceiling includes engine, lazy chunks and workers; per-chunk historical measurements are not separate allowances.
+- Combined the behavioral-gates worker's three real Graphics-boundary tests with main's new bounded-refinement metadata test. The source for main's unconsumed `duskRefinement40` data helper is unchanged. Neither a passing metadata test nor an eight-by-five number array proves forty visible refinements.
+- The shared checker scope clarification (emitted JS files plus executable inline script blocks) is included. Event-handler attributes and `javascript:` URLs remain outside that documented static size metric.
+
+### Fresh reconciled verification
+
+- Dependency installation: exit 0 using the writable temporary npm cache.
+- Focused command, dusk, landscape and CI-layout tests: 59/59 passed.
+- `npm test`: 1,035/1,035 passed, exit 0.
+- `npm run test:fast`: 988/988 passed, exit 0.
+- `npm run build`: TypeScript, Vite and shared size check passed, exit 0.
+- Total emitted JavaScript plus inline script blocks: 468,105 gzip bytes (457.1 KiB), below 512,000 bytes. The existing large-Phaser-chunk warning remains.
+
+### Screenshot review and remaining boundary
+
+Four recovered original PNGs were opened and inspected: baseline `b7ba32ccd607` and candidate `805969b28bd7`, each at 390x844 and 1280x800. They show the existing authored First Fires scene; the candidate's small gate pennant adds readiness without a panel or obscuring the center lane. Those captures are evidence for the older compared sources only. The separate older-source browser run reported native touch, direct command acceptance, pause and rotation passing. No new-main screenshot, 4x CPU or listening acceptance is inferred from those results.
+
+The reconciled head still needs final-source browser/touch/rotation checks and screenshot review. Physical-device performance, perceptual audio and Arabic/RTL are not certified. The deeper painterly atmosphere work is a separate, unfinished visual batch; no extra atmospheric source changes were bundled into this reconciliation.

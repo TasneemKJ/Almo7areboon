@@ -16,7 +16,8 @@ export function masteryMarksHtml(profile:Profile,chapter:number):string {
  }).join('')}</span><span class="mastery-requirement">${view.thirdRequirement}</span><span class="mastery-remaining">${number(view.remainingCoins)} coins · ${number(view.remainingGems)} gems remaining</span>`;
 }
 
-export function masteryAttemptText(profile:Profile,state:BattleState):string {
+/** `repeatRequirement` is false where the seal ledger above already states the requirement (result screen). */
+export function masteryAttemptText(profile:Profile,state:BattleState,repeatRequirement=true):string {
  const view=chapterMastery(profile,profile.enemyAge);
  if(state.phase==='won'&&profile.pendingVictory?.settlement==='legacy')return `Seals are available on future attempts. ${view.thirdRequirement}`;
  const objective=masteryObjectiveProgress(profile.enemyAge,{...state,stats:battleStats(state.stats)});
@@ -29,7 +30,7 @@ export function masteryAttemptText(profile:Profile,state:BattleState):string {
   case 4:measure=`${objective.value} meteor defeats · target 3 enemies`;break;
   case 5:measure=`${objective.value} deployments · at most 18`;break;
  }
- return `${view.thirdRequirement} Attempt: ${measure}.`;
+ return `${repeatRequirement?`${view.thirdRequirement} `:''}Attempt: ${measure}.`;
 }
 
 /** One supported next-attempt fact, in the specified evidence priority. */

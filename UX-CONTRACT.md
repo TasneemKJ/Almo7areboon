@@ -21,4 +21,6 @@ All new controls have semantic names,44px minimum, visible keyboard focus and no
 
 The ready-screen Journey button label (`ui/next-goal.ts`) is derived from the current profile only: daily reward, then a claimable milestone, then the nearest unfinished milestone. It never claims, spends or saves, and its accessible name starts with "Your journey".
 
+Phone landscape (`orientation:landscape`, height at most 540px, width at least 600px) uses the side rail in `ui/landscape-rail.css`: the battlefield fills the left, the command deck and upgrades fill a right rail, navigation runs along the bottom, and playing needs no page scroll. Portrait keeps the Gather control in its own row below the troop cards. `npm run review:mobile-touch` checks both by touch at 320-412 portrait and 844x390.
+
 The gate readiness pennant reads `canIssueOrder` for both Hold and Advance; it cannot appear as ready while paused, outside a running battle or during an active order. Readiness itself produces neither an audio cue nor a village answer. Accepted order audio comes only from the existing drained simulation events, with valid order IDs, ordinary voice limits and existing sound/mix/lifecycle gates. Rejected input remains silent. No additional control or balance path is introduced.

@@ -2,10 +2,11 @@
 
 ## One ceiling for all six games
 
-The production distribution must ship **at most 500 KiB (512,000 bytes) of
-JavaScript after gzip compression at level 9**. This definition and value are
-identical in Al-bayyara, Al-ejar, Al-nafetha, Almo7areboon, Bait-Al-dumiah and
-souq-al-layl. There is no separate allowance or exclusion for an engine.
+The production output's **emitted JavaScript files plus executable inline
+`<script>` blocks must total at most 500 KiB (512,000 bytes), using gzip
+compression at level 9**. This definition and value are identical in
+Al-bayyara, Al-ejar, Al-nafetha, Almo7areboon, Bait-Al-dumiah and souq-al-layl.
+There is no separate allowance or exclusion for an engine.
 
 `scripts/check-size.mjs` measures the completed output and exits nonzero when
 it exceeds the limit, is missing, or contains no JavaScript. The production
@@ -27,10 +28,13 @@ node scripts/check-size.mjs path/to/output
   This lets the single-file Souq distribution use the same JavaScript metric.
 - JSON data blocks and import maps are not executable JavaScript. HTML markup,
   CSS, source maps, images, fonts and audio are outside this particular metric.
-- This is the **whole locally shipped JavaScript distribution**, not only the
-  entry chunk or code requested before the first frame. A second chunk does not
-  remove bytes from the budget. The checker does not fetch remote resources or
-  claim to measure server compression, cache behavior or network transfer bytes.
+- Inline event-handler attributes (such as `onclick`) and `javascript:` URLs
+  are outside this static metric. The checker does not account for every
+  executable byte in HTML. This scope is identical in all six repositories.
+- These files and script blocks count across the **whole output directory**,
+  including both entry and deferred code. A second chunk does not remove bytes
+  from the budget. The checker does not fetch remote resources or claim to
+  measure server compression, cache behavior or network transfer bytes.
 
 The checker prints each measured file and the exact total, using KiB = 1,024
 bytes. Run it on freshly packaged output; stale files in the directory still

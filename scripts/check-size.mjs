@@ -1,5 +1,6 @@
 /* Common game-distribution budget. Keep this checker identical in all six repos.
- * Count all shipped JS, including engines, lazy chunks, workers and inline scripts.
+ * Count emitted JS files and executable inline <script> blocks, including engines.
+ * Event-handler attributes and javascript: URLs are outside this static metric.
  * This is a reproducible gzip-size ceiling, not a mobile load-time measurement.
  * See docs/javascript-budget.md. Run after packaging: node scripts/check-size.mjs [outDir]. */
 import { readdirSync, readFileSync } from 'node:fs';
@@ -61,7 +62,7 @@ if (process.argv[1] && import.meta.url === pathToFileURL(resolve(process.argv[1]
   try {
     const directory = process.argv[2] ? resolve(process.argv[2]) : fileURLToPath(new URL('../dist/', import.meta.url));
     const report = measureJavaScript(directory);
-    const line = `total JavaScript ${report.bytes} bytes (${(report.bytes / 1024).toFixed(1)} KiB) gzip; budget ${JS_BUDGET_GZIP_BYTES} bytes (500 KiB)`;
+    const line = `total JavaScript ${report.bytes} bytes (${(report.bytes / 1024).toFixed(1)} KiB) gzip; budget ${JS_BUDGET_GZIP_BYTES} bytes (500 KiB); scope: JS files + inline script blocks`;
     for (const entry of report.entries) console.log(`check-size: ${entry.path}: ${entry.bytes} bytes gzip`);
     if (report.overBudget) { console.error(`check-size: over budget, ${line}`); process.exit(1); }
     console.log(`check-size: ${line}`);
