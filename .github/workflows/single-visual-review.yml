@@ -1,4 +1,4 @@
-name: Single visual review 805969b
+name: Recover original frames 805969b
 # Disposable verification branch only. Never merge these review files into a product PR.
 on:
   push:
@@ -29,7 +29,7 @@ jobs:
     env:
       SOURCE_SHA: ${{ matrix.source }}
       REVIEW_REVISION: ${{ matrix.revision }}
-      REVIEW_Al-bayyara: Al-bayyara
+      REVIEW_GAME: Almo7areboon
     steps:
       - name: Check out disposable review harness
         uses: actions/checkout@v7
@@ -74,18 +74,6 @@ jobs:
         if: ${{ !cancelled() && steps.browser.outcome == 'success' }}
         timeout-minutes: 12
         run: flock /tmp/browser.lock node --experimental-strip-types ../harness/scripts/capture-review.mjs
-      - name: Existing native mobile reliability suite
-        id: journeys
-        if: ${{ !cancelled() && matrix.revision == 'candidate' && steps.browser.outcome == 'success' }}
-        timeout-minutes: 8
-        run: MOBILE_ASSERT=1 MOBILE_ENGINES=chromium flock /tmp/browser.lock node --experimental-strip-types scripts/verify-mobile.mjs
-      - name: Native command, save and offline browser contracts
-        id: commands
-        if: ${{ !cancelled() && matrix.revision == 'candidate' && steps.browser.outcome == 'success' }}
-        timeout-minutes: 12
-        env:
-          QA_ENGINE: chromium
-        run: flock /tmp/browser.lock node --experimental-strip-types scripts/verify-battle-banner.mjs
       - name: Original PNG log transport (artifact quota fallback)
         if: ${{ !cancelled() && steps.browser.outcome == 'success' }}
         run: python ../harness/scripts/emit-originals.py artifacts/single-review

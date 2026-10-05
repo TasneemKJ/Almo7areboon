@@ -23,7 +23,8 @@ async function capture(page,label,width,height,mobile,reduced,scenario,transport
 }
 try{
  browser=await chromium.launch({headless:true,args:['--enable-unsafe-swiftshader']});
- const sizes=manifest.revision==='baseline'?[[390,844],[844,390],[1280,800]]:[[320,568],[360,640],[390,844],[412,915],[844,390],[1280,800],[390,844,true]];
+ const sizes=[[390,844],[1280,800]]; // Recovery: exact-source originals only; full matrix already passed.
+
  for(const [width,height,reduced=false] of sizes){
   const mobile=width!==1280,label=`${width}x${height}-${reduced?'reduced':'full'}-en`;
   const context=await browser.newContext({viewport:{width,height},hasTouch:mobile,isMobile:mobile,deviceScaleFactor:mobile?2:1,reducedMotion:reduced?'reduce':'no-preference'});
@@ -48,7 +49,7 @@ try{
    await action('button[data-order="advance"]');
    await page.waitForFunction(()=>JSON.parse(document.querySelector('canvas')?.dataset.battleOrder??'null')?.order==='advance');
    const active=await page.evaluate(()=>JSON.parse(document.querySelector('canvas')?.dataset.battleOrder??'null'));
-   await capture(page,label+'-advance',width,height,mobile,reduced,'same live battle; accepted Advance input',selected);
+   await capture(page,label+'-advance',width,height,mobile,reduced,'same live battle; accepted Advance input',false);
    await action('#pause');const paused=await page.locator('#pause').getAttribute('aria-pressed');assert.equal(paused,'true');
    if(mobile){await page.setViewportSize({width:height,height:width});assert.equal(await page.locator('#pause').getAttribute('aria-pressed'),'true');await page.setViewportSize({width,height});}
    assert.deepEqual(errors,[]);manifest.checks.push({name:label,passed:true,before,active,paused});
