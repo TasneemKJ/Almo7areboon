@@ -60,3 +60,8 @@ Ordered tasks. Tick a task when it is done and never delete finished tasks. This
 - [x] Reproduce absent compact-live CSS contracts before implementation; preserve original troop markup in every chapter.
 - [x] Compact the existing active roster/food/nav surfaces and narrow the landscape rail without changing actions or gameplay.
 - [ ] Verify full source/build, independent review and same-scene native before/after gains, touch/focus/scroll, cost/lock/warning and repeated state transitions before release.
+
+## Simple opening redesign (5 October 2026)
+- [ ] Verify the new two-control Home and short results in native320/390/844browser captures, including save recovery, return focus and expedition choices.
+- [ ] Replace the dense active deployment/navigation/upgrade/power layout with legible direct world interactions and at most3UI controls; preserve real troop/skill/order/Gather access.
+- [ ] Record genuine empty-profile120second play and representative later saves; audit actual world targets separately from UI chrome.

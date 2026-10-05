@@ -24,7 +24,7 @@ for(const target of ['body','hidden','disabled','detached','unfocusable','valid'
   });
   const layer:any={hidden:false,innerHTML:'dialog'};
   doc.activeElement={};
-  const context:any={document:doc,focusBefore:origin,modal:'settings',modalVersion:0,pendingImport:null,focusFrame:0,activeTab:'battle',
+  const context:any={document:doc,focusBefore:origin,modal:'settings',modalVersion:0,pendingImport:null,focusFrame:0,entryEntered:true,activeTab:'battle',
    playable:()=>true,session:{check:()=>true},window:{cancelAnimationFrame(){}},$:()=>layer,isolateModal(){},syncPause(){},update(){},
    root:{querySelector:()=>nav},
   };
@@ -35,9 +35,16 @@ for(const target of ['body','hidden','disabled','detached','unfocusable','valid'
 }
 test('initial loading with no dialog does not steal keyboard focus',()=>{
  const doc:any={body:{},documentElement:{},activeElement:{}};const before=doc.activeElement;let focused=false;
- const context:any={document:doc,focusBefore:null,modal:null,modalVersion:0,pendingImport:null,focusFrame:0,activeTab:'battle',
+ const context:any={document:doc,focusBefore:null,modal:null,modalVersion:0,pendingImport:null,focusFrame:0,entryEntered:true,activeTab:'battle',
   playable:()=>true,session:{check:()=>true},window:{cancelAnimationFrame(){}},$:()=>({}),isolateModal(){},syncPause(){},update(){},
   root:{querySelector:()=>({focus(){focused=true;}})},
  };
  runInNewContext(code,context);context.closeModal(false);assert.equal(focused,false);assert.equal(doc.activeElement,before);
+});
+test('closing Home Settings returns focus to the entry when its original control is gone',()=>{
+ const doc:any={body:{},documentElement:{},activeElement:{}};
+ const play={focus(){doc.activeElement=this;}};const layer={hidden:false,innerHTML:'settings'};
+ const context:any={document:doc,focusBefore:null,modal:'settings',modalVersion:0,pendingImport:null,focusFrame:0,entryEntered:false,activeTab:'battle',
+  playable:()=>true,session:{check:()=>true},window:{cancelAnimationFrame(){}},$:(id:string)=>id==='entry-play'?play:layer,isolateModal(){},syncPause(){},update(){},root:{querySelector:()=>null}};
+ runInNewContext(code,context);context.closeModal(false);assert.equal(doc.activeElement,play);assert.equal(context.entryEntered,false);
 });

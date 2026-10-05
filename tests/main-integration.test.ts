@@ -1,3 +1,5 @@
+import {entryCopy} from '../src/ui/entry-screen.ts';
+import {chapterLandscape} from '../src/ui/chapter-presentation.ts';
 import {journeyScreenHtml} from '../src/ui/journey-screen.ts';
 import {updateOrderBanner} from '../src/ui/battle-orders.ts';
 import {chronicleScreenHtml,chronicleActionFromData} from '../src/ui/chronicle-screen.ts';
@@ -17,7 +19,7 @@ import { battleSelectionHtml, evolutionDialogHtml } from '../src/ui/progression-
 import { ERAS, QUESTS, foodRate, unlockCost, dailyReward, localDay } from '../src/game/data.ts';
 import { battleGuidance, baseHealthDisplay, compactNumber, waveLabel, waveAccessibleLabel } from '../src/ui/battle-hud.ts';
 import { chapterPresentation, unitPresentationName } from '../src/ui/chapter-presentation.ts';
-import { resultsHtml } from '../src/ui/results-screen.ts';
+import { compactResultsHtml, expeditionChoiceHtml, resultsHtml } from '../src/ui/results-screen.ts';
 import { earlierChapter } from '../src/ui/regroup-learning.ts';
 import { isLegacyChoice, legacyEffects, prestigePreview } from '../src/game/prestige.ts';
 import { legacyCurrentHtml, prestigeDetailsHtml, prestigeDialogHtml } from '../src/ui/prestige-presentation.ts';
@@ -31,7 +33,7 @@ import { createModalTapGuard } from '../src/ui/modal-tap-guard.ts';
 // Execute the app's actual functions with a clock and minimal DOM boundary; no browser/debug hooks.
 const source = readFileSync(new URL('../src/main.ts', import.meta.url), 'utf8');
 const ast = ts.createSourceFile('main.ts', source, ts.ScriptTarget.Latest, true, ts.ScriptKind.TS);
-const names = new Set(['playable', 'guardAction', 'action', 'persist', 'update', 'renderScreen', 'sessionPresentation', 'showResult', 'acquireSession', 'dismissModal', 'returnToChapters', 'clearPrestigeContext', 'openPrestige', 'refreshPrestige', 'returnFromPrestige', 'dailyRow', 'showQuests']);
+const names = new Set(['playable', 'guardAction', 'action', 'persist', 'update', 'renderScreen', 'sessionPresentation', 'showResult', 'acquireSession', 'dismissModal', 'returnToChapters', 'clearPrestigeContext', 'openPrestige', 'refreshPrestige', 'returnFromPrestige', 'dailyRow', 'showQuests', 'showSettings', 'entryReady', 'syncEntry', 'enterWorld', 'showResultDetails', 'showHome', 'continueWithProvision']);
 const functions = ast.statements.filter(node => ts.isFunctionDeclaration(node) && node.name && names.has(node.name.text));
 assert.equal(functions.length, names.size);
 const click=ast.statements.find(node=>ts.isExpressionStatement(node)&&ts.isCallExpression(node.expression)&&node.expression.expression.getText(ast)==='lifetime.listen'&&node.expression.arguments[0]?.getText(ast)==='root'&&node.expression.arguments[1]?.getText(ast)==="'click'") as ts.ExpressionStatement;
@@ -44,7 +46,7 @@ const code = ts.transpile(functions.map(node => node.getText(ast)).join('\n')+`\
 function harness(motion = 'full') {
   let now = 100, foreign = false;
   const dialogs: string[] = [];
-  const node = () => ({ dataset: {}, style: {}, hidden: false, innerHTML:'',textContent:'',classList: { toggle() {} }, setAttribute() {}, toggleAttribute() {}, querySelector() { return null; }, querySelectorAll():any[] { return []; } });
+  const node = () => ({ dataset: {}, style: {}, focus() {}, hidden: false, innerHTML:'',textContent:'',classList: { toggle() {} }, setAttribute() {}, toggleAttribute() {}, querySelector() { return null; }, querySelectorAll():any[] { return []; } });
   class BoundaryButton {
     dataset:Record<string,string>;disabled=false;
     constructor(dataset:Record<string,string>){this.dataset=dataset;}
@@ -58,12 +60,12 @@ function harness(motion = 'full') {
   const root = node(), elements = new Map<string, ReturnType<typeof node>>();
   const context: any = {
     Element:BoundaryButton,HTMLInputElement:BoundaryInput, Game, game: new Game(defaultProfile()), sessionReady: true, retriedSession: false, pagePresent: true, lifetime: { disposed: false },
-    acquiring: null, acquisitionVersion: 0, hasPlayed: true, manualPaused: false, savedWarning: false, pendingImport: null, modal: null, evolutionFromResult: false, modalPointerSequence: false,prestigeOrigin:null,prestigeDraft:null,prestigeExpectedTimeline:null,
+    acquiring: null, acquisitionVersion: 0, hasPlayed: true, entryEntered: true, entrySaved: true, resultDetailsOpen:false, atmosphereEnabled:true,audioMix:{effects:100,atmosphere:100}, manualPaused: false, savedWarning: false, pendingImport: null, modal: null, evolutionFromResult: false, modalPointerSequence: false,prestigeOrigin:null,prestigeDraft:null,prestigeExpectedTimeline:null,
     lastUpdate: 0, lastSave: 100, lastPhase: 'ready', resultDue: 0, resultShown: '', activeTab: 'battle', root,
     performance: { now: () => now }, document: { documentElement: { dataset: { motion } } },
-    blockModalTap:createModalTapGuard(),journeyScreenHtml,updateOrderBanner,
-    $: (id: string) => { if (!elements.has(id)) elements.set(id, node()); return elements.get(id); },
-    chronicleScreenHtml,chronicleActionFromData,chronicleGuidance,CAPTAINS,routeDefinition,advanceStatus, battleSelectionHtml, evolutionDialogHtml, ERAS, QUESTS, foodRate, unlockCost, dailyReward, localDay, battleGuidance, baseHealthDisplay, compactNumber, waveLabel, waveAccessibleLabel, chapterPresentation, unitPresentationName, resultsHtml,isLegacyChoice,legacyEffects,prestigePreview,prestigeDetailsHtml,prestigeDialogHtml,legacyCurrentHtml,evolutionScreenHtml,saveSessionDialogHtml,temporarySessionNotice,skillCue,troopUnlockMessage,nextGoalLabel, waveInspectionHtml,
+    blockModalTap:createModalTapGuard(),journeyScreenHtml,updateOrderBanner,entryCopy,chapterLandscape,
+    $: (id: string) => { if (!elements.has(id)) {const element=node();if(id==='battlefield')element.dataset={renderer:'ready'};elements.set(id,element);} return elements.get(id); },
+    chronicleScreenHtml,chronicleActionFromData,chronicleGuidance,CAPTAINS,routeDefinition,advanceStatus, battleSelectionHtml, evolutionDialogHtml, ERAS, QUESTS, foodRate, unlockCost, dailyReward, localDay, battleGuidance, baseHealthDisplay, compactNumber, waveLabel, waveAccessibleLabel, chapterPresentation, unitPresentationName, compactResultsHtml, expeditionChoiceHtml, resultsHtml,isLegacyChoice,legacyEffects,prestigePreview,prestigeDetailsHtml,prestigeDialogHtml,legacyCurrentHtml,evolutionScreenHtml,saveSessionDialogHtml,temporarySessionNotice,skillCue,troopUnlockMessage,nextGoalLabel, waveInspectionHtml,
     earlierChapter,storybookArt: () => false, money: String, coin: String, icon:()=>'',textIfChanged(target:any,value:string){target.textContent=value;},htmlIfChanged(target:any,value:string){target.innerHTML=value;},unlockAudio() {}, syncPause() {}, rebuildArmy() {}, syncMotion() {}, isolateModal(){}, toast() {},
     closeModal() { context.modal=null; }, showModal: (id: string,html:string,focusCommand?:string) => {context.modal=id;context.dialogHtml=html;context.focusCommand=focusCommand;dialogs.push(id);},
     session: {
@@ -388,6 +390,75 @@ test('closing Quests opened from Journey restores the held result without reissu
 });
 test('closing Quests over a loss restores Regroup while ready-state Quests still closes normally',()=>{
  const loss=harness(),c=loss.context;c.game.dispatch({type:'start'});c.game.dispatch({type:'retreat'});c.resultShown='lost';c.modal='result';
- loss.click('journey');loss.click('quests');c.api.dismissModal();assert.equal(c.modal,'result');assert.match(c.dialogHtml,/REGROUP/);
+ loss.click('journey');loss.click('quests');c.api.dismissModal();assert.equal(c.modal,'result');assert.match(c.dialogHtml,/Regroup/i);
  const readyState=harness();readyState.context.modal='quests';readyState.context.api.dismissModal();assert.equal(readyState.context.modal,null);
+});
+
+// Home is a presentation boundary, not an automatic start or reward claim.
+test('Home holds a pending result until Continue without mutating its state',()=>{
+ const h=harness(),c=h.context;c.entryEntered=false;c.game.state.phase='won';c.resultShown='';
+ const before=JSON.stringify([c.game.profile,c.game.state]);c.api.update(true);
+ assert.equal(c.modal,null);assert.equal(JSON.stringify([c.game.profile,c.game.state]),before);
+});
+test('Play deliberately enters and starts a ready battle once',()=>{
+ const h=harness(),c=h.context;c.entryEntered=false;c.entrySaved=false;
+ h.click('enter-world');assert.equal(c.entryEntered,true);assert.equal(c.game.state.phase,'running');
+ const before=JSON.stringify([c.game.profile,c.game.state]);h.click('enter-world');
+ assert.equal(JSON.stringify([c.game.profile,c.game.state]),before);
+});
+test('Home rejects an underlying troop click before entry',()=>{
+ const h=harness(),c=h.context;c.entryEntered=false;c.game.dispatch({type:'start'});
+ h.clickData({unit:'0'});assert.equal(c.game.state.stats.deployed,0);
+});
+test('the real result route shows a compact choice, with details returning without settlement',()=>{
+ const h=harness(),c=h.context;c.game.dispatch({type:'start'});c.game.dispatch({type:'retreat'});
+ const before=JSON.stringify([c.game.profile,c.game.state]);c.api.showResult();
+ assert.equal((c.dialogHtml.match(/<button\b/g)||[]).length,3);assert.doesNotMatch(c.dialogHtml,/battle-statistics/);
+ h.click('result-details');assert.match(c.dialogHtml,/battle-statistics/);
+ h.click('result-back');assert.doesNotMatch(c.dialogHtml,/battle-statistics/);
+ assert.equal(JSON.stringify([c.game.profile,c.game.state]),before);
+});
+test('result Home retains the outcome and Continue returns to it without another payout',()=>{
+ const h=harness(),c=h.context;c.game.dispatch({type:'start'});c.game.dispatch({type:'retreat'});c.api.showResult();
+ const before=JSON.stringify([c.game.profile,c.game.state]);h.click('home');assert.equal(c.entryEntered,false);assert.equal(c.modal,null);
+ h.click('enter-world');assert.equal(c.modal,'result');assert.equal(JSON.stringify([c.game.profile,c.game.state]),before);
+});
+test('Play cannot enter a world whose renderer is still loading',()=>{
+ const h=harness(),c=h.context;c.entryEntered=false;c.$('battlefield').dataset.renderer='loading';
+ h.click('enter-world');assert.equal(c.entryEntered,false);assert.equal(c.game.state.phase,'ready');
+});
+
+test('Home Settings closes back to Home without starting the encounter',()=>{
+ const h=harness(),c=h.context;c.entryEntered=false;const before=JSON.stringify([c.game.profile,c.game.state]);
+ h.click('settings');assert.equal(c.modal,'settings');assert.equal(c.entryEntered,false);
+ h.click('close');assert.equal(c.modal,null);assert.equal(c.entryEntered,false);
+ assert.equal(JSON.stringify([c.game.profile,c.game.state]),before);
+});
+function expeditionResultHarness(){
+ const h=harness(),p=defaultProfile();p.chronicle!.restoration=1;p.cards.fill(100);p.foodLevel=12;p.unlocked=[true,true,true];
+ const g=new Game(p);assert.equal(g.dispatch({type:'chronicle-expedition',battle:0}),true);assert.equal(g.dispatch({type:'start'}),true);
+ for(let tick=0;tick<36000&&g.state.phase==='running';tick++){if(tick%15===0)g.dispatch({type:'spawn',kind:0});g.step(1/60);}
+ assert.equal(g.state.phase,'won');h.context.game=g;h.context.resultShown='won';h.context.lastPhase='won';h.context.modal='result';return h;
+}
+for(const provision of ['supplies','shelter'])test(`explicit ${provision} expedition choice advances once through canonical actions`,()=>{
+ const h=expeditionResultHarness(),c=h.context,before={coins:c.game.profile.coins,gems:c.game.profile.gems,wins:c.game.profile.wins};
+ h.click('result-expedition');assert.equal(c.modal,'result-expedition');
+ h.clickData({command:'continue-with-provision',provision});
+ assert.equal(c.game.profile.chronicle.expedition.stage,1);assert.equal(c.game.profile.chronicle.expedition.provision,provision);
+ assert.equal(c.game.state.phase,'ready');assert.equal(c.game.profile.pendingVictory,null);assert.equal(c.modal,null);
+ for(const key of ['coins','gems','wins'] as const)assert.equal(c.game.profile[key],before[key]);
+ const after=JSON.stringify(c.game.profile);h.clickData({command:'continue-with-provision',provision});assert.equal(JSON.stringify(c.game.profile),after);
+});
+test('expedition choice cancellation and foreign ownership preserve the held receipt',()=>{
+ const h=expeditionResultHarness(),c=h.context,before=JSON.stringify(c.game.profile);
+ h.click('result-expedition');h.click('result-back');assert.equal(c.modal,'result');assert.equal(JSON.stringify(c.game.profile),before);
+ h.click('result-expedition');h.foreign();h.clickData({command:'continue-with-provision',provision:'shelter'});
+ assert.equal(c.modal,'session');assert.equal(JSON.stringify(c.game.profile),before);
+});
+test('a failed renderer keeps a durable Home explanation and reuses the primary control for Reload',()=>{
+ const h=harness(),c=h.context;c.entryEntered=false;c.$('battlefield').dataset.renderer='failed';c.api.update(true);
+ assert.equal(c.$('entry-play').textContent,'Reload');assert.equal(c.$('entry-play').dataset.command,'reload-world');
+ assert.match(c.$('entry-subtitle').textContent,/could not load.*saved progress/i);
+ let reloads=0;c.window={location:{reload(){reloads++;}}};const before=JSON.stringify(c.game.profile);
+ h.click('reload-world');assert.equal(reloads,1);assert.equal(JSON.stringify(c.game.profile),before);assert.equal(c.entryEntered,false);
 });

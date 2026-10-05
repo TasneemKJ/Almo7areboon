@@ -1,0 +1,47 @@
+/* Home owns its own scene. The battle chrome is absent, not dimmed behind a CTA. */
+#app[data-entry="home"] .game-shell{display:block;height:100dvh;min-height:0;max-height:none;padding:0;position:relative}
+#app[data-entry="home"] .resources,
+#app[data-entry="home"] .battle-view,
+#app[data-entry="home"] .bottom-nav,
+#app[data-entry="home"] .secondary-screen{display:none!important}
+.entry-screen{height:100%;min-height:0;position:relative;isolation:isolate;display:flex;flex-direction:column;justify-content:space-between;overflow:hidden;background:#102b29;color:#fff1d0;padding:max(34px,env(safe-area-inset-top)) 24px max(24px,env(safe-area-inset-bottom))}
+.entry-screen[hidden]{display:none}
+.entry-art{position:absolute;inset:0;z-index:-2;width:100%;height:100%;object-fit:cover;object-position:50% 50%}
+.entry-screen::before{content:"";position:absolute;inset:0;z-index:-1;background:linear-gradient(180deg,rgba(5,22,23,.66),rgba(7,24,25,.02) 40%,rgba(7,24,25,.18) 62%,rgba(7,24,25,.92))}
+.entry-copy{text-align:center;text-shadow:0 2px 12px #061b1bdd}
+.entry-kicker{font-size:10px;letter-spacing:.22em;font-weight:700;margin:0 0 12px}
+.entry-copy h1{font-family:var(--font-display,Georgia,serif);font-size:clamp(27px,8vw,42px);letter-spacing:.015em;line-height:1.1;margin:0 0 14px;color:#ffe9ad}
+#entry-chapter{font-size:17px;font-weight:700;margin:0 0 6px}
+#entry-subtitle{font-size:12px;line-height:1.5;margin:0}
+.entry-actions{width:min(100%,290px);margin-inline:auto;display:grid;gap:8px}
+.entry-actions .big-button{min-height:54px;width:100%;font-size:18px}
+.entry-settings{min-height:44px;background:transparent;border:1px solid #d8bb7777;border-radius:12px;color:#fff1d0;font:inherit;font-size:13px;cursor:pointer}
+.entry-actions button:focus-visible{outline:3px solid #fff5d6;outline-offset:3px}
+#app[data-entry="home"] .session-notice{position:absolute;bottom:0;inset-inline:0;z-index:2;height:auto;min-height:28px}
+#app[data-entry="home"][data-save-session="temporary"] .entry-screen{padding-bottom:calc(max(24px,env(safe-area-inset-bottom)) + 28px)}
+@media(max-height:540px) and (orientation:landscape){
+ .entry-screen{padding:18px 28px max(14px,env(safe-area-inset-bottom));display:grid;grid-template-columns:1fr minmax(180px,260px);align-items:center;gap:30px}
+ .entry-copy{text-align:start}.entry-copy h1{font-size:32px}.entry-actions{align-self:end}.entry-kicker{font-size:9px}
+ .entry-art{object-position:center 57%}
+}
+@media(prefers-reduced-motion:reduce){.entry-screen *{animation:none!important;transition:none!important}}
+
+/* Ordinary results fit in one view; the original complete receipt is deliberate. */
+.dialog:has(>.compact-result){max-width:390px;padding:24px 20px;overflow:auto}
+.compact-result>.eyebrow{display:block;font-size:10px;letter-spacing:.16em;color:var(--muted)}
+.result-dialog .compact-result h2{font-size:34px;line-height:1.1;margin:10px 0 14px}
+.compact-result[data-outcome="lost"] h2{color:#51697c}
+.compact-result-reward{font-size:18px;font-weight:800;margin:0 0 4px;color:var(--ink)}
+.compact-result-settled{font-size:11px;margin:0;color:var(--muted)}
+.compact-result-next{font-size:13px;line-height:1.45;margin:14px 0 18px}
+.compact-result-actions{display:grid;gap:9px}
+.compact-result-actions>.big-button{width:100%;min-height:46px;padding:10px 12px;font-size:14px;line-height:1.3;white-space:normal}
+.result-back{position:sticky;top:0;z-index:3;width:100%;margin-bottom:16px}
+@media(max-height:440px) and (orientation:landscape){
+ .dialog:has(>.compact-result){max-width:650px;padding:18px 22px}
+ .compact-result{display:grid;grid-template-columns:minmax(0,1fr) minmax(190px,.9fr);column-gap:24px;align-items:center;text-align:start}
+ .compact-result-actions{grid-column:2;grid-row:1/span 5}
+ .compact-result>.eyebrow,.compact-result>h2,.compact-result>p{grid-column:1}
+ .result-dialog .compact-result h2{font-size:30px;margin:6px 0 10px}
+ .compact-result-next{margin:10px 0 0}
+}

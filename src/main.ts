@@ -15,6 +15,7 @@ import './ui/readability.css';
 import './ui/layout-polish.css';
 import './ui/skill-cues.css';
 import './ui/battle-banner.css';
+import './ui/simple-entry.css';
 import './ui/landscape-rail.css';
 import { Game } from './game/simulation.ts';
 import { createBattlefieldPort } from './game/battlefield-port.ts';
@@ -30,13 +31,14 @@ import { exportBackup, importBackup, restoreBackupWithSave } from './game/backup
 import type { Action, GameEvent, LegacyChoice, Profile, Skill, UnitKind } from './game/types.ts';
 import {advanceVillagePresentation,type VillagePresentation} from './view/village-mood.ts';
 import { unitPortrait } from './view/unit-illustrations.ts';
-import { chapterPresentation } from './ui/chapter-presentation.ts';
+import { chapterLandscape, chapterPresentation } from './ui/chapter-presentation.ts';
+import { entryCopy, entryScreenHtml } from './ui/entry-screen.ts';
 import { evolutionScreenHtml } from './ui/evolution-screen.ts';
 import { icon } from './view/icons.ts';
 import { playCombatEvents, playSummonAudio, stopCombatAudio, unlockAudio, suspendAudio, disposeAudio, updateSoundscape, updateAudioMix } from './view/audio.ts';
 import { createArmyUpdater, troopControlLabel, troopUnlockMessage } from './ui/army-screen.ts';
 import { cardsScreenHtml, summonedCardsHtml } from './ui/cards-screen.ts';
-import { resultsHtml } from './ui/results-screen.ts';
+import { compactResultsHtml, expeditionChoiceHtml, resultsHtml } from './ui/results-screen.ts';
 import { earlierChapter } from './ui/regroup-learning.ts';
 import { legacyCurrentHtml, prestigeDetailsHtml, prestigeDialogHtml } from './ui/prestige-presentation.ts';
 import { battleGuidance, baseHealthDisplay, compactNumber, waveLabel, waveAccessibleLabel } from './ui/battle-hud.ts';
@@ -73,14 +75,16 @@ let prestigeOrigin:'result'|'battles'|null=null,prestigeDraft:LegacyChoice|null=
 let modalPointerSequence=false;
 const blockModalTap=createModalTapGuard();
 let sessionReady=false,pagePresent=true,resumeOwnership=false,acquisitionVersion=0,hasPlayed=false;
+let entryEntered=false,entrySaved=false,resultDetailsOpen=false;
 let acquiring:Promise<void>|null=null;
 const money=(value:number)=>value>=10000?compactNumber(value):Math.floor(value).toLocaleString('en-US');
 const coin=(value:number)=>`${icon('coin')}<span>${money(value)}</span>`;
 root.innerHTML = `
 <main class="game-shell" aria-label="Almo7areboon">
+  ${entryScreenHtml(game.profile)}
   <header class="resources"><div class="currency">${icon('coin')}<span id="coins">0</span></div><button class="currency gems" data-command="quests" aria-label="Gems and quests">${icon('gem')}<span id="gems">100</span></button><div class="game-wordmark">ALMO7AREBOON</div></header>
   <div id="battle-view" class="battle-view">
-    <section id="world" class="world" aria-label="Battlefield">
+    <section id="world" class="world" tabindex="-1" aria-label="Battlefield">
       <div id="battlefield"></div>
       <div class="stage"><div id="timeline" class="eyebrow"></div><h1 id="age-title"></h1><p id="scene-name" class="scene-name"></p><button id="battle-select" class="battle-select" data-command="battles" aria-label="Choose a battle"><span class="stage-progress" id="stage-progress"></span></button></div>
       <div class="world-tools"><button id="quests" class="square-button" data-command="quests" aria-label="Quests">${icon('quest')}<i class="notification"></i></button><button class="square-button" data-command="settings" aria-label="Settings">${icon('gear')}</button></div>
@@ -140,7 +144,7 @@ async function acquireSession(){
     const loaded=await session.acquire();
     if(lifetime.disposed||version!==acquisitionVersion||!pagePresent)return;
     if(loaded.status==='active'&&loaded.profile){
-      game=new Game(loaded.profile);lastPhase=game.state.phase;resultDue=0;hasPlayed=true;sessionReady=true;
+      game=new Game(loaded.profile);lastPhase=game.state.phase;resultDue=0;hasPlayed=true;sessionReady=true;entrySaved=loaded.loadStatus!=='new'&&loaded.loadStatus!=='corrupt';
       manualPaused=false;resultShown='';savedWarning=false;pendingImport=null;evolutionFromResult=false;clearPrestigeContext();
       closeModal(false);rebuildArmy();syncMotion();switchTab('battle');
       if(loaded.loadStatus==='recovered')toast('Recovered your progress from the backup save.');
@@ -153,6 +157,28 @@ async function acquireSession(){
   return acquiring;
 }
 
+function entryReady(){return playable()&&$('battlefield').dataset.renderer==='ready'&&!$('battlefield').querySelector('.world-loader');}
+function syncEntry(){
+  const mode=entryEntered?'play':'home';
+  if(root!.dataset.entry!==mode)root!.dataset.entry=mode;
+  if($('entry-screen').hidden!==entryEntered)$('entry-screen').hidden=entryEntered;
+  if(entryEntered)return;
+  const copy=entryCopy(game.profile,entrySaved),failed=$('battlefield').dataset.renderer==='failed';
+  textIfChanged($('entry-play'),failed?'Reload':entryReady()?copy.action:'Loading…');
+  $('entry-play').dataset.command=failed?'reload-world':'enter-world';
+  textIfChanged($('entry-chapter'),copy.chapter);
+  textIfChanged($('entry-subtitle'),failed?'The battlefield could not load. Reload to try again; your saved progress is kept.':copy.subtitle);
+  const art=$('entry-art'),source=chapterLandscape(game.profile.enemyAge);
+  if(art.dataset.source!==source){art.setAttribute('src',source);art.dataset.source=source;}
+  $('entry-play').toggleAttribute('disabled',!playable()||(!failed&&!entryReady()));$('entry-settings').toggleAttribute('disabled',!playable());
+}
+function enterWorld(){
+  if(entryEntered||modal||!guardAction()||!entryReady())return;
+  entryEntered=true;entrySaved=true;syncEntry();
+  if(game.state.phase==='ready'){manualPaused=false;action({type:'start'});}
+  switchTab('battle');
+  if(!modal)$('world').focus({preventScroll:true});
+}
 function rebuildArmy(){updateArmy(game.profile);}
 function toast(message:string,duration=4200){
   textIfChanged($('toast'),message);$('toast').classList.add('visible');
@@ -166,8 +192,8 @@ function persist():boolean{
   return ok;
 }
 function syncPause(){
-  game.state.paused=!playable()||pauseReason({phase:game.state.phase,manual:manualPaused,tab:activeTab,modal,hidden:document.hidden})!==null;
-  if(!game.profile.sound||!playable()||document.hidden||manualPaused||activeTab!=='battle'||(modal!==null&&modal!=='result')){
+  game.state.paused=!entryEntered||!playable()||pauseReason({phase:game.state.phase,manual:manualPaused,tab:activeTab,modal,hidden:document.hidden})!==null;
+  if(!entryEntered||!game.profile.sound||!playable()||document.hidden||manualPaused||activeTab!=='battle'||(modal!==null&&modal!=='result')){
     // Only a direct accepted card-summon's finite shimmer may finish in Cards.
     const summonTail=game.profile.sound&&playable()&&!document.hidden&&!manualPaused&&activeTab==='cards'&&(modal===null||modal==='summon');
     stopCombatAudio(summonTail);
@@ -175,10 +201,10 @@ function syncPause(){
   syncVillagePresentation();
 }
 function syncVillagePresentation(dt=0,batch:readonly GameEvent[]=[]){
-  villagePresentation=advanceVillagePresentation(villagePresentation,game.state,game.profile.age,dt,batch,!playable()||document.hidden||activeTab!=='battle'||modal!==null);
+  villagePresentation=advanceVillagePresentation(villagePresentation,game.state,game.profile.age,dt,batch,!entryEntered||!playable()||document.hidden||activeTab!=='battle'||modal!==null);
   // The renderer calls this after stepping and draining events, so a delayed
   // result dialog still gates audio with the actual terminal phase this frame.
-  updateSoundscape(game.profile.age,ambienceAllowed({sound:game.profile.sound,atmosphere:atmosphereEnabled,paused:game.state.paused,phase:game.state.phase,tab:activeTab,modal,hidden:document.hidden}),villagePresentation.mood);
+  updateSoundscape(game.profile.age,ambienceAllowed({sound:game.profile.sound&&entryEntered,atmosphere:atmosphereEnabled,paused:game.state.paused,phase:game.state.phase,tab:activeTab,modal,hidden:document.hidden}),villagePresentation.mood);
 }
 function syncMotion(){document.documentElement.dataset.motion=game.profile.motion==='reduced'||motionQuery.matches?'reduced':'full';}
 function action(a:Action):boolean{
@@ -193,6 +219,8 @@ function action(a:Action):boolean{
 function update(force=false){
   const now=performance.now();if(!force&&now-lastUpdate<80)return;lastUpdate=now;
  const p=game.profile,s=game.state;
+ syncEntry();
+ if(!entryEntered)return;
  $('world').dataset.phase=s.phase;
  updateOrderBanner($('order-banner'),s);
  const artStyle=storybookArt(p.age)?'storybook':'legacy';
@@ -257,7 +285,7 @@ function update(force=false){
   // Let the finishing blow and base collapse play before the result dialog covers them.
   if(s.phase!==lastPhase){if(lastPhase==='running'&&(s.phase==='won'||s.phase==='lost'))resultDue=now+(document.documentElement.dataset.motion==='reduced'?350:1300);lastPhase=s.phase;}
   const reviewHoldingResult=globalThis.navigator?.webdriver&&document.querySelector('canvas')?.dataset.battlefieldReviewFrameReady===s.phase;
-  if(playable()&&modal!=='session'&&(s.phase==='won'||s.phase==='lost')&&resultShown!==s.phase&&now>=resultDue&&!reviewHoldingResult){resultShown=s.phase;showResult();}
+  if(entryEntered&&playable()&&modal!=='session'&&(s.phase==='won'||s.phase==='lost')&&resultShown!==s.phase&&now>=resultDue&&!reviewHoldingResult){resultShown=s.phase;showResult();}
   if(s.phase==='ready'||s.phase==='running')resultShown='';
   if(playable()&&session.status==='active'&&now-lastSave>5000)persist();
 }
@@ -268,7 +296,7 @@ function switchTab(tab:string){
   $('secondary-screen').hidden=tab==='battle';$('battle-view').inert=tab!=='battle';
   $('battle-view').setAttribute('aria-hidden',String(tab!=='battle'));
   syncPause();renderScreen();update(true);
-  if(tab==='battle'&&!modal&&(game.state.phase==='won'||game.state.phase==='lost')){resultShown=game.state.phase;showResult();}
+  if(entryEntered&&tab==='battle'&&!modal&&(game.state.phase==='won'||game.state.phase==='lost')){resultShown=game.state.phase;showResult();}
   if(tab!=='battle')$('secondary-title')?.focus();
 }
 function renderScreen(legacyOnly=false){
@@ -296,8 +324,8 @@ function showModal(id:string,html:string,focusCommand?:string){
   if(!replacing)focusBefore=document.activeElement as HTMLElement;
   modal=id;modalVersion++;const version=modalVersion;
   const dismissButton=`<button class="close-button" data-command="close" aria-label="Close">${icon('close')}</button>`;
-  const dismissMarkup=id==='result'||id==='session'?'':id==='chronicle'?dismissButton:`<div class="dialog-dismiss">${dismissButton}</div>`;
-  layer.hidden=false;layer.innerHTML=`<section class="dialog ${id==='result'?'result-dialog':id==='session'?'session-dialog':id==='prestige'?'prestige-dialog':id==='chronicle'?'chronicle-dialog':''}" role="dialog" tabindex="-1" aria-modal="true" aria-labelledby="dialog-title">${dismissMarkup}${html}</section>`;
+  const dismissMarkup=id==='result'||id==='result-expedition'||id==='session'?'':id==='chronicle'?dismissButton:`<div class="dialog-dismiss">${dismissButton}</div>`;
+  layer.hidden=false;layer.innerHTML=`<section class="dialog ${(id==='result'||id==='result-expedition')?'result-dialog':id==='session'?'session-dialog':id==='prestige'?'prestige-dialog':id==='chronicle'?'chronicle-dialog':''}" role="dialog" tabindex="-1" aria-modal="true" aria-labelledby="dialog-title">${dismissMarkup}${html}</section>`;
   isolateModal(true);syncPause();window.cancelAnimationFrame(focusFrame);
   focusFrame=requestAnimationFrame(()=>{
     if(lifetime.disposed||layer.hidden||version!==modalVersion)return;
@@ -322,7 +350,7 @@ function closeModal(refresh=true){
     // A restored result often has BODY as its origin. A connected element can also
     // be non-focusable; verify that focus actually moved before accepting it.
     if(!target||document.activeElement!==target||target===document.body||target===document.documentElement)
-      root!.querySelector<HTMLElement>(`.bottom-nav [data-tab="${activeTab}"]`)?.focus();
+      (entryEntered?root!.querySelector<HTMLElement>(`.bottom-nav [data-tab="${activeTab}"]`):$('entry-play'))?.focus();
   }
   if(refresh)update(true);
 }
@@ -331,7 +359,26 @@ function showResult(focusCommand?:string){
   if(game.state.phase!=='won'&&game.state.phase!=='lost')return;
   persist();
   // A failed ownership check/save may synchronously replace this modal with recovery.
-  if(playable()&&modal!=='session')showModal('result',resultsHtml(game.profile,game.state),focusCommand);
+  if(playable()&&modal!=='session'){resultDetailsOpen=false;showModal('result',compactResultsHtml(game.profile,game.state),focusCommand);}
+}
+function showResultDetails(){
+  if(!guardAction()||modal!=='result')return;
+  resultDetailsOpen=true;
+  showModal('result',`<button class="big-button secondary result-back" data-command="result-back">Back to result</button>${resultsHtml(game.profile,game.state)}`,'result-back');
+}
+function showHome(){
+  if(!guardAction()||modal!=='result'||!['won','lost'].includes(game.state.phase))return;
+  persist();if(!playable()||modal!=='result')return;
+  entryEntered=false;entrySaved=true;resultDetailsOpen=false;syncEntry();closeModal(false);syncPause();
+  $('entry-play').focus({preventScroll:true});
+}
+function continueWithProvision(provision:string|undefined){
+  const run=game.profile.chronicle?.expedition;
+  if(!guardAction()||modal!=='result-expedition'||game.state.phase!=='won'||!run||run.stage>=2||(provision!=='supplies'&&provision!=='shelter'))return;
+  if(!action({type:'chronicle-provision',provision})||!playable()||modal!=='result-expedition')return;
+  if(action({type:'chronicle-continue'})&&playable()&&modal==='result-expedition'){
+    closeModal(false);manualPaused=false;switchTab('battle');
+  }
 }
 function clearPrestigeContext(){prestigeOrigin=null;prestigeDraft=null;prestigeExpectedTimeline=null;}
 function openPrestige(){
@@ -367,7 +414,9 @@ function dismissModal(){
   if(modal==='session')return;
   if((modal==='chronicle'||modal==='journey'||modal==='quests')&&(game.state.phase==='won'||game.state.phase==='lost')){showResult();return;}
   if(modal==='prestige'){returnFromPrestige();return;}
+  if(modal==='result-expedition'){showResult();return;}
   if(modal==='result'){
+    if(resultDetailsOpen){showResult('result-details');return;}
     if(advanceStatus(game.profile,game.state).reason==='complete')returnToChapters();
     return;
   }
@@ -416,7 +465,7 @@ lifetime.listen<PointerEvent>($('battlefield'),'pointerdown',e=>{
 lifetime.listen<PointerEvent>($('battlefield'),'pointercancel',()=>{battlefieldPointer=null;});
 lifetime.listen<PointerEvent>($('battlefield'),'pointerup',e=>{
  const start=battlefieldPointer;battlefieldPointer=null;
- if(!start||!e.isPrimary||e.pointerId!==start.id||modal||activeTab!=='battle'||game.state.phase!=='running'||game.state.paused||!playable())return;
+ if(!start||!e.isPrimary||e.pointerId!==start.id||!entryEntered||modal||activeTab!=='battle'||game.state.phase!=='running'||game.state.paused||!playable())return;
  const rect=$('battlefield').getBoundingClientRect();
  const order=battlefieldOrderFromGesture({startX:start.x,startY:start.y,endX:e.clientX,endY:e.clientY},{left:rect.left,top:rect.top,width:rect.width,height:rect.height});
  if(order)action({type:'order',order});
@@ -445,7 +494,15 @@ lifetime.listen<MouseEvent>(root,'click',e=>{
   // Also protects direct preference mutations and synthetic clicks on isolated controls.
   if(!guardAction())return;
   if(modal&&!button.closest('#modal-layer'))return;
+  if(!entryEntered&&!modal&&command!=='enter-world'&&command!=='reload-world'&&command!=='settings')return;
   unlockAudio(game.profile.sound);
+  if(command==='reload-world'){if(!entryEntered&&!modal&&$('battlefield').dataset.renderer==='failed')window.location.reload();return;}
+  if(command==='enter-world'){enterWorld();return;}
+  if(command==='home'){showHome();return;}
+  if(command==='result-details'){showResultDetails();return;}
+  if(command==='result-back'){if(modal==='result'||modal==='result-expedition')showResult('result-details');return;}
+  if(command==='result-expedition'){if(modal==='result'&&game.state.phase==='won'&&game.profile.chronicle?.expedition&&game.profile.chronicle.expedition.stage<2)showModal('result-expedition',expeditionChoiceHtml());return;}
+  if(command==='continue-with-provision'){continueWithProvision(button.dataset.provision);return;}
   if(command==='journey'){showModal('journey',journeyScreenHtml(game.profile,game.state));return;}
   if(command==='journey-result'){if(modal==='journey'&&(game.state.phase==='won'||game.state.phase==='lost'))showResult();return;}
   if(button.dataset.journeyTab){if(modal==='journey'&&['cards','battle'].includes(button.dataset.journeyTab)){closeModal(false);switchTab(button.dataset.journeyTab);}return;}
@@ -597,7 +654,7 @@ lifetime.listen<KeyboardEvent>(document,'keydown',e=>{
       e.preventDefault();(index===null?$('modal-layer').querySelector<HTMLElement>('.dialog'):elements[index])?.focus();
     }return;
   }
-  if(!guardAction()||activeTab!=='battle'||e.repeat||e.ctrlKey||e.altKey||e.metaKey||e.isComposing||document.hidden||isEditingTarget(e.target instanceof HTMLElement?e.target:null))return;
+  if(!entryEntered||!guardAction()||activeTab!=='battle'||e.repeat||e.ctrlKey||e.altKey||e.metaKey||e.isComposing||document.hidden||isEditingTarget(e.target instanceof HTMLElement?e.target:null))return;
   if(['1','2','3'].includes(e.key)){e.preventDefault();action({type:'spawn',kind:(Number(e.key)-1) as UnitKind});}
   const skillIndex=['q','w','e'].indexOf(e.key.toLowerCase());
   if(skillIndex>=0){e.preventDefault();action({type:'skill',skill:(['freeze','meteor','food'] as Skill[])[skillIndex]});}
@@ -641,9 +698,9 @@ let renderer:{destroy():void}|null=null,rendererClosed=false;
 $('battlefield').dataset.renderer='loading';
 void import('./view/battlefield.ts').then(({mountBattlefield})=>{
   if(rendererClosed)return;
-  renderer=mountBattlefield($('battlefield'),port,force=>update(force),events,{isVisible:()=>activeTab==='battle'&&!document.hidden,villageMood:()=>villagePresentation!.mood,onPresentation:syncVillagePresentation});
+  renderer=mountBattlefield($('battlefield'),port,force=>update(force),events,{isVisible:()=>entryEntered&&activeTab==='battle'&&!document.hidden,villageMood:()=>villagePresentation!.mood,onPresentation:syncVillagePresentation});
   $('battlefield').dataset.renderer='ready';
-}).catch(()=>{$('battlefield').dataset.renderer='failed';toast('The battlefield could not load. Check your connection and reload.');});
+}).catch(()=>{$('battlefield').dataset.renderer='failed';syncEntry();toast('The battlefield could not load. Check your connection and reload.');});
 lifetime.add(()=>{rendererClosed=true;renderer?.destroy();});lifetime.add(disposeAudio);
 lifetime.add(()=>{window.clearTimeout(toastTimer);window.cancelAnimationFrame(focusFrame);isolateModal(false);});
 lifetime.add(()=>{acquisitionVersion++;sessionReady=false;session.dispose();});
