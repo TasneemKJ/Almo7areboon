@@ -72,3 +72,19 @@ test('evolution plays a one-shot card reveal that restarts on a second evolution
   assert.match(rail, /\.unit-cards\[data-evolve-reveal="a"\] \.unit-card \{ animation:evolve-reveal-a/);
   assert.match(rail, /\.unit-cards\[data-evolve-reveal="b"\] \.unit-card \{ animation:evolve-reveal-b/);
 });
+
+test('first-Meteor cue appears after Freeze when three enemies gather and Meteor is unused', async () => {
+  const { battleGuidance } = await import('../src/ui/battle-hud.ts');
+  const { Game } = await import('../src/game/simulation.ts');
+  const g = new Game(); g.state.phase = 'running'; g.state.food = 50; g.state.time = 30;
+  g.state.stats.deployed = 3; g.state.stats.skillsCast = 1;
+  const enemy = () => ({ ...(g.state.units[0] ?? {}), side: 'enemy', hp: 10 } as any);
+  g.state.units = [enemy(), enemy(), enemy()];
+  assert.doesNotMatch(battleGuidance(g.profile, g.state), /Tap Meteor/);
+  g.state.skillsUsed.push('freeze');
+  assert.match(battleGuidance(g.profile, g.state), /Tap Meteor to hit every one/);
+  g.state.skillsUsed.push('meteor');
+  assert.doesNotMatch(battleGuidance(g.profile, g.state), /Tap Meteor/);
+  g.state.skillsUsed.pop(); g.profile.wins = 9;
+  assert.doesNotMatch(battleGuidance(g.profile, g.state), /Tap Meteor/);
+});
