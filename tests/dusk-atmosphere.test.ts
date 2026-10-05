@@ -107,3 +107,14 @@ test('depth marks stay in the middle of the field, clear of the #158 tap zones a
   }
  }
 });
+test('forty-pass storybook refinement exposes eight five-pass groups',async()=>{
+ const m=await dusk();
+ assert.equal(typeof m.duskRefinement40,'function');
+ if(typeof m.duskRefinement40!=='function')return;
+ const full=m.duskRefinement40(3,12,false),stillA=m.duskRefinement40(3,1,true),stillB=m.duskRefinement40(3,99,true);
+ const groups=['depth','light','materials','air','motion','grounding','mobile','signature'];
+ assert.equal(groups.flatMap((k:any)=>full[k]).length,40);
+ for(const k of groups)assert.equal(full[k].length,5);
+ assert.deepEqual(stillA.motion,stillB.motion);
+ for(const v of groups.flatMap((k:any)=>full[k]))assert.ok(Number.isFinite(v));
+});
