@@ -61,9 +61,14 @@
 /* Short landscape dialogs: the close header sits at the top edge instead of under 27px of padding
    plus an empty 44px band, so Settings and Journey show content on the first screen. */
 @media (orientation:landscape) and (max-height:540px) {
- .dialog:has(>.dialog-dismiss) { padding-top:4px; }
- .dialog>.dialog-dismiss { margin-bottom:2px; border-bottom:0; }
- .dialog>.dialog-dismiss+.eyebrow { margin-top:0; }
+ .dialog:has(>.dialog-dismiss) { padding-top:12px; scroll-padding-block-start:8px; }
+ /* The sticky header collapses to a zero-height line; the close button floats at the top-right corner on an
+    opaque tile, so the title starts at the top instead of under an empty 44px band. */
+ .dialog>.dialog-dismiss { height:0; margin:0; border-bottom:0; overflow:visible; }
+ .dialog>.dialog-dismiss::before { display:none; }
+ .dialog>.dialog-dismiss>.close-button { position:absolute; top:-8px; right:-8px; background:var(--paper); border:1px solid var(--paper-edge); box-shadow:0 2px 0 #1b2c3a22; }
+ .dialog>.dialog-dismiss+.eyebrow { margin-top:0; padding-inline:48px; }
+ .dialog>.dialog-dismiss~h2 { padding-inline:48px; }
  .dialog h2 { margin:4px 0 8px; font-size:24px; }
 }
 
