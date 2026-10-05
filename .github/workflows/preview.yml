@@ -1,0 +1,54 @@
+name: Preview
+
+# Vercel builds only main automatically (vercel.json git.deploymentEnabled).
+# Previews of any other branch are manual: Actions -> Preview -> Run workflow,
+# pick a ref. Each run spends one Vercel deployment and never touches production.
+on:
+  workflow_dispatch:
+    inputs:
+      ref:
+        description: Branch, tag or commit SHA to preview
+        required: true
+        default: main
+
+permissions:
+  contents: read
+
+# One preview at a time, so a double click cannot spend two deploys.
+concurrency:
+  group: preview
+  cancel-in-progress: false
+
+jobs:
+  preview:
+    runs-on: ubuntu-latest
+    timeout-minutes: 20
+    env:
+      VERCEL_TOKEN: ${{ secrets.VERCEL_TOKEN }}
+      VERCEL_ORG_ID: ${{ vars.VERCEL_ORG_ID || 'team_qiAFMSqtbagLD5Gl9l98BY7E' }}
+      VERCEL_PROJECT_ID: ${{ vars.VERCEL_PROJECT_ID || 'prj_fj37AFY5dsuN4mnNX3vZIrZAnd89' }}
+    steps:
+      - uses: actions/checkout@v4
+        with:
+          ref: ${{ inputs.ref }}
+          persist-credentials: false
+      - uses: actions/setup-node@v4
+        with:
+          node-version: 22
+      - name: Require the deploy token
+        run: |
+          if [ -z "$VERCEL_TOKEN" ]; then
+            echo "::error::Add VERCEL_TOKEN under Settings -> Secrets and variables -> Actions"
+            exit 1
+          fi
+      - name: Pull preview settings
+        run: npx --yes vercel@59.25.4 pull --yes --environment=preview --token="$VERCEL_TOKEN"
+      - name: Build on the runner
+        run: npx --yes vercel@59.25.4 build --token="$VERCEL_TOKEN"
+      - name: Publish
+        env:
+          REF: ${{ inputs.ref }}
+        run: |
+          url="$(npx --yes vercel@59.25.4 deploy --prebuilt --token="$VERCEL_TOKEN")"
+          echo "Preview of $REF: $url"
+          echo "Preview of \`$REF\`: $url" >> "$GITHUB_STEP_SUMMARY"
