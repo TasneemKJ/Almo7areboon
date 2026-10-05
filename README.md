@@ -80,6 +80,8 @@ The browser probes are summarised in [docs/quality-probes.md](docs/quality-probe
 
 GitHub Actions runs tests and the production build with read-only repository permissions. Workflows upload one small evidence artifact (trimmed log tails, JSON and at most four 800px JPEGs, one-day retention) only when a run fails; no build output is published.
 
+See [CREDITS.md](CREDITS.md) for licences and the privacy note, and [docs/performance-budgets.md](docs/performance-budgets.md) for load and size budgets.
+
 ## Fidelity and limits
 
 Food-to-troop combat, melee/ranged/heavy choices, six eras with 18 appearances, evolution, upgrades, cards and skills are recreated. Original hidden tuning is not available: era rewards, later-age balance and some card curves remain provisional. The original reference's heroes, runes, dungeons, live events, ads, purchases and backend services are not included. The original story captains, expeditions and rule-based alternate timelines in this expansion are separate systems, not recreations of those reference features. Phaser's vendor bundle still produces a size warning; low-end device performance is unmeasured.

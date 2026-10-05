@@ -12,9 +12,9 @@ jobs:
     runs-on: ubuntu-latest
     timeout-minutes: 10
     steps:
-      - uses: actions/checkout@v4
+      - uses: actions/checkout@v7
         with: {persist-credentials: false}
-      - uses: actions/setup-node@v4
+      - uses: actions/setup-node@v7
         with: {node-version: 22, cache: npm}
       - run: npm ci
       - name: Validate the campaign runners
@@ -35,9 +35,9 @@ jobs:
         engine: [chromium, webkit]
         ids: ['1-10', '11-20', '21-30', '31-40']
     steps:
-      - uses: actions/checkout@v4
+      - uses: actions/checkout@v7
         with: {persist-credentials: false}
-      - uses: actions/setup-node@v4
+      - uses: actions/setup-node@v7
         with: {node-version: 22, cache: npm}
       - run: npm ci
       - run: node --check scripts/qa40/campaign.mjs
@@ -64,7 +64,7 @@ jobs:
         run: bash scripts/trim-evidence.sh evidence artifacts/qa40
       - name: Publish failure evidence
         if: failure()
-        uses: actions/upload-artifact@v4
+        uses: actions/upload-artifact@v7
         with:
           name: qa40-failure-${{ matrix.engine }}-${{ matrix.ids }}
           path: evidence/

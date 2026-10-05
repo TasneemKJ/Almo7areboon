@@ -139,7 +139,7 @@ test('native battle-memory journeys use public actions and prove HUD-safe paused
 
 test('chronicle CI keeps one small failure-only evidence artifact',()=>{
  const ci=workflow();
- assert.equal((ci.match(/upload-artifact@v4/g)??[]).length,1);
+ assert.equal((ci.match(/upload-artifact@v\d+/g)??[]).length,1);
  assert.match(ci,/if: failure\(\)/);assert.match(ci,/trim-evidence\.sh evidence artifacts\/chronicle/);
  assert.match(ci,/compression-level: 9/);assert.match(ci,/retention-days: 1/);assert.match(ci,/if-no-files-found: ignore/);
 });

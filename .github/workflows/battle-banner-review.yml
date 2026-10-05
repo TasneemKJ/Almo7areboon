@@ -16,9 +16,9 @@ jobs:
       matrix:
         engine: [chromium, webkit]
     steps:
-      - uses: actions/checkout@v4
+      - uses: actions/checkout@v7
         with: {persist-credentials: false}
-      - uses: actions/setup-node@v4
+      - uses: actions/setup-node@v7
         with: {node-version: 22, cache: npm}
       - run: npm ci
       - run: npm test
@@ -34,7 +34,7 @@ jobs:
         run: bash scripts/trim-evidence.sh evidence artifacts/battle-banner
       - name: Publish failure evidence
         if: failure()
-        uses: actions/upload-artifact@v4
+        uses: actions/upload-artifact@v7
         with:
           name: battle-banner-failure-${{ matrix.engine }}
           path: evidence/
