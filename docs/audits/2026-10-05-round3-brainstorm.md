@@ -9,7 +9,7 @@ Method: IDEAL with the 5Ws (who: a phone player mid-battle; what they see and do
 4. **Performance:** lazy-load Phaser after the shell (shipped; app chunk 356 → 233 kB).
 5. **Release:** Open Graph/Twitter preview from shipped Harbor art (shipped; key art requested in ASSET_REQUESTS.md).
 6. **Writing:** result screen repeated the seal requirement; it now states the attempt only (shipped).
-7. **Retention:** the result's Journey button names the next real reward (shipped).
+7. **Retention:** the result's Journey button names the next real reward (shipped; docs/COMPETITIVE.md lesson 1).
 8. **Input:** a repeatable touch check (`npm run review:mobile-touch`) that plays to a result with #158 tap orders (shipped).
 9. **Typography:** balanced two-line hints, no orphaned word (shipped).
 10. **Release:** current action majors everywhere, including `preview.yml` (shipped).

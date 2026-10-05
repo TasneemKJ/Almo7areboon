@@ -32,3 +32,7 @@ Ordered tasks. Tick a task when it is done and never delete finished tasks. This
 - [ ] Compact the Settings dialog header in landscape
 - [ ] Record the production domain and make `og:image` absolute
 - [ ] Add `review:mobile-touch` to the weekly suite once its runtime is under ten minutes per engine
+- [ ] Evolution reveal moment: a short deck and battlefield transformation on evolving, static with reduced motion (docs/COMPETITIVE.md lesson 2)
+- [ ] One live cue per first use of Freeze and Advance (lesson 3)
+- [ ] Small hit-stop and knockback on heavy hits and base strikes, absent with reduced motion (lesson 5)
+- [ ] Unearned seals shown on the chapter picker (lesson 6)
