@@ -105,7 +105,7 @@ async function run(engine,width,height,temporary=false,insets=null){
     }
     const dialog=screen.regions['.dialog'];if(dialog)check(dialog.x>=0&&dialog.right<=screen.width,`${prefix}: dialog overflows`);
     if(screen.height>=540&&!dialog){for(const c of screen.controls.filter(c=>['battle','evolution','cards','skills'].includes(c.command)))check(c.y>=top&&c.bottom<=bottom&&c.reachable,`${prefix}: navigation ${c.command} is obscured`);}
-    for(const c of screen.controls.filter(c=>!c.disabled&&(c.command==='story-rally'||c.command.startsWith('story-page-'))))check(c.width>=44&&c.height>=44,`${prefix}: ${c.command} target is ${c.width}x${c.height}, below 44x44`);
+    for(const c of screen.controls.filter(c=>!c.disabled))check(c.width>=44&&c.height>=44,`${prefix}: ${c.command||c.text||'control'} target is ${c.width}x${c.height}, below 44x44`);
     if(screen.phase==='ready'||screen.phase==='retry'){
      const a=screen.controls.find(c=>c.command==='battles');
      for(const b of screen.controls.filter(c=>c.command==='start'||c.command==='chronicle')){
