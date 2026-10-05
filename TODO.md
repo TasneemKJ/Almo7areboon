@@ -24,7 +24,8 @@ Ordered tasks. Tick a task when it is done and never delete finished tasks. This
 ## Next
 - [ ] Weekly suite records the performance budgets in `docs/performance-budgets.md`; add frame-rate capture
 - [ ] First-battle teaching pulse on the first troop card
-- [ ] Count-up victory rewards and a victory/defeat audio motif
+- [x] Count-up battle earnings on the result (round 6); victory/defeat motifs already existed
+- [x] Settings and other dialogs in short landscape: no empty header band (round 6)
 - [ ] Colour-blind-safe troop-type shapes; optional haptics
 - [ ] Streak grace day (needs an optional, normalized save field)
 - [ ] Capture and review victory/defeat, Journey, Chronicle and evolve-confirm screens on touch devices at 320, 360 and 412 widths
@@ -32,9 +33,9 @@ Ordered tasks. Tick a task when it is done and never delete finished tasks. This
 - [x] Compact dialog header in short landscape (round 4)
 - [ ] Record the production domain and make `og:image` absolute
 - [ ] Add `review:mobile-touch` to the weekly suite once its runtime is under ten minutes per engine
-- [ ] Evolution reveal moment: a short deck and battlefield transformation on evolving, static with reduced motion (docs/COMPETITIVE.md lesson 2)
-- [ ] One live cue per first use of Freeze and Advance (lesson 3)
-- [ ] Small hit-stop and knockback on heavy hits and base strikes, absent with reduced motion (lesson 5)
+- [x] Evolution reveal: one-shot card flare, static with reduced motion (round 5)
+- [x] First-Freeze cue when three enemies gather (Advance/Hold already cued by the order banner) (round 5)
+- [ ] True hit-stop on heavy hits (heavy base hits already shake the camera, absent with reduced motion; a render freeze needs its own design)
 - [x] Unearned seals shown on the chapter picker (already present via `masteryMarksHtml`; verified round 4)
 - [x] RUSH wave panel moved out of the lane into the sky band (round 4)
 
