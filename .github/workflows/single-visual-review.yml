@@ -1,0 +1,111 @@
+# Disposable QA branch only. Exactly two bounded entry/result jobs; no manual dispatch or artifact quota gate.
+name: Almo Home and short-result boundary
+'on':
+  push:
+    branches:
+      - qa/almo-simple-entry-20261005
+permissions:
+  contents: read
+concurrency:
+  group: almo-simple-entry-${{ github.ref }}
+  cancel-in-progress: false
+env:
+  SOURCE_SHA: 7c5554e827c98107da1aaf0bb8d7f0f3bd74c9c1
+  REVIEW_REVISION: candidate
+jobs:
+  compare-390:
+    name: Empty-profile before and after Home plus real defeat result at 390
+    runs-on: ubuntu-latest
+    timeout-minutes: 15
+    env:
+      REVIEW_CASE: compare-390
+    steps:
+      - uses: actions/checkout@v7
+        with:
+          path: harness
+          persist-credentials: false
+      - uses: actions/checkout@v7
+        with:
+          path: candidate
+          ref: ${{ env.SOURCE_SHA }}
+          persist-credentials: false
+      - uses: actions/checkout@v7
+        with:
+          path: baseline
+          ref: d9dd1dcd1c5c4a4bb6cdd44641e73f8dd07f4003
+          persist-credentials: false
+      - uses: actions/setup-node@v7
+        with:
+          node-version: '22'
+      - name: Verify and build immutable sources with bounded setup output
+        id: build
+        shell: bash
+        run: |
+          set -euo pipefail
+          bounded() {
+            local log="${RUNNER_TEMP}/almo-entry-setup.log"
+            if "$@" >"$log" 2>&1; then tail -c 12000 "$log"; else tail -c 24000 "$log"; return 1; fi
+          }
+          test "$(git -C candidate rev-parse HEAD)" = "$SOURCE_SHA"
+          test "$(git -C candidate rev-parse HEAD^{tree})" = e12c7d4e13378e5c41d7f1b23ff5f75b682680ef
+          test "$(git -C baseline rev-parse HEAD)" = d9dd1dcd1c5c4a4bb6cdd44641e73f8dd07f4003
+          git -C candidate diff --exit-code HEAD --
+          git -C baseline diff --exit-code HEAD --
+          (cd candidate; bounded npm ci --ignore-scripts; bounded npm run build; bounded npx playwright install --with-deps chromium)
+          (cd baseline; bounded npm ci --ignore-scripts; bounded npm run build)
+      - name: Baseline initial empty-profile screen
+        if: ${{ !cancelled() && steps.build.outcome == 'success' }}
+        working-directory: baseline
+        env:
+          SOURCE_SHA: d9dd1dcd1c5c4a4bb6cdd44641e73f8dd07f4003
+          REVIEW_REVISION: baseline
+        run: flock /tmp/browser.lock node --experimental-strip-types ../harness/scripts/capture-entry.mjs
+      - name: Candidate native Home Settings Play deployment Retreat and result
+        if: ${{ !cancelled() && steps.build.outcome == 'success' }}
+        working-directory: candidate
+        run: flock /tmp/browser.lock node --experimental-strip-types ../harness/scripts/capture-entry.mjs
+      - name: Atomically transport at most three untouched originals for whole job
+        if: ${{ !cancelled() && steps.build.outcome == 'success' }}
+        run: python3 harness/scripts/emit-originals.py baseline/artifacts/entry-review candidate/artifacts/entry-review
+  small-320-rotate:
+    name: Small Home Settings result rotation and renderer/save recovery
+    runs-on: ubuntu-latest
+    timeout-minutes: 15
+    env:
+      REVIEW_CASE: small-320-rotate
+    steps:
+      - uses: actions/checkout@v7
+        with:
+          path: harness
+          persist-credentials: false
+      - uses: actions/checkout@v7
+        with:
+          path: candidate
+          ref: ${{ env.SOURCE_SHA }}
+          persist-credentials: false
+      - uses: actions/setup-node@v7
+        with:
+          node-version: '22'
+      - name: Verify and build immutable source with bounded setup output
+        id: build
+        shell: bash
+        run: |
+          set -euo pipefail
+          bounded() {
+            local log="${RUNNER_TEMP}/almo-entry-setup.log"
+            if "$@" >"$log" 2>&1; then tail -c 12000 "$log"; else tail -c 24000 "$log"; return 1; fi
+          }
+          test "$(git -C candidate rev-parse HEAD)" = "$SOURCE_SHA"
+          test "$(git -C candidate rev-parse HEAD^{tree})" = e12c7d4e13378e5c41d7f1b23ff5f75b682680ef
+          git -C candidate diff --exit-code HEAD --
+          cd candidate
+          bounded npm ci --ignore-scripts
+          bounded npm run build
+          bounded npx playwright install --with-deps chromium
+      - name: Candidate native entry result rotation durable Reload and future-save cases
+        if: ${{ !cancelled() && steps.build.outcome == 'success' }}
+        working-directory: candidate
+        run: flock /tmp/browser.lock node --experimental-strip-types ../harness/scripts/capture-entry.mjs
+      - name: Atomically transport at most three untouched originals for whole job
+        if: ${{ !cancelled() && steps.build.outcome == 'success' }}
+        run: python3 harness/scripts/emit-originals.py candidate/artifacts/entry-review
