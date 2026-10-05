@@ -136,6 +136,18 @@ async function firstPlay(){
   await key(page,'Enter');await page.getByRole('heading',{name:'Settings',exact:true}).waitFor();
   const closeSelector='#modal-layer [data-command="close"]';assertReachable(await page.locator(closeSelector).evaluate(inspectControl));
   assert.equal(await page.locator('#modal-layer [data-command="retreat"]').count(),0,'Home settings must not offer retreat from an unstarted battle');
+  if(reviewCase==='small-320-rotate'){
+    const dialog=page.locator('#modal-layer .dialog');
+    const before=await dialog.evaluate(node=>({top:node.scrollTop,height:node.clientHeight,content:node.scrollHeight}));
+    assert(before.content>before.height,'long Settings must retain its scrollable content');
+    const box=await dialog.boundingBox();assert(box);await page.mouse.move(box.x+box.width/2,box.y+box.height/2);
+    await action(page,'native wheel inside long Settings',()=>page.mouse.wheel(0,1000));await page.waitForTimeout(200);
+    const after=await dialog.evaluate(node=>({top:node.scrollTop,height:node.clientHeight,content:node.scrollHeight}));
+    assert(after.top>before.top,'Settings content really scrolls inside dialog');
+    assert.equal(await page.evaluate(()=>scrollY),0,'dialog scrolling must not move background document');
+    assertReachable(await page.locator(closeSelector).evaluate(inspectControl));
+    manifest.checks.push({name:'long-settings-retains-dialog-scroll',passed:true,before,after});
+  }
   await tap(page,closeSelector);await page.locator('#modal-layer').waitFor({state:'hidden'});
   assert(await page.locator('#entry-settings').evaluate(node=>node===document.activeElement),'close restores Settings opener');
   manifest.checks.push({name:'home-settings-native-close-focus',passed:true,settingsFocus});

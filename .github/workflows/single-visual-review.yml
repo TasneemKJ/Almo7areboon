@@ -10,7 +10,7 @@ concurrency:
   group: almo-simple-entry-${{ github.ref }}
   cancel-in-progress: false
 env:
-  SOURCE_SHA: 7c5554e827c98107da1aaf0bb8d7f0f3bd74c9c1
+  SOURCE_SHA: bf79938e26ed2d963a76fa4db3102dd4e30fe822
   REVIEW_REVISION: candidate
 jobs:
   compare-390:
@@ -47,7 +47,7 @@ jobs:
             if "$@" >"$log" 2>&1; then tail -c 12000 "$log"; else tail -c 24000 "$log"; return 1; fi
           }
           test "$(git -C candidate rev-parse HEAD)" = "$SOURCE_SHA"
-          test "$(git -C candidate rev-parse HEAD^{tree})" = e12c7d4e13378e5c41d7f1b23ff5f75b682680ef
+          test "$(git -C candidate rev-parse HEAD^{tree})" = 90b3d59e04d445323d7c8cca0434ad43c9758d3e
           test "$(git -C baseline rev-parse HEAD)" = d9dd1dcd1c5c4a4bb6cdd44641e73f8dd07f4003
           git -C candidate diff --exit-code HEAD --
           git -C baseline diff --exit-code HEAD --
@@ -96,7 +96,7 @@ jobs:
             if "$@" >"$log" 2>&1; then tail -c 12000 "$log"; else tail -c 24000 "$log"; return 1; fi
           }
           test "$(git -C candidate rev-parse HEAD)" = "$SOURCE_SHA"
-          test "$(git -C candidate rev-parse HEAD^{tree})" = e12c7d4e13378e5c41d7f1b23ff5f75b682680ef
+          test "$(git -C candidate rev-parse HEAD^{tree})" = 90b3d59e04d445323d7c8cca0434ad43c9758d3e
           git -C candidate diff --exit-code HEAD --
           cd candidate
           bounded npm ci --ignore-scripts
