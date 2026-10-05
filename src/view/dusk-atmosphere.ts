@@ -71,3 +71,33 @@ export function paintDuskAtmosphere(graphics:DuskPainter,marks:readonly DuskMark
   }
  }
 }
+
+/** The eight reviewable batches of the forty-pass refinement (docs/visual-40), five passes each. */
+export const DUSK_REFINEMENT_GROUPS=Object.freeze(['depth','light','materials','air','motion','grounding','mobile','signature'] as const);
+export type DuskRefinementGroup=typeof DUSK_REFINEMENT_GROUPS[number];
+export type DuskRefinement=Readonly<Record<DuskRefinementGroup,readonly number[]>>;
+const refinementBase:Readonly<Record<DuskRefinementGroup,readonly number[]>>=Object.freeze({
+ depth:[.052,.068,.4,.6,.35],light:[.135,.09,.5,.3,.2],materials:[.25,.2,.15,.3,.1],
+ air:[.07,.06,.04,.05,.03],motion:[.025,.055,.5,.0,.1],grounding:[.3,.25,.2,.15,.1],
+ mobile:[.5,.4,.3,.2,.1],signature:[.6,.5,.4,.3,.2],
+});
+/**
+ * Bounded strengths (each 0..1) for the forty passes of the refinement, derived only from chapter, time and
+ * motion preference. Pure data: it paints nothing and adds no objects. Under reduced motion the `motion` group
+ * is constant, so decorative drift stays frozen. Invalid input collapses to chapter 0 and time 0.
+ */
+export function duskRefinement40(age:number,time:number,reduced:boolean):DuskRefinement {
+ const scene=sceneIndex(age),t=reduced?0:Number.isFinite(time)?Math.max(0,Math.min(1e7,time)):0;
+ const out={} as Record<DuskRefinementGroup,number[]>;
+ DUSK_REFINEMENT_GROUPS.forEach((group,g)=>{
+  out[group]=refinementBase[group].map((base,i)=>{
+   const chapter=1+(scene-2.5)*.02*(g%3-1);
+   const breathe=group==='motion'?0:reduced?0:Math.sin(t*.03+g+i)*.01;
+   return Math.max(0,Math.min(1,base*chapter+breathe));
+  });
+ });
+ // Reduced motion keeps the motion group at its resting values, whatever the clock says.
+ if(reduced)out.motion=refinementBase.motion.slice();
+ else out.motion=refinementBase.motion.map((base,i)=>Math.max(0,Math.min(1,base+Math.sin(t*.02+i)*.01)));
+ return out;
+}
