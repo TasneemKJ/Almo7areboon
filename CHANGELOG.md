@@ -2,6 +2,13 @@
 
 Semantic versioning. Each merged batch adds an entry and a `vX.Y.Z` tag.
 
+## 0.3.0 - 2026-10-05
+- Landscape phones: side rail layout; the battlefield stays in view while deploying.
+- Portrait: Gather has its own space; tall phones no longer push upgrades under the navigation.
+- Phaser loads after the shell (app chunk 356 kB to 233 kB).
+- Share preview image and metadata; result screen states seal requirements once and names the next reward.
+- Touch check script; actions v7 in every workflow; Dependabot ignores breaking majors.
+
 ## 0.2.0 - 2026-10-05
 - Ready screen: the Journey button names the nearest reward (daily reward, claimable milestone, closest milestone).
 - Dialog titles no longer show a boxed focus outline after pointer or programmatic focus.

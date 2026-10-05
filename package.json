@@ -1,6 +1,6 @@
 {
   "name": "almo7areboon",
-  "version": "0.2.0",
+  "version": "0.3.0",
   "private": true,
   "type": "module",
   "scripts": {
@@ -17,7 +17,8 @@
     "review:overlap": "node scripts/hud-overlap-check.mjs",
     "review:contrast": "node scripts/contrast-audit.mjs",
     "review:clip": "node scripts/text-clip-check.mjs",
-    "test:fast": "node scripts/test-fast.mjs"
+    "test:fast": "node scripts/test-fast.mjs",
+    "review:mobile-touch": "node scripts/mobile-touch-check.mjs"
   },
   "dependencies": {
     "phaser": "^3.90.0"
