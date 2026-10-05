@@ -46,3 +46,9 @@ test('result screen Journey button names the next real reward', async () => {
   const g = new Game(); g.profile.dailyDay = localDay(); g.profile.wins = 3; g.state.phase = 'lost';
   assert.match(resultsHtml(g.profile, g.state), /data-command="journey" aria-label="Your journey\. A milestone is ready: claim 100 gems\.">Your journey · Claim 100 gems</);
 });
+test('wave label sits in the sky band, not above the skill row over the lane', () => {
+  assert.match(rail, /\.battle-meta>\.wave-inspect \{\s*left:50%; bottom:auto; transform:translateX\(-50%\);\s*top:calc\(100px/);
+});
+test('short landscape dialogs drop the empty header band', () => {
+  assert.match(rail, /\.dialog:has\(>\.dialog-dismiss\) \{ padding-top:4px; \}/);
+});
