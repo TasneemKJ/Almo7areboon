@@ -4,7 +4,7 @@ import { ERAS } from '../game/data.ts';
 import { advanceStatus, canRetry, chapterMastery } from '../game/mastery.ts';
 import type { BattleState, Profile } from '../game/types.ts';
 import { battleStats } from '../game/statistics.ts';
-import { chapterPresentation, chapterLandscape } from './chapter-presentation.ts';
+import { chapterPresentation, chapterLandscape, unitPresentationName } from './chapter-presentation.ts';
 import { icon } from '../view/icons.ts';
 import { compactNumber } from './battle-hud.ts';
 import { masteryMarksHtml, masteryAttemptText, masteryAdvice } from './mastery-presentation.ts';
@@ -23,6 +23,16 @@ function journeyButton(profile:Profile):string {
  return `<button class="big-button secondary" data-command="journey" aria-label="${goal.label}">Your journey · ${text}</button>`;
 }
 
+/** Names the troop role that dealt the most damage; empty when nothing was recorded or the battle was won. */
+export function defeatRecapHtml(age:number,state:BattleState):string {
+ const ledger=battleStats(state.stats).damageByKind;
+ if(state.phase!=='lost'||!ledger)return '';
+ const total=ledger[0]+ledger[1]+ledger[2];
+ if(total<1)return '';
+ const top=([0,1,2] as const).reduce((best,kind)=>ledger[kind]>ledger[best]?kind:best,0 as 0|1|2);
+ return `<p class="defeat-recap">Most damage came from your ${unitPresentationName(age,top)}: ${Math.round(ledger[top]/total*100)}% of what your army dealt.</p>`;
+}
+
 export function resultsHtml(profile: Profile, state: BattleState): string {
  const won=state.phase==='won',stats=battleStats(state.stats),advance=advanceStatus(profile,state),view=chapterMastery(profile,profile.enemyAge);
  const terminal=advance.reason==='complete',receipt=won?profile.pendingVictory:null;
@@ -37,7 +47,7 @@ export function resultsHtml(profile: Profile, state: BattleState): string {
  const evolve=canEvolve?`<button class="big-button secondary" data-command="evolve" ${profile.coins<ERAS[profile.age].evolveCost?'disabled':''}>Evolve · ${amount(ERAS[profile.age].evolveCost)} coins</button>`:'';
  return `<div class="result-landscape" aria-hidden="true"><img alt="" src="${chapterLandscape(won&&advance.target==='battle'?advance.nextBattle!:profile.enemyAge)}"/></div><div class="result-emblem ${won?'':'defeat'}">${icon(won?'trophy':'shield')}</div><span class="eyebrow">${won?'THE BATTLE IS YOURS':'YOUR COINS ARE SAFE'}</span><h2 id="dialog-title" tabindex="-1" data-initial-focus>${won?'VICTORY!':'REGROUP'}</h2><p>${terminal?terminalCopy:won?(advance.target==='timeline'?`Timeline complete! ${timelineResetText}`:`${nextTitle} is next. Your own army evolves separately.`):masteryAdvice(profile,state)}</p>
  <blockquote class="village-voice" data-village-moment="${villageMoment(voiceStats)}">${villageVoice(profile.enemyAge,state.phase,voiceStats)}</blockquote>
- ${regroupLearningHtml(profile,state)}
+ ${defeatRecapHtml(profile.age,state)}${regroupLearningHtml(profile,state)}
  ${state.phase==='lost'&&earlierChapter(profile)!==null?'<button class="big-button secondary" data-command="regroup-chapters">Choose an earlier chapter</button>':''}
  <div class="reward"><span>TOTAL BATTLE EARNINGS</span><strong aria-label="${amount(state.earned)} coins">${icon('coin')}<span data-count-to="${state.earned}">${compactNumber(state.earned)}</span></strong><small>Already added to your coins${won?' · victory bonus: up to 10 gems':''}</small>${settled?`<small>Normal combat: ${amount(state.earned-settled.masteryCoins)} coins</small><small>Mastery credited: ${amount(settled.masteryCoins)} coins · ${amount(settled.masteryGems)} gems</small>`:''}</div>
  <div class="result-mastery">${masteryMarksHtml(profile,profile.enemyAge)}${settled?`<p>New seals: ${newTitles.length?newTitles.join(', '):'none · previously earned seals stay earned'}.</p>`:''}<p>${masteryAttemptText(profile,state,false)}</p>${settled?`<small>Gate damage this attempt: ${amount(stats.gateDamageTaken)}</small>`:''}</div>
