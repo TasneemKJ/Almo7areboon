@@ -1,0 +1,147 @@
+name: Full verification (manual)
+# Deep verification is intentionally manual; normal development uses the faster automatic suites.
+on:
+  workflow_dispatch:
+  workflow_call:
+permissions:
+  contents: read
+jobs:
+  verify:
+    runs-on: ubuntu-latest
+    timeout-minutes: 60
+    steps:
+      - uses: actions/checkout@v7
+        with:
+          persist-credentials: false
+      - uses: actions/setup-node@v7
+        with:
+          node-version: '22'
+          cache: npm
+      - run: npm ci
+      - name: Test simulation
+        id: tests
+        continue-on-error: true
+        run: |
+          set -o pipefail
+          npm test | tee verification-tests.log
+      - name: Production build
+        id: build
+        continue-on-error: true
+        run: |
+          set -o pipefail
+          npm run build | tee verification-build.log
+      - name: Install browser for visual verification
+        if: steps.tests.outcome == 'success' && steps.build.outcome == 'success'
+        run: npx playwright install --with-deps chromium
+      - name: Verify native production audio controls and ownership
+        id: audio_browser
+        if: steps.tests.outcome == 'success' && steps.build.outcome == 'success'
+        continue-on-error: true
+        run: |
+          set -o pipefail
+          node scripts/review-audio.mjs --browser --output artifacts/audio-review/browser 2>&1 | tee verification-audio-browser.log
+      - name: Verify enlarged upgrade text in production
+        id: upgrade_text
+        if: steps.tests.outcome == 'success' && steps.build.outcome == 'success'
+        continue-on-error: true
+        run: npm run review:upgrade-text
+      - name: Verify production offline audio waveforms
+        id: offline_audio
+        if: steps.tests.outcome == 'success' && steps.build.outcome == 'success'
+        continue-on-error: true
+        run: |
+          set -o pipefail
+          node scripts/review-audio.mjs --offline --output artifacts/audio-review/task-1 | tee verification-audio.log
+      - name: Verify production offline return and deployment
+        id: offline_game
+        if: steps.tests.outcome == 'success' && steps.build.outcome == 'success'
+        continue-on-error: true
+        run: node --experimental-strip-types scripts/capture-offline-game-review.mjs
+      - name: Verify troop unlock teaching in production
+        id: troop_unlock
+        if: steps.tests.outcome == 'success' && steps.build.outcome == 'success'
+        continue-on-error: true
+        run: node --experimental-strip-types scripts/capture-troop-unlock-review.mjs
+      - name: Verify optional wave inspection in production
+        id: wave_help
+        if: steps.tests.outcome == 'success' && steps.build.outcome == 'success'
+        continue-on-error: true
+        run: node --experimental-strip-types scripts/capture-wave-inspection-review.mjs
+      - name: Verify optional legacy learning in production
+        id: legacy_learning
+        if: steps.tests.outcome == 'success' && steps.build.outcome == 'success'
+        continue-on-error: true
+        timeout-minutes: 5
+        run: node --experimental-strip-types scripts/capture-legacy-learning-review.mjs
+      - name: Verify Food Drop teaching in production
+        id: food_teaching
+        if: steps.tests.outcome == 'success' && steps.build.outcome == 'success'
+        continue-on-error: true
+        timeout-minutes: 5
+        run: node --experimental-strip-types scripts/capture-food-drop-review.mjs
+      - name: Verify card summon learning in production
+        id: card_learning
+        if: steps.tests.outcome == 'success' && steps.build.outcome == 'success'
+        continue-on-error: true
+        timeout-minutes: 5
+        run: node --experimental-strip-types scripts/capture-card-learning-review.mjs
+      - name: Verify live formation teaching in production
+        id: formation_learning
+        if: steps.tests.outcome == 'success' && steps.build.outcome == 'success'
+        continue-on-error: true
+        timeout-minutes: 5
+        run: node --experimental-strip-types scripts/capture-formation-review.mjs
+      - name: Verify accessible troop timing in production
+        id: troop_status
+        if: steps.tests.outcome == 'success' && steps.build.outcome == 'success'
+        continue-on-error: true
+        timeout-minutes: 5
+        run: node --experimental-strip-types scripts/capture-troop-status-review.mjs
+      - name: Verify native skill timing cues
+        id: skill_cues
+        if: steps.tests.outcome == 'success' && steps.build.outcome == 'success'
+        continue-on-error: true
+        run: node --experimental-strip-types scripts/capture-skill-cues-review.mjs
+      - name: Verify regroup learning in production
+        id: regroup
+        if: steps.tests.outcome == 'success' && steps.build.outcome == 'success'
+        continue-on-error: true
+        run: node --experimental-strip-types scripts/capture-regroup-review.mjs
+      - name: Capture portrait browser states
+        id: browser
+        if: steps.tests.outcome == 'success' && steps.build.outcome == 'success'
+        continue-on-error: true
+        run: npm run review:browser
+      - name: Verify frozen battlefield layering
+        id: layering
+        if: steps.tests.outcome == 'success' && steps.build.outcome == 'success'
+        continue-on-error: true
+        run: npm run review:layering
+      - name: Verify exclusive save sessions and recovery
+        id: save_sessions
+        if: steps.tests.outcome == 'success' && steps.build.outcome == 'success'
+        continue-on-error: true
+        run: npm run review:save-sessions
+      - name: Verify mastery progression and guarded result routes
+        id: mastery
+        if: steps.tests.outcome == 'success' && steps.build.outcome == 'success'
+        continue-on-error: true
+        run: npm run review:mastery
+      - name: Require passing checks
+        if: always()
+        env:
+          VERIFICATION_STEPS: ${{ toJSON(steps) }}
+          REQUIRED_CHECKS: tests build audio_browser upgrade_text offline_audio offline_game troop_unlock wave_help legacy_learning food_teaching card_learning formation_learning troop_status skill_cues regroup browser layering save_sessions mastery
+        run: node scripts/require-verification.mjs
+      - name: Trim failure evidence
+        if: failure()
+        run: bash scripts/trim-evidence.sh evidence artifacts
+      - name: Publish failure evidence
+        if: failure()
+        uses: actions/upload-artifact@v7
+        with:
+          name: verify-failure-diagnostics
+          path: evidence/
+          if-no-files-found: ignore
+          compression-level: 9
+          retention-days: 1

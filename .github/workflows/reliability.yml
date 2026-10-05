@@ -1,11 +1,8 @@
 name: Reliability checks
 
 on:
-  push:
-    branches: [main, fix/game-reliability-audit]
-  pull_request:
   workflow_dispatch:
-
+  workflow_call:
 permissions:
   contents: read
 
@@ -18,10 +15,10 @@ jobs:
     runs-on: ubuntu-latest
     timeout-minutes: 15
     steps:
-      - uses: actions/checkout@v4
+      - uses: actions/checkout@v7
         with:
           persist-credentials: false
-      - uses: actions/setup-node@v4
+      - uses: actions/setup-node@v7
         with:
           node-version: 24
           cache: npm
@@ -45,19 +42,15 @@ jobs:
           npm run preview -- --port 4173 > /tmp/reliability-preview.log 2>&1 &
           for i in $(seq 1 30); do curl -fsS http://127.0.0.1:4173/ >/dev/null && break || sleep 1; done
           node scripts/monkey-test.mjs http://127.0.0.1:4173/ 30
-      - uses: actions/upload-artifact@v4
-        if: always()
+      - name: Trim failure evidence
+        if: failure()
+        run: bash scripts/trim-evidence.sh evidence artifacts/reliability artifacts/save-session-review artifacts/browser-review/offline-game /tmp/reliability-preview.log
+      - name: Publish failure evidence
+        if: failure()
+        uses: actions/upload-artifact@v7
         with:
-          name: reliability-evidence
-          path: |
-            artifacts/reliability/
-            artifacts/save-session-review/
-            artifacts/browser-review/offline-game/
-            /tmp/reliability-preview.log
-          retention-days: 1
-      - uses: actions/upload-artifact@v4
-        if: success()
-        with:
-          name: reliability-web-build
-          path: dist/
+          name: reliability-failure-evidence
+          path: evidence/
+          if-no-files-found: ignore
+          compression-level: 9
           retention-days: 1

@@ -56,3 +56,4 @@
 @media(min-height:701px) {
  .world { min-height:clamp(200px,calc(100dvh - 330px),690px); }
 }
+.ready-paths .journey-open { max-width:calc(100% - 24px); }

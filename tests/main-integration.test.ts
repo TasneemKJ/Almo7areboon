@@ -25,6 +25,7 @@ import { evolutionScreenHtml } from '../src/ui/evolution-screen.ts';
 import { skillCue } from '../src/ui/skill-cues.ts';
 import { troopUnlockMessage } from '../src/ui/army-screen.ts';
 import { waveInspectionHtml } from '../src/ui/wave-inspection.ts';
+import { nextGoalLabel } from '../src/ui/next-goal.ts';
 import { createModalTapGuard } from '../src/ui/modal-tap-guard.ts';
 
 // Execute the app's actual functions with a clock and minimal DOM boundary; no browser/debug hooks.
@@ -62,7 +63,7 @@ function harness(motion = 'full') {
     performance: { now: () => now }, document: { documentElement: { dataset: { motion } } },
     blockModalTap:createModalTapGuard(),journeyScreenHtml,updateOrderBanner,
     $: (id: string) => { if (!elements.has(id)) elements.set(id, node()); return elements.get(id); },
-    chronicleScreenHtml,chronicleActionFromData,chronicleGuidance,CAPTAINS,routeDefinition,advanceStatus, battleSelectionHtml, evolutionDialogHtml, ERAS, QUESTS, foodRate, unlockCost, dailyReward, localDay, battleGuidance, baseHealthDisplay, compactNumber, waveLabel, waveAccessibleLabel, chapterPresentation, unitPresentationName, resultsHtml,isLegacyChoice,legacyEffects,prestigePreview,prestigeDetailsHtml,prestigeDialogHtml,legacyCurrentHtml,evolutionScreenHtml,saveSessionDialogHtml,temporarySessionNotice,skillCue,troopUnlockMessage,waveInspectionHtml,
+    chronicleScreenHtml,chronicleActionFromData,chronicleGuidance,CAPTAINS,routeDefinition,advanceStatus, battleSelectionHtml, evolutionDialogHtml, ERAS, QUESTS, foodRate, unlockCost, dailyReward, localDay, battleGuidance, baseHealthDisplay, compactNumber, waveLabel, waveAccessibleLabel, chapterPresentation, unitPresentationName, resultsHtml,isLegacyChoice,legacyEffects,prestigePreview,prestigeDetailsHtml,prestigeDialogHtml,legacyCurrentHtml,evolutionScreenHtml,saveSessionDialogHtml,temporarySessionNotice,skillCue,troopUnlockMessage,nextGoalLabel, waveInspectionHtml,
     earlierChapter,storybookArt: () => false, money: String, coin: String, icon:()=>'',textIfChanged(target:any,value:string){target.textContent=value;},htmlIfChanged(target:any,value:string){target.innerHTML=value;},unlockAudio() {}, syncPause() {}, rebuildArmy() {}, syncMotion() {}, isolateModal(){}, toast() {},
     closeModal() { context.modal=null; }, showModal: (id: string,html:string,focusCommand?:string) => {context.modal=id;context.dialogHtml=html;context.focusCommand=focusCommand;dialogs.push(id);},
     session: {

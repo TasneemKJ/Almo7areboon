@@ -48,6 +48,7 @@ import { loadAtmosphere, saveAtmosphere, ambienceAllowed, loadAudioMix, normaliz
 import { createLifetime } from './ui/lifetime.ts';
 import { createModalTapGuard } from './ui/modal-tap-guard.ts';
 import { textIfChanged, htmlIfChanged } from './ui/dom-state.ts';
+import { nextGoalLabel } from './ui/next-goal.ts';
 import { skillCue } from './ui/skill-cues.ts';
 
 // The initial render is a non-playable default. Only ownership makes a loaded Game authoritative.
@@ -84,7 +85,7 @@ root.innerHTML = `
       <div class="stage"><div id="timeline" class="eyebrow"></div><h1 id="age-title"></h1><p id="scene-name" class="scene-name"></p><button id="battle-select" class="battle-select" data-command="battles" aria-label="Choose a battle"><span class="stage-progress" id="stage-progress"></span></button></div>
       <div class="world-tools"><button id="quests" class="square-button" data-command="quests" aria-label="Quests">${icon('quest')}<i class="notification"></i></button><button class="square-button" data-command="settings" aria-label="Settings">${icon('gear')}</button></div>
       <div class="battle-meta"><button id="wave-label" class="wave-inspect" data-command="wave-help"></button><div class="battle-toggles"><button id="speed" data-command="speed" aria-label="Change battle speed">1×</button><button id="pause" data-command="pause" aria-label="Pause battle">Ⅱ</button></div></div>
-      <div id="ready" class="ready"><div class="ready-title">YOUR ARMY. YOUR ERA.</div><button class="big-button green" data-command="start">BATTLE ${icon('battle')}</button><p id="story-ready-rule">Destroy the enemy base!</p><div class="ready-paths"><button class="story-open" data-command="chronicle">Open the storybook</button><button class="journey-open" data-command="journey">Your journey</button></div></div>
+      <div id="ready" class="ready"><div class="ready-title">YOUR ARMY. YOUR ERA.</div><button class="big-button green" data-command="start">BATTLE ${icon('battle')}</button><p id="story-ready-rule">Destroy the enemy base!</p><div class="ready-paths"><button class="story-open" data-command="chronicle">Open the storybook</button><button class="journey-open" id="journey-open" data-command="journey">Your journey</button></div></div>
       <p id="base-status" class="sr-only"></p><p id="game-status" class="sr-only" role="status" aria-live="polite"></p><div id="pause-banner" class="pause-banner" hidden>PAUSED</div>
       <div class="battle-skills" id="battle-skills"></div>
     </section>
@@ -241,6 +242,7 @@ function update(force=false){
   });
   const notification=$('quests').querySelector<HTMLElement>('.notification');
   if(notification)notification.hidden=!(dailyReward(p,localDay()).available||QUESTS.some(q=>p[q.stat]>=q.target&&!p.claimed.includes(q.id)));
+  {const goal=nextGoalLabel(p,localDay()),journeyOpen=$('journey-open');textIfChanged(journeyOpen,goal.text);journeyOpen.setAttribute('aria-label',goal.label);}
   const story=s.chronicle;
   $('story-rally').hidden=!story?.enabled;
   $('story-rally').toggleAttribute('disabled',s.phase!=='running'||s.paused);
@@ -384,6 +386,7 @@ function showSettings(){
   ${game.state.phase==='running'?'<button class="big-button secondary retreat-button" data-command="retreat">RETREAT FROM THIS BATTLE</button><p class="save-note">Retreating counts as a loss. Coins you already earned are kept.</p>':''}
   <div class="backup-actions"><button class="big-button blue" data-command="export">EXPORT SAVE</button><button class="big-button secondary" data-command="import" ${session.status!=='active'?'disabled':''}>IMPORT SAVE</button><button class="big-button secondary" data-command="reset" ${session.status!=='active'?'disabled':''}>START OVER</button><input id="import-save" type="file" accept=".json,application/json" hidden></div>
   <details class="help-box"><summary>How to play</summary><p>Tap Battle, collect food and deploy troops. Your army fights automatically.</p><p>Deployments and defeated enemies earn momentum. At 60, tap near your gate to Hold or near the enemy gate to Advance; the command buttons remain available. Advance adds 20% troop damage and 15% movement for 10 seconds; Hold reduces incoming troop and gate damage by 25% for 10 seconds.</p><p>Keep ranged troops behind a melee or heavy front line. Spend earned coins on food production and new troops.</p><p>Battle victories unlock opponents. Evolution upgrades your own army and resets coins and upgrades. Your selected opponent, unlocked battles and chapter seals stay.</p><small>1–3 troops · Q / W / E skills · Space pause · Escape closes menus.</small></details>
+  <details class="help-box"><summary>About and privacy</summary><p>No accounts, tracking or servers. Progress stays in this browser; export keeps a copy you control. Code and art are original; Phaser (MIT) runs the battlefield. See CREDITS.md in the project.</p></details>
   <p class="save-note">${session.status==='temporary'?temporarySessionNotice:savedWarning?'Saving is unavailable. Export a backup before closing.':'Progress saves on this browser. Export a backup to keep a separate copy.'}</p>`);
 }
 function dailyRow(p:Profile){

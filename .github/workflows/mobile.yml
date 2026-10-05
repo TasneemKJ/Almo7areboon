@@ -1,11 +1,8 @@
 name: Mobile reliability
 
 on:
-  push:
-    branches: [main, fix/mobile-reliability-audit]
-  pull_request:
   workflow_dispatch:
-
+  workflow_call:
 permissions:
   contents: read
 
@@ -18,23 +15,10 @@ jobs:
     runs-on: ubuntu-latest
     timeout-minutes: 15
     steps:
-      - uses: actions/checkout@v4
+      - uses: actions/checkout@v7
         with:
           persist-credentials: false
-      - name: Package exact audit source
-        run: |
-          git ls-files -z -- src tests scripts public .github package.json package-lock.json tsconfig.json vite.config.ts index.html .gitignore README.md AGENTS.md | tar --null -T - -czf /tmp/mobile-source.tar.gz
-          git rev-parse HEAD > /tmp/mobile-revision.txt
-          git ls-tree -r HEAD > /tmp/mobile-tree.txt
-      - uses: actions/upload-artifact@v4
-        with:
-          name: mobile-source
-          path: |
-            /tmp/mobile-source.tar.gz
-            /tmp/mobile-revision.txt
-            /tmp/mobile-tree.txt
-          retention-days: 1
-      - uses: actions/setup-node@v4
+      - uses: actions/setup-node@v7
         with:
           node-version: 22
           cache: npm
@@ -53,12 +37,15 @@ jobs:
       - name: Offline return and deployment
         if: ${{ !cancelled() }}
         run: node --experimental-strip-types scripts/capture-offline-game-review.mjs
-      - uses: actions/upload-artifact@v4
-        if: always()
+      - name: Trim failure evidence
+        if: failure()
+        run: bash scripts/trim-evidence.sh evidence artifacts/mobile artifacts/save-session-review artifacts/browser-review/offline-game
+      - name: Publish failure evidence
+        if: failure()
+        uses: actions/upload-artifact@v7
         with:
-          name: mobile-evidence
-          path: |
-            artifacts/mobile/
-            artifacts/save-session-review/
-            artifacts/browser-review/offline-game/
+          name: mobile-failure-evidence
+          path: evidence/
+          if-no-files-found: ignore
+          compression-level: 9
           retention-days: 1
