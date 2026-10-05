@@ -26,3 +26,10 @@ Ordered tasks. Tick a task when it is done and never delete finished tasks. This
 - [ ] Colour-blind-safe troop-type shapes; optional haptics
 - [ ] Streak grace day (needs an optional, normalized save field)
 - [ ] Capture and review victory/defeat, Journey, Chronicle and evolve-confirm screens on touch devices at 320, 360 and 412 widths
+
+## Village command response, 2026-10-05
+- [x] Implement quieter gate readiness from authoritative Hold/Advance validity, with static reduced-motion parity
+- [x] Route accepted simulation order events to distinct bounded Hold/Advance accents; test rejected input, draining, mute and voice limits
+- [ ] Capture and inspect current before/after readiness and active-command screenshots at required phone/landscape/desktop sizes before verified visual release
+- [ ] Listen to the new command contours alongside battle/atmosphere on browser and physical mobile output
+- [ ] Complete the original cinematic atmosphere roadmap in real, behavior-tested slices; inherited forty-pass placeholder expectation is still unfinished

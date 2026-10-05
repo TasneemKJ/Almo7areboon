@@ -684,10 +684,10 @@ export function mountBattlefield(element:HTMLElement,game:GamePort,onFrame:(forc
     g.lineStyle(1.5,frame.color,.65*frame.pulse);g.strokeEllipse(mark.x,mark.y,mark.radius*2.4,8);
     if(frame.order==='advance'){g.lineStyle(1.5,frame.color,.85);g.beginPath();g.moveTo(mark.x-4,mark.y-2);g.lineTo(mark.x+2,mark.y);g.lineTo(mark.x-4,mark.y+2);g.strokePath();}
    }
-   const {x,y}=frame.pennant;g.lineStyle(2,0xb7955f,1);g.lineBetween(x,y,x,y+44);
-   g.fillStyle(frame.color,.9);g.fillTriangle(x+1,y,x+22,y+5,x+1,y+13);
-   g.lineStyle(1,0x16394b,1);g.lineBetween(x+4,y+5,x+11,y+8);
-   if(navigator.webdriver)this.game.canvas.dataset.battleOrder=JSON.stringify({order:frame.order,count:frame.marks.length,reduced:this.reduce,pulse:frame.pulse});
+   const {x,y,width,alpha,tipOffset}=frame.pennant;g.lineStyle(2,0xb7955f,frame.ready?.6:1);g.lineBetween(x,y,x,y+44);
+   g.fillStyle(frame.color,alpha);g.fillTriangle(x+1,y,x+width,y+5+tipOffset,x+1,y+13);
+   g.lineStyle(1,0x16394b,frame.ready?.7:1);g.lineBetween(x+4,y+5,x+11,y+8);
+   if(navigator.webdriver)this.game.canvas.dataset.battleOrder=JSON.stringify({order:frame.order,ready:frame.ready,count:frame.marks.length,reduced:this.reduce,pulse:frame.pulse});
   }
   private event(e:GameEvent):void {
    this.villageMuster=rememberVillageMuster(this.villageMuster,e,game.state.time);

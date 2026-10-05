@@ -29,3 +29,33 @@ test('reduced motion keeps a static village answer without extending its lifetim
  assert.deepEqual(orderPresentationFrame(g.state,300,true)!.answer,{kind:'hold',progress:1});
  g.state.time=2.4;assert.equal(orderPresentationFrame(g.state,300,true)!.answer,null);
 });
+
+test('gate pennant becomes ready only when the real command can be accepted',()=>{
+ const g=new Game();g.state.orders!.charge=100;
+ assert.equal(orderPresentationFrame(g.state,300,false),null,'preparation is not command readiness');
+ g.dispatch({type:'start'});g.state.orders!.charge=59.99;
+ assert.equal(orderPresentationFrame(g.state,300,false),null,'below the actual 60 momentum cost');
+ g.state.orders!.charge=60;const before=JSON.stringify(g.state),ready=orderPresentationFrame(g.state,300,false)!;
+ assert.ok(ready,'the gate should acknowledge a charged command');assert.equal(ready.ready,true);assert.equal(ready.order,null);
+ assert.equal(ready.answer,null,'readiness must not pretend a command happened');assert.deepEqual(ready.marks,[]);
+ assert.equal(JSON.stringify(g.state),before,'presentation cannot spend momentum');
+ g.dispatch({type:'pause'});assert.equal(orderPresentationFrame(g.state,300,false),null,'a paused command is unavailable');
+ g.dispatch({type:'pause'});assert.equal(g.dispatch({type:'order',order:'hold'}),true);
+ const active=orderPresentationFrame(g.state,300,false)!;assert.equal(active.ready,false);assert.equal(active.order,'hold');
+ assert.equal(g.state.orders!.charge,0);assert.equal(g.state.orders!.until,10);
+ g.state.orders!.charge=100;assert.equal(orderPresentationFrame(g.state,300,false)!.ready,false,'charge earned during an order cannot offer an overlapping cast');
+ g.dispatch({type:'retreat'});assert.equal(orderPresentationFrame(g.state,300,false),null);
+ g.dispatch({type:'retry'});assert.equal(orderPresentationFrame(g.state,300,false),null);
+});
+
+test('readiness stays quieter than an active order and reduced motion has static cloth',()=>{
+ const g=new Game();g.dispatch({type:'start'});g.state.orders!.charge=60;
+ const still=orderPresentationFrame(g.state,300,true)!;assert.ok(still,'charged readiness exists');
+ g.state.time=7;assert.deepEqual(orderPresentationFrame(g.state,300,true),still);
+ const moving=orderPresentationFrame(g.state,300,false)!;
+ assert.ok(Math.abs(moving.pennant.tipOffset)<=1,'cloth motion is no larger than a source-space pixel');
+ assert.equal(g.dispatch({type:'order',order:'advance'}),true);const active=orderPresentationFrame(g.state,300,false)!;
+ assert.ok(still.pennant.alpha<active.pennant.alpha);assert.ok(still.pennant.width<active.pennant.width);
+ assert.equal(still.pennant.x,active.pennant.x,'the same existing gate pennant owns readiness and order identity');
+ assert.equal(still.pennant.y,active.pennant.y);assert.equal(still.pennant.tipOffset,0);
+});

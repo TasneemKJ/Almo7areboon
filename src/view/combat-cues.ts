@@ -1,5 +1,5 @@
 import type {GameEvent} from '../game/types.ts';
-export type CombatCueId='story-rally'|'story-bell'|'story-shatter'|'story-protect'|'story-cover'|'story-breach'|'story-landmark'|'story-rescue'|'deploy'|'hit-neutral'|'hit-blunt'|'hit-flick'|'hit-hollow'|'base-player'|'base-enemy'|'coin'|'freeze'|'meteor'|'food'|'upgrade'|'evolve'|'win'|'lose'|'death'|'summon';
+export type CombatCueId='order-hold'|'order-advance'|'story-rally'|'story-bell'|'story-shatter'|'story-protect'|'story-cover'|'story-breach'|'story-landmark'|'story-rescue'|'deploy'|'hit-neutral'|'hit-blunt'|'hit-flick'|'hit-hollow'|'base-player'|'base-enemy'|'coin'|'freeze'|'meteor'|'food'|'upgrade'|'evolve'|'win'|'lose'|'death'|'summon';
 export type CueCooldown='deployment'|'unit-hit'|'base-hit'|'coin'|'death';
 export interface CombatCue {
  readonly id:CombatCueId;readonly eventIndex:number;readonly priority:number;
@@ -27,6 +27,8 @@ export function selectCombatCues(events:readonly GameEvent[]):readonly CombatCue
    if((event.amount??0)<=0)continue;
   }
   switch(event.type){
+   case 'order':if(event.order!=='hold'&&event.order!=='advance')continue;
+    id=event.order==='hold'?'order-hold':'order-advance';priority=4;break;
    case 'skill':if(event.skill!=='freeze'&&event.skill!=='meteor'&&event.skill!=='food')continue;
     if(skills.length<3)skills.push({id:event.skill,eventIndex:index,priority:6,critical:true,cooldown:null});continue;
    case 'hit':
