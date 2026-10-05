@@ -44,3 +44,11 @@ Ordered tasks. Tick a task when it is done and never delete finished tasks. This
 - [ ] Capture and inspect current before/after readiness and active-command screenshots at required phone/landscape/desktop sizes before verified visual release
 - [ ] Listen to the new command contours alongside battle/atmosphere on browser and physical mobile output
 - [ ] Complete the original cinematic atmosphere roadmap in real, behavior-tested slices; forty visually verified refinements are still unfinished
+
+## First Fires depth, 2026-10-05
+- [x] Inspect exact-current phone, landscape and desktop baseline views and register two hill-air pockets and two masonry reflections to the original 900×1000 painting
+- [x] Implement a bounded immutable depth mesh in the real storybook branch, with crop/HUD/source-ink exclusions and static reduced motion
+- [x] Add near-hearth/far-valley synthesis within the existing First Fires buffer; retain byte-identical audio for the five other chapters
+- [x] Verify source registration and actual Phaser triangle-command decoding; run combined source tests and the unchanged engine-inclusive 500 KiB JS budget
+- [ ] Capture and inspect exact-payload after views plus Canvas/WebGL, touch, crop/chapter changes and same-scenario 4× CPU evidence before visual release
+- [ ] Complete browser OfflineAudioContext checks, listening review and physical mobile acceptance for First Fires spatial audio

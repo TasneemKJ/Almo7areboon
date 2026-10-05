@@ -101,6 +101,7 @@ type RendererDiagnostics = Phaser.Scene & {
   clouds?:Phaser.GameObjects.Container;
   mist?:Phaser.GameObjects.Container;
   villageViewport?:VillageViewport;
+  storybookDepth?:readonly {region:string;kind:string;points:readonly {x:number;y:number}[]}[];
   impactCues?: {trait?:string;x:number;y:number;lane?:number;life:number}[];
   attackCues?: unknown[];
   bolts?: unknown[];
@@ -110,19 +111,21 @@ type RendererDiagnostics = Phaser.Scene & {
 // These Phaser command IDs are stable in the pinned 3.90 Graphics API. Unknown
 // commands fail diagnostics rather than silently substituting model output.
 function paths(graphic:Phaser.GameObjects.Graphics|undefined){
- const fills:Array<{points:number[][];alpha:number}>=[],strokes:Array<{points:number[][];alpha:number;lineWidth:number}>=[];
- const commands=graphic?.commandBuffer??[];let points:number[][]=[],alpha=1,lineAlpha=1,lineWidth=1;
+ const triangles:Array<{points:number[][];alpha:number;color:number}>=[],fills:Array<{points:number[][];alpha:number}>=[],strokes:Array<{points:number[][];alpha:number;lineWidth:number}>=[];
+ const commands=graphic?.commandBuffer??[];let points:number[][]=[],alpha=1,color=0,lineAlpha=1,lineWidth=1;
  for(let i=0;i<commands.length;){const command=commands[i++];switch(command){
   case 1:points=[];break;case 2:break;
   case 4:case 5:points.push([commands[i++],commands[i++]]);break;
   case 6:lineWidth=commands[i++];i++;lineAlpha=commands[i++];break;
-  case 7:i++;alpha=commands[i++];break;
+  case 7:color=commands[i++];alpha=commands[i++];break;
+  case 10:triangles.push({points:[[commands[i++],commands[i++]],[commands[i++],commands[i++]],[commands[i++],commands[i++]]],alpha,color});break;
   case 8:fills.push({points:points.slice(),alpha});break;
   case 9:strokes.push({points:points.slice(),alpha:lineAlpha,lineWidth});break;
   default:throw new Error(`Unexpected village Graphics command ${command}`);
  }}
- return {fills,strokes};
+ return {fills,strokes,triangles};
 }
+let lastDepth:RendererDiagnostics['storybookDepth'],depthBuilds=0;
 function inspect() {
   const leaves: DisplayObject[] = [];
   function walk(objects: Phaser.GameObjects.GameObject[]) {
@@ -141,6 +144,7 @@ function inspect() {
       bounds: { x: bounds.x, y: bounds.y, width: bounds.width, height: bounds.height } }];
   });
   const actual = scene as RendererDiagnostics;
+  if(actual.storybookDepth!==lastDepth){lastDepth=actual.storybookDepth;depthBuilds++;}
   const graphics = (object: Phaser.GameObjects.Graphics | undefined) => object ? {
     paintIndex: leaves.indexOf(object), depth: object.depth,
     commandCount: object.commandBuffer.length,
@@ -157,7 +161,7 @@ function inspect() {
     state: { time: game.state.time, paused: game.state.paused, unitCount: game.state.units.length },
     canvas: { width: scene.game.canvas.width, height: scene.game.canvas.height },
     village:village?{mood:{...villageMood},plate:VILLAGE_PLATES[game.profile.age],viewport:actual.villageViewport,
-     paths:paths(actual.ambience),ambience:graphics(actual.ambience),shadows:graphics(actual.shadows),halos:graphics(actual.halos),
+     paths:paths(actual.ambience),depth:actual.storybookDepth??[],depthBuilds,ambience:graphics(actual.ambience),shadows:graphics(actual.shadows),halos:graphics(actual.halos),
      skyIndex:actual.sky?leaves.indexOf(actual.sky):-1,
      lamps:actual.stageLight?.list.map(object=>{const lamp=object as Phaser.GameObjects.Image;return {visible:lamp.visible,paintIndex:leaves.indexOf(lamp),x:lamp.x,y:lamp.y,width:lamp.displayWidth,height:lamp.displayHeight,alpha:lamp.alpha,tint:lamp.tintTopLeft};})??[],
      pools:{lights:actual.stageLight?.length,stars:actual.stars?.length,clouds:actual.clouds?.length,mist:actual.mist?.length},
@@ -181,6 +185,15 @@ const renderer = mountBattlefield(battlefield, port, () => {
 async function setClock(time:number){villageMood={...villageMood,time};await new Promise<void>(resolve=>requestAnimationFrame(()=>requestAnimationFrame(()=>resolve())));return inspect();}
 async function crossing(x:number){for(const unit of game.state.units)unit.x=x;await new Promise<void>(resolve=>requestAnimationFrame(()=>requestAnimationFrame(()=>resolve())));return inspect();}
 async function chapter(age:number){if(!Number.isInteger(age)||age<0||age>5)throw Error('Invalid chapter');game.profile.age=age;game.profile.enemyAge=age;for(const unit of game.state.units)unit.age=age;await new Promise<void>(resolve=>requestAnimationFrame(()=>requestAnimationFrame(()=>resolve())));return inspect();}
-declare global { interface Window { layeringReview: { inspect: typeof inspect;setClock:typeof setClock;crossing:typeof crossing;chapter:typeof chapter; resumeEffects():void;resetEffects():void;destroy():void }; } }
-window.layeringReview = { inspect,setClock,crossing,chapter,resumeEffects:()=>{game.state.paused=false;},resetEffects:()=>{game.state={...game.state,units:[]};},destroy:()=>renderer.destroy() };
+// Measures only production Graphics command preparation. It does not measure
+// raster/GPU time, physical phone frame rate, or browser audio quality.
+function measureAtmosphere(samples=120){
+ if(!Number.isInteger(samples)||samples<30||samples>600)throw Error('Invalid sample count');
+ const current=scene as unknown as {drawAtmosphere():void},times:number[]=[];
+ for(let i=0;i<30;i++)current.drawAtmosphere();
+ for(let i=0;i<samples;i++){const start=performance.now();current.drawAtmosphere();times.push(performance.now()-start);}
+ times.sort((a,b)=>a-b);return {samples,p50:times[Math.floor(samples*.5)],p95:times[Math.min(samples-1,Math.floor(samples*.95))],max:times.at(-1),scope:'production drawAtmosphere CPU command preparation only'};
+}
+declare global { interface Window { layeringReview: { inspect: typeof inspect;setClock:typeof setClock;crossing:typeof crossing;chapter:typeof chapter;measureAtmosphere:typeof measureAtmosphere; resumeEffects():void;resetEffects():void;destroy():void }; } }
+window.layeringReview = { inspect,setClock,crossing,chapter,measureAtmosphere,resumeEffects:()=>{game.state.paused=false;},resetEffects:()=>{game.state={...game.state,units:[]};},destroy:()=>renderer.destroy() };
 window.addEventListener('pagehide', () => renderer.destroy(), { once: true });

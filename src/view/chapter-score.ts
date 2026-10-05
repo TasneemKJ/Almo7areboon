@@ -5,6 +5,13 @@ export interface ChapterScore {
  readonly plucks:readonly ScoreNote[];readonly answers:readonly ScoreNote[];
 }
 const notes=(decay:number,positions:readonly (readonly [number,number])[]):readonly ScoreNote[]=>positions.map(([at,semitones])=>({at,semitones,decay}));
+/** Sparse local texture, separate from the pitched phrase and its distant air. */
+export const FIRST_FIRES_HEARTH_CRACKLES=Object.freeze([
+ {at:.65,duration:.12,strength:.7},{at:2.7,duration:.09,strength:.55},
+ {at:8.8,duration:.16,strength:.8},{at:10.8,duration:.15,strength:1},
+ {at:12.1,duration:.18,strength:.85},{at:16.9,duration:.11,strength:.6},
+ {at:22.1,duration:.14,strength:.75},
+].map(crackle=>Object.freeze(crackle)));
 export const CHAPTER_SCORES:readonly ChapterScore[]=[
  {root:146.83,air:.012,water:0,pluck:.073,breath:.011,seed:319,plucks:notes(2.4,[[1.2,0],[3.2,3],[5.2,2],[14,0]]),answers:notes(3,[[18.5,12]])},
  {root:130.81,air:.011,water:.003,pluck:.069,breath:.014,seed:887,plucks:notes(2.4,[[1,0],[1.8,3],[6.4,2],[13,7],[13.8,5]]),answers:notes(3,[[19,12]])},

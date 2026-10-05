@@ -2,6 +2,7 @@ import { orderPresentationFrame } from './order-presentation.ts';
 import Phaser from 'phaser';
 import {ChronicleView} from './chronicle-view.ts';
 import {storybookArt} from './storybook-art.ts';
+import {cacheStorybookDepth,paintStorybookDepth,type StorybookDepthTriangle} from './storybook-depth.ts';
 import {reducedMotion,projectileForHit,traitCueForHit} from './combat-feedback.ts';
 import {arenaLayout,foregroundPlacement,landscapePlacement,troopPose,visualEra} from './visual-theme.ts';
 import {atmosphereFrame} from './era-atmosphere.ts';
@@ -83,6 +84,7 @@ export function mountBattlefield(element:HTMLElement,game:GamePort,onFrame:(forc
   private bars!:Phaser.GameObjects.Graphics;
   private stageLight!:Phaser.GameObjects.Container;
   private villageViewport!:VillageViewport;
+  private storybookDepth:readonly StorybookDepthTriangle[]=[];
   private villageHudPhase:Phase|null=null;
   private villageHudPaused:boolean|null=null;
   private quietVillage=createVillageMood();
@@ -193,6 +195,7 @@ export function mountBattlefield(element:HTMLElement,game:GamePort,onFrame:(forc
    }
    const viewport:VillageViewport={placement,cssWorldScale,visibleSource,hudSourceBounds};
    viewport.skyPath=villageSkyPath(game.profile.age,viewport);this.villageViewport=viewport;
+   this.storybookDepth=cacheStorybookDepth(game.profile.age,viewport);
    this.villageHudPaused=game.state.paused;
    this.cacheBattlefieldHudBounds();
   }
@@ -391,6 +394,7 @@ export function mountBattlefield(element:HTMLElement,game:GamePort,onFrame:(forc
     const mood=options.villageMood?.()??this.quietVillage;
     const villageVerdict=this.aftermath?.phase===game.state.phase?villageVerdictFrame({phase:this.aftermath.phase,elapsed:Math.max(0,this.clock-this.aftermath.at),reduced:this.reduce}):null;
     const frame=villageFrame({age:game.profile.age,time:options.villageMood?mood.time:this.clock,reduced:this.reduce,restoration:game.profile.chronicle?.restoration??0,mood,viewport:this.villageViewport,verdict:villageVerdict,watch:this.waveArrival,order:this.orderFrame?.answer,muster:this.musterFrame});
+    paintStorybookDepth(g,this.storybookDepth,options.villageMood?mood.time:this.clock,this.reduce,frame.lamps.map(lamp=>lamp.alpha));
     for(const resident of frame.residents)for(const pane of resident.panes){g.fillStyle(pane.color,pane.alpha);g.fillPoints(pane.points as Phaser.Types.Math.Vector2Like[],true);}
     for(const stroke of frame.verdictStrokes){g.lineStyle(stroke.width,stroke.color,stroke.alpha);g.lineBetween(stroke.from.x,stroke.from.y,stroke.to.x,stroke.to.y);}
     for(const stroke of frame.watchStrokes){g.lineStyle(stroke.width,stroke.color,stroke.alpha);g.lineBetween(stroke.from.x,stroke.from.y,stroke.to.x,stroke.to.y);}
