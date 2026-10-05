@@ -60,7 +60,7 @@ test('watchfire reuses village ambience and light pools with bounded webdriver e
  assert.match(source,/private villageHudPaused:boolean\|null=null;/,'pause visibility needs an explicit HUD measurement owner');
  assert.match(source,/private cacheVillageViewport\(\):void \{[\s\S]*?this\.villageHudPaused=game\.state\.paused;[\s\S]*?this\.cacheBattlefieldHudBounds\(\);\s*\}/,'every phase, era, resize, and order measurement must record whether it included paused HUD');
  assert.match(source,/onFrame:\(force\?:boolean\)=>void/,'the renderer must be able to request an immediate host-layout sync');
- assert.match(source,/orderHudChanged=villageOrderHudChanged\(this\.villageHudPaused,game\.state\.paused,!!this\.orderFrame\?\.answer,!!this\.waveArrival\)/,'the tested HUD owner must decide pause-side measurement and resume-side cleanup');
+ assert.match(source,/orderHudChanged=villageOrderHudChanged\(this\.villageHudPaused,game\.state\.paused,!!this\.orderFrame\?\.answer,!!this\.waveArrival,!!this\.musterFrame\)/,'the tested HUD owner must decide pause-side measurement and resume-side cleanup for order and muster answers');
  assert.match(source,/if\(phaseHudChanged\|\|orderHudChanged\)\{const world=element\.closest<HTMLElement>\('\.world'\);if\(world\?\.dataset\.phase!==game\.state\.phase\|\|orderHudChanged\)onFrame\(true\);this\.villageHudPhase=game\.state\.phase;this\.cacheVillageViewport\(\);\}/,'phase and relevant order-pause reflow must reach the DOM before HUD exclusions are measured and the village is painted');
  assert.match(source,/\.battle-skills button,\.pause-banner/,'transient controls and the centered pause card must reserve their painted regions');
  assert.match(main,/mountBattlefield\(\$\('battlefield'\),port,force=>update\(force\),events/,'the host must honor a forced layout sync from the renderer');
@@ -77,7 +77,7 @@ test('one authoritative order frame drives troop marks and the bounded village a
  const source=readFileSync(new URL('../src/view/battlefield.ts',import.meta.url),'utf8');
  assert.match(source,/private orderFrame:ReturnType<typeof orderPresentationFrame>=null;/);
  assert.equal(source.match(/orderPresentationFrame\(game\.state,this\.layout\.groundY,this\.reduce,this\.layout\.laneGap\)/g)?.length,1,'one read boundary must own troop and village presentation');
- assert.match(source,/this\.orderFrame=orderPresentationFrame\(game\.state,this\.layout\.groundY,this\.reduce,this\.layout\.laneGap\);\s*this\.waveArrival=/);
+ assert.match(source,/this\.orderFrame=orderPresentationFrame\(game\.state,this\.layout\.groundY,this\.reduce,this\.layout\.laneGap\);[\s\S]*?this\.waveArrival=/);
  assert.match(source,/villageFrame\(\{[^}]*order:this\.orderFrame\?\.answer/s);
  assert.match(source,/const frame=this\.orderFrame;/);
  assert.doesNotMatch(source,/setTimeout\([^)]*villageOrder|Date\.now\(\)[^;]*villageOrder/i);
@@ -93,6 +93,35 @@ test('order answer reuses village ambience and light pools with bounded webdrive
  assert.match(review,/assertOrderRegionsClearOf\(p,'\.pause-banner'\)/,'native evidence must independently reject a pause-card overlap');
  assert.match(source,/while\(this\.stageLight\.length<6\)/);
  assert.doesNotMatch(source,/order(?:Strokes|Lights)[^\n]*this\.add\.(?:graphics|image|container)/i);
+});
+test('first accepted deployment owns one simulation-time village muster answer',()=>{
+ const source=readFileSync(new URL('../src/view/battlefield.ts',import.meta.url),'utf8');
+ assert.match(source,/import \{createVillageMuster,rememberVillageMuster,villageMusterFrame/);
+ assert.match(source,/private villageMuster=createVillageMuster\(\);/);
+ assert.match(source,/this\.villageMuster=rememberVillageMuster\(this\.villageMuster,e,game\.state\.time\)/);
+ assert.match(source,/this\.villageMuster=createVillageMuster\(\)/,'a new authoritative battle state must clear the old first-muster owner');
+ assert.equal(source.match(/villageMusterFrame\(this\.villageMuster,game\.state\.time,this\.reduce\)/g)?.length,1,'one read boundary must own the rendered muster frame');
+ assert.match(source,/private musterFrame:ReturnType<typeof villageMusterFrame>=null;/);
+ assert.match(source,/this\.musterFrame=villageMusterFrame\(this\.villageMuster,game\.state\.time,this\.reduce\)/);
+ assert.match(source,/villageFrame\(\{[^}]*muster:this\.musterFrame\}/);
+ assert.doesNotMatch(source,/setTimeout\([^)]*muster|Date\.now\(\)[^;]*muster/i);
+});
+test('muster response reuses village ambience and light pools with bounded webdriver evidence',()=>{
+ const source=readFileSync(new URL('../src/view/battlefield.ts',import.meta.url),'utf8');
+ const review=readFileSync(new URL('../scripts/verify-battle-banner.mjs',import.meta.url),'utf8');
+ assert.match(source,/for\(const stroke of frame\.musterStrokes\)/);
+ assert.match(source,/const musterRegions=/);assert.match(source,/frame\.musterResidents\.flatMap/);assert.match(source,/frame\.musterLights\.map/);
+ assert.match(source,/dataset\.villageMusterAnswer=JSON\.stringify/);
+ assert.match(source,/delete this\.game\.canvas\.dataset\.villageMusterAnswer/);
+ assert.match(source,/while\(this\.stageLight\.length<6\)/);
+ assert.doesNotMatch(source,/muster(?:Strokes|Lights)[^\n]*this\.add\.(?:graphics|image|container)/i);
+ assert.match(source,/villageOrderHudChanged\(this\.villageHudPaused,game\.state\.paused,!!this\.orderFrame\?\.answer,!!this\.waveArrival,!!this\.musterFrame\)/);
+ assert.match(review,/data-village-muster-answer/);
+ assert.match(review,/\$\{viewport\.width\}-muster/);assert.match(review,/width:320,height:568/);assert.match(review,/width:390,height:844/);assert.match(review,/full-motion-muster/);
+ assert.match(review,/assertMusterRegionsClearOfHud/);
+ for(const selector of ['.stage .eyebrow','.stage .battle-select','.world-tools button','.battle-meta button'])assert.ok(review.includes(selector),`native muster review must cover ${selector}`);
+ assert.match(review,/dataset\.villageWatchfire/,'native muster review must positively observe the concurrent opening watchfire');
+ assert.match(review,/watchfire\.lights>0/,'native muster review must prove the concurrent watchfire owns practical lamps');
 });
 test('chronicle renderer no longer paints abstract restoration bars beside the player base',()=>{
  const source=readFileSync(new URL('../src/view/chronicle-view.ts',import.meta.url),'utf8');

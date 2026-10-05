@@ -94,6 +94,50 @@ test('complete birds avoid HUD and roofs, need readable continuous travel, and f
 test('reduced motion is still inhabited and identical across clocks, with no bird',async()=>{const m=await life();for(let age=0;age<6;age++){const a=m.villageFrame({age,time:0,reduced:true,mood:quiet,viewport});assert.deepEqual(a,m.villageFrame({age,time:99,reduced:true,mood:quiet,viewport}));assert.ok(a.residents.some((r:any)=>r.panes.some((p:any)=>p.alpha>.2)));assert.equal(a.bird,null);const alarm=m.villageFrame({age,time:0,reduced:true,mood:{...quiet,mood:'alarmed',alarmMix:1},viewport});assert.ok(alarm.residents.every((r:any)=>r.panes.every((p:any)=>p.alpha<=.2)));}});
 test('source registration follows uniform painted placement at narrow and short layouts',async()=>{const m=await life();for(const [width,height] of [[320,300],[390,430],[450,430],[320,180]]){const layout=arenaLayout(width,height),placement=landscapePlacement(450,layout.height,layout.groundY);const f=m.villageFrame({age:5,time:0,reduced:true,mood:quiet,viewport:{...viewport,placement,cssWorldScale:width/450}});assert.equal(f.lamps[3].center.x,placement.x+871*placement.scale);assert.equal(f.lamps[3].center.y,placement.y+365*placement.scale);assert.equal(f.lamps[3].color,0x8edfc9);assert.equal(f.lamps[0].color,0xffd08a);assert.ok(f.residents.every((r:any)=>r.panes.every((p:any)=>p.points.every((point:any)=>Number.isFinite(point.x)&&Number.isFinite(point.y)))));}});
 
+test('first muster gathers measured witnesses and existing lamps without adding a pool',async()=>{
+ const m=await life();
+ for(let age=0;age<6;age++){
+  const frame=m.villageFrame({age,time:9,reduced:false,mood:quiet,viewport,muster:{progress:.5}});
+  assert.equal(frame.musterResidents.length,2);assert.equal(frame.musterStrokes.length,4);assert.equal(frame.musterLights.length,m.VILLAGE_PLATES[age].lamps.length);
+  assert.equal(frame.residents.length,2);assert.equal(frame.lamps.length,m.VILLAGE_PLATES[age].lamps.length);
+  for(const [index,stroke] of frame.musterStrokes.entries()){
+   const bounds=m.VILLAGE_PLATES[age].windows[Math.floor(index/2)].bounds;
+   assert.ok(inside(stroke.from,bounds)&&inside(stroke.to,bounds));
+   assert.ok(stroke.to.x<stroke.from.x&&stroke.to.y>stroke.from.y,'two ink strokes send the eye down-road toward the player gate');
+  }
+  assert.deepEqual(frame.musterLights,frame.lamps,'muster brightens authored lamps rather than allocating new halos');
+ }
+});
+
+test('danger owns the lamps while alarm orders and verdicts suppress muster without queuing it',async()=>{
+ const m=await life(),base={age:0,time:9,reduced:true,mood:quiet,viewport,muster:{progress:.4}};
+ const watch=m.villageFrame({...base,watch:{intent:'rush',progress:.5}});
+ assert.equal(watch.musterResidents.length,2);assert.equal(watch.musterStrokes.length,4);assert.deepEqual(watch.musterLights,[]);
+ assert.equal(watch.watchLights.length,m.VILLAGE_PLATES[0].lamps.length);assert.ok(watch.watchStrokes.length>0);
+ const frames=[
+  m.villageFrame({...base,mood:{...quiet,mood:'alarmed',alarmMix:1}}),
+  m.villageFrame({...base,order:{kind:'hold',progress:.5}}),
+  m.villageFrame({...base,verdict:{mode:'celebrate',progress:1}}),
+ ];
+ for(const frame of frames){assert.deepEqual(frame.musterResidents,[]);assert.deepEqual(frame.musterStrokes,[]);assert.deepEqual(frame.musterLights,[]);}
+});
+
+test('muster obeys live HUD exclusions and reduced motion keeps one complete bounded pose',async()=>{
+ const m=await life(),hud={...viewport,hudSourceBounds:[[220,340,255,390] as const]};
+ const partial=m.villageFrame({age:0,time:9,reduced:false,mood:quiet,viewport:hud,muster:{progress:.3}});
+ assert.equal(partial.musterResidents.length,1);assert.equal(partial.musterStrokes.length,2);
+ const reduced=m.villageFrame({age:0,time:999,reduced:true,mood:quiet,viewport,muster:{progress:.01}});
+ const complete=m.villageFrame({age:0,time:0,reduced:true,mood:quiet,viewport,muster:{progress:1}});
+ assert.deepEqual(reduced,complete);assert.equal(reduced.musterResidents.length,2);assert.equal(reduced.musterStrokes.length,4);
+});
+
+test('muster requests fresh HUD geometry when a pause card appears and disappears',async()=>{
+ const m=await life();
+ assert.equal(m.villageOrderHudChanged(false,true,false,false,true),true);
+ assert.equal(m.villageOrderHudChanged(true,false,false,false,true),true);
+ assert.equal(m.villageOrderHudChanged(false,true,false,true,true),false,'the higher-priority watchfire owns the paused frame');
+});
+
 test('oven and workshop restoration illuminate their own measured apertures while courtyard restoration brings both rooms home',async()=>{
  const m=await life(),frame=(restoration:number)=>m.villageFrame({age:0,time:0,reduced:true,restoration,mood:quiet,viewport});
  assert.deepEqual(frame(0).restorationLights,[]);

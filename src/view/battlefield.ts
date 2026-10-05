@@ -7,6 +7,7 @@ import {arenaLayout,foregroundPlacement,landscapePlacement,troopPose,visualEra} 
 import {atmosphereFrame} from './era-atmosphere.ts';
 import {ensureVillageLight,villageFrame,villageOrderHudChanged,villageSkyPath,type Bounds,type VillageViewport} from './village-life.ts';
 import {createVillageMood,type VillageMoodSnapshot} from './village-mood.ts';
+import {createVillageMuster,rememberVillageMuster,villageMusterFrame} from './village-muster.ts';
 import {duskAtmosphereFrame,paintDuskAtmosphere} from './dusk-atmosphere.ts';
 import {lightingHierarchyFrame,paintLightingHierarchy} from './lighting-hierarchy.ts';
 import {baseDamageFrame,baseDamagePalette,baseDamageStage} from './base-damage.ts';
@@ -85,6 +86,7 @@ export function mountBattlefield(element:HTMLElement,game:GamePort,onFrame:(forc
   private villageHudPhase:Phase|null=null;
   private villageHudPaused:boolean|null=null;
   private quietVillage=createVillageMood();
+  private villageMuster=createVillageMuster();
   private halos!:Phaser.GameObjects.Graphics;
   private glow!:Phaser.GameObjects.Graphics;
   private mist!:Phaser.GameObjects.Container;
@@ -119,6 +121,7 @@ export function mountBattlefield(element:HTMLElement,game:GamePort,onFrame:(forc
   private reduce=false;
   private failed=false;
   private orderFrame:ReturnType<typeof orderPresentationFrame>=null;
+  private musterFrame:ReturnType<typeof villageMusterFrame>=null;
   private waveArrival:WaveArrivalFrame|null=null;
   constructor(){super('battlefield');}
   preload():void {
@@ -165,7 +168,7 @@ export function mountBattlefield(element:HTMLElement,game:GamePort,onFrame:(forc
     this.baseText.push(text);this.world.add(text);
    }
    this.scale.on('resize',this.resize,this);
-   this.events.once('shutdown',()=>{delete this.game.canvas.dataset.waveArrival;delete this.game.canvas.dataset.battleAftermath;delete this.game.canvas.dataset.villageVerdict;delete this.game.canvas.dataset.villageWatchfire;delete this.game.canvas.dataset.villageOrderAnswer;delete this.game.canvas.dataset.battlefieldMemory;delete this.game.canvas.dataset.spoilsHomecoming;delete this.game.canvas.dataset.spoilsReward;delete this.game.canvas.dataset.battlefieldReviewFrameReady;this.aftermath=null;this.orderFrame=null;this.waveArrival=null;this.scale.off('resize',this.resize,this);this.resetEffects();this.units.clear();this.idle=[];});
+   this.events.once('shutdown',()=>{delete this.game.canvas.dataset.waveArrival;delete this.game.canvas.dataset.battleAftermath;delete this.game.canvas.dataset.villageVerdict;delete this.game.canvas.dataset.villageWatchfire;delete this.game.canvas.dataset.villageOrderAnswer;delete this.game.canvas.dataset.villageMusterAnswer;delete this.game.canvas.dataset.battlefieldMemory;delete this.game.canvas.dataset.spoilsHomecoming;delete this.game.canvas.dataset.spoilsReward;delete this.game.canvas.dataset.battlefieldReviewFrameReady;this.aftermath=null;this.orderFrame=null;this.musterFrame=null;this.waveArrival=null;this.villageMuster=createVillageMuster();this.scale.off('resize',this.resize,this);this.resetEffects();this.units.clear();this.idle=[];});
    this.resize();this.syncEra();loading.remove();
    if(this.failed)element.dispatchEvent(new CustomEvent('visual-fallback',{bubbles:true}));
   }
@@ -382,16 +385,17 @@ export function mountBattlefield(element:HTMLElement,game:GamePort,onFrame:(forc
   }
   private drawAtmosphere():void {
    const g=this.ambience;g.clear();
-   if(navigator.webdriver){delete this.game.canvas.dataset.villageVerdict;delete this.game.canvas.dataset.villageWatchfire;delete this.game.canvas.dataset.villageOrderAnswer;}
+   if(navigator.webdriver){delete this.game.canvas.dataset.villageVerdict;delete this.game.canvas.dataset.villageWatchfire;delete this.game.canvas.dataset.villageOrderAnswer;delete this.game.canvas.dataset.villageMusterAnswer;}
    if(storybookArt(game.profile.age)){
     this.streak.clear();this.stars.setVisible(false);this.clouds.setVisible(false);this.mist.setVisible(false);this.stageLight.setVisible(true);
     const mood=options.villageMood?.()??this.quietVillage;
     const villageVerdict=this.aftermath?.phase===game.state.phase?villageVerdictFrame({phase:this.aftermath.phase,elapsed:Math.max(0,this.clock-this.aftermath.at),reduced:this.reduce}):null;
-    const frame=villageFrame({age:game.profile.age,time:options.villageMood?mood.time:this.clock,reduced:this.reduce,restoration:game.profile.chronicle?.restoration??0,mood,viewport:this.villageViewport,verdict:villageVerdict,watch:this.waveArrival,order:this.orderFrame?.answer});
+    const frame=villageFrame({age:game.profile.age,time:options.villageMood?mood.time:this.clock,reduced:this.reduce,restoration:game.profile.chronicle?.restoration??0,mood,viewport:this.villageViewport,verdict:villageVerdict,watch:this.waveArrival,order:this.orderFrame?.answer,muster:this.musterFrame});
     for(const resident of frame.residents)for(const pane of resident.panes){g.fillStyle(pane.color,pane.alpha);g.fillPoints(pane.points as Phaser.Types.Math.Vector2Like[],true);}
     for(const stroke of frame.verdictStrokes){g.lineStyle(stroke.width,stroke.color,stroke.alpha);g.lineBetween(stroke.from.x,stroke.from.y,stroke.to.x,stroke.to.y);}
     for(const stroke of frame.watchStrokes){g.lineStyle(stroke.width,stroke.color,stroke.alpha);g.lineBetween(stroke.from.x,stroke.from.y,stroke.to.x,stroke.to.y);}
     for(const stroke of frame.orderStrokes){g.lineStyle(stroke.width,stroke.color,stroke.alpha);g.lineBetween(stroke.from.x,stroke.from.y,stroke.to.x,stroke.to.y);}
+    for(const stroke of frame.musterStrokes){g.lineStyle(stroke.width,stroke.color,stroke.alpha);g.lineBetween(stroke.from.x,stroke.from.y,stroke.to.x,stroke.to.y);}
     for(const mark of frame.water){g.lineStyle(mark.width,mark.color,mark.alpha);g.lineBetween(mark.from.x,mark.from.y,mark.to.x,mark.to.y);}
     if(frame.bird)for(const shape of frame.bird){g.fillStyle(shape.color,shape.alpha);g.fillPoints(shape.points as Phaser.Types.Math.Vector2Like[],true);}
     const lights=[...frame.lamps,...frame.restorationLights];
@@ -408,6 +412,11 @@ export function mountBattlefield(element:HTMLElement,game:GamePort,onFrame:(forc
      ...frame.orderStrokes.map(stroke=>({left:Math.min(stroke.from.x,stroke.to.x)-stroke.width,top:Math.min(stroke.from.y,stroke.to.y)-stroke.width,right:Math.max(stroke.from.x,stroke.to.x)+stroke.width,bottom:Math.max(stroke.from.y,stroke.to.y)+stroke.width})),
      ...frame.orderLights.map(mark=>({left:mark.center.x-mark.rx,top:mark.center.y-mark.ry,right:mark.center.x+mark.rx,bottom:mark.center.y+mark.ry})),
     ];
+    const musterRegions=[
+     ...frame.musterResidents.flatMap(resident=>resident.panes.map(pane=>pane.points.reduce((bounds,point)=>({left:Math.min(bounds.left,point.x),top:Math.min(bounds.top,point.y),right:Math.max(bounds.right,point.x),bottom:Math.max(bounds.bottom,point.y)}),{left:Infinity,top:Infinity,right:-Infinity,bottom:-Infinity}))),
+     ...frame.musterStrokes.map(stroke=>({left:Math.min(stroke.from.x,stroke.to.x)-stroke.width,top:Math.min(stroke.from.y,stroke.to.y)-stroke.width,right:Math.max(stroke.from.x,stroke.to.x)+stroke.width,bottom:Math.max(stroke.from.y,stroke.to.y)+stroke.width})),
+     ...frame.musterLights.map(mark=>({left:mark.center.x-mark.rx,top:mark.center.y-mark.ry,right:mark.center.x+mark.rx,bottom:mark.center.y+mark.ry})),
+    ];
     for(let i=0;i<this.stageLight.length;i++){
      const image=this.stageLight.getAt(i) as Phaser.GameObjects.Image,mark=lights[i];
      if(!mark){image.setVisible(false);continue;}
@@ -416,6 +425,7 @@ export function mountBattlefield(element:HTMLElement,game:GamePort,onFrame:(forc
     if(navigator.webdriver&&villageVerdict)this.game.canvas.dataset.villageVerdict=JSON.stringify({mode:villageVerdict.mode,progress:villageVerdict.progress,witnesses:frame.verdictResidents.length,strokes:frame.verdictStrokes.length,lights:lights.length,affectedLights:frame.verdictLights.length,regions:verdictRegions,reduced:this.reduce,paused:game.state.paused});
     if(navigator.webdriver&&this.waveArrival&&frame.watchLights.length)this.game.canvas.dataset.villageWatchfire=JSON.stringify({number:this.waveArrival.number,intent:this.waveArrival.intent,progress:this.waveArrival.progress,lights:frame.watchLights.length,strokes:frame.watchStrokes.length,regions:watchfireRegions,reduced:this.reduce,paused:game.state.paused});
     if(navigator.webdriver&&this.orderFrame?.answer&&frame.orderLights.length)this.game.canvas.dataset.villageOrderAnswer=JSON.stringify({kind:this.orderFrame.answer.kind,progress:this.orderFrame.answer.progress,lights:frame.orderLights.length,strokes:frame.orderStrokes.length,regions:orderRegions,reduced:this.reduce,paused:game.state.paused});
+    if(navigator.webdriver&&this.musterFrame)this.game.canvas.dataset.villageMusterAnswer=JSON.stringify({progress:this.musterFrame.progress,witnesses:frame.musterResidents.length,lights:frame.musterLights.length,strokes:frame.musterStrokes.length,regions:musterRegions,reduced:this.reduce,paused:game.state.paused});
     return;
    }
    if(!storybookArt(game.profile.age)){
@@ -680,6 +690,7 @@ export function mountBattlefield(element:HTMLElement,game:GamePort,onFrame:(forc
    if(navigator.webdriver)this.game.canvas.dataset.battleOrder=JSON.stringify({order:frame.order,count:frame.marks.length,reduced:this.reduce,pulse:frame.pulse});
   }
   private event(e:GameEvent):void {
+   this.villageMuster=rememberVillageMuster(this.villageMuster,e,game.state.time);
    const x=xAt(e.x??500),y=this.yAt(e.lane??1);
    if(e.type==='order'){this.floatText(106,this.layout.groundY-58,e.order==='advance'?'ADVANCE':'HOLD THE LINE',e.order==='advance'?'#f0ce87':'#a9dfdc',false);return;}
    if(e.type==='win'||e.type==='lose')this.aftermath={phase:e.type==='win'?'won':'lost',at:this.clock};
@@ -763,15 +774,16 @@ export function mountBattlefield(element:HTMLElement,game:GamePort,onFrame:(forc
    if(disposed||!this.world)return;
    const dt=Math.min(.05,Math.max(0,delta/1000));game.step(dt);
    const events=game.drainEvents();options.onPresentation?.(dt,events);if(events.length)onEvents(events);
-   if(this.lastState!==game.state){this.lastState=game.state;this.aftermath=null;delete this.game.canvas.dataset.battleAftermath;delete this.game.canvas.dataset.villageVerdict;delete this.game.canvas.dataset.villageWatchfire;delete this.game.canvas.dataset.villageOrderAnswer;this.spoilsOrder=0;this.resetEffects();for(const view of this.units.values())view.body.destroy();this.units.clear();}
+   if(this.lastState!==game.state){this.lastState=game.state;this.aftermath=null;delete this.game.canvas.dataset.battleAftermath;delete this.game.canvas.dataset.villageVerdict;delete this.game.canvas.dataset.villageWatchfire;delete this.game.canvas.dataset.villageOrderAnswer;delete this.game.canvas.dataset.villageMusterAnswer;this.villageMuster=createVillageMuster();this.musterFrame=null;this.spoilsOrder=0;this.resetEffects();for(const view of this.units.values())view.body.destroy();this.units.clear();}
    const reduced=reducedMotion(game.profile.motion,motionQuery.matches);
    if(reduced&&!this.reduce)this.resetEffects('motion');this.reduce=reduced;
    this.syncEra();for(const event of events)this.event(event);
    if(options.isVisible&&!options.isVisible()){onFrame();return;}
    if(!game.state.paused&&!this.reduce)this.clock+=dt;
    this.orderFrame=orderPresentationFrame(game.state,this.layout.groundY,this.reduce,this.layout.laneGap);
+   this.musterFrame=villageMusterFrame(this.villageMuster,game.state.time,this.reduce);
    this.waveArrival=waveArrivalForPort(game,this.reduce);
-   const phaseHudChanged=this.villageHudPhase!==game.state.phase,orderHudChanged=villageOrderHudChanged(this.villageHudPaused,game.state.paused,!!this.orderFrame?.answer,!!this.waveArrival);
+   const phaseHudChanged=this.villageHudPhase!==game.state.phase,orderHudChanged=villageOrderHudChanged(this.villageHudPaused,game.state.paused,!!this.orderFrame?.answer,!!this.waveArrival,!!this.musterFrame);
    if(phaseHudChanged||orderHudChanged){const world=element.closest<HTMLElement>('.world');if(world?.dataset.phase!==game.state.phase||orderHudChanged)onFrame(true);this.villageHudPhase=game.state.phase;this.cacheVillageViewport();}
    this.drawAtmosphere();this.drawBaseDamage();this.drawArmy();this.drawOrders();this.healthBars();this.effects(game.state.paused?0:dt);onFrame();
   }
