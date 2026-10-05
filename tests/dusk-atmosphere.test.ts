@@ -90,3 +90,9 @@ test('ultra dusk frame adds two bounded chapter-specific depth marks',async()=>{
  }
  assert.ok(new Set(signatures).size>=4);
 });
+test('depth marks use a quieter two-fill hierarchy than practical glows',async()=>{
+ const m=await dusk(),fills:number[][]=[];
+ const painter={fillStyle(){},lineStyle(){},fillEllipse(...args:number[]){fills.push(args);},strokeEllipse(){}};
+ m.paintDuskAtmosphere(painter,[{kind:'depth',x:200,y:300,rx:80,ry:20,color:0xabcdee,alpha:.1}],{x:0,y:0,scale:1});
+ assert.equal(fills.length,2);
+});
