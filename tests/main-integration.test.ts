@@ -64,7 +64,7 @@ function harness(motion = 'full') {
     acquiring: null, acquisitionVersion: 0, hasPlayed: true, entryEntered: true, entrySaved: true, resultDetailsOpen:false, atmosphereEnabled:true,audioMix:{effects:100,atmosphere:100}, manualPaused: false, savedWarning: false, pendingImport: null, modal: null, evolutionFromResult: false, modalPointerSequence: false,prestigeOrigin:null,prestigeDraft:null,prestigeExpectedTimeline:null,
     lastUpdate: 0, lastSave: 100, lastPhase: 'ready', resultDue: 0, resultShown: '', activeTab: 'battle', root,
     performance: { now: () => now }, document: { documentElement: { dataset: { motion } } },
-    blockModalTap:createModalTapGuard(),startCountUp,journeyScreenHtml,updateOrderBanner,entryCopy,chapterLandscape,
+    fieldControls:{update(){},clear(){},select(){}},blockModalTap:createModalTapGuard(),startCountUp,journeyScreenHtml,updateOrderBanner,entryCopy,chapterLandscape,
     $: (id: string) => { if (!elements.has(id)) {const element=node();if(id==='battlefield')element.dataset={renderer:'ready'};elements.set(id,element);} return elements.get(id); },
     chronicleScreenHtml,chronicleActionFromData,chronicleGuidance,CAPTAINS,routeDefinition,advanceStatus, battleSelectionHtml, evolutionDialogHtml, ERAS, QUESTS, foodRate, unlockCost, dailyReward, localDay, battleGuidance, baseHealthDisplay, compactNumber, waveLabel, waveAccessibleLabel, chapterPresentation, unitPresentationName, compactResultsHtml, expeditionChoiceHtml, resultsHtml,isLegacyChoice,legacyEffects,prestigePreview,prestigeDetailsHtml,prestigeDialogHtml,legacyCurrentHtml,evolutionScreenHtml,saveSessionDialogHtml,temporarySessionNotice,skillCue,troopUnlockMessage,nextGoalLabel, waveInspectionHtml,
     earlierChapter,storybookArt: () => false, money: String, coin: String, icon:()=>'',textIfChanged(target:any,value:string){target.textContent=value;},htmlIfChanged(target:any,value:string){target.innerHTML=value;},unlockAudio() {}, syncPause() {}, rebuildArmy() {}, syncMotion() {}, isolateModal(){}, toast() {},
@@ -462,4 +462,31 @@ test('a failed renderer keeps a durable Home explanation and reuses the primary 
  assert.match(c.$('entry-subtitle').textContent,/could not load.*saved progress/i);
  let reloads=0;c.window={location:{reload(){reloads++;}}};const before=JSON.stringify(c.game.profile);
  h.click('reload-world');assert.equal(reloads,1);assert.equal(JSON.stringify(c.game.profile),before);assert.equal(c.entryEntered,false);
+});
+
+test('physical recruit activation pays the real food cost and rejects an unaffordable repeat',()=>{
+ const h=harness(),c=h.context;assert.equal(c.game.dispatch({type:'start'}),true);c.game.state.food=3;
+ const before=c.game.profile.coins;h.clickData({unit:'0',fieldRecruit:'0'});
+ assert.equal(c.game.state.stats.deployed,1);assert.equal(c.game.state.food,0);assert.equal(c.game.profile.coins,before);
+ h.clickData({unit:'0',fieldRecruit:'0'});assert.equal(c.game.state.stats.deployed,1);assert.equal(c.game.state.food,0);
+});
+test('selecting a physical enemy or supplies never casts or spends on the first tap',()=>{
+ const h=harness(),c=h.context;assert.equal(c.game.dispatch({type:'start'}),true);
+ const before=JSON.stringify([c.game.profile,c.game.state]);let selected='';c.fieldControls.select=(kind:string)=>{selected=kind;};
+ h.clickData({fieldContext:'enemy'});assert.equal(selected,'enemy');assert.equal(JSON.stringify([c.game.profile,c.game.state]),before);
+ h.clickData({fieldContext:'supplies'});assert.equal(selected,'supplies');assert.equal(JSON.stringify([c.game.profile,c.game.state]),before);
+});
+test('field Pause has exactly three focused actions and Camp preserves the live encounter',()=>{
+ const h=harness(),c=h.context;c.game.dispatch({type:'start'});c.game.dispatch({type:'spawn',kind:0});
+ const before=JSON.stringify([c.game.profile,c.game.state]);h.click('field-pause');assert.equal(c.modal,'field-pause');
+ assert.equal((c.dialogHtml.match(/<button\b/g)||[]).length,3);
+ h.click('field-camp');assert.equal(c.root.dataset.fieldMode,'camp');assert.equal(c.manualPaused,true);assert.equal(c.modal,null);
+ assert.equal(JSON.stringify([c.game.profile,c.game.state]),before);
+ h.click('field-return');assert.equal(c.root.dataset.fieldMode,'field');assert.equal(c.manualPaused,false);
+ assert.equal(JSON.stringify([c.game.profile,c.game.state]),before);
+});
+test('explicit field Resume releases a manual pause without restarting the battle',()=>{
+ const h=harness(),c=h.context;c.game.dispatch({type:'start'});c.manualPaused=true;
+ const before=JSON.stringify([c.game.profile,c.game.state]);h.click('field-pause');h.click('field-resume');
+ assert.equal(c.manualPaused,false);assert.equal(c.modal,null);assert.equal(JSON.stringify([c.game.profile,c.game.state]),before);
 });

@@ -66,3 +66,8 @@ Ordered tasks. Tick a task when it is done and never delete finished tasks. This
 - [ ] Verify the new two-control Home and short results in native320/390/844browser captures, including save recovery, return focus and expedition choices.
 - [ ] Replace the dense active deployment/navigation/upgrade/power layout with legible direct world interactions and at most3UI controls; preserve real troop/skill/order/Gather access.
 - [ ] Record genuine empty-profile120second play and representative later saves; audit actual world targets separately from UI chrome.
+
+## Physical-field UI simplification
+- [x] Source slice: shared painted/native recruit anchors, physical gate/standard/supply interaction and contextual tactical controls.
+- [ ] Exact-source native first120seconds from an empty profile, returning saves, keyboard/touch/rotation and visual review.
+- [ ] Replace retained Camp catalogues, result Details actions and long Preferences with focused surfaces; current source is not all-screen acceptance.

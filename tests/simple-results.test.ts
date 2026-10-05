@@ -9,7 +9,7 @@ for(const phase of ['won','lost'] as const)test(`ordinary ${phase} result has th
  const before=JSON.stringify([g.profile,g.state]),html=compactResultsHtml(g.profile,g.state);
  assert.equal(controls(html),3);assert.match(html,/data-command="result-details"/);assert.match(html,/data-command="home"/);
  assert.doesNotMatch(html,/battle-statistics|village-voice|story-discoveries|data-command="journey"/);
- assert.match(html,/123/);assert.match(html,/Already added/);
+ assert.match(html,/123/);if(phase==='won')assert.match(html,/Already added/);else assert.doesNotMatch(html,/Already added/);
  assert.equal(JSON.stringify([g.profile,g.state]),before);
  assert.match(resultsHtml(g.profile,g.state),/battle-statistics/,'optional receipt keeps original statistics');
 });
@@ -26,4 +26,10 @@ for(const phase of ['won','lost'] as const)test(`terminal ${phase} offers chapte
  const p=defaultProfile();p.timeline=1000;p.enemyAge=5;p.furthestBattle=5;p.mastery.timeline=1000;
  const g=new Game(p);g.state.phase=phase;const html=compactResultsHtml(g.profile,g.state);
  assert.equal(controls(html),3);assert.match(html,/data-command="return-chapters"/);assert.doesNotMatch(html,/data-command="next"/);
+});
+test('defeat uses one safety line and zero earnings never claim an added payout',()=>{
+ const g=new Game();g.state.phase='lost';g.state.earned=0;
+ const html=compactResultsHtml(g.profile,g.state);
+ assert.doesNotMatch(html,/Already added|YOUR PROGRESS IS SAFE/);assert.match(html,/Your earned coins stay with you/);
+ g.state.phase='won';assert.doesNotMatch(compactResultsHtml(g.profile,g.state),/Already added/);
 });

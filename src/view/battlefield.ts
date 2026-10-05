@@ -1,3 +1,4 @@
+import {campLayout,campRecruits} from './world-camp.ts';
 import { orderPresentationFrame } from './order-presentation.ts';
 import Phaser from 'phaser';
 import {ChronicleView} from './chronicle-view.ts';
@@ -104,6 +105,8 @@ export function mountBattlefield(element:HTMLElement,game:GamePort,onFrame:(forc
   private fallen=new DeathVisuals();
   private baseHit:Record<Side,number>={player:0,enemy:0};
   private idle:ImageOrFallback[]=[];
+  private campActors:ImageOrFallback[]=[];
+  private campProps!:Phaser.GameObjects.Graphics;
   private sparks:Spark[]=[];
   private bolts:Bolt[]=[];
   private rings:Ring[]=[];
@@ -154,6 +157,7 @@ export function mountBattlefield(element:HTMLElement,game:GamePort,onFrame:(forc
    this.halos=this.add.graphics().setBlendMode(Phaser.BlendModes.ADD);this.world.add(this.halos);
    this.armyLayer=this.add.container();this.world.add(this.armyLayer);
    this.arrivalSignal=this.add.graphics();this.armyLayer.add(this.arrivalSignal);
+   this.campProps=this.add.graphics();this.armyLayer.add(this.campProps);
    this.chronicleView=new ChronicleView(this,this.armyLayer);
    this.baseDamage=this.add.graphics();this.armyLayer.add(this.baseDamage);
    // Fixed pools share the actor sort; no masks or per-particle game objects.
@@ -305,6 +309,8 @@ export function mountBattlefield(element:HTMLElement,game:GamePort,onFrame:(forc
    this.armyLayer.add([this.playerBase,this.enemyBase]);
    for(const actor of this.idle)actor.destroy();this.idle=[];
    for(const side of ['player','enemy'] as const){const actor=this.sprite(side==='player'?p.age:p.enemyAge,0,side);this.armyLayer.add(actor);this.idle.push(actor);}
+   for(const actor of this.campActors)actor.destroy();this.campActors=[];
+   for(const kind of [0,1,2] as const){const actor=this.sprite(p.age,kind,'player');this.armyLayer.add(actor);this.campActors.push(actor);}
    const shell=element.closest<HTMLElement>('.game-shell');
    if(shell){shell.dataset.era=String(p.age);shell.style.setProperty('--era-accent',visualEra(p.age).accent);}
   }
@@ -377,7 +383,36 @@ export function mountBattlefield(element:HTMLElement,game:GamePort,onFrame:(forc
     else {actor.setScale(i===0?1:-1,1);drawTroop(actor,i===0?game.profile.age:game.profile.enemyAge,0,side,0,false);}
    }
    this.chronicleView.update(game.profile,game.state,groundY,this.layout.laneGap,this.reduce);
+   this.drawCamp();
    this.armyLayer.sort('depth');
+  }
+  private drawCamp():void {
+   const visible=game.state.phase==='running'&&element.closest<HTMLElement>('#app')?.dataset.fieldMode==='field';
+   const plan=campLayout(this.scale.width,this.scale.height),scale=this.layout.scale,g=this.campProps.clear();
+   const unlocked=campRecruits(game.profile);
+   this.campActors.forEach((actor,kind)=>{
+    actor.setVisible(visible&&unlocked.includes(kind as 0|1|2));
+    if(!visible)return;
+    const target=plan.recruits[kind],x=target.footX/scale,y=target.footY/scale;
+    actor.setPosition(x,y).setDepth(y);
+    if(actor instanceof Phaser.GameObjects.Image)actor.setScale(48/(actor.height*scale)).setFlipX(false);
+    else {actor.setScale(.75/scale);drawTroop(actor,game.profile.age,kind as 0|1|2,'player',0,false);}
+    if(unlocked.includes(kind as 0|1|2)){this.shadows.fillStyle(0x192c25,.3);this.shadows.fillEllipse(x,y+2/scale,28/scale,7/scale);}
+   });
+   if(!visible||game.state.stats.deployed===0)return;
+   // Objects are painted on the ground plane, with no button plates or card frames.
+   const flag=plan.standard,basket=plan.supplies,x=flag.footX/scale,y=flag.footY/scale,k=1/scale;
+   g.setDepth(Math.max(flag.footY,basket.footY)/scale+.1);
+   if(game.state.chronicle?.enabled){
+    g.lineStyle(3*k,0x765435,1);g.lineBetween(x,y,x,y-43*k);
+    g.fillStyle(game.state.chronicle.rally?0xe2b969:0xc7d6ad,1);g.fillTriangle(x,y-42*k,x+24*k,y-35*k,x,y-23*k);
+    g.fillStyle(0x243e40,.25);g.fillEllipse(x,y+2*k,24*k,6*k);
+   }
+   const bx=basket.footX/scale,by=basket.footY/scale;
+   g.fillStyle(0x4a3529,1);g.fillEllipse(bx,by-12*k,38*k,27*k);
+   g.fillStyle(0xc18f4e,1);g.fillRoundedRect(bx-18*k,by-20*k,36*k,21*k,5*k);
+   g.lineStyle(2*k,0x76512f,1);for(let i=-12;i<=12;i+=8)g.lineBetween(bx+i*k,by-19*k,bx+i*k,by-2*k);
+   g.fillStyle(game.state.skillsUsed.includes('food')?0x806c52:0xebcd8d,1);g.fillEllipse(bx-8*k,by-22*k,17*k,10*k);g.fillEllipse(bx+9*k,by-22*k,17*k,10*k);
   }
   private drawWaveArrival(groundY:number):void {
    const graphics=this.arrivalSignal.clear();delete this.game.canvas.dataset.waveArrival;

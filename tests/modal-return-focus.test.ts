@@ -9,8 +9,8 @@ const ast=ts.createSourceFile('main.ts',source,ts.ScriptTarget.Latest,true,ts.Sc
 const node=ast.statements.find(n=>ts.isFunctionDeclaration(n)&&n.name?.text==='closeModal');
 assert.ok(node);
 const code=ts.transpile(node.getText(ast)+'\nthis.closeModal=closeModal;',{target:ts.ScriptTarget.ES2022});
-for(const target of ['body','hidden','disabled','detached','unfocusable','valid'] as const){
- test(`closing a dialog restores usable focus from a ${target} origin`,()=>{
+for(const mode of ['camp','field'])for(const target of ['body','hidden','disabled','detached','unfocusable','valid'] as const){
+ test(`closing a dialog restores usable focus from a ${target} origin in ${mode}`,()=>{
   const doc:any={body:{},documentElement:{},activeElement:null};
   const nav={focus(){doc.activeElement=this;}};
   const origin:any=target==='body'?doc.body:{};
@@ -26,7 +26,7 @@ for(const target of ['body','hidden','disabled','detached','unfocusable','valid'
   doc.activeElement={};
   const context:any={document:doc,focusBefore:origin,modal:'settings',modalVersion:0,pendingImport:null,focusFrame:0,entryEntered:true,activeTab:'battle',
    playable:()=>true,session:{check:()=>true},window:{cancelAnimationFrame(){}},$:()=>layer,isolateModal(){},syncPause(){},update(){},
-   root:{querySelector:()=>nav},
+   root:{dataset:{fieldMode:mode},querySelector:(selector:string)=>{assert.equal(selector,mode==='field'?'[data-command="field-pause"]':'.bottom-nav [data-tab="battle"]');return nav;}},
   };
   runInNewContext(code,context);context.closeModal(false);
   assert.equal(doc.activeElement,target==='valid'?origin:nav);

@@ -1,3 +1,6 @@
+import {fieldControlsHtml} from './ui/field-controls.ts';
+import {createFieldController} from './ui/field-controller.ts';
+import './ui/world-play.css';
 import { updateOrderBanner } from './ui/battle-orders.ts';
 import { battlefieldOrderFromGesture } from './ui/battlefield-orders.ts';
 import { journeyScreenHtml } from './ui/journey-screen.ts';
@@ -58,6 +61,7 @@ import { skillCue } from './ui/skill-cues.ts';
 let game=new Game(defaultProfile());
 const root=document.querySelector<HTMLDivElement>('#app');
 if(!root)throw new Error('The game mount element is missing.');
+root.dataset.fieldMode='field';
 const lifetime=createLifetime();
 let activeTab='battle',modal:string|null=null,manualPaused=false;
 let battlefieldPointer:{id:number;x:number;y:number}|null=null;
@@ -87,6 +91,7 @@ root.innerHTML = `
   <div id="battle-view" class="battle-view">
     <section id="world" class="world" tabindex="-1" aria-label="Battlefield">
       <div id="battlefield"></div>
+      ${fieldControlsHtml()}
       <div class="stage"><div id="timeline" class="eyebrow"></div><h1 id="age-title"></h1><p id="scene-name" class="scene-name"></p><button id="battle-select" class="battle-select" data-command="battles" aria-label="Choose a battle"><span class="stage-progress" id="stage-progress"></span></button></div>
       <div class="world-tools"><button id="quests" class="square-button" data-command="quests" aria-label="Quests">${icon('quest')}<i class="notification"></i></button><button class="square-button" data-command="settings" aria-label="Settings">${icon('gear')}</button></div>
       <div class="battle-meta"><button id="wave-label" class="wave-inspect" data-command="wave-help"></button><div class="battle-toggles"><button id="speed" data-command="speed" aria-label="Change battle speed">1×</button><button id="pause" data-command="pause" aria-label="Pause battle">Ⅱ</button></div></div>
@@ -101,6 +106,7 @@ root.innerHTML = `
     </section>
     <section class="upgrades" aria-label="Army upgrades"><div class="upgrade-row"><div class="upgrade-label">${icon('food')}<div>Food Production<small id="food-level"></small></div></div><button id="food-upgrade" class="buy-button" data-command="upgrade-food"></button></div><div class="upgrade-row"><div class="upgrade-label">${icon('heart')}<div>Base Health<small id="base-level"></small></div></div><button id="base-upgrade" class="buy-button" data-command="upgrade-base"></button></div></section>
   </div>
+  <button id="field-return" data-command="field-return">Back to battlefield</button>
   <section id="secondary-screen" class="secondary-screen" aria-labelledby="secondary-title" hidden></section>
   <p id="session-notice" class="session-notice" role="status" aria-live="polite" hidden></p>
   <nav class="bottom-nav" aria-label="Game screens">${[['battle','Battle'],['evolution','Evolution'],['cards','Cards'],['skills','Skills']].map(([id,label])=>`<button data-tab="${id}" class="nav-item ${id==='battle'?'active':''}" aria-label="${label}" aria-current="${id==='battle'?'page':'false'}">${icon(id)}<span>${label}</span></button>`).join('')}</nav>
@@ -111,6 +117,7 @@ const $=<T extends HTMLElement=HTMLElement>(id:string)=>document.getElementById(
 
 const updateArmy=createArmyUpdater({units:$('unit-cards'),skills:$('battle-skills'),stages:$('stage-progress')},unitPortrait,money);
 const isolateModal=createModalIsolation($('modal-layer'));
+const fieldControls=createFieldController(root);
 const motionQuery=window.matchMedia('(prefers-reduced-motion: reduce)');
 let focusBefore:HTMLElement|null=null;
 const session=createSaveSession({
@@ -175,6 +182,7 @@ function syncEntry(){
 }
 function enterWorld(){
   if(entryEntered||modal||!guardAction()||!entryReady())return;
+  root!.dataset.fieldMode='field';
   entryEntered=true;entrySaved=true;syncEntry();
   if(game.state.phase==='ready'){manualPaused=false;action({type:'start'});}
   switchTab('battle');
@@ -258,7 +266,7 @@ function update(force=false){
     button.classList.toggle('affordable',!button.disabled);
     const label=troopControlLabel(p,kind,status);
     button.title=label;if(button.getAttribute('aria-label')!==label)button.setAttribute('aria-label',label);
-    (button.querySelector('.unit-fill') as HTMLElement).style.transform=`scaleX(${Math.max(0,Math.min(1,s.food/ERAS[p.age].units[kind].cost))})`;
+    const fill=button.querySelector<HTMLElement>('.unit-fill');if(fill)fill.style.transform=`scaleX(${Math.max(0,Math.min(1,s.food/ERAS[p.age].units[kind].cost))})`;
   });
   root!.querySelectorAll<HTMLButtonElement>('[data-skill]').forEach(button=>{
     const skill=button.dataset.skill as Skill,used=s.skillsUsed.includes(skill);
@@ -283,6 +291,7 @@ function update(force=false){
     textIfChanged($('story-ready-rule'),p.wins===0&&story.route==='road'?'Rima waits at the gate. Tap Battle, then send a defender. The company fights together.':routeDefinition(story.route).rule);
 
   }
+  fieldControls.update(game);
   // Let the finishing blow and base collapse play before the result dialog covers them.
   if(s.phase!==lastPhase){if(lastPhase==='running'&&(s.phase==='won'||s.phase==='lost'))resultDue=now+(document.documentElement.dataset.motion==='reduced'?350:1300);lastPhase=s.phase;}
   const reviewHoldingResult=globalThis.navigator?.webdriver&&document.querySelector('canvas')?.dataset.battlefieldReviewFrameReady===s.phase;
@@ -325,7 +334,7 @@ function showModal(id:string,html:string,focusCommand?:string){
   if(!replacing)focusBefore=document.activeElement as HTMLElement;
   modal=id;modalVersion++;const version=modalVersion;
   const dismissButton=`<button class="close-button" data-command="close" aria-label="Close">${icon('close')}</button>`;
-  const dismissMarkup=id==='result'||id==='result-expedition'||id==='session'?'':id==='chronicle'?dismissButton:`<div class="dialog-dismiss">${dismissButton}</div>`;
+  const dismissMarkup=id==='field-pause'||id==='result'||id==='result-expedition'||id==='session'?'':id==='chronicle'?dismissButton:`<div class="dialog-dismiss">${dismissButton}</div>`;
   layer.hidden=false;layer.innerHTML=`<section class="dialog ${(id==='result'||id==='result-expedition')?'result-dialog':id==='session'?'session-dialog':id==='prestige'?'prestige-dialog':id==='chronicle'?'chronicle-dialog':''}" role="dialog" tabindex="-1" aria-modal="true" aria-labelledby="dialog-title">${dismissMarkup}${html}</section>`;
   isolateModal(true);syncPause();window.cancelAnimationFrame(focusFrame);
   focusFrame=requestAnimationFrame(()=>{
@@ -351,7 +360,7 @@ function closeModal(refresh=true){
     // A restored result often has BODY as its origin. A connected element can also
     // be non-focusable; verify that focus actually moved before accepting it.
     if(!target||document.activeElement!==target||target===document.body||target===document.documentElement)
-      (entryEntered?root!.querySelector<HTMLElement>(`.bottom-nav [data-tab="${activeTab}"]`):$('entry-play'))?.focus();
+      (entryEntered?root!.querySelector<HTMLElement>(root!.dataset.fieldMode==='field'?'[data-command="field-pause"]':`.bottom-nav [data-tab="${activeTab}"]`):$('entry-play'))?.focus({preventScroll:true});
   }
   if(refresh)update(true);
 }
@@ -370,8 +379,9 @@ function showResultDetails(){
   showModal('result',`<button class="big-button secondary result-back" data-command="result-back">Back to result</button>${resultsHtml(game.profile,game.state)}`,'result-back');
 }
 function showHome(){
-  if(!guardAction()||modal!=='result'||!['won','lost'].includes(game.state.phase))return;
-  persist();if(!playable()||modal!=='result')return;
+  if(!guardAction()||(modal!=='field-pause'&&(modal!=='result'||!['won','lost'].includes(game.state.phase))))return;
+  const owner=modal;persist();if(!playable()||modal!==owner)return;
+  fieldControls.clear();
   entryEntered=false;entrySaved=true;resultDetailsOpen=false;syncEntry();closeModal(false);syncPause();
   $('entry-play').focus({preventScroll:true});
 }
@@ -468,6 +478,7 @@ lifetime.listen<PointerEvent>($('battlefield'),'pointerdown',e=>{
 lifetime.listen<PointerEvent>($('battlefield'),'pointercancel',()=>{battlefieldPointer=null;});
 lifetime.listen<PointerEvent>($('battlefield'),'pointerup',e=>{
  const start=battlefieldPointer;battlefieldPointer=null;
+ if(root!.dataset.fieldMode==='field'){fieldControls.clear();return;}
  if(!start||!e.isPrimary||e.pointerId!==start.id||!entryEntered||modal||activeTab!=='battle'||game.state.phase!=='running'||game.state.paused||!playable())return;
  const rect=$('battlefield').getBoundingClientRect();
  const order=battlefieldOrderFromGesture({startX:start.x,startY:start.y,endX:e.clientX,endY:e.clientY},{left:rect.left,top:rect.top,width:rect.width,height:rect.height});
@@ -502,6 +513,13 @@ lifetime.listen<MouseEvent>(root,'click',e=>{
   if(command==='reload-world'){if(!entryEntered&&!modal&&$('battlefield').dataset.renderer==='failed')window.location.reload();return;}
   if(command==='enter-world'){enterWorld();return;}
   if(command==='home'){showHome();return;}
+  if(command==='field-pause'){fieldControls.clear();showModal('field-pause','<h2 id="dialog-title">A moment by the fire</h2><button class="big-button green" data-command="field-resume">Resume</button><button class="big-button secondary" data-command="settings">Settings</button><button class="big-button secondary" data-command="field-camp">Camp</button>');return;}
+  if(command==='field-resume'){manualPaused=false;closeModal();return;}
+  if(command==='field-camp'){root!.dataset.fieldMode='camp';manualPaused=true;fieldControls.clear();closeModal(false);switchTab('battle');return;}
+  if(command==='field-return'){root!.dataset.fieldMode='field';manualPaused=false;fieldControls.clear();switchTab('battle');root!.querySelector<HTMLElement>('[data-command="field-pause"]')?.focus({preventScroll:true});return;}
+  if(command==='field-dismiss'){fieldControls.clear();return;}
+  if(button.dataset.fieldContext){fieldControls.select(button.dataset.fieldContext,game);return;}
+  if(button.closest('#field-targets'))fieldControls.clear();
   if(command==='result-details'){showResultDetails();return;}
   if(command==='result-back'){if(modal==='result'||modal==='result-expedition')showResult('result-details');return;}
   if(command==='result-expedition'){if(modal==='result'&&game.state.phase==='won'&&game.profile.chronicle?.expedition&&game.profile.chronicle.expedition.stage<2)showModal('result-expedition',expeditionChoiceHtml());return;}
@@ -530,7 +548,7 @@ lifetime.listen<MouseEvent>(root,'click',e=>{
   }
   if(button.dataset.tab){switchTab(button.dataset.tab);return;}
   if(button.dataset.unit!==undefined){const kind=Number(button.dataset.unit) as UnitKind;if(!game.profile.unlocked[kind]){if(action({type:'unlock',kind})&&playable()&&!savedWarning)toast(troopUnlockMessage(game.profile,game.state.phase,kind,game.deploymentStatus(kind)),7000);}else action({type:'spawn',kind});return;}
-  if(button.dataset.skill){action({type:'skill',skill:button.dataset.skill as Skill});return;}
+  if(button.dataset.skill){if(action({type:'skill',skill:button.dataset.skill as Skill}))fieldControls.clear();return;}
   if(button.dataset.daily){if(action({type:'daily',day:Number(button.dataset.daily)}))showQuests();return;}
   if(button.dataset.claim){const fromJourney=modal==='journey';if(action({type:'claim',id:button.dataset.claim})){if(fromJourney&&playable()&&modal!=='session')showModal('journey',journeyScreenHtml(game.profile,game.state));else showQuests();}return;}
   if(button.dataset.battle!==undefined){if(action({type:'select-battle',battle:Number(button.dataset.battle)}))closeModal();return;}
@@ -658,6 +676,7 @@ lifetime.listen<KeyboardEvent>(document,'keydown',e=>{
       e.preventDefault();(index===null?$('modal-layer').querySelector<HTMLElement>('.dialog'):elements[index])?.focus();
     }return;
   }
+  if(e.key==='Escape'&&entryEntered){fieldControls.clear();e.preventDefault();return;}
   if(!entryEntered||!guardAction()||activeTab!=='battle'||e.repeat||e.ctrlKey||e.altKey||e.metaKey||e.isComposing||document.hidden||isEditingTarget(e.target instanceof HTMLElement?e.target:null))return;
   if(['1','2','3'].includes(e.key)){e.preventDefault();action({type:'spawn',kind:(Number(e.key)-1) as UnitKind});}
   const skillIndex=['q','w','e'].indexOf(e.key.toLowerCase());
