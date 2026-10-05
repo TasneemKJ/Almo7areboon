@@ -134,6 +134,15 @@ async function firstPlay(){
   await tabTo(page,'#entry-play');await key(page,'Tab');assert(await page.locator('#entry-settings').evaluate(node=>node===document.activeElement));
   const settingsFocus=await page.locator('#entry-settings').evaluate(inspectControl);assertReachable(settingsFocus);assert(settingsFocus.focusVisible,'native keyboard focus must be visible');
   await key(page,'Enter');await page.getByRole('heading',{name:'Settings',exact:true}).waitFor();
+  if(reviewCase==='compare-390'){
+    const early=await page.locator('#modal-layer [data-command="close"]').evaluate(node=>{const r=node.getBoundingClientRect(),dialog=node.closest('.dialog');return {x:r.x+r.width/2,y:r.y+r.height/2,width:r.width,height:r.height,at:performance.now(),animations:dialog.getAnimations().map(a=>({time:a.currentTime,state:a.playState,duration:a.effect.getTiming().duration}))};});
+    await action(page,'native early Close pointer tap during Settings entrance',()=>page.mouse.click(early.x,early.y));
+    await page.locator('#modal-layer').waitFor({state:'hidden'});
+    assert(await page.locator('#entry-settings').evaluate(node=>node===document.activeElement));
+    manifest.checks.push({name:'early-settings-close-tap',passed:true,early,insideEntrance:early.animations.some(a=>a.state==='running'&&a.time<a.duration)});
+    await key(page,'Enter');await page.getByRole('heading',{name:'Settings',exact:true}).waitFor();
+  }
+  await page.waitForFunction(()=>{const dialog=document.querySelector('#modal-layer .dialog');return dialog&&dialog.getAnimations({subtree:false}).every(animation=>animation.playState==='finished');});
   const closeSelector='#modal-layer [data-command="close"]';assertReachable(await page.locator(closeSelector).evaluate(inspectControl));
   assert.equal(await page.locator('#modal-layer [data-command="retreat"]').count(),0,'Home settings must not offer retreat from an unstarted battle');
   if(reviewCase==='small-320-rotate'){

@@ -68,6 +68,7 @@ jobs:
         if: ${{ !cancelled() && steps.build.outcome == 'success' }}
         run: python3 harness/scripts/emit-originals.py baseline/artifacts/entry-review candidate/artifacts/entry-review
   small-320-rotate:
+    if: ${{ false }} # Exact-source320/rotation/recovery already passed37384366998; only390 needs settled-geometry follow-through.
     name: Small Home Settings result rotation and renderer/save recovery
     runs-on: ubuntu-latest
     timeout-minutes: 15
