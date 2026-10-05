@@ -395,7 +395,7 @@ function showSettings(){
 function dailyRow(p:Profile){
   const day=localDay(),reward=dailyReward(p,day);
   const label=reward.available?`Daily reward · day ${reward.streak}`:`Daily reward claimed · day ${p.dailyStreak}`;
-  const hint=reward.available?'Come back every day to raise the reward.':'Return tomorrow to keep your streak going.';
+  const hint=reward.graced?'You missed a day. A grace day keeps your streak alive (once a week).':reward.available?'Come back every day to raise the reward.':'Return tomorrow to keep your streak going.';
   return `<div class="quest-row"><div><h3>${label}</h3><small>${hint}</small></div><button class="buy-button" data-daily="${day}" aria-label="${reward.available?`Claim ${reward.gems} gems`:'Claimed today'}" ${reward.available?'':'disabled'}>${reward.available?icon('gem')+reward.gems:'✓'}</button></div>`;
 }
 function showQuests(){

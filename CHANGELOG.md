@@ -2,6 +2,9 @@
 
 Semantic versioning. Each merged batch adds an entry and a `vX.Y.Z` tag.
 
+## 0.3.7 - 2026-10-05
+- Streak grace day: one missed day keeps a daily-reward streak of two or more, at most once every seven days; the Quests row says so before claiming. Stored as an optional `graceDay` profile field, normalized on load and kept by Start over.
+
 ## 0.3.3 - 2026-10-05
 - Short-landscape dialogs (Settings, Quests, Journey): the close button floats top-right on an opaque tile and the title starts at the top, removing the empty band of about 70px.
 - The result's battle earnings count up over 0.8 s (static with reduced motion; the full total stays in the accessible label).

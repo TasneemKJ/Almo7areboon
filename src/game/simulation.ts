@@ -236,6 +236,7 @@ export class Game implements GamePort {
         if (!reward.available) return false;
         this.profile.dailyDay = action.day;
         this.profile.dailyStreak = Math.min(1e6, reward.streak);
+        if (reward.graced) this.profile.graceDay = action.day;
         this.profile.gems = Math.min(1e7, this.profile.gems + reward.gems);
         this.events.push({ type: 'upgrade' });
         return true;
