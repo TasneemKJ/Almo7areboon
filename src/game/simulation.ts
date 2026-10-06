@@ -396,6 +396,7 @@ export class Game implements GamePort {
           const hit = (targetUnit: Unit, secondary = false) => {
             const resolved = resolveRoleHit(unit.kind, targetUnit.kind, damage, secondary);
             const actual = this.hurt(targetUnit, chronicleDamage(this.profile,this.state,unit,targetUnit,resolved.damage,secondary));
+            this.credit(unit,actual);
             chronicleAfterHit(this.profile,this.state,unit,targetUnit,resolved.damage,secondary,this.chronicleHost());
             this.events.push({ type: 'hit', x: targetUnit.x, lane: targetUnit.lane, side: unit.side, amount: actual, source, target: 'unit', ...(resolved.trait ? { trait: resolved.trait } : {}) });
           };
@@ -407,6 +408,7 @@ export class Game implements GamePort {
             }
           } else {
             const actual = this.hurtBase(unit.side, damage);
+            this.credit(unit,actual);
             this.events.push({ type: 'hit', x: baseX, lane: unit.lane, side: unit.side, amount: actual, source, target: 'base' });
           }
         }
@@ -445,6 +447,13 @@ export class Game implements GamePort {
       }
     }
     return actual;
+  }
+
+  /** Presentation-only ledger of player damage per troop role, for the defeat recap. */
+  private credit(attacker: Unit, actual: number): void {
+    if (attacker.side !== 'player' || !(actual > 0) || ![0, 1, 2].includes(attacker.kind)) return;
+    const ledger = this.state.stats.damageByKind ??= [0, 0, 0];
+    ledger[attacker.kind] += actual;
   }
 
   private hurtBase(attacker: Side, damage: number): number {
