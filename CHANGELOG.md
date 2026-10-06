@@ -2,6 +2,9 @@
 
 Semantic versioning. Each merged batch adds an entry and a `vX.Y.Z` tag.
 
+## 0.3.7 - 2026-10-05
+- Streak grace day: one missed day keeps a daily-reward streak of two or more, at most once every seven days; the Quests row says so before claiming. Stored as an optional `graceDay` profile field, normalized on load and kept by Start over.
+
 ## 0.3.6 - 2026-10-05
 - Settings: "Troop shapes" (off by default). Cards and the battlefield mark roles with a circle (melee), triangle (ranged) or square (heavy); filled shapes are yours, outlined are the enemy. Stored as an optional `marks: true` profile field, normalized on load, kept by Start over.
 

@@ -26,6 +26,8 @@ Ordered tasks. Tick a task when it is done and never delete finished tasks. This
 - [ ] First-battle teaching pulse on the first troop card
 - [x] Count-up battle earnings on the result (round 6); victory/defeat motifs already existed
 - [x] Settings and other dialogs in short landscape: no empty header band (round 6)
+- [ ] Colour-blind-safe troop-type shapes; optional haptics
+- [x] Streak grace day (optional `graceDay` field)
 - [x] Colour-independent troop shapes (Settings, optional `marks` field)
 - [ ] Optional haptics
 - [ ] Streak grace day (needs an optional, normalized save field)

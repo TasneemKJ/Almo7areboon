@@ -13,5 +13,6 @@ export function startOverProfile(current: Profile): Profile {
   if (current.marks) fresh.marks = true;
   fresh.dailyDay = current.dailyDay;
   fresh.dailyStreak = current.dailyStreak;
+  if (current.graceDay !== undefined) fresh.graceDay = current.graceDay;
   return fresh;
 }
