@@ -215,8 +215,14 @@ async function ordinaryField(){
 }
 async function dprOneContact(){
  const session=await open('ordinary-empty-profile-DPR1',{dpr:1}),{page}=session;
- await readyHome(page);await tap(page,'#entry-play');await page.waitForFunction(()=>document.querySelector('#world')?.dataset.phase==='running');
- await tapPaintedRecruit(page,'[data-field-recruit="0"]');await page.waitForFunction(key=>JSON.parse(localStorage.getItem(key)||'{}').deployed===1,SAVE_KEY);
+ await readyHome(page);const enteringAt=await page.evaluate(()=>performance.now());await page.locator('#entry-play').tap();
+ const early=await page.locator('[data-field-recruit="0"]').evaluate(node=>{const r=node.getBoundingClientRect(),canvas=document.querySelector('canvas'),world=document.querySelector('#world'),raw=canvas?.dataset.fieldCamp,frame=raw?JSON.parse(raw):null;return {at:performance.now(),x:r.x+r.width/2,y:r.y+r.height/2,visible:node.checkVisibility()&&!node.closest('[hidden],[inert]'),frameMatches:!!frame&&Math.abs(frame.width-world.clientWidth)<1&&Math.abs(frame.height-world.clientHeight)<1&&frame.rendered.some(a=>a.kind===0),frame};});
+ manifest.checks.push({name:'early-Home-to-field-readiness-observation',passed:true,enteringAt,early});persist();
+ await action(page,'real early native contact immediately after Home Play',()=>page.touchscreen.tap(early.x,early.y));
+ const afterEarly=await observe(page);(manifest.earlyContactAttempts??=[]).push({enteringAt,early,afterEarly});persist();
+ if(!early.frameMatches)assert.equal(afterEarly.saved.deployed,0,'an unready painted field must not admit a mismatched early recruitment');
+ if(afterEarly.saved.deployed===0)await tapPaintedRecruit(page,'[data-field-recruit="0"]');
+ await page.waitForFunction(key=>JSON.parse(localStorage.getItem(key)||'{}').deployed===1,SAVE_KEY);
  await fieldGeometry(page,'DPR1-rendered-recruit-owns-touch');const actual=await observe(page);assert.equal(actual.viewport.dpr,1);
  manifest.checks.push({name:'DPR1-actual-world-contact',passed:true,actual});runtimeClean(session.row);await close(session);
 }

@@ -10,7 +10,7 @@ concurrency:
   group: almo-world-play-${{ github.ref }}
   cancel-in-progress: false
 env:
-  SOURCE_SHA: b29d6199708135f30128abc8b4eb537ea5620bf6
+  SOURCE_SHA: 1fd61226c90cc4b96e73296a000737d473b72e69
   REVIEW_REVISION: candidate
 jobs:
   field-390:
@@ -47,7 +47,7 @@ jobs:
             if "$@" >"$log" 2>&1; then tail -c 12000 "$log"; else tail -c 24000 "$log"; return 1; fi
           }
           test "$(git -C candidate rev-parse HEAD)" = "$SOURCE_SHA"
-          test "$(git -C candidate rev-parse HEAD^{tree})" = e70db7e262a3e199771940d68319c6087817069a
+          test "$(git -C candidate rev-parse HEAD^{tree})" = 11b42719a6b65d5ea8be59e1a4f057564dbc7e56
           test "$(git -C baseline rev-parse HEAD)" = bf79938e26ed2d963a76fa4db3102dd4e30fe822
           git -C candidate diff --exit-code HEAD --
           git -C baseline diff --exit-code HEAD --
@@ -68,7 +68,6 @@ jobs:
         if: ${{ !cancelled() && steps.build.outcome == 'success' }}
         run: python3 harness/scripts/emit-originals.py baseline/artifacts/entry-review candidate/artifacts/entry-review
   field-320-rotate:
-    if: ${{ false }} # Hold this supplemental job until the390 rendered-body diagnostic clears; no whole-matrix acceptance.
     name: Physical targets, Gather and rotation during120seconds at320
     runs-on: ubuntu-latest
     timeout-minutes: 15
@@ -97,7 +96,7 @@ jobs:
             if "$@" >"$log" 2>&1; then tail -c 12000 "$log"; else tail -c 24000 "$log"; return 1; fi
           }
           test "$(git -C candidate rev-parse HEAD)" = "$SOURCE_SHA"
-          test "$(git -C candidate rev-parse HEAD^{tree})" = e70db7e262a3e199771940d68319c6087817069a
+          test "$(git -C candidate rev-parse HEAD^{tree})" = 11b42719a6b65d5ea8be59e1a4f057564dbc7e56
           git -C candidate diff --exit-code HEAD --
           cd candidate
           bounded npm ci --ignore-scripts

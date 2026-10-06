@@ -16,7 +16,7 @@ spec.loader.exec_module(emitter)
 verify_spec = importlib.util.spec_from_file_location('verify_log', Path(__file__).with_name('verify-job-log.py'))
 verifier = importlib.util.module_from_spec(verify_spec)
 verify_spec.loader.exec_module(verifier)
-CANDIDATE = 'b29d6199708135f30128abc8b4eb537ea5620bf6'
+CANDIDATE = '1fd61226c90cc4b96e73296a000737d473b72e69'
 WORKFLOW = 'b' * 40
 ENV = {'SOURCE_SHA': CANDIDATE, 'REVIEW_CASE': 'field-390', 'GITHUB_SHA': WORKFLOW, 'GITHUB_RUN_ID': 'unit-only'}
 
