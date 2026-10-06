@@ -2,6 +2,9 @@
 
 Semantic versioning. Each merged batch adds an entry and a `vX.Y.Z` tag.
 
+## 0.3.5 - 2026-10-05
+- Defeat recap: the result names the troop role that dealt the most damage and its share. Battle stats gain an optional, normalized `damageByKind` (older saves and receipts simply omit it).
+
 ## 0.3.4 - 2026-10-05
 - First-Meteor cue: after Freeze is used, when three enemies gather, the deploy hint points at Meteor (first five wins only).
 

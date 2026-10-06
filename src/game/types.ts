@@ -9,7 +9,7 @@ export type Phase = 'ready' | 'running' | 'won' | 'lost';
 export type Skill = 'freeze' | 'meteor' | 'food';
 export interface UnitDef { name: string; role: string; cost: number; hp: number; damage: number; speed: number; range: number; interval: number; }
 export interface Era { name: string; year: string; color: string; ground: string; units: [UnitDef,UnitDef,UnitDef]; evolveCost: number; }
-export interface BattleStats { ordersCast?: number; deployed: number; kills: number; foodSpent: number; peakArmy: number; damageDealt: number; damageTaken: number; skillsCast: number; gateDamageTaken: number; deployedByKind: [number,number,number]; maxFreezeTargets: number; meteorKills: number; }
+export interface BattleStats { ordersCast?: number; deployed: number; kills: number; foodSpent: number; peakArmy: number; damageDealt: number; damageTaken: number; skillsCast: number; gateDamageTaken: number; deployedByKind: [number,number,number]; maxFreezeTargets: number; meteorKills: number; damageByKind?: [number,number,number]; }
 export interface ChapterMasteryRecord { earnedMask: number; bestSeconds: number | null; bestGateDamage: number | null; }
 export interface MasteryProgress { timeline: number; chapters: [ChapterMasteryRecord,ChapterMasteryRecord,ChapterMasteryRecord,ChapterMasteryRecord,ChapterMasteryRecord,ChapterMasteryRecord]; }
 export type VictorySettlement = { settlement: 'legacy' } | { settlement: 'mastery-v1'; eligibleMask: number; newMask: number; masteryCoins: number; masteryGems: number };
