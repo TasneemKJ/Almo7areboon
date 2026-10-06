@@ -26,3 +26,9 @@ test('result motifs differ: victory rises, defeat falls', () => {
   assert.ok(win.every((f, i) => i === 0 || f > win[i - 1]), 'victory rises');
   assert.ok(lose.every((f, i) => i === 0 || f < lose[i - 1]), 'defeat falls');
 });
+
+test('Settings shows when the game last saved, from memory only (no save-format change)', () => {
+  assert.match(main, /lastSavedAt=Date\.now\(\)/);
+  assert.match(main, /Last saved \$\{new Date\(lastSavedAt\)\.toLocaleTimeString/);
+  assert.doesNotMatch(main, /localStorage\.setItem\([^)]*lastSavedAt/);
+});
