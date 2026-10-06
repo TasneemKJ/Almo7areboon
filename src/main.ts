@@ -165,7 +165,7 @@ function toast(message:string,duration=4200){
 function persist():boolean{
   if(!playable()||session.status==='temporary')return false;
   // lastSeen rides on the saved copy only, so the live profile (and every "unchanged progress" check) is untouched.
-  const result=session.save({...game.profile,lastSeen:Date.now()}),ok=result.ok;lastSave=performance.now();
+  const result=session.save({...game.profile,lastSeen:Math.floor(Date.now()/60000)*60000}),ok=result.ok;lastSave=performance.now();
   if(result.reason==='write-failed'&&!savedWarning){savedWarning=true;toast('Progress could not be saved. Export a backup from Settings before closing this tab.');}
   if(ok){savedWarning=false;lastSavedAt=Date.now();}
   return ok;

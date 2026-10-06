@@ -121,6 +121,7 @@ export function mountBattlefield(element:HTMLElement,game:GamePort,onFrame:(forc
   private aftermath:{phase:'won'|'lost';at:number}|null=null;
   private clock=0;
   private reduce=false;
+  private hitStop=0;private hitStopCool=0;private hitStops=0;
   private failed=false;
   private orderFrame:ReturnType<typeof orderPresentationFrame>=null;
   private musterFrame:ReturnType<typeof villageMusterFrame>=null;
@@ -716,6 +717,7 @@ export function mountBattlefield(element:HTMLElement,game:GamePort,onFrame:(forc
    }
    if(e.type==='spawn'){this.emit(x,y,5,0xdfd4b1,true,.4,e.lane??1);this.ring(x,y,0xc9e2b3,13);this.flare(x,y-4,16,e.side==='enemy'?0xff8b55:0x6fd6ff,.3);}
    if(e.type==='hit'){
+    if(e.source?.kind===2&&e.target==='unit'&&(e.amount??0)>0&&!this.reduce&&this.hitStopCool<=0){this.hitStop=.05;this.hitStopCool=.5;this.hitStops++;if(navigator.webdriver)this.game.canvas.dataset.hitStops=String(this.hitStops);}
     const trait=traitCueForHit(e);
     if(trait){this.impactCues.push({x:xAt(trait.x),y:this.yAt(trait.lane)-22,lane:trait.lane,trait:trait.trait,age:e.source?.age??0,kind:e.source?.kind??0,side:e.source?.side??'player',life:.28,max:.28});if(this.impactCues.length>54)this.impactCues.shift();}
     if(e.source&&e.trait!=='sweep'){this.attackCues.push({x:xAt(e.source.x),y:this.yAt(e.source.lane),lane:e.source.lane,age:e.source.age,kind:e.source.kind,side:e.source.side,life:.18,max:.18});if(this.attackCues.length>42)this.attackCues.shift();}
@@ -794,7 +796,11 @@ export function mountBattlefield(element:HTMLElement,game:GamePort,onFrame:(forc
   private resetEffects(reason:'motion'|'scene'='scene'):void {delete this.game.canvas.dataset.battleOrder;this.baseHit={player:0,enemy:0};this.battlefieldMemory=battlefieldMemoryAfterReset(this.battlefieldMemory,reason,this.bolts.flatMap(b=>b.memory?[b.memory]:[]));this.spoilsHomecoming=[];this.spoilsReward=null;delete this.game.canvas.dataset.battlefieldMemory;delete this.game.canvas.dataset.battlefieldMemoryPending;delete this.game.canvas.dataset.spoilsHomecoming;delete this.game.canvas.dataset.spoilsReward;for(const g of this.groundFx)g.clear();this.attackCues=[];this.impactCues=[];this.fallen.clear();for(const f of this.floaters)f.text.destroy();this.floaters=[];this.sparks=[];this.bolts=[];this.rings=[];this.flares=[];this.glow?.clear();}
   update(_time:number,delta:number):void {
    if(disposed||!this.world)return;
-   const dt=Math.min(.05,Math.max(0,delta/1000));game.step(dt);
+   const dt=Math.min(.05,Math.max(0,delta/1000));
+   // Hit-stop: a heavy blow freezes the whole scene for about 50 ms (at most twice a second); never with reduced motion.
+   if(this.hitStopCool>0)this.hitStopCool=Math.max(0,this.hitStopCool-dt);
+   if(this.hitStop>0){this.hitStop=Math.max(0,this.hitStop-dt);if(!reducedMotion(game.profile.motion,motionQuery.matches))return;this.hitStop=0;}
+   game.step(dt);
    const events=game.drainEvents();options.onPresentation?.(dt,events);if(events.length)onEvents(events);
    if(this.lastState!==game.state){this.lastState=game.state;this.aftermath=null;delete this.game.canvas.dataset.battleAftermath;delete this.game.canvas.dataset.villageVerdict;delete this.game.canvas.dataset.villageWatchfire;delete this.game.canvas.dataset.villageOrderAnswer;delete this.game.canvas.dataset.villageMusterAnswer;this.villageMuster=createVillageMuster();this.musterFrame=null;this.spoilsOrder=0;this.resetEffects();for(const view of this.units.values())view.body.destroy();this.units.clear();}
    const reduced=reducedMotion(game.profile.motion,motionQuery.matches);

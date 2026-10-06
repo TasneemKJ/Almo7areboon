@@ -2,6 +2,10 @@
 
 Semantic versioning. Each merged batch adds an entry and a `vX.Y.Z` tag.
 
+## 0.3.11 - 2026-10-06
+- Hit-stop: a heavy blow on a unit freezes the scene for about 50 ms (at most twice a second); never with reduced motion. Webdriver-only `canvas.dataset.hitStops` counts them for browser checks.
+- `lastSeen` is rounded to the minute, which removes a rare flake where two back-to-back saves differed by a millisecond.
+
 ## 0.3.10 - 2026-10-06
 - Welcome-back line: after six hours or more away, a returning player sees "Welcome back. The village kept the lamps lit for 3 days." (grants nothing). Stored as an optional, normalized `lastSeen` written on the saved copy only.
 - Webdriver-only `canvas.dataset.lastDeath` hook so browser checks can find a heavy death.
