@@ -86,6 +86,8 @@ function validate(value: unknown): Profile {
   if (Array.isArray(data.claimed)) clean.claimed = QUESTS.filter(quest => (data.claimed as unknown[]).includes(quest.id)).map(quest => quest.id);
   clean.dailyDay = integer(data.dailyDay, 0, 0, MAX_DAILY_DAY);
   clean.dailyStreak = clean.dailyDay ? integer(data.dailyStreak, 0, 0, 1e6) : 0;
+  // Optional: epoch ms of the last save; only a plausible past-or-near-present time survives.
+  if (typeof data.lastSeen === 'number' && Number.isInteger(data.lastSeen) && data.lastSeen > 0 && data.lastSeen <= 4_102_444_800_000) clean.lastSeen = data.lastSeen;
   // Optional: the day a grace day was last used. Kept only when it is a real past-or-present claim day.
   if (clean.dailyDay && typeof data.graceDay === 'number' && Number.isInteger(data.graceDay) && data.graceDay > 0 && data.graceDay <= clean.dailyDay) clean.graceDay = data.graceDay;
   if (typeof data.sound === 'boolean') clean.sound = data.sound;
