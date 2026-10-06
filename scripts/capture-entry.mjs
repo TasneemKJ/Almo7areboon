@@ -67,7 +67,13 @@ async function action(page,name,perform){const row={case:page.__case,name,starte
 async function settle(page){
  // Wait for actual finite modal animations only, with an explicit timeout. Never disable animation.
  await page.waitForTimeout(375);
+ const record=async stage=>({stage,at:now(),case:page.__case,...await page.evaluate(()=>({heading:document.querySelector('#dialog-title')?.textContent,active:document.activeElement?.outerHTML,animations:document.getAnimations().map(a=>{const n=a.effect?.target,t=a.effect?.getComputedTiming();return {name:a.animationName??null,property:a.transitionProperty??null,playState:a.playState,currentTime:a.currentTime,startTime:a.startTime,pending:a.pending,connected:n?.isConnected,insideModal:n instanceof Element&&!!n.closest('#modal-layer'),target:n instanceof Element?n.outerHTML.slice(0,400):String(n),timing:t?{...t,iterations:String(t.iterations),endTime:String(t.endTime),activeDuration:String(t.activeDuration)}:null};})}))});
+ const before=await record('before-settle');
+ try {
  await page.waitForFunction(()=>document.getAnimations().filter(a=>{const n=a.effect?.target;return n instanceof Element&&n.closest('#modal-layer')&&a.effect.getComputedTiming().iterations!==Infinity;}).every(a=>a.playState!=='running'),null,{timeout:2500});
+ } catch(error) {
+  (manifest.animationDiagnostics??=[]).push(before,await record('settle-timeout'));persist();throw error;
+ }
 }
 async function tap(page,selector){await action(page,`native touch ${selector}`,async()=>{await settle(page);const control=page.locator(selector);assert.equal(await control.count(),1,`unique scoped target ${selector}`);assertReachable(await control.evaluate(inspectControl));await control.tap();});}
 async function scrollTap(page,selector){await page.locator(selector).scrollIntoViewIfNeeded();await tap(page,selector);}

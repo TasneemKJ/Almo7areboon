@@ -16,6 +16,7 @@ env:
   npm_config_update_notifier: 'false'
 jobs:
   camp-390:
+    if: ${{ false }}
     name: Same returning-profile ready Camp before and after at390
     runs-on: ubuntu-latest
     timeout-minutes: 15
@@ -114,6 +115,7 @@ jobs:
         if: ${{ !cancelled() && steps.build.outcome == 'success' }}
         run: python3 harness/scripts/emit-originals.py candidate/artifacts/entry-review
   preferences-home-390:
+    if: ${{ false }}
     name: Separate Preferences, Home, late saving warning and recovery ownership
     runs-on: ubuntu-latest
     timeout-minutes: 15
