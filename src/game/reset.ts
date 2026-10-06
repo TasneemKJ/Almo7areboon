@@ -10,7 +10,9 @@ export function startOverProfile(current: Profile): Profile {
   fresh.sound = current.sound;
   fresh.speed = current.speed;
   fresh.motion = current.motion;
+  if (current.marks) fresh.marks = true;
   fresh.dailyDay = current.dailyDay;
   fresh.dailyStreak = current.dailyStreak;
+  if (current.graceDay !== undefined) fresh.graceDay = current.graceDay;
   return fresh;
 }

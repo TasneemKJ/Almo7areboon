@@ -1,6 +1,6 @@
 /** Native semantic targets lie over the matching painted world objects. */
 export function fieldControlsHtml():string{return `<div id="field-targets" class="field-targets">
-${[0,1,2].map(kind=>`<button class="world-hit recruit-hit" data-field-recruit="${kind}" data-unit="${kind}" hidden><span class="recruit-cost" aria-hidden="true"></span></button>`).join('')}
+${[0,1,2].map(kind=>`<button class="world-hit recruit-hit" data-field-recruit="${kind}" data-unit="${kind}" hidden><span class="troop-mark troop-mark-${kind}" aria-hidden="true"></span><span class="recruit-cost" aria-hidden="true"></span></button>`).join('')}
 <button class="world-hit gate-hit" data-field-gate="hold" data-order="hold" aria-label="Hold at your gate"><span class="world-target-name">Hold · 60 momentum</span></button>
 <button class="world-hit gate-hit" data-field-gate="advance" data-order="advance" aria-label="Advance toward the enemy gate"><span class="world-target-name">Advance · 60 momentum</span></button>
 <button id="field-standard" class="world-hit" data-command="story-rally" aria-label="Gather newly deployed troops at the standard" hidden><span class="world-target-name">Gather</span></button>

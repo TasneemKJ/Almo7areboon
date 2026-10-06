@@ -663,6 +663,16 @@ export function mountBattlefield(element:HTMLElement,game:GamePort,onFrame:(forc
     g.fillStyle(0x203d43,.7);g.fillRoundedRect(x-w/2-1,y-1,w+2,5,2);
     g.fillStyle(unit.side==='player'?0x9de6ef:0xffb18a,1);const fill=w*Math.max(0,unit.hp/unit.maxHp);if(fill>.1)g.fillRoundedRect(x-w/2,y,fill,3,1);
    }
+   if(game.profile.marks)for(const unit of s.units){
+    // Colour-independent roles and sides: circle melee, triangle ranged, square heavy; filled = yours, outlined = enemy.
+    const perspective=lanePresentation(unit.lane,unit.kind),x=xAt(unit.x),y=this.yAt(unit.lane)-healthOffset(unit.kind,unit.lane)-7*perspective.scale,r=3.6*perspective.scale+1.4;
+    const mine=unit.side==='player';
+    g.fillStyle(0x10242f,.85);g.lineStyle(1.6,mine?0xf4f0d2:0xffd9a8,1);
+    if(unit.kind===1){g.fillTriangle(x,y-r-.6,x-r-.4,y+r*.8,x+r+.4,y+r*.8);}
+    else if(unit.kind===2){g.fillRect(x-r,y-r,r*2,r*2);}else{g.fillCircle(x,y,r);}
+    if(mine){g.fillStyle(0xf4f0d2,1);const q=r-1.6;if(unit.kind===1)g.fillTriangle(x,y-q-.4,x-q-.3,y+q*.7,x+q+.3,y+q*.7);else if(unit.kind===2)g.fillRect(x-q,y-q,q*2,q*2);else g.fillCircle(x,y,q);}
+    if(unit.kind===1)g.strokeTriangle(x,y-r-.6,x-r-.4,y+r*.8,x+r+.4,y+r*.8);else if(unit.kind===2)g.strokeRect(x-r,y-r,r*2,r*2);else g.strokeCircle(x,y,r);
+   }
    if(s.freezeUntil>s.time){const y=this.layout.groundY+12;g.fillStyle(0xbff6ff,.1);g.fillEllipse(300,y,260,34,24);g.lineStyle(1.5,0xd6fbff,.55);g.strokeEllipse(300,y,250,30,24);}
   }
   private emit(x:number,y:number,count:number,color:number,dust=false,life=.36,lane?:number):void {

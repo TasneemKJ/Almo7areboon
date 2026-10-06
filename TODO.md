@@ -27,6 +27,9 @@ Ordered tasks. Tick a task when it is done and never delete finished tasks. This
 - [x] Count-up battle earnings on the result (round 6); victory/defeat motifs already existed
 - [x] Settings and other dialogs in short landscape: no empty header band (round 6)
 - [ ] Colour-blind-safe troop-type shapes; optional haptics
+- [x] Streak grace day (optional `graceDay` field)
+- [x] Colour-independent troop shapes (Settings, optional `marks` field)
+- [ ] Optional haptics
 - [ ] Streak grace day (needs an optional, normalized save field)
 - [ ] Capture and review victory/defeat, Journey, Chronicle and evolve-confirm screens on touch devices at 320, 360 and 412 widths
 - [ ] Migrate Phaser 4, TypeScript 7 and Vite 8 as separate batches (Dependabot #161 closed: 126 type errors, Vite 8 `manualChunks` must be a function)
@@ -71,3 +74,6 @@ Ordered tasks. Tick a task when it is done and never delete finished tasks. This
 - [x] Source slice: shared painted/native recruit anchors, physical gate/standard/supply interaction and contextual tactical controls.
 - [ ] Exact-source native first120seconds from an empty profile, returning saves, keyboard/touch/rotation and visual review.
 - [ ] Replace retained Camp catalogues, result Details actions and long Preferences with focused surfaces; current source is not all-screen acceptance.
+
+- [x] Give the temporary-session notice its own intrinsic row beneath physical play; retain optional role shapes on waiting recruits.
+- [ ] Native verify temporary-session warning, actual recruit ownership after resize, role shapes and later Camp/Chronicle paths on the integrated source.

@@ -1,7 +1,7 @@
 /* Physical play owns the whole viewport. The old preparation owners remain in
    Camp until their separate focused-surface replacement is verified. */
-#app[data-field-mode="field"][data-entry="play"] .game-shell{height:100dvh;min-height:0;max-height:none;max-width:1100px;display:block;padding:0}
-#app[data-field-mode="field"][data-entry="play"] .battle-view{display:block;height:100%;min-height:0}
+#app[data-field-mode="field"][data-entry="play"] .game-shell{height:100dvh;min-height:0;max-height:none;max-width:1100px;display:grid;grid-template-rows:minmax(0,1fr) auto;padding:0}
+#app[data-field-mode="field"][data-entry="play"] .battle-view{grid-row:1;display:block;height:100%;min-height:0}
 #app[data-field-mode="field"][data-entry="play"] .world{height:100%;min-height:0}
 #app[data-field-mode="field"] .resources,#app[data-field-mode="field"] .deployment,#app[data-field-mode="field"] .upgrades,#app[data-field-mode="field"] .bottom-nav,
 #app[data-field-mode="field"] .world-tools,#app[data-field-mode="field"] .battle-meta,#app[data-field-mode="field"] .battle-skills,
@@ -26,7 +26,7 @@
 #field-return{display:none}
 #app[data-field-mode="camp"] .field-targets,#app[data-field-mode="camp"] .field-chrome,#app[data-field-mode="camp"] .field-cue{display:none}
 #app[data-field-mode="camp"] #field-return{display:block;position:absolute;top:12px;left:12px;z-index:12;min-height:44px;padding:8px 12px;background:#efe0ba;border:1px solid #786348;border-radius:9px}
-#app[data-save-session="temporary"][data-field-mode="field"] .world{height:calc(100% - 28px)}
+#app[data-field-mode="field"][data-entry="play"] .session-notice{grid-row:2;height:auto;min-height:28px;align-self:end}
 @media(orientation:landscape) and (max-height:540px){#app[data-field-mode="field"] .stage h1{font-size:18px}.field-cue{top:18%}}
 
 #app[data-field-mode="field"] .ready-title,#app[data-field-mode="field"] .ready>p,#app[data-field-mode="field"] .ready-paths{display:none}
@@ -35,3 +35,6 @@
 .recruit-hit.recruit-ready::after{content:"";position:absolute;width:36px;height:9px;left:calc(50% - 18px);bottom:1px;border:1px solid #efd18da8;border-radius:50%;box-shadow:0 0 12px #efce8170;pointer-events:none}
 .recruit-hit[aria-disabled="true"] .recruit-cost{color:#d1c7ad}
 .world:has(#field-context:not([hidden])) .stage{visibility:hidden}
+
+/* Optional colour-independent role cue stays with each real waiting figure. */
+.recruit-hit .troop-mark{top:-8px;left:calc(50% - 4px);width:8px;height:8px;filter:drop-shadow(0 1px 2px #10242f)}

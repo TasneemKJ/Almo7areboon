@@ -81,3 +81,6 @@ The three-control limit refers to visible UI chrome/buttons. Genuine scene objec
 
 ### Physical field input, current iteration
 Use the world as the primary interaction surface: waiting defenders deploy at their real food cost; gate pennants issue actual momentum orders; the standard assembles/releases troops. Selecting an enemy exposes deliberate tactical actions. Preserve authored character art and direct native focus semantics. See docs/audits/2026-10-05-physical-field-plan.md for scope and unaccepted preparation-screen debt.
+
+### Physical-play save and role cues
+Temporary sessions reserve an intrinsic-height row for the existing saving warning; the battlefield and its physical targets share the remaining height. Optional troop-shape markers appear above waiting recruits as well as deployed fighters. This preserves the incoming accessibility preference without restoring a card dashboard.
