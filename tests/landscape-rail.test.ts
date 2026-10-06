@@ -60,7 +60,7 @@ test('first-Freeze cue appears when three enemies gather and Freeze is unused', 
   const g = new Game(); g.state.phase = 'running'; g.state.food = 50;
   g.state.stats.deployed = 3;
   const enemy = () => ({ ...(g.state.units[0] ?? {}), side: 'enemy', hp: 10 } as any);
-  g.state.units = [enemy(), enemy(), enemy()];
+  g.state.units = [enemy(), enemy(), enemy(), { ...enemy(), side: 'player' }, { ...enemy(), side: 'player' }, { ...enemy(), side: 'player' }];
   assert.match(battleGuidance(g.profile, g.state), /Tap Freeze to hold them/);
   g.state.skillsUsed.push('freeze');
   assert.doesNotMatch(battleGuidance(g.profile, g.state), /Tap Freeze to hold them/);
@@ -79,7 +79,7 @@ test('first-Meteor cue appears after Freeze when three enemies gather and Meteor
   const g = new Game(); g.state.phase = 'running'; g.state.food = 50; g.state.time = 30;
   g.state.stats.deployed = 3; g.state.stats.skillsCast = 1;
   const enemy = () => ({ ...(g.state.units[0] ?? {}), side: 'enemy', hp: 10 } as any);
-  g.state.units = [enemy(), enemy(), enemy()];
+  g.state.units = [enemy(), enemy(), enemy(), { ...enemy(), side: 'player' }, { ...enemy(), side: 'player' }, { ...enemy(), side: 'player' }];
   assert.doesNotMatch(battleGuidance(g.profile, g.state), /Tap Meteor/);
   g.state.skillsUsed.push('freeze');
   assert.match(battleGuidance(g.profile, g.state), /Tap Meteor to hit every one/);
