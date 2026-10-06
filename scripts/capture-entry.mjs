@@ -36,7 +36,7 @@ const manifest={schemaVersion:1,game:'Almo7areboon',sourceCommit:expected,source
   firstPlay:{profile:'genuinely empty storage; no profile seeding',initialStorage:null},
   constraints:{noCSSInjection:true,noRendererReplacement:true,noSimulationMutation:true,noClockOverride:true,originalScreenshotScale:'css'},
   cases:[],actions:[],nativeInputs:[],images:[],checks:[],errors:[],
-  remainingGates:['This bounded two-viewport wave does not accept all advanced screens','Exact published candidate browser execution','Original-pixel art-direction review','Advanced preparation/Settings/Details remain dense and unaccepted','This is one ordinary120-second input policy, not retention evidence','Physical touch, Safari, physical orientation and backgrounding are unverified','Service workers are blocked in the browser context so exact renderer fault interception is reliable; offline caching is unverified','Native audio full-suite unchanged and not rerun in this boundary probe','Victory, expedition provisions and full save-conflict matrix remain source-tested, not browser-certified by this probe']};
+  remainingGates:['Known inherited320Camp food-upgrade/nav collision remains a whole-PR blocker until real paid-upgrade check passes after redesign','This bounded two-viewport wave does not accept all advanced screens','Exact published candidate browser execution','Original-pixel art-direction review','Advanced preparation/Settings/Details remain dense and unaccepted','This is one ordinary120-second input policy, not retention evidence','Physical touch, Safari, physical orientation and backgrounding are unverified','Service workers are blocked in the browser context so exact renderer fault interception is reliable; offline caching is unverified','Native audio full-suite unchanged and not rerun in this boundary probe','Victory, expedition provisions and full save-conflict matrix remain source-tested, not browser-certified by this probe']};
 mkdirSync(out,{recursive:true});const persist=()=>writeFileSync(resolve(out,'review-manifest.json'),JSON.stringify(manifest,null,2));persist();
 const mime={'.html':'text/html','.js':'text/javascript','.css':'text/css','.png':'image/png','.webp':'image/webp','.svg':'image/svg+xml','.json':'application/json','.webmanifest':'application/manifest+json','.woff2':'font/woff2'};
 const server=createServer((req,res)=>{const path=new URL(req.url,'http://localhost').pathname,file=resolve(dist,'.'+(path==='/'?'/index.html':path));
@@ -169,13 +169,40 @@ async function advancedCampOwnership(){
  await page.waitForFunction(()=>document.querySelector('#world')?.dataset.phase==='running');
  const marks=await page.locator('[data-field-recruit] .troop-mark').evaluateAll(nodes=>nodes.map(n=>({role:n.className,visible:n.checkVisibility(),box:n.getBoundingClientRect().toJSON()})));
  (manifest.roleShapeMeasurements??=[]).push(marks);persist();assert.equal(marks.filter(n=>n.visible&&n.box.width>=7&&n.box.height>=7).length,3,'all three physical recruits retain the optional role cue');
- await fieldGeometry(page,'advanced-three-recruit-field');await tap(page,'[data-command="field-pause"]');await tap(page,'[data-command="field-camp"]');
+ await fieldGeometry(page,'advanced-three-recruit-field');await tap(page,'[data-command="field-pause"]');await tap(page,'[data-command="home"]');await tap(page,'#entry-secondary');await tap(page,'[data-command="confirm-leave-battle"]');
  const upgrade=await page.locator('#food-upgrade').evaluate(inspectControl);(manifest.campMeasurements??=[]).push(upgrade);persist();assertReachable(upgrade);
  const before=JSON.parse((await storage(page))[0]);await tap(page,'#food-upgrade');
  await page.waitForFunction(({key,level})=>JSON.parse(localStorage.getItem(key)).foodLevel===level+1,{key:SAVE_KEY,level:before.foodLevel});
  const after=JSON.parse((await storage(page))[0]);assert(after.coins<before.coins,'Camp upgrade retains real cost');
- await tap(page,'[data-command="field-return"]');assert.equal(await page.locator('[data-command="field-pause"]').evaluate(n=>n===document.activeElement),true,'Camp return restores visible Pause focus');
+ await tap(page,'#field-return');await page.waitForFunction(()=>document.querySelector('#app').dataset.entry==='home');assert.equal(await page.locator('#entry-secondary').textContent(),'Camp','ready Camp returns to its honest Home owner');
  manifest.checks.push({name:'advanced-physical-marks-and-real-Camp-upgrade',passed:true,marks,upgrade,before:{coins:before.coins,foodLevel:before.foodLevel},after:{coins:after.coins,foodLevel:after.foodLevel},scope:'explicit returning fixture, separate from ordinary first120'});runtimeClean(session.row);await close(session);
+}
+async function flatPreferencesOwnership(){
+ const session=await open('separate-empty-profile-flat-Preferences'),{page}=session;
+ await readyHome(page);await tap(page,'#entry-settings');await page.getByRole('heading',{name:'Preferences',exact:true}).waitFor();
+ const fields=await page.locator('#modal-layer input:not([type="file"]),#modal-layer select').count();assert.equal(fields,7);
+ assert.equal(await page.locator('#modal-layer button').count(),3);assert.equal((await visibleControls(page,'button')).length,3,'background Home controls stay inert');
+ // Replace a redundant ordinary after120 transport slot, keeping the untouched file.
+ const last=manifest.images.filter(i=>i.transport).at(-1);if(last)last.transport=false;
+ await capture(page,'flat-preferences','Actual seven-field Preferences before native input; separate empty context');
+ const sound=page.locator('#preference-sound'),handle=await sound.elementHandle();
+ const clickLabel=async id=>{const selector=`label[for="${id}"]`;await page.locator(selector).scrollIntoViewIfNeeded();await tap(page,selector);};
+ await clickLabel('preference-sound');assert.equal(await sound.isChecked(),false);assert(await handle.evaluate(n=>n===document.getElementById('preference-sound')),'preference changes keep native node');
+ await clickLabel('preference-atmosphere');await clickLabel('preference-marks');
+ for(const [id,value]of[['preference-speed','2'],['preference-motion','reduced']]){await page.locator('#'+id).scrollIntoViewIfNeeded();await tap(page,'#'+id);await key(page,'End');await key(page,'Enter');assert.equal(await page.locator('#'+id).inputValue(),value);}
+ for(const id of ['effects-volume','atmosphere-volume']){await page.locator('#'+id).scrollIntoViewIfNeeded();await tabTo(page,'#'+id);const before=Number(await page.locator('#'+id).inputValue());await key(page,'ArrowLeft');assert.equal(Number(await page.locator('#'+id).inputValue()),Math.max(0,before-5));}
+ const scroll=await page.evaluate(()=>({page:{x:scrollX,y:scrollY,w:document.documentElement.scrollWidth,h:document.documentElement.scrollHeight},dialog:{top:document.querySelector('.dialog').scrollTop,h:document.querySelector('.dialog').scrollHeight,client:document.querySelector('.dialog').clientHeight},viewport:{w:innerWidth,h:innerHeight}}));assert(scroll.page.x===0&&scroll.page.y===0&&scroll.page.w<=scroll.viewport.w+1&&scroll.page.h<=scroll.viewport.h+1,'only dialog may scroll');
+ const footer=async command=>{await page.locator(`[data-command="${command}"]`).scrollIntoViewIfNeeded();await tap(page,`[data-command="${command}"]`);};
+ await footer('save-recovery');assert.equal(await page.locator('#modal-layer button').count(),3);await footer('close');assert.equal(await page.locator('[data-command="save-recovery"]').evaluate(n=>n===document.activeElement),true);
+ await footer('reset');assert.equal(await page.locator('#modal-layer button').count(),3);await key(page,'Escape');assert.equal(await page.locator('[data-command="reset"]').evaluate(n=>n===document.activeElement),true);
+ const focus=await page.locator('[data-command="reset"]').evaluate(inspectControl);assertReachable(focus);await footer('close');
+ assert.equal(await page.locator('#entry-settings').evaluate(n=>n===document.activeElement),true);assert.equal((await observe(page)).saved.played,undefined,'Settings alone cannot create play history');
+ await page.reload({waitUntil:'networkidle'});await readyHome(page);assert.equal(await page.locator('#entry-play').textContent(),'Play');
+ await tap(page,'#entry-play');await page.waitForFunction(key=>JSON.parse(localStorage.getItem(key)).played===true,SAVE_KEY);
+ await tap(page,'[data-command="field-pause"]');assert.equal(await page.locator('#modal-layer button').count(),3);await tap(page,'[data-command="settings"]');await footer('close');assert.equal(await page.locator('[data-command="settings"]').evaluate(n=>n===document.activeElement),true);
+ await tap(page,'[data-command="home"]');assert.equal(await page.locator('#entry-secondary').textContent(),'Leave battle…');await tap(page,'#entry-secondary');assert.equal(await page.locator('#modal-layer button').count(),2);await key(page,'Escape');assert.equal(await page.locator('#entry-secondary').evaluate(n=>n===document.activeElement),true);
+ const before=await observe(page);await page.waitForTimeout(1400);const after=await observe(page);assert.equal(after.saved.deployed,before.saved.deployed);assert.equal(after.food,before.food,'held Home does not produce battle food');
+ manifest.checks.push({name:'flat-Preferences-native-fields-scroll-and-held-Home',passed:true,fields,scroll,focus,actual:after,scope:'separate initially-empty context; no prepared profile'});runtimeClean(session.row);await close(session);
 }
 async function ordinaryField(){
  const session=await open('ordinary-empty-profile-120seconds'),{page}=session;
@@ -259,11 +286,11 @@ async function temporaryFieldNotice(){
 try{
  await new Promise((resolve,reject)=>{server.once('error',reject);server.listen(0,'127.0.0.1',resolve);});origin=`http://127.0.0.1:${server.address().port}`;
  browser=await chromium.launch({headless:true,args:['--enable-unsafe-swiftshader']});manifest.browser={engine:'chromium',version:browser.version(),playwright:sourceRequire('playwright/package.json').version};
- await ordinaryField();if(revision==='candidate'){if(reviewCase==='field-390')await dprOneContact();else {await temporaryFieldNotice();await advancedCampOwnership();}}assert(manifest.nativeInputs.every(event=>event.isTrusted),'all actual input must be browser-trusted');git(['diff','--exit-code','HEAD','--']);manifest.executionStatus='passed-awaiting-original-pixel-review';
+ await ordinaryField();if(revision==='candidate'){if(reviewCase==='field-390'){await dprOneContact();await flatPreferencesOwnership();}else {await temporaryFieldNotice();await flatPreferencesOwnership();await advancedCampOwnership();}}assert(manifest.nativeInputs.every(event=>event.isTrusted),'all actual input must be browser-trusted');git(['diff','--exit-code','HEAD','--']);manifest.executionStatus='passed-awaiting-original-pixel-review';
 }catch(error){manifest.errors.push({at:now(),error:String(error),stack:error.stack});manifest.executionStatus='failed';process.exitCode=1;
  const limit=revision==='baseline'?1:reviewCase==='field-390'?2:3;
  if(activePage&&!activePage.isClosed()){
-  if(manifest.images.length>=limit)manifest.images.at(-1).transport=false;
+  if(manifest.images.filter(i=>i.transport).length>=limit)(manifest.images.find(i=>i.transport&&i.path.endsWith('-active-after.png'))||manifest.images.filter(i=>i.transport).at(-1)).transport=false;
   await capture(activePage,'failure','Actual failed boundary; not visual acceptance').catch(error=>manifest.errors.push({captureError:String(error)}));
  }
 }finally{for(const context of contexts)await context.close();await browser?.close();server.closeAllConnections();if(server.listening)await new Promise(resolve=>server.close(resolve));persist();}
