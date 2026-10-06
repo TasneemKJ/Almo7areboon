@@ -22,13 +22,16 @@ export function weeklyStatus(profile: Pick<Profile, 'weekly' | 'mastery' | 'time
 }
 
 /** Starts the week on first sight and rebases after a timeline reset (the seal total fell). Returns true if it changed. */
-export function syncWeekly(profile: Profile, week: number): boolean {
+export function syncWeekly(profile: Profile, week: number, justEarned = 0): boolean {
   if (!(Number.isInteger(week) && week >= 0 && week <= MAX_WEEK)) return false;
   const w = profile.weekly;
   // Retain the newer week, including its claimed marker, if the local calendar moves backward.
   if (w && week < w.week) return false;
   const seals = currentSealCount(profile);
-  if (!w || w.week !== week) { profile.weekly = { week, baseSeals: seals }; return true; }
+  // A just-settled win may be the first event after Monday. Only a newly admitted week
+  // can count its own receipt seals; the earlier-week rejection above retains newer claims.
+  const fresh = Number.isInteger(justEarned) ? Math.max(0, Math.min(3, justEarned)) : 0;
+  if (!w || w.week !== week) { profile.weekly = { week, baseSeals: Math.max(0, seals - fresh) }; return true; }
   if (seals < w.baseSeals) { w.baseSeals = seals; return true; }
   return false;
 }

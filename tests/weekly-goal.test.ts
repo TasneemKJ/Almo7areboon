@@ -93,3 +93,26 @@ test('forward weekly sync and same-week timeline rebasing preserve legitimate ea
  withSeals(g,0);assert.equal(g.dispatch({type:'weekly-sync',week:week+1}),true);assert.equal(g.profile.weekly!.baseSeals,0);assert.equal(g.profile.weekly!.claimed,true);
  withSeals(g,3);assert.equal(g.dispatch({type:'weekly',week:week+1}),false);assert.equal(g.profile.gems,220);
 });
+
+
+test('a win that is the first thing seen in a new week counts its own seals toward that week', () => {
+  const g = new Game(); withSeals(g, 5); // 2 of these were settled by the win that just landed after Monday
+  assert.equal(g.dispatch({ type: 'weekly-sync', week, earned: 2 }), true);
+  assert.equal(g.profile.weekly!.baseSeals, 3);
+  assert.equal(weeklyStatus(g.profile, week).progress, 2);
+  const h = new Game(); withSeals(h, 1); h.dispatch({ type: 'weekly-sync', week, earned: 3 });
+  assert.equal(h.profile.weekly!.baseSeals, 0, 'never below zero');
+  for (const bad of [Number.NaN, -4, 1.5, 99, undefined]) {
+    const k = new Game(); withSeals(k, 5); k.dispatch({ type: 'weekly-sync', week, earned: bad as number });
+    assert.ok([5, 2].includes(k.profile.weekly!.baseSeals), `hostile earned ${String(bad)} is clamped, got ${k.profile.weekly!.baseSeals}`);
+  }
+  const same = new Game(); withSeals(same, 2); same.dispatch({ type: 'weekly-sync', week });
+  withSeals(same, 4); same.dispatch({ type: 'weekly-sync', week, earned: 2 });
+  assert.equal(same.profile.weekly!.baseSeals, 2, 'earned only matters when a week opens');
+});
+
+test('just-earned fallback cannot roll back or reopen a retained claim',()=>{
+ const g=new Game();g.profile.weekly={week,baseSeals:0,claimed:true};withSeals(g,6);const before=JSON.stringify(g.profile);
+ for(const token of [week-1,week+.5,Number.NaN]){assert.equal(g.dispatch({type:'weekly-sync',week:token,earned:3}),false);assert.equal(JSON.stringify(g.profile),before);}
+ assert.equal(g.dispatch({type:'weekly-sync',week,earned:3}),false);assert.equal(JSON.stringify(g.profile),before);
+});

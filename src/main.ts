@@ -886,7 +886,7 @@ function events(batch:GameEvent[]){
   // Fresh terminal results are admitted before their dialog; menus and all
   // modal owners block new batches, including accepted menu confirmations.
   playCombatEvents(batch,game.profile.sound&&playable()&&!document.hidden&&!manualPaused&&!game.state.paused&&activeTab==='battle'&&modal===null);
-  if(batch.some(event=>event.type==='win')&&guardAction())game.dispatch({type:'weekly-sync',week:weekId(localDay())});
+  if(batch.some(event=>event.type==='win')&&guardAction()){const receipt=game.profile.pendingVictory,mask=receipt&&receipt.settlement==='mastery-v1'?receipt.newMask:0;game.dispatch({type:'weekly-sync',week:weekId(localDay()),earned:(mask&1)+((mask>>1)&1)+((mask>>2)&1)});}
   if(batch.some(event=>event.type==='win'||event.type==='lose'))persist();
 }
 const port=createBattlefieldPort(()=>game,action,dt=>{

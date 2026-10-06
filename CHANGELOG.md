@@ -1,6 +1,10 @@
 # Changelog
 
-Semantic versioning. Each merged batch adds an entry and a `vX.Y.Z` tag.
+Semantic versioning. Each merged batch adds an entry; `package.json` and the top heading carry the same version (a test checks). Git tags are cut by the maintainer at release time (only `v0.2.0` exists).
+
+## 0.3.14 - 2026-10-06
+- Weekly goal edge closed: a battle that starts in a new week opens it first, and a win that is the first thing seen in a new week counts the seals it just settled (they were earned this week) instead of making them the base.
+- Docs pass: UX-CONTRACT describes the shipped dialog header, cues, preferences and goals; TODO ticks what shipped and keeps open items honest; `package-lock.json` carries the package version; a test pins package, lock and changelog versions together.
 
 ## 0.3.13 - 2026-10-06
 - Weekly goal in Quests: earn 3 new mastery seals within a Monday-to-Sunday week for 60 gems, once per week. Optional, normalized `weekly {week, baseSeals, claimed}` profile field; progress is the rise in the seal total since the week was first seen (synced at load, when Quests opens and on a win), so seals earned before the week do not count and a timeline reset rebases instead of going negative. Start over keeps it, so a reset cannot reopen a claimed week.
@@ -46,7 +50,7 @@ Semantic versioning. Each merged batch adds an entry and a `vX.Y.Z` tag.
 - First-Freeze cue: when three enemies gather and Freeze is unused, the deploy hint says so (first five wins only).
 - Evolving plays a one-shot flare across the new army's cards (static with reduced motion).
 
-## Unreleased — First Fires depth
+## First Fires depth — merged between 0.3.2 and 0.3.3 without a version bump
 - First Fires gains two source-registered distant-air pockets and two masonry reflections on the existing ambience layer, with static reduced motion and bounded cached geometry.
 - Its original soundscape gains restrained near-hearth and distant-valley separation without adding an audio voice or changing other chapters.
 - Source tests and build are verified; exact-payload native-render, listening and physical-device acceptance remain separate release gates.
@@ -70,3 +74,7 @@ Semantic versioning. Each merged batch adds an entry and a `vX.Y.Z` tag.
 
 ## 0.1.0
 - Initial playable release (see `docs/ITERATIONS.md`).
+
+### Physical-world branch reconciliation of 0.3.14
+- Keeps the guarded pre-step and accepted-start weekly baseline, adds the clamped just-earned fallback for a calendar boundary between step and event drain, and preserves monotonic retained claims.
+- Quiet Home subtitle, focused Goal records, physical Camp, native accessibility and incoming regression provenance remain explicit.

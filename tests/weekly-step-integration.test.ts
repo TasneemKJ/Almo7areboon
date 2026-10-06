@@ -42,3 +42,18 @@ for(const boundary of ['first-frame','reset','missing','forward'])test(`${bounda
  context.step(1/60);assert.equal(checks,1,'matching established week does not check again');
  game.state.enemyHp=0;context.step(1/60);assert.equal(checks,1);context.events(game.drainEvents());assert.equal(weeklyStatus(game.profile,current).progress,3);
 });
+
+test('actual win owner counts settled seals if Monday begins between pre-step and event drain',()=>{
+ const game=new Game(),monday=20000-((20000+3)%7);let day=monday-1;
+ game.dispatch({type:'start'});game.state.enemyHp=0;
+ const context:any={game,weekId,localDay:()=>day,document:{hidden:false},manualPaused:false,activeTab:'battle',modal:null,syncPause(){},playable:()=>true,guardAction:()=>true,playCombatEvents(){},persist(){}};
+ runInNewContext(code,context);context.step(1/60);assert.equal(game.state.phase,'won');day=monday;context.events(game.drainEvents());
+ assert.equal(weeklyStatus(game.profile,weekId(day)).progress,3);assert.equal(game.profile.weekly!.baseSeals,0);
+});
+test('accepted start opens the current baseline, rejected start does not mutate weekly state',()=>{
+ const declaration=ast.statements.find(n=>ts.isFunctionDeclaration(n)&&n.name?.text==='action')!;
+ const actionCode=ts.transpileModule(`${declaration.getText(ast)};this.invoke=action;`,{compilerOptions:{target:ts.ScriptTarget.ES2022}}).outputText;
+ const game=new Game(),current=weekId(localDay()),context:any={game,weekId,localDay,guardAction:()=>true,unlockAudio(){},persist(){},syncPause(){},rebuildArmy(){},update(){},activeTab:'battle'};
+ runInNewContext(actionCode,context);assert.equal(context.invoke({type:'start'}),true);assert.equal(game.profile.weekly!.week,current);
+ delete game.profile.weekly;const before=JSON.stringify(game.profile);assert.equal(context.invoke({type:'start'}),false);assert.equal(JSON.stringify(game.profile),before);
+});

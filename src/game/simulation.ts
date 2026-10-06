@@ -244,7 +244,7 @@ export class Game implements GamePort {
         return true;
       }
       case 'weekly-sync':
-        return syncWeekly(this.profile, action.week);
+        return syncWeekly(this.profile, action.week, action.earned);
       case 'weekly': {
         // Claim admission is read-only: only an explicitly synchronized week can pay.
         if (!Number.isInteger(action.week) || action.week < 0 || action.week > MAX_WEEK || this.profile.weekly?.week !== action.week) return false;

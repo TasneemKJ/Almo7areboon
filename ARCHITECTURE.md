@@ -24,6 +24,8 @@ saves    art,     screens lifecycle, render loop
 
 One `Profile` (schema version 5) plus a transient `BattleState`. Storage key `almo7areboon.save.v1`, backup `almo7areboon.save.v1.backup`. `decodeSave` migrates versions 1-5 (six-card prototypes widen to 30 cards), rejects corrupt data to a backup recovery path, and protects unknown future versions from overwrite. Web Locks give one saving tab; others pause behind recovery dialogs; temporary play never writes. Difficulty and rewards are decided in `game/`; `ui/` only presents them.
 
+Optional profile fields, each validated in `validate` (`game/save.ts`) and omitted unless meaningful: `marks` (troop shapes), `graceDay` (streak grace), `weekly {week, baseSeals, claimed}` (weekly seal goal, `game/weekly.ts`), `lastSeen` (epoch ms, written on the saved copy only, rounded to the minute) and, in battle stats, `damageByKind`. Start over keeps `marks`, `graceDay` and `weekly` with the other preferences and daily state.
+
 ## Rules the tests enforce
 
 - No rewards are granted while rendering; claims go through `Game.dispatch`.
