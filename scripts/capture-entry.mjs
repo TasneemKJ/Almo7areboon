@@ -157,8 +157,25 @@ async function fieldGeometry(page,label){
  for(const row of measured)assertReachable(row);
  const bounds=await page.evaluate(()=>({width:innerWidth,height:innerHeight,scrollWidth:document.documentElement.scrollWidth,scrollHeight:document.documentElement.scrollHeight,world:document.querySelector('#world').getBoundingClientRect().toJSON()}));
  assert(bounds.scrollWidth<=bounds.width+1&&bounds.scrollHeight<=bounds.height+1,'active field must fit viewport');
- assert(bounds.world.height>=bounds.height-30,'field should own nearly all available height');
+ const notice=await page.locator('#session-notice').evaluate(n=>n.hidden?0:n.getBoundingClientRect().height);
+ assert(bounds.world.height>=bounds.height-notice-1,'healthy field fills viewport; temporary field reserves only actual notice height');
  manifest.checks.push({name:label,passed:true,ui,physicalTargets:rows.filter(r=>r.world),bounds});persist();
+}
+async function advancedCampOwnership(){
+ const profile=defaultProfile();Object.assign(profile,{coins:5000,deployed:3,marks:true,unlocked:[true,true,true]});
+ const raw=JSON.stringify(profile);assert.equal(decodeSave(raw).problem,null);const fixture=[raw,raw];
+ const session=await open('explicit-returning-camp-role-shapes',{fixture}),{page}=session;
+ await readyHome(page);await tap(page,'#entry-play');
+ await page.waitForFunction(()=>document.querySelector('#world')?.dataset.phase==='running');
+ const marks=await page.locator('[data-field-recruit] .troop-mark').evaluateAll(nodes=>nodes.map(n=>({role:n.className,visible:n.checkVisibility(),box:n.getBoundingClientRect().toJSON()})));
+ (manifest.roleShapeMeasurements??=[]).push(marks);persist();assert.equal(marks.filter(n=>n.visible&&n.box.width>=7&&n.box.height>=7).length,3,'all three physical recruits retain the optional role cue');
+ await fieldGeometry(page,'advanced-three-recruit-field');await tap(page,'[data-command="field-pause"]');await tap(page,'[data-command="field-camp"]');
+ const upgrade=await page.locator('#food-upgrade').evaluate(inspectControl);(manifest.campMeasurements??=[]).push(upgrade);persist();assertReachable(upgrade);
+ const before=JSON.parse((await storage(page))[0]);await tap(page,'#food-upgrade');
+ await page.waitForFunction(({key,level})=>JSON.parse(localStorage.getItem(key)).foodLevel===level+1,{key:SAVE_KEY,level:before.foodLevel});
+ const after=JSON.parse((await storage(page))[0]);assert(after.coins<before.coins,'Camp upgrade retains real cost');
+ await tap(page,'[data-command="field-return"]');assert.equal(await page.locator('[data-command="field-pause"]').evaluate(n=>n===document.activeElement),true,'Camp return restores visible Pause focus');
+ manifest.checks.push({name:'advanced-physical-marks-and-real-Camp-upgrade',passed:true,marks,upgrade,before:{coins:before.coins,foodLevel:before.foodLevel},after:{coins:after.coins,foodLevel:after.foodLevel},scope:'explicit returning fixture, separate from ordinary first120'});runtimeClean(session.row);await close(session);
 }
 async function ordinaryField(){
  const session=await open('ordinary-empty-profile-120seconds'),{page}=session;
@@ -232,12 +249,17 @@ async function temporaryFieldNotice(){
  const notice=await page.locator('#session-notice').evaluate(node=>{const r=node.getBoundingClientRect(),world=document.querySelector('#world').getBoundingClientRect();return {hidden:node.hidden,text:node.textContent,top:r.top,bottom:r.bottom,height:r.height,width:r.width,viewportHeight:innerHeight,worldBottom:world.bottom};});
  (manifest.temporaryMeasurements??=[]).push(notice);persist();
  assert(!notice.hidden&&/progress is not saved/.test(notice.text));assert(notice.top>=0&&notice.bottom<=notice.viewportHeight&&notice.height>=28,'temporary-session warning must remain inside visible viewport');assert(notice.worldBottom<=notice.top+1,'field must not cover temporary-session warning');
+ await tapPaintedRecruit(page,'[data-field-recruit="0"]');await fieldGeometry(page,'temporary-320-painted-contact');
+ await action(page,'real temporary-field rotation to844x390',()=>page.setViewportSize({width:844,height:390}));
+ await page.waitForFunction(()=>{const c=document.querySelector('canvas'),w=document.querySelector('#world'),f=c?.dataset.fieldCamp?JSON.parse(c.dataset.fieldCamp):null;return f&&Math.abs(f.width-w.clientWidth)<1&&Math.abs(f.height-w.clientHeight)<1;});
+ const rotated=await page.locator('#session-notice').evaluate(n=>{const r=n.getBoundingClientRect(),w=document.querySelector('#world').getBoundingClientRect();return {top:r.top,bottom:r.bottom,worldBottom:w.bottom,height:innerHeight};});
+ (manifest.temporaryMeasurements??=[]).push(rotated);persist();assert(rotated.bottom<=rotated.height&&rotated.worldBottom<=rotated.top+1,'rotated warning must stay clear of field');await fieldGeometry(page,'temporary-landscape-geometry');
  await page.waitForTimeout(5500);assert.deepEqual(await storage(page),fixture,'temporary play never writes future primary or backup');manifest.checks.push({name:'temporary-field-notice-and-safe-storage',passed:true,notice});runtimeClean(session.row);await close(session);
 }
 try{
  await new Promise((resolve,reject)=>{server.once('error',reject);server.listen(0,'127.0.0.1',resolve);});origin=`http://127.0.0.1:${server.address().port}`;
  browser=await chromium.launch({headless:true,args:['--enable-unsafe-swiftshader']});manifest.browser={engine:'chromium',version:browser.version(),playwright:sourceRequire('playwright/package.json').version};
- await ordinaryField();if(revision==='candidate'){if(reviewCase==='field-390')await dprOneContact();else await temporaryFieldNotice();}assert(manifest.nativeInputs.every(event=>event.isTrusted),'all actual input must be browser-trusted');git(['diff','--exit-code','HEAD','--']);manifest.executionStatus='passed-awaiting-original-pixel-review';
+ await ordinaryField();if(revision==='candidate'){if(reviewCase==='field-390')await dprOneContact();else {await temporaryFieldNotice();await advancedCampOwnership();}}assert(manifest.nativeInputs.every(event=>event.isTrusted),'all actual input must be browser-trusted');git(['diff','--exit-code','HEAD','--']);manifest.executionStatus='passed-awaiting-original-pixel-review';
 }catch(error){manifest.errors.push({at:now(),error:String(error),stack:error.stack});manifest.executionStatus='failed';process.exitCode=1;
  const limit=revision==='baseline'?1:reviewCase==='field-390'?2:3;
  if(activePage&&!activePage.isClosed()){
