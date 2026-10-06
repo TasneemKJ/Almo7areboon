@@ -7,6 +7,8 @@ import { Game } from '../src/game/simulation.ts';
 import { pauseReason } from '../src/ui/pause.ts';
 import { ambienceAllowed } from '../src/ui/audio-preferences.ts';
 import { advanceVillagePresentation } from '../src/view/village-mood.ts';
+import { weekId } from '../src/game/weekly.ts';
+import { localDay } from '../src/game/data.ts';
 
 const source=readFileSync(new URL('../src/main.ts',import.meta.url),'utf8');
 const ast=ts.createSourceFile('main.ts',source,ts.ScriptTarget.Latest,true,ts.ScriptKind.TS);
@@ -17,7 +19,7 @@ const code=ts.transpile(functions.map(node=>node.getText(ast)).join('\n'),{targe
 
 test('actual village owner freezes and silences ambience without save ownership',()=>{
   const audible:boolean[]=[],game=new Game();game.dispatch({type:'start'});
-  const context:any={game,sessionReady:true,pagePresent:true,lifetime:{disposed:false},session:{status:'active'},
+  const context:any={weekId,localDay,game,sessionReady:true,pagePresent:true,lifetime:{disposed:false},session:{status:'active'},
     manualPaused:false,activeTab:'battle',modal:null,document:{hidden:false},atmosphereEnabled:true,villagePresentation:null,
     stopCombatAudio(){},pauseReason,ambienceAllowed,advanceVillagePresentation,updateSoundscape:(_age:number,allowed:boolean)=>audible.push(allowed)};
   runInNewContext(`${code}\nthis.api={syncPause,syncVillagePresentation};`,context);
@@ -43,7 +45,7 @@ import {recordedContext,installContext} from './helpers/audio-context.ts';
 function combatHarness(){
  audio.disposeAudio();const c=recordedContext(),restore=installContext(c);audio.unlockAudio();
  const game=new Game();game.dispatch({type:'start'});const persisted:number[]=[];
- const context:any={game,sessionReady:true,pagePresent:true,lifetime:{disposed:false},session:{status:'active'},
+ const context:any={weekId,localDay,game,sessionReady:true,pagePresent:true,lifetime:{disposed:false},session:{status:'active'},
   manualPaused:false,activeTab:'battle',modal:null,document:{hidden:false},atmosphereEnabled:false,villagePresentation:null,
   pauseReason,ambienceAllowed,advanceVillagePresentation,updateSoundscape:audio.updateSoundscape,
   unlockAudio:audio.unlockAudio,playSummonAudio:audio.playSummonAudio,rebuildArmy(){},update(){},renderScreen(){},

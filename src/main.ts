@@ -39,6 +39,7 @@ import { cardsScreenHtml, summonedCardsHtml } from './ui/cards-screen.ts';
 import { resultsHtml } from './ui/results-screen.ts';
 import { startCountUp } from './ui/count-up.ts';
 import { welcomeBackLine } from './ui/welcome-back.ts';
+import { weekId, weeklyStatus } from './game/weekly.ts';
 import { earlierChapter } from './ui/regroup-learning.ts';
 import { legacyCurrentHtml, prestigeDetailsHtml, prestigeDialogHtml } from './ui/prestige-presentation.ts';
 import { battleGuidance, foodIsPiling, baseHealthDisplay, compactNumber, waveLabel, waveAccessibleLabel } from './ui/battle-hud.ts';
@@ -145,7 +146,7 @@ async function acquireSession(){
     if(loaded.status==='active'&&loaded.profile){
       game=new Game(loaded.profile);lastPhase=game.state.phase;resultDue=0;hasPlayed=true;sessionReady=true;
       manualPaused=false;resultShown='';savedWarning=false;pendingImport=null;evolutionFromResult=false;clearPrestigeContext();
-      closeModal(false);rebuildArmy();syncMotion();switchTab('battle');
+      closeModal(false);rebuildArmy();syncMotion();switchTab('battle');game.dispatch({type:'weekly-sync',week:weekId(localDay())});
       if(loaded.loadStatus==='recovered')toast('Recovered your progress from the backup save.');
       else if(loaded.loadStatus==='corrupt')toast('The stored save could not be recovered. A new game has started.');
       else{const line=welcomeBackLine(loaded.profile.lastSeen,Date.now(),loaded.profile.wins);if(line)toast(line,6000);}
@@ -246,6 +247,7 @@ function update(force=false){
     button.classList.toggle('skill-opportunity',cue.opportunity);
     button.classList.toggle('freeze-active',cue.activeEffect);
     button.title=cue.label;button.setAttribute('aria-label',cue.label);
+    button.classList.toggle('badge-targets',/^\d+$/.test(cue.badge));
     const badge=button.querySelector('small');if(badge){badge.setAttribute('aria-hidden','true');textIfChanged(badge,cue.badge);}
   });
   const notification=$('quests').querySelector<HTMLElement>('.notification');
@@ -406,9 +408,15 @@ function dailyRow(p:Profile){
   const hint=reward.graced?'You missed a day. A grace day keeps your streak alive (once a week).':reward.available?'Come back every day to raise the reward.':'Return tomorrow to keep your streak going.';
   return `<div class="quest-row"><div><h3>${label}</h3><small>${hint}</small></div><button class="buy-button" data-daily="${day}" aria-label="${reward.available?`Claim ${reward.gems} gems`:'Claimed today'}" ${reward.available?'':'disabled'}>${reward.available?icon('gem')+reward.gems:'✓'}</button></div>`;
 }
+function weeklyRow(p:Profile){
+  const week=weekId(localDay()),s=weeklyStatus(p,week);
+  const hint=s.claimed?'Claimed this week. A new goal opens on Monday.':'Earn new mastery seals in battle. Resets every Monday.';
+  return `<div class="quest-row"><div><h3>Weekly goal · earn ${s.target} seals</h3><div class="quest-meter"><i style="width:${s.progress/s.target*100}%"></i></div><small>${s.progress} / ${s.target} · ${hint}</small></div><button class="buy-button" data-weekly="${week}" aria-label="${s.claimed?'Claimed this week':`Claim ${s.gems} gems for the weekly goal`}" ${s.ready?'':'disabled'}>${s.claimed?'✓':icon('gem')+s.gems}</button></div>`;
+}
 function showQuests(){
+  game.dispatch({type:'weekly-sync',week:weekId(localDay())});
   const p=game.profile;
-  showModal('quests',`<span class="eyebrow">EARN YOUR GLORY</span><h2 id="dialog-title">Quests</h2><p>Complete milestones to earn gems for cards.</p><button class="big-button secondary" data-command="journey">Your journey and next goal</button><div class="quest-list">${dailyRow(p)}${QUESTS.map(q=>{const count=p[q.stat],done=count>=q.target,claimed=p.claimed.includes(q.id);return `<div class="quest-row"><div><h3>${q.title}</h3><div class="quest-meter"><i style="width:${Math.min(100,count/q.target*100)}%"></i></div><small>${Math.min(count,q.target).toLocaleString('en-US')} / ${q.target.toLocaleString('en-US')}</small></div><button class="buy-button" data-claim="${q.id}" aria-label="${claimed?'Claimed':`Claim ${q.reward} gems for ${q.title}`}" ${!done||claimed?'disabled':''}>${claimed?'✓':icon('gem')+q.reward}</button></div>`;}).join('')}</div>`);
+  showModal('quests',`<span class="eyebrow">EARN YOUR GLORY</span><h2 id="dialog-title">Quests</h2><p>Complete milestones to earn gems for cards.</p><button class="big-button secondary" data-command="journey">Your journey and next goal</button><div class="quest-list">${dailyRow(p)}${weeklyRow(p)}${QUESTS.map(q=>{const count=p[q.stat],done=count>=q.target,claimed=p.claimed.includes(q.id);return `<div class="quest-row"><div><h3>${q.title}</h3><div class="quest-meter"><i style="width:${Math.min(100,count/q.target*100)}%"></i></div><small>${Math.min(count,q.target).toLocaleString('en-US')} / ${q.target.toLocaleString('en-US')}</small></div><button class="buy-button" data-claim="${q.id}" aria-label="${claimed?'Claimed':`Claim ${q.reward} gems for ${q.title}`}" ${!done||claimed?'disabled':''}>${claimed?'✓':icon('gem')+q.reward}</button></div>`;}).join('')}</div>`);
 }
 function exportSave(){
   try{
@@ -482,6 +490,7 @@ lifetime.listen<MouseEvent>(root,'click',e=>{
   if(button.dataset.tab){switchTab(button.dataset.tab);return;}
   if(button.dataset.unit!==undefined){const kind=Number(button.dataset.unit) as UnitKind;if(!game.profile.unlocked[kind]){if(action({type:'unlock',kind})&&playable()&&!savedWarning)toast(troopUnlockMessage(game.profile,game.state.phase,kind,game.deploymentStatus(kind)),7000);}else action({type:'spawn',kind});return;}
   if(button.dataset.skill){action({type:'skill',skill:button.dataset.skill as Skill});return;}
+  if(button.dataset.weekly){if(action({type:'weekly',week:Number(button.dataset.weekly)}))showQuests();return;}
   if(button.dataset.daily){if(action({type:'daily',day:Number(button.dataset.daily)}))showQuests();return;}
   if(button.dataset.claim){const fromJourney=modal==='journey';if(action({type:'claim',id:button.dataset.claim})){if(fromJourney&&playable()&&modal!=='session')showModal('journey',journeyScreenHtml(game.profile,game.state));else showQuests();}return;}
   if(button.dataset.battle!==undefined){if(action({type:'select-battle',battle:Number(button.dataset.battle)}))closeModal();return;}
@@ -645,6 +654,7 @@ function events(batch:GameEvent[]){
   // Fresh terminal results are admitted before their dialog; menus and all
   // modal owners block new batches, including accepted menu confirmations.
   playCombatEvents(batch,game.profile.sound&&playable()&&!document.hidden&&!manualPaused&&!game.state.paused&&activeTab==='battle'&&modal===null);
+  if(batch.some(event=>event.type==='win'))game.dispatch({type:'weekly-sync',week:weekId(localDay())});
   if(batch.some(event=>event.type==='win'||event.type==='lose'))persist();
 }
 const port=createBattlefieldPort(()=>game,action,dt=>{syncPause();if(playable())game.step(dt*game.profile.speed);});
