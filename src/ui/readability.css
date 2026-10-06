@@ -12,3 +12,10 @@
 
 /* Dialog titles take programmatic focus for screen readers; show a ring only for keyboard users, never a boxed heading after a tap or battle end. */
 #dialog-title:focus:not(:focus-visible) { outline:none; }
+
+/* Troop shapes preference: the same circle / triangle / square the battlefield draws above each unit. */
+.troop-mark { display:none; position:absolute; top:6px; left:5px; z-index:3; width:7px; height:7px; background:#f4f0d2; pointer-events:none; }
+:root[data-marks="on"] .troop-mark { display:block; }
+.troop-mark-0 { border-radius:50%; }
+.troop-mark-1 { clip-path:polygon(50% 0,100% 100%,0 100%); }
+.troop-mark-2 { border-radius:1px; }

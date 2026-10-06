@@ -91,6 +91,8 @@ function validate(value: unknown): Profile {
   if (typeof data.sound === 'boolean') clean.sound = data.sound;
   clean.speed = data.speed === 2 ? 2 : 1;
   clean.motion = data.motion === 'reduced' ? 'reduced' : 'system';
+  // Optional preference: stored only when on, so existing saves keep their exact shape.
+  if (data.marks === true) clean.marks = true;
   return clean;
 }
 

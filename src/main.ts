@@ -181,7 +181,8 @@ function syncVillagePresentation(dt=0,batch:readonly GameEvent[]=[]){
   // result dialog still gates audio with the actual terminal phase this frame.
   updateSoundscape(game.profile.age,ambienceAllowed({sound:game.profile.sound,atmosphere:atmosphereEnabled,paused:game.state.paused,phase:game.state.phase,tab:activeTab,modal,hidden:document.hidden}),villagePresentation.mood);
 }
-function syncMotion(){document.documentElement.dataset.motion=game.profile.motion==='reduced'||motionQuery.matches?'reduced':'full';}
+function syncMarks(){document.documentElement.dataset.marks=game.profile.marks?'on':'off';}
+function syncMotion(){document.documentElement.dataset.motion=game.profile.motion==='reduced'||motionQuery.matches?'reduced':'full';syncMarks();}
 function action(a:Action):boolean{
   if(!guardAction())return false;
   unlockAudio(game.profile.sound);const ok=game.dispatch(a);
@@ -385,6 +386,7 @@ function showSettings(){
   <div class="audio-volume"><div class="audio-volume-label"><label for="effects-volume">Effects volume</label><output id="effects-volume-value" for="effects-volume">${audioMix.effects}%</output></div><input id="effects-volume" type="range" min="0" max="100" step="5" value="${audioMix.effects}" aria-valuetext="${audioMix.effects}%"></div>
   <div class="audio-volume"><div class="audio-volume-label"><label for="atmosphere-volume">Atmosphere volume</label><output id="atmosphere-volume-value" for="atmosphere-volume">${audioMix.atmosphere}%</output></div><input id="atmosphere-volume" type="range" min="0" max="100" step="5" value="${audioMix.atmosphere}" aria-valuetext="${audioMix.atmosphere}%"></div>
   <button class="setting-row" data-command="speed">${icon('evolution')} Battle speed <b>${game.profile.speed}×</b></button>
+  <button class="setting-row" data-command="marks" aria-pressed="${game.profile.marks===true}" aria-label="Troop shapes: circle melee, triangle ranged, square heavy">Troop shapes <b>${game.profile.marks?'ON':'OFF'}</b></button>
   <button class="setting-row" data-command="motion" aria-pressed="${game.profile.motion==='reduced'}">Motion <b>${game.profile.motion==='reduced'?'REDUCED':'SYSTEM'}</b></button>
   ${game.state.phase==='running'?'<button class="big-button secondary retreat-button" data-command="retreat">RETREAT FROM THIS BATTLE</button><p class="save-note">Retreating counts as a loss. Coins you already earned are kept.</p>':''}
   <div class="backup-actions"><button class="big-button blue" data-command="export">EXPORT SAVE</button><button class="big-button secondary" data-command="import" ${session.status!=='active'?'disabled':''}>IMPORT SAVE</button><button class="big-button secondary" data-command="reset" ${session.status!=='active'?'disabled':''}>START OVER</button><input id="import-save" type="file" accept=".json,application/json" hidden></div>
@@ -532,6 +534,7 @@ lifetime.listen<MouseEvent>(root,'click',e=>{
     case 'quests':showQuests();break;
     case 'sound':game.profile.sound=!game.profile.sound;if(game.profile.sound)unlockAudio(true);else suspendAudio();persist();if(playable())showSettings();break;
     case 'atmosphere':atmosphereEnabled=!atmosphereEnabled;saveAtmosphere(atmosphereEnabled);syncPause();showSettings();break;
+    case 'marks':if(game.profile.marks)delete game.profile.marks;else game.profile.marks=true;syncMarks();persist();if(playable())showSettings();break;
     case 'motion':game.profile.motion=game.profile.motion==='reduced'?'system':'reduced';syncMotion();persist();if(playable())showSettings();break;
     case 'import':$('import-save')?.click();break;
     case 'reset':if(session.status!=='active')break;showModal('reset',`<h2 id="dialog-title">Start over?</h2><p>This deletes your progress on this browser: your age, coins, upgrades, unlocked battles, every card and all gems, quests and records.</p><p>Your sound, speed and motion choices stay. Export a save first if you might want this progress back.</p><button class="big-button blue" data-command="export">EXPORT SAVE FIRST</button><button class="big-button danger" data-command="confirm-reset">DELETE PROGRESS AND START OVER</button><button class="big-button secondary" data-command="close">KEEP MY PROGRESS</button>`);break;

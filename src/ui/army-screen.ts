@@ -47,7 +47,7 @@ export function createArmyUpdater(targets: { units: MarkupTarget; skills: Markup
       targets.units.innerHTML = ERAS[profile.age].units.map((unit, index) => {
         const specialty=TROOP_SPECIALTIES[index];
         const kind = index as UnitKind, unlocked = profile.unlocked[index], cost = unlockCost(kind, profile), name = unitPresentationName(profile.age, kind);
-        return `<button class="unit-card ${unlocked ? '' : 'locked'}" data-unit="${index}" aria-label="${unlocked ? `Deploy ${name}, ${unit.cost} food` : `Unlock ${name}, ${cost} coins`}. ${specialty.effect}" title="${specialty.effect}"><span class="unit-role">${unit.role} · ${specialty.name}</span><span class="unit-name">${name}</span><img alt="" src="${portrait(profile.age, kind)}"/><span class="unit-price">${unlocked ? icon('food') + unit.cost : icon('lock') + `<span>${formatCost(cost)}</span>` + icon('coin')}</span><span class="unit-fill"></span></button>`;
+        return `<button class="unit-card ${unlocked ? '' : 'locked'}" data-unit="${index}" aria-label="${unlocked ? `Deploy ${name}, ${unit.cost} food` : `Unlock ${name}, ${cost} coins`}. ${specialty.effect}" title="${specialty.effect}"><i class="troop-mark troop-mark-${index}" aria-hidden="true"></i><span class="unit-role">${unit.role} · ${specialty.name}</span><span class="unit-name">${name}</span><img alt="" src="${portrait(profile.age, kind)}"/><span class="unit-price">${unlocked ? icon('food') + unit.cost : icon('lock') + `<span>${formatCost(cost)}</span>` + icon('coin')}</span><span class="unit-fill"></span></button>`;
       }).join('');
       armyKey = nextArmyKey;
     }
