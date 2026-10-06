@@ -3,7 +3,8 @@ import {mkdirSync,writeFileSync,existsSync} from 'node:fs';
 import {spawn,spawnSync} from 'node:child_process';
 import {chromium} from 'playwright';
 import {defaultProfile,SAVE_KEY,BACKUP_KEY} from '../src/game/save.ts';
-const output='artifacts/browser-review/formation-learning',origin='http://127.0.0.1:4188',cue='Deploy a defender before ranged troops; defenders protect them.';
+import {reviewPort} from './review-port.mjs';
+const output='artifacts/browser-review/formation-learning',origin=`http://127.0.0.1:${reviewPort(4188)}`,cue='Deploy a defender before ranged troops; defenders protect them.';
 mkdirSync(output,{recursive:true});
 const diagnostics={revision:spawnSync('git',['rev-parse','HEAD'],{encoding:'utf8'}).stdout.trim(),status:'failed',cases:[],pageErrors:[],assetFailures:[]};
 let browser,server,serverLog='';
@@ -29,7 +30,7 @@ async function session(viewport){
  }catch(error){diagnostics.cases.push({name,status:'failed',error:error.stack,lastUi:await page?.evaluate(()=>({hint:document.querySelector('#deploy-hint')?.textContent,food:document.querySelector('#food-count')?.textContent})).catch(()=>null)});await page?.screenshot({path:`${output}/formation-failure-${name}.png`}).catch(()=>{});throw error;}finally{await context.close();}
 }
 try{
- assert.ok(existsSync('dist/index.html'));server=spawn(process.execPath,['node_modules/vite/bin/vite.js','preview','--host','127.0.0.1','--port','4188','--strictPort'],{stdio:'pipe'});server.stdout.on('data',c=>serverLog+=c);server.stderr.on('data',c=>serverLog+=c);
+ assert.ok(existsSync('dist/index.html'));server=spawn(process.execPath,['node_modules/vite/bin/vite.js','preview','--host','127.0.0.1','--port',String(reviewPort(4188)),'--strictPort'],{stdio:'pipe'});server.stdout.on('data',c=>serverLog+=c);server.stderr.on('data',c=>serverLog+=c);
  let ready=false;for(let i=0;i<80;i++){if(server.exitCode!==null)throw Error(serverLog);try{ready=(await fetch(origin,{signal:AbortSignal.timeout(2000)})).ok;}catch{}if(ready)break;await new Promise(r=>setTimeout(r,250));}assert.ok(ready);
  browser=await chromium.launch({headless:true,timeout:30000});diagnostics.browser=browser.version();for(const viewport of [{width:320,height:568},{width:390,height:844}])await session(viewport);assert.equal(diagnostics.cases.length,2);assert.deepEqual(diagnostics.pageErrors,[]);assert.deepEqual(diagnostics.assetFailures,[]);diagnostics.status='passed';console.log('Formation learning passed: 2 native production scenarios');
 }catch(error){diagnostics.error=error.stack;process.exitCode=1;console.error(error);}finally{diagnostics.serverLog=serverLog;writeFileSync(`${output}/diagnostics.json`,JSON.stringify(diagnostics,null,2));try{await browser?.close();}finally{server?.kill('SIGTERM');}}

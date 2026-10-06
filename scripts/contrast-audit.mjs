@@ -7,7 +7,8 @@
  * Set CHROMIUM_PATH to reuse an installed Chromium. Always exits 0; read the list.
  */
 import {chromium} from 'playwright';
-const url=process.argv[2]??'http://127.0.0.1:4173/';
+import {reviewPort} from './review-port.mjs';
+const url=process.argv[2]??`http://127.0.0.1:${reviewPort(4173)}/`;
 const b=await chromium.launch(process.env.CHROMIUM_PATH?{executablePath:process.env.CHROMIUM_PATH}:{});
 const p=await b.newPage({viewport:{width:390,height:844}});
 const prof={version:2,timeline:1,age:0,enemyAge:1,furthestBattle:1,coins:3000,gems:2000,foodLevel:2,baseLevel:1,unlocked:[true,true,false],cards:Array(30).fill(0).map((_,i)=>i%4),summonCount:10,summonSeed:4242,pendingVictory:null,kills:12,wins:2,deployed:30,claimed:[],dailyDay:0,dailyStreak:0,sound:true,speed:1,motion:'system'};

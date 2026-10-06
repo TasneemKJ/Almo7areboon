@@ -6,8 +6,9 @@
  * Set CHROMIUM_PATH to reuse an installed Chromium. Exits 1 when any text is cut off.
  */
 import {chromium} from 'playwright';
+import {reviewPort} from './review-port.mjs';
 
-const url = process.argv[2] ?? 'http://127.0.0.1:4173/';
+const url = process.argv[2] ?? `http://127.0.0.1:${reviewPort(4173)}/`;
 const browser = await chromium.launch(process.env.CHROMIUM_PATH ? {executablePath: process.env.CHROMIUM_PATH} : {});
 const save = {version: 2, timeline: 1, age: 0, enemyAge: 1, furthestBattle: 1, coins: 123456, gems: 100000, foodLevel: 2, baseLevel: 1, unlocked: [true, true, false], cards: Array.from({length: 30}, (_, i) => (i % 4) * 30), summonCount: 10, summonSeed: 4242, pendingVictory: null, kills: 12, wins: 2, deployed: 30, claimed: [], dailyDay: 0, dailyStreak: 0, sound: true, speed: 1, motion: 'system'};
 let failed = false;

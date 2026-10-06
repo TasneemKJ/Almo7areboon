@@ -10,8 +10,9 @@
  */
 import {chromium} from 'playwright';
 import {mkdirSync} from 'node:fs';
+import {reviewPort} from './review-port.mjs';
 
-const url = process.argv[2] ?? 'http://127.0.0.1:4173/';
+const url = process.argv[2] ?? `http://127.0.0.1:${reviewPort(4173)}/`;
 const out = process.env.OUT ?? 'artifacts/mobile-touch';
 const only = process.env.SIZES?.split(',');
 mkdirSync(out, {recursive: true});

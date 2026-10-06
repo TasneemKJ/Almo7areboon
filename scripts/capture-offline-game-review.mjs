@@ -4,9 +4,10 @@ import { spawn, spawnSync } from 'node:child_process';
 import { createServer } from 'node:http';
 import { chromium } from 'playwright';
 import { defaultProfile, SAVE_KEY, BACKUP_KEY } from '../src/game/save.ts';
+import {reviewPort} from './review-port.mjs';
 
 const output = 'artifacts/browser-review/offline-game';
-const upstream = 'http://127.0.0.1:4181', origin = 'http://127.0.0.1:4182';
+const upstream = `http://127.0.0.1:${reviewPort(4181)}`, origin = `http://127.0.0.1:${reviewPort(4182)}`;
 mkdirSync(output, { recursive: true });
 const diagnostics = { revision: spawnSync('git', ['rev-parse', 'HEAD'], { encoding: 'utf8' }).stdout.trim(), status: 'failed', cases: [], pageErrors: [], assetFailures: [] };
 let browser, preview, proxy, serverLog = '', probeVersion = 'first', heldRefresh;
@@ -75,7 +76,7 @@ async function session(viewport) {
 
 try {
   assert.ok(existsSync('dist/index.html'));
-  preview = spawn(process.execPath, ['node_modules/vite/bin/vite.js', 'preview', '--host', '127.0.0.1', '--port', '4181', '--strictPort'], { stdio: 'pipe' });
+  preview = spawn(process.execPath, ['node_modules/vite/bin/vite.js', 'preview', '--host', '127.0.0.1', '--port',String(reviewPort(4181)), '--strictPort'], { stdio: 'pipe' });
   preview.stdout.on('data', chunk => serverLog += chunk); preview.stderr.on('data', chunk => serverLog += chunk);
   let ready = false;
   for (let i = 0; i < 80; i++) {

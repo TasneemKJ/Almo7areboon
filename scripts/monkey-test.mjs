@@ -6,8 +6,9 @@
  * Set CHROMIUM_PATH to use an existing Chromium instead of the one Playwright downloads.
  */
 import {chromium} from 'playwright';
+import {reviewPort} from './review-port.mjs';
 
-const url = process.argv[2] ?? 'http://127.0.0.1:4173/', seconds = Number(process.argv[3] ?? 30);
+const url = process.argv[2] ?? `http://127.0.0.1:${reviewPort(4173)}/`, seconds = Number(process.argv[3] ?? 30);
 const SAVE = 'almo7areboon.save.v1';
 const saves = {
   'no save': null, garbage: '{{{not json', 'empty object': '{}', 'json null': 'null',

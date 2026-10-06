@@ -3,12 +3,13 @@ import assert from 'node:assert/strict';
 import { mkdirSync, readFileSync, writeFileSync } from 'node:fs';
 import { spawn, spawnSync } from 'node:child_process';
 import { chromium } from 'playwright';
+import {reviewPort} from './review-port.mjs';
 
-const output = 'artifacts/save-session-review', origin = 'http://127.0.0.1:4175';
+const output = 'artifacts/save-session-review', origin = `http://127.0.0.1:${reviewPort(4175)}`;
 const primary = 'almo7areboon.save.v1', backup = `${primary}.backup`;
 mkdirSync(output, { recursive: true });
 const diagnostics = { revision: spawnSync('git', ['rev-parse', 'HEAD'], { encoding: 'utf8' }).stdout.trim(), origin, cases: [], pageErrors: [], status: 'failed' };
-const server = spawn(process.execPath, ['node_modules/vite/bin/vite.js', 'preview', '--host', '127.0.0.1', '--port', '4175', '--strictPort'], { stdio: 'pipe' });
+const server = spawn(process.execPath, ['node_modules/vite/bin/vite.js', 'preview', '--host', '127.0.0.1', '--port',String(reviewPort(4175)), '--strictPort'], { stdio: 'pipe' });
 let log = '', browser;
 server.stdout.on('data', chunk => { log += chunk; });
 server.stderr.on('data', chunk => { log += chunk; });

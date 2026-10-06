@@ -115,7 +115,7 @@ button,.game-shell { -webkit-user-select:none; -webkit-touch-callout:none; }
 .upgrade-label { display:flex; align-items:center; gap:9px; font-size:13px; font-weight:800; }
 .upgrade-label>.icon { width:26px; height:26px; }
 .upgrade-label small { display:block; margin-top:3px; color:#53696a; font-size:10px; font-weight:500; }
-.buy-button { min-width:84px; min-height:var(--touch); padding:7px 9px; border:1px solid #3a6577; border-radius:11px; display:flex; justify-content:center; align-items:center; gap:5px; color:#fff3d7; background:linear-gradient(#326a86,#244d64); box-shadow:0 2px 0 #203f4e,inset 0 1px #b9e5e133; font-size:14px; }
+.buy-button { min-width:84px; min-height:var(--touch); padding:7px 9px; border:1px solid #3a6577; border-radius:11px; display:flex; justify-content:center; align-items:center; gap:5px; color:#fff3d7; background:linear-gradient(#2a5f7b,#1f4459); box-shadow:0 2px 0 #203f4e,inset 0 1px #b9e5e133; font-size:14px; }
 .buy-button .icon { width:20px; height:20px; }
 .buy-button:disabled { color:#607775; background:#d5ddcb; border-color:#aebfaf; box-shadow:0 2px 0 #a3b5a8; }
 .bottom-nav { flex-shrink:0; height:calc(65px + env(safe-area-inset-bottom,0px)); display:grid; grid-template-columns:repeat(4,minmax(0,1fr)); padding:0 8px env(safe-area-inset-bottom,0px); background:#18394b; position:relative; z-index:4; border-top:1px solid #8ba79c; }
@@ -218,8 +218,8 @@ button,.game-shell { -webkit-user-select:none; -webkit-touch-callout:none; }
 .battle-statistics>div { min-width:0; padding:7px; border-bottom:1px solid #d1d5b7; }
 .battle-statistics dt { font-size:10px; font-weight:500; color:var(--muted); }
 .battle-statistics dd { font-size:18px; margin:4px 0 0; overflow-wrap:anywhere; }
-.setting-row { width:100%; min-height:var(--touch); display:flex; align-items:center; gap:10px; padding:10px; border:1px solid #b9c6ae; border-radius:11px; background:#e6e9d3; font-size:13px; margin:9px 0; }
-.setting-row b { margin-left:auto; padding:6px 8px; background:#3b6b70; color:#ffedc4; border-radius:6px; font-size:10px; }
+.setting-row { width:100%; min-height:var(--touch); display:flex; align-items:center; gap:10px; padding:10px; border:1px solid #b9c6ae; border-radius:11px; background:#e6e9d3; color:#17303a; font-size:13px; margin:9px 0; }
+.setting-row b { margin-left:auto; padding:6px 8px; background:#2f575c; color:#ffedc4; border-radius:6px; font-size:10px; }
 .audio-volume { margin:12px 0; text-align:left; color:var(--ink); }
 .audio-volume-label { display:flex; justify-content:space-between; align-items:center; gap:10px; font-size:13px; }
 .audio-volume output { font-variant-numeric:tabular-nums; }

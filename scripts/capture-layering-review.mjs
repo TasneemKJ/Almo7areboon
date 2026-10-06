@@ -3,11 +3,12 @@ import assert from 'node:assert/strict';
 import { mkdirSync, writeFileSync } from 'node:fs';
 import { spawn } from 'node:child_process';
 import { chromium } from 'playwright';
+import {reviewPort} from './review-port.mjs';
 
 const output = 'artifacts/browser-review/layering';
 mkdirSync(output, { recursive: true });
-const origin = 'http://127.0.0.1:4174';
-const server = spawn(process.execPath, ['node_modules/vite/bin/vite.js', '--host', '127.0.0.1', '--port', '4174', '--strictPort'], { stdio: 'pipe' });
+const origin = `http://127.0.0.1:${reviewPort(4174)}`;
+const server = spawn(process.execPath, ['node_modules/vite/bin/vite.js', '--host', '127.0.0.1', '--port',String(reviewPort(4174)), '--strictPort'], { stdio: 'pipe' });
 let serverLog = '';
 server.stdout.on('data', chunk => { serverLog += chunk; });
 server.stderr.on('data', chunk => { serverLog += chunk; });

@@ -5,7 +5,8 @@ import {simulateChronicle,preparedChronicleProfile} from './simulate-chronicle.t
 import {arrivalReviewFixtures,assertArrivalPaused,validateArrivalSnapshot} from './chronicle-arrival-review.ts';
 import {assertWatchfirePaused,validateWatchfireSnapshot} from './village-watchfire-review.ts';
 import {assertSpoilsHomecomingPaused,assertSpoilsHomecomingProgress,validateSpoilsHomecomingSnapshot,validateSpoilsStaticReward} from './spoils-homecoming-review.ts';
-const base=process.env.REVIEW_URL??'http://127.0.0.1:4173',out='artifacts/chronicle';await mkdir(out,{recursive:true});
+import {reviewPort} from './review-port.mjs';
+const base=process.env.REVIEW_URL??`http://127.0.0.1:${reviewPort(4173)}`,out='artifacts/chronicle';await mkdir(out,{recursive:true});
 const browser=await chromium.launch({headless:true,...(process.env.CHROMIUM_PATH?{executablePath:process.env.CHROMIUM_PATH}:{}),args:['--enable-unsafe-swiftshader']});
 const errors=[],assetFailures=[],checks=[],screens=[];
 async function open(name,width,height,profile,reducedMotion='reduce'){

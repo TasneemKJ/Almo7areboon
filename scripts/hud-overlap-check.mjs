@@ -5,8 +5,9 @@
  * Set CHROMIUM_PATH to reuse an installed Chromium. Also checks that the Settings and Quests dialog titles contrast with their parchment. Exits 1 when any pair overlaps by more than 2px each way or a title is illegible.
  */
 import {chromium} from 'playwright';
+import {reviewPort} from './review-port.mjs';
 
-const url = process.argv[2] ?? 'http://127.0.0.1:4173/';
+const url = process.argv[2] ?? `http://127.0.0.1:${reviewPort(4173)}/`;
 const selectors = ['.currency', '.game-wordmark', '.world-tools button', '#timeline', '#age-title', '#scene-name', '#battle-select', '#wave-label', '#speed', '#pause', '.battle-skills button', '.ready-title', '.ready .big-button', '.ready p', '#deploy-hint'];
 const sizes = [[320, 568], [360, 640], [375, 667], [390, 844], [412, 915], [768, 1024]];
 const save = {version: 2, timeline: 1, age: 0, enemyAge: 0, furthestBattle: 0, coins: 123456, gems: 100000, foodLevel: 0, baseLevel: 0, unlocked: [true, true, true], cards: Array(30).fill(0), summonCount: 0, summonSeed: 99, pendingVictory: null, kills: 0, wins: 0, deployed: 0, claimed: [], dailyDay: 0, dailyStreak: 0, sound: false, speed: 1, motion: 'system'};

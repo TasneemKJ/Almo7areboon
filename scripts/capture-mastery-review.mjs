@@ -11,8 +11,9 @@ import { reviewPrestige } from './capture-prestige-review.mjs';
 import { reviewScouting } from './capture-scouting-review.mjs';
 import { villageVoice, villageMoment } from '../src/ui/chapter-scouting.ts';
 import { ERAS } from '../src/game/data.ts';
+import {reviewPort} from './review-port.mjs';
 
-const output = 'artifacts/browser-review/mastery', origin = 'http://127.0.0.1:4176';
+const output = 'artifacts/browser-review/mastery', origin = `http://127.0.0.1:${reviewPort(4176)}`;
 mkdirSync(output, { recursive: true });
 const diagnostics = {
   revision: spawnSync('git', ['rev-parse', 'HEAD'], { encoding: 'utf8' }).stdout.trim(),
@@ -274,7 +275,7 @@ try {
     partial: winSeed(prepared(0), 'clear-only-intentionally-missed-objectives', { clearOnly: true }),
   };
   assert.ok(seeds.evolve.coins >= ERAS[0].evolveCost); assert.ok(seeds.insufficient.coins < ERAS[0].evolveCost);
-  server = spawn(process.execPath, ['node_modules/vite/bin/vite.js', 'preview', '--host', '127.0.0.1', '--port', '4176', '--strictPort'], { stdio: 'pipe' });
+  server = spawn(process.execPath, ['node_modules/vite/bin/vite.js', 'preview', '--host', '127.0.0.1', '--port',String(reviewPort(4176)), '--strictPort'], { stdio: 'pipe' });
   server.stdout.on('data', chunk => { serverLog += chunk; }); server.stderr.on('data', chunk => { serverLog += chunk; });
   let started = false;
   for (let attempt = 0; attempt < 80; attempt++) {

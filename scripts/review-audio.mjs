@@ -7,6 +7,7 @@ import {spawn,execFileSync} from 'node:child_process';
 import {chromium} from 'playwright';
 import {measureAudioReview,encodeAudioReviewWav,validateAudioReviewCues} from './audio-review-metrics.mjs';
 import {reviewAudioBrowser} from './audio-browser-review.mjs';
+import {reviewPort} from './review-port.mjs';
 
 const args=process.argv.slice(2);let offline=false,browserMode=false,output;
 for(let i=0;i<args.length;i++){
@@ -18,9 +19,9 @@ for(let i=0;i<args.length;i++){
 }
 assert.ok(offline!==browserMode,'Choose exactly one of --offline and --browser');
 output??=browserMode?'artifacts/audio-review/browser':'artifacts/audio-review/task-1';
-const root=resolve(dirname(fileURLToPath(import.meta.url)),'..'),directory=resolve(output),origin='http://127.0.0.1:4176';
+const root=resolve(dirname(fileURLToPath(import.meta.url)),'..'),directory=resolve(output),origin=`http://127.0.0.1:${reviewPort(4176)}`;
 mkdirSync(directory,{recursive:true});
-const server=spawn(process.execPath,[resolve(root,'node_modules/vite/bin/vite.js'),'--host','127.0.0.1','--port','4176','--strictPort'],{cwd:root,stdio:'pipe'});
+const server=spawn(process.execPath,[resolve(root,'node_modules/vite/bin/vite.js'),'--host','127.0.0.1','--port',String(reviewPort(4176)),'--strictPort'],{cwd:root,stdio:'pipe'});
 let serverLog='',serverError,browser,browserVersion;const errors=[],reports=[];
 server.stdout.on('data',chunk=>{serverLog+=chunk;});server.stderr.on('data',chunk=>{serverLog+=chunk;});server.on('error',error=>{serverError=error;});
 let revision='unavailable';try{revision=execFileSync('git',['rev-parse','HEAD'],{cwd:root,encoding:'utf8'}).trim();}catch{}
