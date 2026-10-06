@@ -11,6 +11,7 @@ export function startOverProfile(current: Profile): Profile {
   fresh.speed = current.speed;
   fresh.motion = current.motion;
   if (current.marks) fresh.marks = true;
+  if (current.weekly) fresh.weekly = { ...current.weekly };
   fresh.dailyDay = current.dailyDay;
   fresh.dailyStreak = current.dailyStreak;
   if (current.graceDay !== undefined) fresh.graceDay = current.graceDay;

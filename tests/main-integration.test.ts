@@ -19,6 +19,7 @@ import { battleGuidance, baseHealthDisplay, compactNumber, waveLabel, waveAccess
 import { chapterPresentation, unitPresentationName } from '../src/ui/chapter-presentation.ts';
 import { resultsHtml } from '../src/ui/results-screen.ts';
 import { startCountUp } from '../src/ui/count-up.ts';
+import { weekId, weeklyStatus } from '../src/game/weekly.ts';
 import { welcomeBackLine } from '../src/ui/welcome-back.ts';
 import { earlierChapter } from '../src/ui/regroup-learning.ts';
 import { isLegacyChoice, legacyEffects, prestigePreview } from '../src/game/prestige.ts';
@@ -33,7 +34,7 @@ import { createModalTapGuard } from '../src/ui/modal-tap-guard.ts';
 // Execute the app's actual functions with a clock and minimal DOM boundary; no browser/debug hooks.
 const source = readFileSync(new URL('../src/main.ts', import.meta.url), 'utf8');
 const ast = ts.createSourceFile('main.ts', source, ts.ScriptTarget.Latest, true, ts.ScriptKind.TS);
-const names = new Set(['playable', 'guardAction', 'action', 'persist', 'update', 'renderScreen', 'sessionPresentation', 'showResult', 'acquireSession', 'dismissModal', 'returnToChapters', 'clearPrestigeContext', 'openPrestige', 'refreshPrestige', 'returnFromPrestige', 'dailyRow', 'showQuests']);
+const names = new Set(['playable', 'guardAction', 'action', 'persist', 'update', 'renderScreen', 'sessionPresentation', 'showResult', 'acquireSession', 'dismissModal', 'returnToChapters', 'clearPrestigeContext', 'openPrestige', 'refreshPrestige', 'returnFromPrestige', 'dailyRow', 'weeklyRow', 'showQuests']);
 const functions = ast.statements.filter(node => ts.isFunctionDeclaration(node) && node.name && names.has(node.name.text));
 assert.equal(functions.length, names.size);
 const click=ast.statements.find(node=>ts.isExpressionStatement(node)&&ts.isCallExpression(node.expression)&&node.expression.expression.getText(ast)==='lifetime.listen'&&node.expression.arguments[0]?.getText(ast)==='root'&&node.expression.arguments[1]?.getText(ast)==="'click'") as ts.ExpressionStatement;
@@ -63,7 +64,7 @@ function harness(motion = 'full') {
     acquiring: null, acquisitionVersion: 0, hasPlayed: true, manualPaused: false, savedWarning: false, pendingImport: null, modal: null, evolutionFromResult: false, modalPointerSequence: false,prestigeOrigin:null,prestigeDraft:null,prestigeExpectedTimeline:null,
     lastUpdate: 0, lastSave: 100, lastPhase: 'ready', resultDue: 0, resultShown: '', activeTab: 'battle', root,
     performance: { now: () => now }, document: { documentElement: { dataset: { motion } } },
-    blockModalTap:createModalTapGuard(),startCountUp,welcomeBackLine,Date:class extends Date{static now(){return 1_800_000_000_000;}},journeyScreenHtml,updateOrderBanner,
+    blockModalTap:createModalTapGuard(),startCountUp,welcomeBackLine,weekId,weeklyStatus,Date:class extends Date{static now(){return 1_800_000_000_000;}},journeyScreenHtml,updateOrderBanner,
     $: (id: string) => { if (!elements.has(id)) elements.set(id, node()); return elements.get(id); },
     chronicleScreenHtml,chronicleActionFromData,chronicleGuidance,CAPTAINS,routeDefinition,advanceStatus, battleSelectionHtml, evolutionDialogHtml, ERAS, QUESTS, foodRate, unlockCost, dailyReward, localDay, battleGuidance, baseHealthDisplay, compactNumber, waveLabel, waveAccessibleLabel, chapterPresentation, unitPresentationName, resultsHtml,isLegacyChoice,legacyEffects,prestigePreview,prestigeDetailsHtml,prestigeDialogHtml,legacyCurrentHtml,evolutionScreenHtml,saveSessionDialogHtml,temporarySessionNotice,skillCue,troopUnlockMessage,nextGoalLabel, waveInspectionHtml,
     earlierChapter,storybookArt: () => false, money: String, coin: String, icon:()=>'',textIfChanged(target:any,value:string){target.textContent=value;},htmlIfChanged(target:any,value:string){target.innerHTML=value;},unlockAudio() {}, syncPause() {}, rebuildArmy() {}, syncMotion() {}, isolateModal(){}, toast() {},
@@ -384,7 +385,9 @@ test('Journey return restores a settled result without reissuing its rewards',()
  assert.equal(c.modal,'result');assert.equal(JSON.stringify(c.game.profile),before);
 });
 test('closing Quests opened from Journey restores the held result without reissuing rewards',()=>{
- const h=settledHarness(),c=h.context,before=JSON.stringify(c.game.profile);
+ const h=settledHarness(),c=h.context;
+ c.game.dispatch({type:'weekly-sync',week:weekId(localDay())}); // the boot sync, so the comparison covers rewards only
+ const before=JSON.stringify(c.game.profile);
  h.click('journey');assert.equal(c.modal,'journey');h.click('quests');assert.equal(c.modal,'quests');
  c.api.dismissModal();assert.equal(c.modal,'result');assert.equal(JSON.stringify(c.game.profile),before);
 });

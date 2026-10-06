@@ -11,6 +11,7 @@ import { battleStats } from './statistics.ts';
 import { cardPackCost, drawCard, nextCardRandom } from './cards.ts';
 import { ERAS, QUESTS, dailyReward, eraEconomyScale, baseUpgradeCost, cardBonus, foodRate, foodUpgradeCost, unlockCost } from './data.ts';
 import { defaultProfile, loadProfile } from './save.ts';
+import { syncWeekly, weeklyStatus } from './weekly.ts';
 import type { Action, BattleState, DeploymentStatus, GameEvent, GamePort, Profile, Side, Skill, Unit, UnitKind } from './types.ts';
 
 const FIXED_STEP = 1 / 60;
@@ -238,6 +239,17 @@ export class Game implements GamePort {
         this.profile.dailyStreak = Math.min(1e6, reward.streak);
         if (reward.graced) this.profile.graceDay = action.day;
         this.profile.gems = Math.min(1e7, this.profile.gems + reward.gems);
+        this.events.push({ type: 'upgrade' });
+        return true;
+      }
+      case 'weekly-sync':
+        return syncWeekly(this.profile, action.week);
+      case 'weekly': {
+        syncWeekly(this.profile, action.week);
+        const status = weeklyStatus(this.profile, action.week);
+        if (!status.ready) return false;
+        this.profile.weekly = { ...this.profile.weekly!, claimed: true };
+        this.profile.gems = Math.min(1e7, this.profile.gems + status.gems);
         this.events.push({ type: 'upgrade' });
         return true;
       }
