@@ -6,6 +6,10 @@
 #   min_age_hours       delete artifacts older than this (at least 2)
 #   name_filter         only touch artifacts whose name matches this regex, for example '^playtest-'
 #   dry_run      true  = list what would go and delete nothing
+#   delete_runs_older_than_days
+#                       also delete finished workflow runs older than this (0 = off). A run's
+#                       artifacts go with it, but so do its logs and history.
+# GitHub has no bulk-delete call, so deletes run six at a time.
 name: Artifact cleanup
 
 on:
@@ -31,6 +35,10 @@ on:
         type: boolean
         required: false
         default: false
+      delete_runs_older_than_days:
+        description: Also delete finished runs older than this many days, logs included (0 = off)
+        required: false
+        default: '0'
       max_deletes:
         description: Stop after deleting this many (keeps the repo token under GitHub's hourly API limit)
         required: false
@@ -59,9 +67,11 @@ jobs:
           NAME_FILTER: ${{ inputs.name_filter || '' }}
           MIN_AGE_HOURS: ${{ inputs.min_age_hours || '24' }}
           MAX_DELETES: ${{ inputs.max_deletes || '400' }}
+          RUN_DAYS: ${{ inputs.delete_runs_older_than_days || '0' }}
+          PARALLEL: '6'
         run: |
           set -uo pipefail
-          for v in MIN_AGE_HOURS MAX_DELETES; do
+          for v in MIN_AGE_HOURS MAX_DELETES RUN_DAYS; do
             if ! [[ "${!v}" =~ ^[0-9]+$ ]]; then echo "::error::$v must be a whole number"; exit 1; fi
           done
           if [ "$DELETE_ALL" != "true" ] && [ "$MIN_AGE_HOURS" -lt 2 ]; then
@@ -92,35 +102,71 @@ jobs:
           budget=$(( remaining - 150 )); [ "$budget" -lt "$MAX_DELETES" ] && MAX_DELETES=$budget
           cutoff=$(( $(date -u +%s) - MIN_AGE_HOURS * 3600 ))
           [ "$DELETE_ALL" = "true" ] && cutoff=$(( $(date -u +%s) + 3600 ))
+          work=$(mktemp -d); cd "$work"
           # Collect every candidate first, so deleting never shifts the pages being read.
-          list=$(mktemp)
           if ! gh api --paginate "repos/$REPO/actions/artifacts?per_page=100" \
-              -q '.artifacts[] | select(.expired | not) | "\(.id) \(.created_at) \(.size_in_bytes) \(.name)"' > "$list"; then
+              -q '.artifacts[] | select(.expired | not) | "\(.id) \(.created_at) \(.size_in_bytes) \(.name)"' > listed.txt; then
             echo "::warning::Could not list artifacts; the next run retries." | tee -a "$GITHUB_STEP_SUMMARY"
             exit 0
           fi
-          deleted=0 freed=0 kept=0 left=0
+          : > todo.tsv; picked=0 kept=0 left=0
           while read -r id created size name; do
             [ -n "$id" ] || continue
             if [ -n "$NAME_FILTER" ] && ! echo "$name" | grep -Eq "$NAME_FILTER"; then kept=$((kept + 1)); continue; fi
             if [ "$(date -u -d "$created" +%s)" -ge "$cutoff" ]; then kept=$((kept + 1)); continue; fi
-            if [ "$deleted" -ge "$MAX_DELETES" ]; then left=$((left + 1)); continue; fi
-            if [ "$DRY_RUN" = "true" ]; then
-              echo "would delete $name ($size bytes, created $created)"
-              deleted=$((deleted + 1)) freed=$((freed + size))
-              continue
-            fi
-            if gh api -X DELETE "repos/$REPO/actions/artifacts/$id" >/dev/null 2>err.txt; then
-              deleted=$((deleted + 1)) freed=$((freed + size))
-              echo "deleted $name ($size bytes, created $created)"
-            elif grep -qiE 'rate limit|HTTP 403|HTTP 429' err.txt; then
-              echo "::warning::Hit the API rate limit; stopping. The next run continues."
-              left=$((left + 1)); MAX_DELETES=$deleted
-            elif grep -qi 'HTTP 404' err.txt; then
-              :  # already gone
+            if [ "$picked" -ge "$MAX_DELETES" ]; then left=$((left + 1)); continue; fi
+            printf 'actions/artifacts/%s\t%s\tartifact %s (created %s)\n' "$id" "$size" "$name" "$created" >> todo.tsv
+            picked=$((picked + 1))
+          done < listed.txt
+          # Old finished runs: deleting a run removes its artifacts, logs and history together.
+          if [ "$RUN_DAYS" -gt 0 ]; then
+            run_cutoff=$(date -u -d "@$(( $(date -u +%s) - RUN_DAYS * 86400 ))" +%Y-%m-%dT%H:%M:%SZ)
+            if gh api --paginate "repos/$REPO/actions/runs?status=completed&created=<$run_cutoff&per_page=100" \
+                -q '.workflow_runs[] | "\(.id) \(.created_at) \(.name)"' > runs.txt; then
+              while read -r id created name; do
+                [ -n "$id" ] && [ "$id" != "$RUN_ID" ] || continue
+                if [ "$picked" -ge "$MAX_DELETES" ]; then left=$((left + 1)); continue; fi
+                printf 'actions/runs/%s\t0\trun %s (created %s)\n' "$id" "$name" "$created" >> todo.tsv
+                picked=$((picked + 1))
+              done < runs.txt
             else
-              echo "::warning::Could not delete $name: $(head -c 200 err.txt)"
+              echo "::warning::Could not list old runs; the next run retries."
             fi
-          done < "$list"
+          fi
+          if [ "$DRY_RUN" = "true" ]; then
+            while IFS=$'\t' read -r path size label; do echo "would delete $label"; done < todo.tsv
+          else
+            # GitHub has no bulk delete, so run $PARALLEL single deletes at a time. One result file per
+            # call; the first rate-limit answer drops a marker and the rest of the batch stands down.
+            export REPO; mkdir -p results
+            delete_one() {
+              IFS=$'\t' read -r path size label <<< "$1"
+              out="results/$(echo "$path" | tr / _)"
+              if [ -e stop ]; then echo "left" > "$out"; return; fi
+              if gh api -X DELETE "repos/$REPO/$path" > /dev/null 2> "$out.err"; then
+                echo "ok $size" > "$out"; echo "deleted $label"
+              elif grep -qiE 'rate limit|HTTP 403|HTTP 429' "$out.err"; then
+                touch stop; echo "left" > "$out"; echo "::warning::Hit the API rate limit; stopping. The next run continues."
+              elif grep -qi 'HTTP 404' "$out.err"; then
+                echo "gone" > "$out"   # already gone
+              else
+                echo "fail" > "$out"; echo "::warning::Could not delete $label: $(head -c 200 "$out.err")"
+              fi
+            }
+            export -f delete_one
+            xargs -d '\n' -P "$PARALLEL" -I{} bash -c 'delete_one "$1"' _ {} < todo.tsv
+          fi
+          deleted=0 freed=0
+          if [ "$DRY_RUN" = "true" ]; then
+            deleted=$picked; freed=$(awk -F'\t' '{s += $2} END {print s + 0}' todo.tsv)
+          else
+            for f in results/*; do
+              [ -f "$f" ] || continue
+              case "$(cat "$f")" in
+                ok*) deleted=$((deleted + 1)); freed=$((freed + $(cut -d' ' -f2 "$f"))) ;;
+                left) left=$((left + 1)) ;;
+              esac
+            done
+          fi
           verb=Deleted; [ "$DRY_RUN" = "true" ] && verb="Would delete"
-          echo "$verb $deleted artifacts ($((freed / 1048576)) MiB); kept $kept; $left left for the next run." | tee -a "$GITHUB_STEP_SUMMARY"
+          echo "$verb $deleted items ($((freed / 1048576)) MiB of artifacts); kept $kept; $left left for the next run." | tee -a "$GITHUB_STEP_SUMMARY"
