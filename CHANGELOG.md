@@ -2,6 +2,15 @@
 
 Semantic versioning. Each merged batch adds an entry and a `vX.Y.Z` tag.
 
+## 0.3.9 - 2026-10-06
+- Settings shows when the game last saved (kept in memory for this visit; nothing new is stored).
+- Short-landscape dialogs: the close button no longer floats over scrolled controls (0.3.3 regression). The 44px header stays sticky and opaque, with the title pulled up into the same row.
+- Heavy troops fall louder: wider dust, a second ring and a short low shake (no shake with reduced motion). Death events now carry the fallen role.
+
+## 0.3.8 - 2026-10-06
+- First battle ever: the Light Guard card gets a gold teaching ring until the first deployment (pulses only when motion is full; static ring otherwise).
+- A test now locks the result motifs: victory rises, defeat falls.
+
 ## 0.3.7 - 2026-10-05
 - Streak grace day: one missed day keeps a daily-reward streak of two or more, at most once every seven days; the Quests row says so before claiming. Stored as an optional `graceDay` profile field, normalized on load and kept by Start over.
 

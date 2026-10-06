@@ -1,3 +1,6 @@
+import {campRootHtml,campFocusHtml} from './ui/camp-screen.ts';
+import {canOwnCamp,isCampStation,campActionFromData,type CampOwner,type CampFocus} from './ui/camp-owner.ts';
+import './ui/camp.css';
 import {fieldControlsHtml} from './ui/field-controls.ts';
 import {createFieldController} from './ui/field-controller.ts';
 import './ui/world-play.css';
@@ -71,6 +74,7 @@ let villagePresentation:VillagePresentation|null=null;
 let atmosphereEnabled=loadAtmosphere();
 let audioMix=loadAudioMix();
 updateAudioMix(audioMix);
+let lastSavedAt=0;
 let lastUpdate=0,lastSave=0,resultShown='',lastPhase=game.state.phase,resultDue=0,toastTimer=0,focusFrame=0,modalVersion=0;
 let savedWarning=false,pendingImport:Profile|null=null;
 // Each file selection owns its asynchronous completion, even before a dialog changes.
@@ -84,6 +88,7 @@ const blockModalTap=createModalTapGuard();
 let sessionReady=false,pagePresent=true,resumeOwnership=false,acquisitionVersion=0,hasPlayed=false;
 let entryEntered=false,entrySaved=false,resultDetailsOpen=false;
 let settingsOrigin:'field-pause'|null=null;
+let campOwner:CampOwner|null=null,campRenderKey='';
 let acquiring:Promise<void>|null=null;
 const money=(value:number)=>value>=10000?compactNumber(value):Math.floor(value).toLocaleString('en-US');
 const coin=(value:number)=>`${icon('coin')}<span>${money(value)}</span>`;
@@ -109,6 +114,7 @@ root.innerHTML = `
     </section>
     <section class="upgrades" aria-label="Army upgrades"><div class="upgrade-row"><div class="upgrade-label">${icon('food')}<div>Food Production<small id="food-level"></small></div></div><button id="food-upgrade" class="buy-button" data-command="upgrade-food"></button></div><div class="upgrade-row"><div class="upgrade-label">${icon('heart')}<div>Base Health<small id="base-level"></small></div></div><button id="base-upgrade" class="buy-button" data-command="upgrade-base"></button></div></section>
   </div>
+  <section id="camp-view" aria-label="Company Camp" hidden></section>
   <button id="field-return" data-command="home">Home</button>
   <section id="secondary-screen" class="secondary-screen" aria-labelledby="secondary-title" hidden></section>
   <p id="session-notice" class="session-notice" role="status" aria-live="polite" hidden></p>
@@ -137,7 +143,7 @@ function sessionPresentation(status:SaveSessionStatus){
   const notice=$('session-notice');
   notice.hidden=status!=='starting'&&status!=='temporary';
   textIfChanged(notice,status==='temporary'?temporarySessionNotice:'Opening your saved game…');
-  if(status!=='active'&&status!=='temporary'){sessionReady=false;clearPrestigeContext();}
+  if(status!=='active'&&status!=='temporary'){sessionReady=false;campOwner=null;clearPrestigeContext();}
   if(status==='active'||status==='temporary')retriedSession=false;
   const html=saveSessionDialogHtml(status,retriedSession);
   if(html){pendingImport=null;evolutionFromResult=false;showModal('session',html);}
@@ -204,7 +210,7 @@ function persist():boolean{
   if(!playable()||session.status==='temporary')return false;
   const result=session.save(game.profile),ok=result.ok;lastSave=performance.now();
   if(result.reason==='write-failed'&&!savedWarning){savedWarning=true;toast('Progress could not be saved. Export a backup from Settings before closing this tab.');}
-  if(ok)savedWarning=false;
+  if(ok){savedWarning=false;lastSavedAt=Date.now();}
   return ok;
 }
 function syncPause(){
@@ -236,7 +242,7 @@ function action(a:Action):boolean{
 function update(force=false){
   const now=performance.now();if(!force&&now-lastUpdate<80)return;lastUpdate=now;
  const p=game.profile,s=game.state;
- syncEntry();
+ syncEntry();syncCamp();
  if(!entryEntered)return;
  $('world').dataset.phase=s.phase;
  updateOrderBanner($('order-banner'),s);
@@ -272,6 +278,7 @@ function update(force=false){
     const kind=Number(button.dataset.unit) as UnitKind,locked=!p.unlocked[kind],status=game.deploymentStatus(kind);
     button.disabled=locked?p.coins<unlockCost(kind,p):!status.allowed;
     button.classList.toggle('affordable',!button.disabled);
+    button.classList.toggle('teach',kind===0&&p.wins===0&&s.phase==='running'&&!s.paused&&s.stats.deployed===0&&!button.disabled);
     const label=troopControlLabel(p,kind,status);
     button.title=label;if(button.getAttribute('aria-label')!==label)button.setAttribute('aria-label',label);
     const fill=button.querySelector<HTMLElement>('.unit-fill');if(fill)fill.style.transform=`scaleX(${Math.max(0,Math.min(1,s.food/ERAS[p.age].units[kind].cost))})`;
@@ -310,6 +317,7 @@ function update(force=false){
 function switchTab(tab:string){
   if(!playable()||!['battle','evolution','cards','skills'].includes(tab))return;
   activeTab=tab;
+  if(entryEntered&&tab==='battle'&&canOwnCamp(game.profile,game.state))root!.dataset.fieldMode='camp';
   root!.querySelectorAll<HTMLElement>('[data-tab]').forEach(button=>{button.classList.toggle('active',button.dataset.tab===tab);button.setAttribute('aria-current',button.dataset.tab===tab?'page':'false');});
   $('secondary-screen').hidden=tab==='battle';$('battle-view').inert=tab!=='battle';
   $('battle-view').setAttribute('aria-hidden',String(tab!=='battle'));
@@ -330,20 +338,23 @@ function renderScreen(legacyOnly=false){
     html=cardsScreenHtml(p);
   }else if(activeTab==='skills'){
     const captain=p.chronicle?.enabled&&p.chronicle.captain!=='none'?CAPTAINS.find(c=>c.id===p.chronicle!.captain):undefined;
-    html=`<div class="screen-heading"><span class="eyebrow">TURN THE TIDE</span><h2 id="secondary-title" tabindex="-1">Battle skills</h2><p>The right move can change everything.</p></div><div class="skill-list">${[{id:'freeze',name:'Freeze',tag:'CONTROL',copy:`Freeze every enemy for ${legacyEffects(p.legacy).freezeSeconds} seconds. Give your army time to strike.`,color:'#73bbdb'},{id:'meteor',name:'Meteor',tag:'DAMAGE',copy:'Hit every enemy on the battlefield. Best saved for a big wave.',color:'#de805d'},{id:'food',name:captain?.skill??'Food Drop',tag:captain?'CAPTAIN':'SUPPORT',copy:captain?.description??'Gain up to 10 food instantly, limited by 99-food storage. Deploy reinforcements when you need them.',color:'#97bc6a'}].map(s=>`<article class="skill-detail"><div class="skill-art" style="background:${s.color}">${icon(s.id)}</div><div><small>${s.tag}</small><h3>${s.name}</h3><p>${s.copy}</p><span class="skill-rule">ONCE PER BATTLE</span></div></article>`).join('')}</div><div class="skill-note">${icon('battle')}<p>Use the three skill buttons above your army during a battle. Each skill refreshes when a new battle begins.</p></div><button class="big-button green" data-tab="battle">BACK TO BATTLE ${icon('arrow')}</button>`;
+    html=`<div class="screen-heading"><span class="eyebrow">TURN THE TIDE</span><h2 id="secondary-title" tabindex="-1">Battle skills</h2><p>The right move can change everything.</p></div><div class="skill-list">${[{id:'freeze',name:'Freeze',tag:'CONTROL',copy:`Freeze every enemy for ${legacyEffects(p.legacy).freezeSeconds} seconds. Give your army time to strike.`,color:'#73bbdb'},{id:'meteor',name:'Meteor',tag:'DAMAGE',copy:'Hit every enemy on the battlefield. Best saved for a big wave.',color:'#de805d'},{id:'food',name:captain?.skill??'Food Drop',tag:captain?'CAPTAIN':'SUPPORT',copy:captain?.description??'Gain up to 10 food instantly, limited by 99-food storage. Deploy reinforcements when you need them.',color:'#97bc6a'}].map(s=>`<article class="skill-detail"><div class="skill-art" style="background:${s.color}">${icon(s.id)}</div><div><small>${s.tag}</small><h3>${s.name}</h3><p>${s.copy}</p><span class="skill-rule">ONCE PER BATTLE</span></div></article>`).join('')}</div><div class="skill-note">${icon('battle')}<p>Select an enemy in battle for Freeze or Meteor. Inspect the supplies after deploying a troop for your support skill. Each skill refreshes when a new battle begins.</p></div><button class="big-button green" data-tab="battle">BACK TO BATTLE ${icon('arrow')}</button>`;
   }
-  if(activeTab!=='battle')htmlIfChanged($('secondary-screen'),html);
+  if(activeTab!=='battle')htmlIfChanged($('secondary-screen'),`${campOwner?.kind==='advanced'?'<button class="big-button secondary camp-advanced-return" data-command="camp-return">Back to Camp</button>':''}${html}`);
 }
 function showModal(id:string,html:string,focusCommand?:string){
   if(id!=='session'&&!playable())return;
+  // A canonical ready transition may open a retained task after mounting Camp.
+  // Its modal, not the underlying root, owns all of those deliberate controls.
+  if(campOwner?.kind==='root'&&canOwnCamp(game.profile,game.state)&&id!=='camp-focus'&&id!=='session')campOwner={kind:'advanced',returnTarget:'journal'};
   const replacing=modal!==null,sameModal=modal===id,active=document.activeElement as HTMLElement|null,command=active?.dataset.command;
   const storyAction=active?chronicleActionFromData(active.dataset):null,storyPage=active?.dataset.storyPage;
   const layer=$('modal-layer'),previousScroll=sameModal?layer.querySelector<HTMLElement>('.dialog')?.scrollTop:null;
   if(!replacing)focusBefore=document.activeElement as HTMLElement;
   modal=id;modalVersion++;const version=modalVersion;
   const dismissButton=`<button class="close-button" data-command="close" aria-label="Close">${icon('close')}</button>`;
-  const dismissMarkup=['field-pause','settings','save-recovery','reset','import','leave-battle','result','result-expedition','session'].includes(id)?'':id==='chronicle'?dismissButton:`<div class="dialog-dismiss">${dismissButton}</div>`;
-  layer.hidden=false;layer.innerHTML=`<section class="dialog ${(id==='result'||id==='result-expedition')?'result-dialog':id==='session'?'session-dialog':id==='settings'?'preferences-dialog':id==='prestige'?'prestige-dialog':id==='chronicle'?'chronicle-dialog':''}" role="dialog" tabindex="-1" aria-modal="true" aria-labelledby="dialog-title">${dismissMarkup}${html}</section>`;
+  const dismissMarkup=['camp-focus','field-pause','settings','save-recovery','reset','import','leave-battle','result','result-expedition','session'].includes(id)?'':id==='chronicle'?dismissButton:`<div class="dialog-dismiss">${dismissButton}</div>`;
+  layer.hidden=false;layer.innerHTML=`<section class="dialog ${(id==='result'||id==='result-expedition')?'result-dialog':id==='session'?'session-dialog':id==='camp-focus'?'camp-dialog':id==='settings'?'preferences-dialog':id==='prestige'?'prestige-dialog':id==='chronicle'?'chronicle-dialog':''}" role="dialog" tabindex="-1" aria-modal="true" aria-labelledby="dialog-title">${dismissMarkup}${html}</section>`;
   isolateModal(true);syncPause();window.cancelAnimationFrame(focusFrame);
   focusFrame=requestAnimationFrame(()=>{
     if(lifetime.disposed||layer.hidden||version!==modalVersion)return;
@@ -368,7 +379,7 @@ function closeModal(refresh=true){
     // A restored result often has BODY as its origin. A connected element can also
     // be non-focusable; verify that focus actually moved before accepting it.
     if(!target||document.activeElement!==target||target===document.body||target===document.documentElement)
-      (entryEntered?root!.querySelector<HTMLElement>(root!.dataset.fieldMode==='field'?'[data-command="field-pause"]':`.bottom-nav [data-tab="${activeTab}"]`):$('entry-play'))?.focus({preventScroll:true});
+      (entryEntered?root!.querySelector<HTMLElement>(campOwner?campOwner.kind==='advanced'&&activeTab!=='battle'?'[data-command="camp-return"]':'[data-command="camp-battle"]':root!.dataset.fieldMode==='field'?'[data-command="field-pause"]':`.bottom-nav [data-tab="${activeTab}"]`):$('entry-play'))?.focus({preventScroll:true});
   }
   if(refresh)update(true);
 }
@@ -390,14 +401,83 @@ function showHome(){
   const fromCamp=entryEntered&&root!.dataset.fieldMode==='camp'&&modal===null;
   if(!guardAction()||(!fromCamp&&modal!=='field-pause'&&(modal!=='result'||!['won','lost'].includes(game.state.phase))))return;
   const owner=modal;persist();if(!playable()||modal!==owner)return;
-  fieldControls.clear();
+  fieldControls.clear();campOwner=null;$('camp-view').hidden=true;
   entryEntered=false;entrySaved=hasPriorPlay(game.profile);root!.dataset.fieldMode='field';resultDetailsOpen=false;syncEntry();closeModal(false);syncPause();
   $('entry-play').focus({preventScroll:true});
 }
 function enterCamp(){
   if(entryEntered||modal||!guardAction()||!entryReady()||entrySecondary(game.profile,game.state)!=='camp')return;
   entryEntered=true;entrySaved=true;root!.dataset.fieldMode='camp';manualPaused=false;
-  fieldControls.clear();syncEntry();switchTab('battle');syncPause();$('field-return').focus({preventScroll:true});
+  fieldControls.clear();syncEntry();switchTab('battle');syncPause();root!.querySelector<HTMLElement>('[data-command="camp-battle"]')?.focus({preventScroll:true});
+}
+/** Camp is presentation only. The renderer continues to receive canonical ready state. */
+function syncCamp(){
+  const visible=entryEntered&&root!.dataset.fieldMode==='camp'&&playable()&&canOwnCamp(game.profile,game.state);
+  if(!visible){campOwner=null;$('camp-view').hidden=true;if(!canOwnCamp(game.profile,game.state))root!.dataset.fieldMode='field';return;}
+  campOwner??={kind:'root'};
+  if(campOwner.kind==='advanced'&&!modal&&activeTab==='battle')campOwner={kind:'root'};
+  const p=game.profile,key=JSON.stringify([p.age,p.enemyAge,p.foodLevel,p.baseLevel,p.unlocked,p.chronicle?.route]);
+  if(key!==campRenderKey){campRenderKey=key;htmlIfChanged($('camp-view'),campRootHtml(p));}
+  $('camp-view').hidden=activeTab!=='battle';$('camp-view').inert=modal!==null||activeTab!=='battle';
+  $('battle-view').inert=true;
+  root!.querySelectorAll<HTMLElement>('.resources,.bottom-nav').forEach(node=>{node.inert=true;});
+  root!.dataset.campOwner=campOwner.kind;
+  const notice=$('session-notice');notice.hidden=session.status!=='temporary'&&!savedWarning;
+  const message=session.status==='temporary'?temporarySessionNotice:savedWarning?'Saving is unavailable. Return Home, then open Settings to export a backup before closing.':'';
+  textIfChanged(notice,message);
+  // A later autosave/background failure must also reach the isolated active focus.
+  // Update this stable node only: no modal replacement, refocus or scroll change.
+  if(modal==='camp-focus'&&campOwner.kind==='focus'){
+    const focusNotice=$('camp-focus-save-status');
+    if(focusNotice){focusNotice.hidden=!message;textIfChanged(focusNotice,message);}
+  }
+}
+function showCampFocus(focus:CampFocus,focusCommand?:string){
+  if(!campOwner||!guardAction()||!canOwnCamp(game.profile,game.state)||modal==='session')return;
+  const returnTarget=typeof focus==='object'?'company':focus;
+  campOwner={kind:'focus',focus,returnTarget};
+  showModal('camp-focus',campFocusHtml(game,focus,session.status==='temporary'?temporarySessionNotice:savedWarning?'Saving is unavailable. Return Home, then open Settings to export a backup before closing.':''),focusCommand);syncCamp();
+}
+function returnToCamp(){
+  if(!campOwner||!guardAction()||!canOwnCamp(game.profile,game.state)||modal==='session')return;
+  if(campOwner.kind==='focus'&&typeof campOwner.focus==='object'){showCampFocus('company');return;}
+  const target=campOwner.kind==='root'?'journal':campOwner.returnTarget;
+  closeModal(false);if(!playable()||modal==='session')return;
+  campOwner={kind:'root'};switchTab('battle');syncCamp();
+  root!.querySelector<HTMLElement>(`[data-camp-station="${target}"]`)?.focus({preventScroll:true});
+}
+function handleCampInput(button:HTMLButtonElement):boolean {
+  const command=button.dataset.command;
+  if(command==='camp-return'){returnToCamp();return true;}
+  if(!campOwner)return command?.startsWith('camp-')??false;
+  if(!guardAction()||!canOwnCamp(game.profile,game.state))return true;
+  if(campOwner.kind==='advanced')return !modal&&!button.closest('#secondary-screen');
+  if(campOwner.kind==='root'){
+    if(isCampStation(button.dataset.campStation)){showCampFocus(button.dataset.campStation);return true;}
+    if(command==='camp-home'){showHome();return true;}
+    if(command==='camp-battle'&&entryReady()&&!modal){manualPaused=false;if(action({type:'start'})&&playable()&&modal!=='session'){campOwner=null;root!.dataset.fieldMode='field';switchTab('battle');$('world').focus({preventScroll:true});}return true;}
+    return true;
+  }
+  if(modal!=='camp-focus')return true;
+  const focus=campOwner.focus;
+  if(command==='camp-back'){returnToCamp();return true;}
+  if(focus==='company'&&/^[0-2]$/.test(button.dataset.campRecruit??'')){showCampFocus({recruit:Number(button.dataset.campRecruit) as UnitKind});return true;}
+  const local=campActionFromData(focus,button.dataset);
+  if(local){
+    const accepted=action(local);
+    if(accepted&&playable()&&modal==='camp-focus'&&campOwner?.kind==='focus'){
+      const again=local.type==='upgrade'&&game.upgradeStatus(local.stat).allowed||local.type==='chronicle-preparation';
+      showCampFocus(focus,again?command:'camp-back');
+    }
+    return true;
+  }
+  const destination=focus==='company'?(command==='camp-evolution'?'evolution':command==='camp-storybook'?'chronicle':null):focus==='journal'?(command==='camp-chapters'?'battles':command==='camp-journal'?'journey':null):null;
+  if(destination){
+    const returnTarget=campOwner.returnTarget;campOwner={kind:'advanced',returnTarget};
+    if(destination==='evolution'){closeModal(false);if(playable()&&(modal as string|null)!=='session')switchTab('evolution');}
+    else showModal(destination,destination==='chronicle'?chronicleScreenHtml(game.profile,game.state):destination==='battles'?battleSelectionHtml(game.profile,game.state):journeyScreenHtml(game.profile,game.state));
+  }
+  return true;
 }
 function showFieldPause(focusCommand?:string){
   if(!entryEntered||!guardAction()||game.state.phase!=='running')return;
@@ -453,6 +533,8 @@ function returnToChapters(){
 }
 function dismissModal(){
   if(modal==='session'||!guardAction())return;
+  if(modal==='camp-focus'){returnToCamp();return;}
+  if(campOwner?.kind==='advanced'&&['chronicle','journey','quests','battles'].includes(modal??'')){returnToCamp();return;}
   if(modal==='settings'){const origin=settingsOrigin;settingsOrigin=null;if(origin==='field-pause'){showFieldPause('settings');return;}closeModal();return;}
   if(modal==='save-recovery'||modal==='reset'){showSettings(modal==='reset'?'reset':'save-recovery');return;}
   if(modal==='import'){pendingImport=null;showSaveRecovery('import');return;}
@@ -467,7 +549,7 @@ function dismissModal(){
   if(modal==='evolve'&&evolutionFromResult){evolutionFromResult=false;showResult();return;}
   evolutionFromResult=false;closeModal();
 }
-function preferenceNotice(){return session.status==='temporary'?temporarySessionNotice:savedWarning?'Saving is unavailable. Export a backup before closing.':'Progress saves in this browser. Export keeps a separate copy.';}
+function preferenceNotice(){return session.status==='temporary'?temporarySessionNotice:savedWarning?'Saving is unavailable. Export a backup before closing.':`Progress saves in this browser. Export keeps a separate copy.${lastSavedAt?` Last saved ${new Date(lastSavedAt).toLocaleTimeString([],{hour:'numeric',minute:'2-digit'})}.`:''}`;}
 function showSettings(focusCommand?:string){
   if(!['settings','save-recovery','reset','import'].includes(modal??''))settingsOrigin=modal==='field-pause'?'field-pause':null;
   showModal('settings',preferencesHtml(game.profile,atmosphereEnabled,audioMix,session.status==='active',preferenceNotice()),focusCommand);
@@ -533,6 +615,7 @@ lifetime.listen<MouseEvent>(root,'click',e=>{
   if(!guardAction())return;
   if(modal&&!button.closest('#modal-layer'))return;
   if(!entryEntered&&!modal&&command!=='enter-world'&&command!=='reload-world'&&command!=='settings'&&command!=='home-camp'&&command!=='leave-battle')return;
+  if(handleCampInput(button))return;
   unlockAudio(game.profile.sound);
   if(command==='reload-world'){if(!entryEntered&&!modal&&$('battlefield').dataset.renderer==='failed')window.location.reload();return;}
   if(command==='enter-world'){enterWorld();return;}
@@ -628,7 +711,7 @@ lifetime.listen<MouseEvent>(root,'click',e=>{
     }
     case 'pause':if(game.state.phase==='running'){manualPaused=!manualPaused;syncPause();update(true);}break;
     case 'speed':game.profile.speed=game.profile.speed===1?2:1;persist();update(true);if(modal==='settings'&&playable())showSettings();break;
-    case 'settings':showSettings();break;
+    case 'settings':persist();showSettings();break;
     case 'quests':showQuests();break;
     case 'save-recovery':showSaveRecovery();break;
     case 'import':if(modal==='save-recovery'&&session.status==='active')$('import-save')?.click();break;
@@ -717,8 +800,8 @@ lifetime.listen<KeyboardEvent>(document,'keydown',e=>{
       e.preventDefault();(index===null?$('modal-layer').querySelector<HTMLElement>('.dialog'):elements[index])?.focus();
     }return;
   }
-  if(e.key==='Escape'&&entryEntered){fieldControls.clear();e.preventDefault();return;}
-  if(!entryEntered||!guardAction()||activeTab!=='battle'||e.repeat||e.ctrlKey||e.altKey||e.metaKey||e.isComposing||document.hidden||isEditingTarget(e.target instanceof HTMLElement?e.target:null))return;
+  if(e.key==='Escape'&&entryEntered){if(campOwner?.kind==='advanced')returnToCamp();else fieldControls.clear();e.preventDefault();return;}
+  if(!entryEntered||!guardAction()||campOwner||activeTab!=='battle'||e.repeat||e.ctrlKey||e.altKey||e.metaKey||e.isComposing||document.hidden||isEditingTarget(e.target instanceof HTMLElement?e.target:null))return;
   if(['1','2','3'].includes(e.key)){e.preventDefault();action({type:'spawn',kind:(Number(e.key)-1) as UnitKind});}
   const skillIndex=['q','w','e'].indexOf(e.key.toLowerCase());
   if(skillIndex>=0){e.preventDefault();action({type:'skill',skill:(['freeze','meteor','food'] as Skill[])[skillIndex]});}

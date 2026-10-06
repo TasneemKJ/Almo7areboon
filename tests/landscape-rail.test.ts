@@ -50,9 +50,9 @@ test('wave label sits in the sky band, not above the skill row over the lane', (
   assert.match(rail, /\.battle-meta>\.wave-inspect \{\s*left:50%; bottom:auto; transform:translateX\(-50%\);\s*top:calc\(100px/);
 });
 test('short landscape dialogs drop the empty header band', () => {
-  assert.match(rail, /\.dialog:has\(>\.dialog-dismiss\) \{ padding-top:12px;/);
-  assert.match(rail, /\.dialog>\.dialog-dismiss \{ height:0; margin:0;/);
-  assert.match(rail, /\.dialog>\.dialog-dismiss>\.close-button \{ position:absolute;/);
+  assert.match(rail, /\.dialog:has\(>\.dialog-dismiss\) \{ padding-top:4px;/);
+  assert.match(rail, /\.dialog>\.dialog-dismiss\+\.eyebrow \{ margin-top:-40px;/);
+  assert.doesNotMatch(rail, /\.dialog>\.dialog-dismiss>\.close-button \{ position:absolute;/);
 });
 test('first-Freeze cue appears when three enemies gather and Freeze is unused', async () => {
   const { battleGuidance } = await import('../src/ui/battle-hud.ts');

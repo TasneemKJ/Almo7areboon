@@ -20,7 +20,7 @@ import { createModalTapGuard } from '../src/ui/modal-tap-guard.ts';
 // Run the actual UI handler and ownership presentation with the real guarded writer.
 const source = readFileSync(new URL('../src/main.ts', import.meta.url), 'utf8');
 const ast = ts.createSourceFile('main.ts', source, ts.ScriptTarget.Latest, true, ts.ScriptKind.TS);
-const names = new Set(['playable', 'guardAction', 'sessionPresentation', 'showSettings', 'showSaveRecovery', 'preferenceNotice', 'clearPrestigeContext']);
+const names = new Set(['handleCampInput','playable', 'guardAction', 'sessionPresentation', 'showSettings', 'showSaveRecovery', 'preferenceNotice', 'clearPrestigeContext']);
 const functions = ast.statements.filter(node => ts.isFunctionDeclaration(node) && node.name && names.has(node.name.text));
 const listener = ast.statements.find(node => ts.isExpressionStatement(node) && ts.isCallExpression(node.expression) && node.expression.expression.getText(ast) === 'lifetime.listen' && node.expression.arguments[0]?.getText(ast) === 'root' && node.expression.arguments[1]?.getText(ast) === "'click'");
 assert.equal(functions.length, names.size); assert.ok(listener);
@@ -49,7 +49,7 @@ async function harness(mode = 'active') {
   };
   const context: any = {chronicleScreenHtml,chronicleActionFromData,chronicleGuidance,CAPTAINS,routeDefinition,
     Element: ElementBoundary, root: { dataset: {} }, game: new Game(old), entryEntered:true,sessionReady: true, retriedSession: false, pagePresent: true,
-    settingsOrigin:null,pendingImport: null, hasPlayed: true, savedWarning: false, manualPaused: true, lastPhase: 'won', resultDue: 99, resultShown: 'old', modal: 'settings', atmosphereEnabled: false, audioMix: { effects: 100, atmosphere: 100 }, evolutionFromResult: false, modalPointerSequence: false,prestigeOrigin:null,prestigeDraft:null,prestigeExpectedTimeline:null,
+    campOwner:null,settingsOrigin:null,pendingImport: null, hasPlayed: true, savedWarning: false, lastSavedAt:0, manualPaused: true, lastPhase: 'won', resultDue: 99, resultShown: 'old', modal: 'settings', atmosphereEnabled: false, audioMix: { effects: 100, atmosphere: 100 }, evolutionFromResult: false, modalPointerSequence: false,prestigeOrigin:null,prestigeDraft:null,prestigeExpectedTimeline:null,
     lifetime: { disposed: false, listen: (_root: unknown, _event: string, handler: Function) => { context.click = handler; } },
     $: node, textIfChanged() {}, syncPause() {}, isolateModal() {}, icon: () => '', unlockAudio() {},
     blockModalTap:createModalTapGuard(),performance:{now:()=>100},

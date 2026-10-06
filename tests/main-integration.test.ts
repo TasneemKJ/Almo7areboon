@@ -1,3 +1,7 @@
+import {cardsScreenHtml,summonedCardsHtml} from '../src/ui/cards-screen.ts';
+import {isEditingTarget} from '../src/ui/accessibility.ts';
+import {campRootHtml,campFocusHtml} from '../src/ui/camp-screen.ts';
+import {canOwnCamp,isCampStation,campActionFromData} from '../src/ui/camp-owner.ts';
 import {preferencesHtml,saveRecoveryHtml} from '../src/ui/preferences-screen.ts';
 import {entryCopy,hasPriorPlay,entrySecondary} from '../src/ui/entry-screen.ts';
 import {chapterLandscape} from '../src/ui/chapter-presentation.ts';
@@ -35,7 +39,7 @@ import { createModalTapGuard } from '../src/ui/modal-tap-guard.ts';
 // Execute the app's actual functions with a clock and minimal DOM boundary; no browser/debug hooks.
 const source = readFileSync(new URL('../src/main.ts', import.meta.url), 'utf8');
 const ast = ts.createSourceFile('main.ts', source, ts.ScriptTarget.Latest, true, ts.ScriptKind.TS);
-const names = new Set(['playable', 'guardAction', 'action', 'persist', 'update', 'renderScreen', 'sessionPresentation', 'showResult', 'acquireSession', 'dismissModal', 'returnToChapters', 'clearPrestigeContext', 'openPrestige', 'refreshPrestige', 'returnFromPrestige', 'dailyRow', 'showQuests', 'showSettings', 'showSaveRecovery', 'preferenceNotice', 'showFieldPause', 'showLeaveBattle', 'leaveBattle', 'enterCamp', 'entryReady', 'syncEntry', 'enterWorld', 'showResultDetails', 'showHome', 'continueWithProvision']);
+const names = new Set(['switchTab','showModal','syncCamp','showCampFocus','returnToCamp','handleCampInput','playable', 'guardAction', 'action', 'persist', 'update', 'renderScreen', 'sessionPresentation', 'showResult', 'acquireSession', 'dismissModal', 'returnToChapters', 'clearPrestigeContext', 'openPrestige', 'refreshPrestige', 'returnFromPrestige', 'dailyRow', 'showQuests', 'showSettings', 'showSaveRecovery', 'preferenceNotice', 'showFieldPause', 'showLeaveBattle', 'leaveBattle', 'enterCamp', 'entryReady', 'syncEntry', 'enterWorld', 'showResultDetails', 'showHome', 'continueWithProvision']);
 const functions = ast.statements.filter(node => ts.isFunctionDeclaration(node) && node.name && names.has(node.name.text));
 assert.equal(functions.length, names.size);
 const click=ast.statements.find(node=>ts.isExpressionStatement(node)&&ts.isCallExpression(node.expression)&&node.expression.expression.getText(ast)==='lifetime.listen'&&node.expression.arguments[0]?.getText(ast)==='root'&&node.expression.arguments[1]?.getText(ast)==="'click'") as ts.ExpressionStatement;
@@ -44,7 +48,9 @@ const listener=(click.expression as ts.CallExpression).arguments[2];
 const change=ast.statements.find(node=>ts.isExpressionStatement(node)&&ts.isCallExpression(node.expression)&&node.expression.expression.getText(ast)==='lifetime.listen'&&node.expression.arguments[0]?.getText(ast)==='root'&&node.expression.arguments[1]?.getText(ast)==="'change'") as ts.ExpressionStatement;
 assert.ok(change,'the real native radio listener must remain reachable');
 const changeListener=(change.expression as ts.CallExpression).arguments[2];
-const code = ts.transpile(functions.map(node => node.getText(ast)).join('\n')+`\nthis.handleClick=${listener.getText(ast)};this.handleChange=${changeListener.getText(ast)};`, { target: ts.ScriptTarget.ES2022 });
+const keydown=ast.statements.find(node=>ts.isExpressionStatement(node)&&ts.isCallExpression(node.expression)&&node.expression.expression.getText(ast)==='lifetime.listen'&&node.expression.arguments[0]?.getText(ast)==='document'&&node.expression.arguments[1]?.getText(ast)==="'keydown'") as ts.ExpressionStatement;
+assert.ok(keydown);const keyListener=(keydown.expression as ts.CallExpression).arguments[2];
+const code = ts.transpile(functions.map(node => node.getText(ast)).join('\n')+`\nthis.handleClick=${listener.getText(ast)};this.handleChange=${changeListener.getText(ast)};this.handleKey=${keyListener.getText(ast)};`, { target: ts.ScriptTarget.ES2022 });
 function harness(motion = 'full') {
   let now = 100, foreign = false;
   const dialogs: string[] = [];
@@ -52,7 +58,7 @@ function harness(motion = 'full') {
   class BoundaryButton {
     dataset:Record<string,string>;disabled=false;
     constructor(dataset:Record<string,string>){this.dataset=dataset;}
-    closest(selector:string){return selector==='button'||(selector==='#modal-layer'&&!this.dataset.tab)?this:null;}
+    closest(selector:string){return selector==='button'||(selector==='#modal-layer'&&!this.dataset.tab)||(selector==='#secondary-screen'&&context.activeTab!=='battle')?this:null;}
   }
   class BoundaryInput {
     type='radio';checked=true;id='';dataset:Record<string,string>={};name:string;value:string;
@@ -62,11 +68,11 @@ function harness(motion = 'full') {
   class BoundarySelect extends BoundaryInput {}
   const root = node(), elements = new Map<string, ReturnType<typeof node>>();
   const context: any = {
-    Element:BoundaryButton,HTMLInputElement:BoundaryInput,HTMLSelectElement:BoundarySelect, Game, game: new Game(defaultProfile()), sessionReady: true, retriedSession: false, pagePresent: true, lifetime: { disposed: false },
-    settingsOrigin:null,acquiring: null, acquisitionVersion: 0, hasPlayed: true, entryEntered: true, entrySaved: true, resultDetailsOpen:false, atmosphereEnabled:true,audioMix:{effects:100,atmosphere:100}, manualPaused: false, savedWarning: false, pendingImport: null, modal: null, evolutionFromResult: false, modalPointerSequence: false,prestigeOrigin:null,prestigeDraft:null,prestigeExpectedTimeline:null,
+    HTMLElement:BoundaryButton,HTMLButtonElement:BoundaryButton,Element:BoundaryButton,HTMLInputElement:BoundaryInput,HTMLSelectElement:BoundarySelect, Game, game: new Game(defaultProfile()), sessionReady: true, retriedSession: false, pagePresent: true, lifetime: { disposed: false },
+    lastSavedAt:0,campOwner:null,campRenderKey:'',focusFrame:0,modalVersion:0,focusBefore:null,settingsOrigin:null,acquiring: null, acquisitionVersion: 0, hasPlayed: true, entryEntered: true, entrySaved: true, resultDetailsOpen:false, atmosphereEnabled:true,audioMix:{effects:100,atmosphere:100}, manualPaused: false, savedWarning: false, pendingImport: null, modal: null, evolutionFromResult: false, modalPointerSequence: false,prestigeOrigin:null,prestigeDraft:null,prestigeExpectedTimeline:null,
     lastUpdate: 0, lastSave: 100, lastPhase: 'ready', resultDue: 0, resultShown: '', activeTab: 'battle', root,
-    performance: { now: () => now }, document: { documentElement: { dataset: { motion } } },
-    fieldControls:{update(){},clear(){},select(){}},blockModalTap:createModalTapGuard(),startCountUp,journeyScreenHtml,updateOrderBanner,entryCopy,hasPriorPlay,entrySecondary,preferencesHtml,saveRecoveryHtml,chapterLandscape,
+    window:{cancelAnimationFrame(){}},requestAnimationFrame(){return 0;},performance: { now: () => now }, document: { documentElement: { dataset: { motion } } },
+    cardsScreenHtml,summonedCardsHtml,isEditingTarget,campRootHtml,campFocusHtml,canOwnCamp,isCampStation,campActionFromData,fieldControls:{update(){},clear(){},select(){}},blockModalTap:createModalTapGuard(),startCountUp,journeyScreenHtml,updateOrderBanner,entryCopy,hasPriorPlay,entrySecondary,preferencesHtml,saveRecoveryHtml,chapterLandscape,
     $: (id: string) => { if (!elements.has(id)) {const element=node();if(id==='battlefield')element.dataset={renderer:'ready'};elements.set(id,element);} return elements.get(id); },
     chronicleScreenHtml,chronicleActionFromData,chronicleGuidance,CAPTAINS,routeDefinition,advanceStatus, battleSelectionHtml, evolutionDialogHtml, ERAS, QUESTS, foodRate, unlockCost, dailyReward, localDay, battleGuidance, baseHealthDisplay, compactNumber, waveLabel, waveAccessibleLabel, chapterPresentation, unitPresentationName, compactResultsHtml, expeditionChoiceHtml, resultsHtml,isLegacyChoice,legacyEffects,prestigePreview,prestigeDetailsHtml,prestigeDialogHtml,legacyCurrentHtml,evolutionScreenHtml,saveSessionDialogHtml,temporarySessionNotice,skillCue,troopUnlockMessage,nextGoalLabel, waveInspectionHtml,
     earlierChapter,storybookArt: () => false, money: String, coin: String, icon:()=>'',textIfChanged(target:any,value:string){target.textContent=value;},htmlIfChanged(target:any,value:string){target.innerHTML=value;},unlockAudio() {}, suspendAudio() {}, saveAtmosphere() {}, syncMarks() {}, syncPause() {}, rebuildArmy() {}, syncMotion() {}, isolateModal(){}, toast() {},
@@ -77,8 +83,9 @@ function harness(motion = 'full') {
       acquire: async () => ({ status: 'active', profile: defaultProfile(), loadStatus: 'loaded' }),
     },
   };
-  context.switchTab = (tab:string) => {context.activeTab=tab;context.update(true);if(context.entryEntered&&tab==='battle'&&!context.modal&&['won','lost'].includes(context.game.state.phase))context.api.showResult();};
+
   runInNewContext(`${code}\nthis.api = { update, action, acquireSession, dismissModal, returnToChapters, showResult, renderScreen }; this.update = update;`, context);
+  const actualShowModal=context.showModal;context.showModal=(id:string,html:string,focusCommand?:string)=>{context.dialogHtml=html;context.focusCommand=focusCommand;dialogs.push(id);actualShowModal(id,html,focusCommand);};
   return { context, dialogs, click:(command:string,detail=0)=>context.handleClick({target:new BoundaryButton({command}),detail,preventDefault(){}}), clickData:(dataset:Record<string,string>,detail=0,extra={})=>context.handleClick({target:new BoundaryButton(dataset),detail,preventDefault(){},...extra}), change:(name:string,value:string)=>context.handleChange({target:new BoundaryInput(name,value)}),preference:(name:string,value:string|boolean)=>{const input=['speed','motion'].includes(name)?new BoundarySelect('',String(value)):new BoundaryInput('',String(value));input.dataset.preference=name;input.type=typeof value==='boolean'?'checkbox':'select-one';input.checked=value===true;context.document.activeElement=input;context.handleChange({target:input});return input;},clock: (value: number) => { now = value; }, foreign: () => { foreign = true; } };
 }
 test('rapid touch continuation cannot activate the navigation exposed under the result',()=>{
@@ -90,7 +97,8 @@ test('rapid touch continuation cannot activate the navigation exposed under the 
  h.clock(200);h.clickData({tab:'cards'},1,touch);
  assert.equal(c.activeTab,'battle','the second same-position tap belongs to result dismissal');
  h.clock(700);h.clickData({tab:'cards'},1,touch);
- assert.equal(c.activeTab,'cards','a later intentional tap works');
+ assert.equal(c.activeTab,'battle','the old hidden nav remains unavailable');
+ h.clickData({campStation:'journal'});h.click('camp-journal');h.clickData({journeyTab:'cards'});assert.equal(c.activeTab,'cards','the visible Journal route works');
 });
 test('rapid touch deployment and a different-position follow-up remain responsive',()=>{
  const h=harness(),c=h.context,touch={pointerType:'touch',clientX:60,clientY:600};
@@ -231,7 +239,7 @@ test('actual evolution with real SaveSession quota preserves warning and old byt
   assert.deepEqual(messages,['Progress could not be saved. Export a backup from Settings before closing this tab.']);
   failWrites=false;assert.equal(c.persist(),true);assert.equal(c.savedWarning,false);assert.equal(JSON.parse(values.get(SAVE_KEY)!).age,1);assert.equal(values.get(BACKUP_KEY),old[0],'first successful retry retains the previous valid profile as backup');
   assert.equal(c.persist(),true);assert.equal(values.get(SAVE_KEY),values.get(BACKUP_KEY),'subsequent unchanged save advances the backup to the recovered profile');
-  c.game.profile.coins=ERAS[1].evolveCost;c.game.profile.enemyAge=1;c.game.profile.furthestBattle=1;h.click('evolve');h.click('confirm-evolve');assert.equal(c.game.profile.age,2);assert.match(messages.at(-1)!,/^Entering Harbor Watch\./);
+  c.game.profile.coins=ERAS[1].evolveCost;c.game.profile.enemyAge=1;c.game.profile.furthestBattle=1;h.clickData({campStation:'company'});h.click('camp-evolution');h.click('evolve');h.click('confirm-evolve');assert.equal(c.game.profile.age,2);assert.match(messages.at(-1)!,/^Entering Harbor Watch\./);
  }finally{session.dispose();}
 });
 for(const legacy of [false,true])for(const escape of [false,true])test(`actual terminal ${legacy?'legacy':'settled'} ${escape?'Escape':'Return'} dispatches ready then picker without payout`,()=>{
@@ -255,8 +263,9 @@ for(const chapter of [0,5])test(`native double-click ${chapter===5?'prestige pre
  // Continued modal-origin pointer input cannot select either exposed or isolated navigation.
  h.clickData({tab:'cards'},2);assert.equal(c.activeTab,'battle');assert.equal(JSON.stringify(c.game.profile),after);
  h.clickData({tab:'cards'},3);assert.equal(c.activeTab,'battle');
- // New single clicks work after the explicit continuation/confirmation reveals navigation.
- h.clickData({tab:'cards'},1);assert.equal(c.activeTab,'cards');
+ // Old navigation remains hidden; a new deliberate Journal path still reaches Cards.
+ h.clickData({tab:'cards'},1);assert.equal(c.activeTab,'battle');
+ h.clickData({campStation:'journal'});h.click('camp-journal');h.clickData({journeyTab:'cards'});assert.equal(c.activeTab,'cards');
 });
 
 for(const origin of ['result','battles'])for(const route of ['close','Escape'])test(`prestige ${route} explicitly restores ${origin} with unchanged settled progress`,()=>{
@@ -577,11 +586,11 @@ test('Home exposes the correct secondary action for a held battle, ready history
  c.$('battlefield').dataset.renderer='failed';c.api.update(true);assert.equal(c.$('entry-secondary').hidden,true);
 });
 test('Camp Home returns to a ready Continue and starting from Camp restores physical field ownership',()=>{
- const h=harness(),c=h.context;c.game.profile.deployed=1;c.entryEntered=false;h.click('home-camp');h.click('home');
- assert.equal(c.entryEntered,false);assert.equal(c.game.state.phase,'ready');h.click('home-camp');h.click('start');assert.equal(c.game.state.phase,'running');assert.equal(c.root.dataset.fieldMode,'field');
+ const h=harness(),c=h.context;c.game.profile.deployed=1;c.entryEntered=false;h.click('home-camp');h.click('camp-home');
+ assert.equal(c.entryEntered,false);assert.equal(c.game.state.phase,'ready');h.click('home-camp');h.click('camp-battle');assert.equal(c.game.state.phase,'running');assert.equal(c.root.dataset.fieldMode,'field');
 });
 test('Camp Home clears preparation chrome before exposing the three Home actions',()=>{
- const h=harness(),c=h.context;c.game.profile.deployed=1;c.entryEntered=false;h.click('home-camp');h.click('home');
+ const h=harness(),c=h.context;c.game.profile.deployed=1;c.entryEntered=false;h.click('home-camp');h.click('camp-home');
  assert.equal(c.entryEntered,false);assert.equal(c.root.dataset.fieldMode,'field','the Camp Home control must not overlay Home');
 });
 test('Escape from Save or reset yields to a newly foreign writer instead of replacing recovery',()=>{
@@ -594,4 +603,98 @@ test('Continue releases a held live battle without replacing troops or starting 
 });
 test('Start over confirmation focuses Keep my progress instead of a destructive action',()=>{
  const h=harness(),c=h.context;h.click('settings');h.click('reset');assert.equal(c.focusCommand,'close');
+});
+
+function readyCamp(){const h=harness(),c=h.context;c.entryEntered=false;c.game.profile.played=true;h.click('home-camp');return h;}
+test('physical Camp owns ready entry and read-only local visits without old preparation input',()=>{
+ const h=readyCamp(),c=h.context,before=JSON.stringify([c.game.profile,c.game.state]);let writes=0;c.session.save=()=>{writes++;return {ok:true};};
+ assert.equal(c.campOwner?.kind,'root');assert.equal(c.$('camp-view').hidden,false);assert.equal(c.$('battle-view').inert,true);
+ for(const station of ['storehouse','gate','company','journal']){h.clickData({campStation:station});assert.equal(c.modal,'camp-focus');assert.equal(c.campOwner.focus,station);c.api.dismissModal();assert.equal(c.modal,null);assert.equal(c.campOwner.kind,'root');}
+ for(const data of [{command:'start'},{command:'upgrade-food'},{unit:'0'},{unit:'1'},{skill:'food'},{order:'hold'},{tab:'cards'}] as Record<string,string>[])h.clickData(data);
+ assert.equal(JSON.stringify([c.game.profile,c.game.state]),before);assert.equal(writes,0);assert.equal(c.activeTab,'battle');
+});
+test('Camp deliberate Battle starts once and transfers ownership to the physical field',()=>{
+ const h=readyCamp(),c=h.context;let starts=0;const dispatch=c.game.dispatch.bind(c.game);c.game.dispatch=(a:any)=>{if(a.type==='start')starts++;return dispatch(a);};
+ h.click('camp-battle');h.click('camp-battle');assert.equal(starts,1);assert.equal(c.game.state.phase,'running');assert.equal(c.root.dataset.fieldMode,'field');assert.equal(c.campOwner,null);assert.equal(c.game.profile.played,true);
+});
+test('Camp local purchase commits once, refreshes canonical cost and rejects stale or wrong focus input',()=>{
+ const h=readyCamp(),c=h.context;c.game.profile.coins=50;h.clickData({campStation:'storehouse'});h.clickData({campAction:'base'});assert.equal(c.game.profile.coins,50);
+ h.clickData({campAction:'food'});assert.equal(c.game.profile.foodLevel,1);assert.equal(c.game.profile.coins,0);assert.equal(c.modal,'camp-focus');assert.match(c.dialogHtml,/71 coins/);assert.equal(c.focusCommand,'camp-back');
+ h.clickData({campAction:'food'});assert.equal(c.game.profile.foodLevel,1);assert.equal(c.game.state.phase,'ready');assert.equal(c.game.state.time,0);
+});
+test('Camp company recruit inspection unlocks without deploying and Back retains its company origin',()=>{
+ const h=readyCamp(),c=h.context;c.game.profile.coins=150;h.clickData({campStation:'company'});h.clickData({campRecruit:'1'});
+ assert.equal(c.campOwner.focus.recruit,1);h.clickData({campAction:'unlock'});assert.equal(c.game.profile.unlocked[1],true);assert.equal(c.game.state.stats.deployed,0);
+ h.click('camp-back');assert.equal(c.campOwner.focus,'company');h.click('camp-back');assert.equal(c.campOwner.kind,'root');
+});
+test('Camp advanced handoffs preserve chapter, journal, storybook and evolution access with explicit origins',()=>{
+ for(const [station,command,modal,tab] of [['journal','camp-chapters','battles','battle'],['journal','camp-journal','journey','battle'],['company','camp-storybook','chronicle','battle'],['company','camp-evolution',null,'evolution']] as const){
+  const h=readyCamp(),c=h.context,before=JSON.stringify(c.game.profile);h.clickData({campStation:station});h.click(command);assert.equal(c.campOwner.kind,'advanced');assert.equal(c.modal,modal);assert.equal(c.activeTab,tab);
+  if(modal)c.api.dismissModal();else h.click('camp-return');assert.equal(c.campOwner.kind,'root');assert.equal(c.activeTab,'battle');assert.equal(JSON.stringify(c.game.profile),before);
+ }
+});
+test('Camp yields to conflict before a purchase and during persistence without stale repaint',()=>{
+ for(const duringSave of [false,true]){
+  const h=readyCamp(),c=h.context;c.game.profile.coins=50;h.clickData({campStation:'storehouse'});
+  if(duringSave)c.session.save=()=>{c.session.status='conflict';c.sessionPresentation('conflict');return {ok:false};};else h.foreign();
+  h.clickData({campAction:'food'});assert.equal(c.modal,'session');assert.equal(c.campOwner,null);assert.equal(c.game.profile.foodLevel,duringSave?1:0);assert.equal(c.game.profile.coins,duringSave?0:50);
+ }
+});
+test('Temporary Camp actions never write and held results cannot borrow Camp ownership',()=>{
+ const h=readyCamp(),c=h.context;c.session.status='temporary';let writes=0;c.session.save=()=>{writes++;return {ok:true};};c.game.profile.coins=40;
+ h.clickData({campStation:'gate'});h.clickData({campAction:'base'});h.click('camp-back');h.click('camp-home');assert.equal(writes,0);assert.equal(c.entryEntered,false);assert.equal(c.campOwner,null);
+ for(const phase of ['running','won','lost'] as const){const blocked=harness(),b=blocked.context;b.entryEntered=false;b.game.profile.played=true;b.game.state.phase=phase;const before=JSON.stringify([b.game.profile,b.game.state]);blocked.click('home-camp');assert.notEqual(b.campOwner?.kind,'root');assert.equal(JSON.stringify([b.game.profile,b.game.state]),before);}
+});
+
+test('real readiness handoff admits deliberate chapter choice after loss recovery',()=>{
+ const h=harness(),c=h.context;Object.assign(c.game.profile,{age:4,enemyAge:5,furthestBattle:5,chronicle:createChronicle(1,5)});c.game.dispatch({type:'start'});c.game.dispatch({type:'retreat'});c.modal='result';
+ h.click('regroup-chapters');assert.equal(c.game.state.phase,'ready');assert.equal(c.campOwner?.kind,'advanced');assert.equal(c.modal,'battles');
+ h.clickData({battle:'4'});assert.equal(c.game.profile.enemyAge,4);assert.equal(c.modal,null);assert.equal(c.game.state.phase,'ready');
+});
+test('Escape from actual advanced Evolution returns to ready Camp without mutation',()=>{
+ const h=readyCamp(),c=h.context;h.clickData({campStation:'company'});h.click('camp-evolution');const before=JSON.stringify([c.game.profile,c.game.state]);
+ c.handleKey({key:'Escape',preventDefault(){}});assert.equal(c.activeTab,'battle');assert.equal(c.campOwner.kind,'root');assert.equal(JSON.stringify([c.game.profile,c.game.state]),before);
+});
+test('nonbutton Space and combat shortcuts cannot start or act in Camp',()=>{
+ const h=readyCamp(),c=h.context,before=JSON.stringify([c.game.profile,c.game.state]);
+ for(const [key,code] of [[' ','Space'],['1','Digit1'],['q','KeyQ']])c.handleKey({key,code,target:null,preventDefault(){}});
+ assert.equal(JSON.stringify([c.game.profile,c.game.state]),before);
+});
+test('Camp save failure keeps a persistent warning outside the focused transaction',()=>{
+ const h=readyCamp(),c=h.context;c.game.profile.coins=50;c.session.save=()=>({ok:false,reason:'write-failed'});h.clickData({campStation:'storehouse'});h.clickData({campAction:'food'});
+ assert.equal(c.$('session-notice').hidden,false);assert.match(c.$('session-notice').textContent,/Saving is unavailable/);assert.match(c.dialogHtml,/Saving is unavailable/);h.click('camp-back');assert.equal(c.$('session-notice').hidden,false);
+});
+test('final receipt chapter-return owner admits a chapter choice and Escape without another payout',()=>{
+ const h=settledHarness(5,1000,false),c=h.context;h.click('return-chapters');assert.equal(c.campOwner.kind,'advanced');const wallet=[c.game.profile.coins,c.game.profile.gems,c.game.profile.wins];
+ h.clickData({battle:'4'});assert.equal(c.game.profile.enemyAge,4);assert.equal(c.game.state.phase,'ready');assert.deepEqual([c.game.profile.coins,c.game.profile.gems,c.game.profile.wins],wallet);
+ c.api.update(true);h.clickData({campStation:'journal'});h.click('camp-chapters');c.handleKey({key:'Escape',preventDefault(){}});assert.equal(c.modal,null);assert.equal(c.campOwner.kind,'root');
+});
+test('Camp expedition abandon reopens the real Storybook owner without trapping its controls',()=>{
+ const h=readyCamp(),c=h.context;c.game.profile.chronicle=createChronicle(1,0);c.game.profile.chronicle.restoration=7;
+ assert.equal(c.game.dispatch({type:'chronicle-expedition',battle:0}),true);h.clickData({campStation:'company'});h.click('camp-storybook');h.click('story-abandon');
+ assert.equal(c.game.profile.chronicle.expedition,null);assert.equal(c.modal,'chronicle');assert.equal(c.campOwner.kind,'advanced');h.click('close');assert.equal(c.modal,null);assert.equal(c.campOwner.kind,'root');assert.equal(c.game.state.phase,'ready');
+});
+test('Escape from Cards reached through the real Journal returns to ready Camp',()=>{
+ const h=readyCamp(),c=h.context;h.clickData({campStation:'journal'});h.click('camp-journal');h.clickData({journeyTab:'cards'});assert.equal(c.activeTab,'cards');const before=JSON.stringify(c.game.profile);
+ c.handleKey({key:'Escape',preventDefault(){}});assert.equal(c.activeTab,'battle');assert.equal(c.campOwner.kind,'root');assert.equal(c.modal,null);assert.equal(JSON.stringify(c.game.profile),before);
+});
+
+test('a Camp focus keeps one stable polite warning node even before any save failure',()=>{
+ const h=readyCamp(),c=h.context;h.clickData({campStation:'storehouse'});
+ assert.match(c.dialogHtml,/id="camp-focus-save-status"[^>]*role="status"[^>]*aria-live="polite"[^>]*hidden/);
+});
+test('periodic failure and verified recovery update the open Camp focus without rebuilding or moving its controls',()=>{
+ const h=readyCamp(),c=h.context;h.clickData({campStation:'storehouse'});const html=c.$('modal-layer').innerHTML,dialogs=h.dialogs.length,warning=c.$('camp-focus-save-status'),focused={id:'camp-local-food'};c.document.activeElement=focused;c.$('modal-layer').scrollTop=137;
+ c.session.save=()=>({ok:false,reason:'write-failed'});h.clock(6000);c.api.update(true);h.clock(6200);c.api.update(true);
+ assert.equal(warning.hidden,false);assert.match(warning.textContent,/Saving is unavailable/);assert.equal(c.$('modal-layer').innerHTML,html);assert.equal(h.dialogs.length,dialogs);assert.equal(c.document.activeElement,focused);assert.equal(c.$('modal-layer').scrollTop,137);
+ c.session.save=()=>({ok:true});h.clock(12000);c.api.update(true);h.clock(12200);c.api.update(true);
+ assert.equal(warning.hidden,true);assert.equal(warning.textContent,'');assert.equal(c.document.activeElement,focused);assert.equal(c.$('modal-layer').scrollTop,137);assert.equal(h.dialogs.length,dialogs);
+});
+test('background persistence failure reaches the existing focused warning on the next update',()=>{
+ const h=readyCamp(),c=h.context;h.clickData({campStation:'gate'});c.session.save=()=>({ok:false,reason:'write-failed'});assert.equal(c.persist(),false);c.api.update(true);
+ assert.equal(c.modal,'camp-focus');assert.equal(c.$('camp-focus-save-status').hidden,false);assert.match(c.$('camp-focus-save-status').textContent,/Saving is unavailable/);
+});
+test('save conflict preempts an open Camp warning without repainting the obsolete focus',()=>{
+ const h=readyCamp(),c=h.context;h.clickData({campStation:'storehouse'});c.session.save=()=>{c.session.status='conflict';c.sessionPresentation('conflict');return{ok:false,reason:'conflict'};};c.persist();c.api.update(true);
+ assert.equal(c.modal,'session');assert.equal(c.campOwner,null);assert.doesNotMatch(c.$('modal-layer').innerHTML,/camp-focus-save-status/);
 });

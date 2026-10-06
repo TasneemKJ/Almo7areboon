@@ -768,6 +768,13 @@ export function mountBattlefield(element:HTMLElement,game:GamePort,onFrame:(forc
     }else if(targetBase)this.baseImpact(x,this.layout.groundY-22,e.amount??0,e.source?.kind===2,targetSide,targetAge);
     else{this.impact(x,y-22,e.amount??0,e.source?.age??0,e.source?.kind??0,e.source?.side??'player');if(intent)this.rememberImpact(intent);}
    }
+   if(e.type==='death'&&e.kind===2){
+    // A heavy falling is the loudest thing on the field: wider dust, a second ring and a short low shake (none when reduced).
+    this.emit(x,y-10,18,e.side==='player'?0x82cce8:0xe6b388,true,.7,e.lane??1);this.emit(x,y-16,8,0xf4e6c2,false,.45,e.lane??1);
+    this.flare(x,y-14,34,e.side==='player'?0x5ccfff:0xff8a50,.38);this.ring(x,y-6,e.side==='player'?0x82cce8:0xf0c08a,30);
+    if(!this.reduce)this.cameras.main.shake(70,.0016);
+    return;
+   }
    if(e.type==='death'){this.emit(x,y-12,9,e.side==='player'?0x82cce8:0xe6b388,true,.52,e.lane??1);this.flare(x,y-14,18,e.side==='player'?0x5ccfff:0xff8a50,.3);}
    if(e.type==='coin'&&e.amount){this.spoilsReward=this.floatText(x,y-51,`+${compactNumber(e.amount)}`,'#ffdf7f');this.spoilsReward.reward=e.amount;const intent=spoilsHomecomingIntentForEvent(e);if(intent&&!this.reduce)this.spoilsHomecoming=rememberSpoilsHomecoming(this.spoilsHomecoming,{...intent,x:this.spoilsReward.text.x,y:this.spoilsReward.startY},++this.spoilsOrder,this.layout.height);}
    if(e.type==='win'&&game.state.chronicle&&['escort','hold','rescue'].includes(game.state.chronicle.objective)){this.floatText(225,this.layout.groundY-70,'THE COMPANY RETURNS','#e5d4ad',true);this.ring(110,this.layout.groundY-12,0xd5bd89,24);return;}

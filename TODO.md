@@ -86,3 +86,11 @@ Ordered tasks. Tick a task when it is done and never delete finished tasks. This
 - [ ] Adapt inherited browser scripts that still assume old Settings buttons, one-step retreat and pre-physical-field dashboard; they are not final-candidate acceptance evidence.
 - [ ] Replace existing dense Camp and result Details catalogue in a separate approved slice; this batch is not all-screen simplicity acceptance.
 - [ ] Native blocker from exact base 27917fe2: at 320×568 Camp food upgrade y528–572 is effectively 40px and covered by bottom navigation. Resolve through the next Camp redesign, preserving the real upgrade and 44px minimum; source-green Preferences is not publication acceptance.
+
+## Physical ready Camp — 2026-10-06
+- [x] Review approved written design and concrete implementation plan; view original 27917fe paused-state 320px failure without mislabelling it current ready evidence.
+- [x] Source: separate illustrated four-place Camp with Battle/Home, canonical local food/gate/recruit/preparation actions and transient ready-only owner.
+- [x] Source: read-only visit, exact economy boundaries, old-hidden-control rejection, origin-aware return, deliberate Start and recovery-precedence regression tests.
+- [ ] Exact candidate native matrix: touch/focus/topmost44px/short-phone/safe-area/200%-text/rotation/background/all-six-age art and real audio; no browser/server was run in this source slice.
+- [ ] Replace retained dense chapter/Chronicle/Journey/Cards/Quests/Evolution/result Details leaves with reviewed focused models. Temporary handoffs preserve access but are not all-screen acceptance.
+- [ ] Future cards: native quantity/cost preview; future quests: read-only records + selected Claim/Back; future chapters/routes: genuine illustrated spatial travel with selected Travel/Back, no binary picker maze.
