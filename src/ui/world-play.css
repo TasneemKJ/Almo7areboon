@@ -32,6 +32,6 @@
 #app[data-field-mode="field"] .ready-title,#app[data-field-mode="field"] .ready>p,#app[data-field-mode="field"] .ready-paths{display:none}
 
 /* A quiet ground light communicates readiness on the real waiting figure. */
-.recruit-hit.recruit-ready::after{content:"";position:absolute;width:36px;height:9px;left:6px;bottom:-3px;border:1px solid #efd18da8;border-radius:50%;box-shadow:0 0 12px #efce8170;pointer-events:none}
+.recruit-hit.recruit-ready::after{content:"";position:absolute;width:36px;height:9px;left:calc(50% - 18px);bottom:1px;border:1px solid #efd18da8;border-radius:50%;box-shadow:0 0 12px #efce8170;pointer-events:none}
 .recruit-hit[aria-disabled="true"] .recruit-cost{color:#d1c7ad}
 .world:has(#field-context:not([hidden])) .stage{visibility:hidden}

@@ -37,3 +37,11 @@ for(const dpr of [1,1.5,2])for(const [width,height] of [[390,844],[844,390]])tes
   assert.ok(Math.abs(logicalY*(width*dpr/450)/dpr-target.footY)<1e-8);
  }
 });
+for(const [width,height] of [[320,568],[390,844],[844,390],[667,375]])test(`recruit hitbox contains the largest real idle frame including its foot margin at ${width}×${height}`,()=>{
+ const plan=campLayout(width,height);
+ for(const box of plan.recruits){
+  const frame={left:box.footX-32,right:box.footX+32,top:box.footY-48*(136/144),bottom:box.footY+48*(1-136/144)};
+  assert.ok(frame.left>=box.x&&frame.right<=box.x+box.width);
+  assert.ok(frame.top>=box.y&&frame.bottom<=box.y+box.height);
+ }
+});

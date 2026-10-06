@@ -27,6 +27,8 @@ export function battleGuidance(profile: Profile, state: BattleState, preview?: W
   const captain=profile.chronicle?.enabled&&profile.chronicle.captain!=='none'?CAPTAINS.find(c=>c.id===profile.chronicle!.captain):undefined;
   // First-Freeze cue: teach the skill at the moment it pays off, while three or more enemies gather.
   if (profile.wins < 5 && state.stats.skillsCast === 0 && !state.skillsUsed.includes('freeze') && state.units.filter(unit => unit.side === 'enemy' && unit.hp > 0).length >= 3) return 'Enemies are gathering. Tap Freeze to hold them while your army strikes.';
+  // First-Meteor cue: once Freeze has been tried, point at the skill that damages every living enemy at once.
+  if (profile.wins < 5 && state.skillsUsed.includes('freeze') && !state.skillsUsed.includes('meteor') && state.time >= 20 && state.units.filter(unit => unit.side === 'enemy' && unit.hp > 0).length >= 3) return 'Enemies are bunched up. Tap Meteor to hit every one of them at once.';
   const wait = Math.ceil((ERAS[profile.age].units[0].cost - state.food) / foodRate(profile));
   if (wait > 0) return profile.wins<3&&!captain&&!state.skillsUsed.includes('food')
     ? `Food Drop adds 10 now, once per battle; or wait ${wait}s.`

@@ -1,3 +1,5 @@
+import {physicalSkillCue} from './field-skill-guidance.ts';
+import {battleGuidance} from './battle-hud.ts';
 import {releaseFieldContext} from './field-focus.ts';
 import type {Game} from '../game/simulation.ts';
 import type {Skill,UnitKind} from '../game/types.ts';
@@ -74,8 +76,8 @@ export function createFieldController(root:HTMLElement){
    }
    context.hidden=selected===null;enemy.classList.toggle('selected',typeof selected==='number');
    context.querySelectorAll<HTMLButtonElement>('[data-skill]').forEach(button=>{const skill=button.dataset.skill as Skill;button.disabled=!game.canUseSkill(skill);button.setAttribute('aria-label',skillCue(p,s,skill,!button.disabled).label);});
-   const status=game.deploymentStatus(0);
-   const message=!running?'':s.stats.deployed===0?`Tap the waiting defender. ${ERAS[p.age].units[0].cost} food.`:status.reason==='food'?`The camp needs food. Ready in ${Math.ceil(status.waitSeconds)}s.`:p.wins===0&&s.stats.deployed<3?'Tap the defender again when their ground lights.':p.wins<5&&!s.skillsUsed.includes('freeze')&&s.units.filter(u=>u.side==='enemy'&&u.hp>0).length>=3?'Enemies are gathering. Select one, then Freeze.':orders.canCast?'Momentum ready. Your gate holds; their gate advances.':'';
+   const status=game.deploymentStatus(0),skillHint=physicalSkillCue(battleGuidance(p,s,game.waveStatus().preview,status));
+   const message=!running?'':s.stats.deployed===0?`Tap the waiting defender. ${ERAS[p.age].units[0].cost} food.`:skillHint?skillHint:status.reason==='food'?`The camp needs food. Ready in ${Math.ceil(status.waitSeconds)}s.`:p.wins===0&&s.stats.deployed<3?'Tap the defender again when their ground lights.':orders.canCast?'Momentum ready. Your gate holds; their gate advances.':'';
    textIfChanged(cue,message);cue.hidden=!message;
   },
  };
