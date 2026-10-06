@@ -2,6 +2,10 @@
 
 Semantic versioning. Each merged batch adds an entry and a `vX.Y.Z` tag.
 
+## 0.3.8 - 2026-10-06
+- First battle ever: the Light Guard card gets a gold teaching ring until the first deployment (pulses only when motion is full; static ring otherwise).
+- A test now locks the result motifs: victory rises, defeat falls.
+
 ## 0.3.4 - 2026-10-05
 - First-Meteor cue: after Freeze is used, when three enemies gather, the deploy hint points at Meteor (first five wins only).
 

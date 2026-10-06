@@ -4,3 +4,8 @@
 .skill-circle.used.freeze-active { opacity:.9; }
 .skill-circle small { font-size:.625rem; min-width:16px; text-align:center; line-height:1.2; }
 @media(forced-colors:active) { .skill-circle.skill-opportunity:not(:disabled):not(.used) { border-color:Highlight; } .skill-circle:focus-visible { outline-color:Highlight; } }
+
+/* First-battle teaching ring on the first troop card; static unless motion is full. */
+#app #unit-cards .unit-card.teach.affordable { box-shadow:0 3px 0 #123442,0 0 0 3px #ffe2a0cc,0 0 16px #ffd27a99; }
+:root[data-motion="full"] #app #unit-cards .unit-card.teach.affordable { animation:teach-ring 1.3s ease-in-out infinite; }
+@keyframes teach-ring { 0%,100% { box-shadow:0 3px 0 #123442,0 0 0 2px #ffe2a099,0 0 6px #ffd27a55; } 50% { box-shadow:0 3px 0 #123442,0 0 0 4px #ffe2a0ee,0 0 20px #ffd27acc; } }

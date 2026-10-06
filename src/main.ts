@@ -228,6 +228,8 @@ function update(force=false){
     const kind=Number(button.dataset.unit) as UnitKind,locked=!p.unlocked[kind],status=game.deploymentStatus(kind);
     button.disabled=locked?p.coins<unlockCost(kind,p):!status.allowed;
     button.classList.toggle('affordable',!button.disabled);
+    // First battle ever: ring the Light Guard card until the first deployment (static ring when motion is reduced).
+    button.classList.toggle('teach',kind===0&&p.wins===0&&s.phase==='running'&&!s.paused&&s.stats.deployed===0&&!button.disabled);
     const label=troopControlLabel(p,kind,status);
     button.title=label;if(button.getAttribute('aria-label')!==label)button.setAttribute('aria-label',label);
     (button.querySelector('.unit-fill') as HTMLElement).style.transform=`scaleX(${Math.max(0,Math.min(1,s.food/ERAS[p.age].units[kind].cost))})`;
