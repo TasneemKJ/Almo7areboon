@@ -66,3 +66,25 @@ test('weekly is optional, normalized on load, preserved by export/import and by 
   assert.deepEqual(startOverProfile(g.profile).weekly, { week, baseSeals: 0, claimed: true }, 'a reset cannot reopen a claimed week');
   assert.equal('weekly' in startOverProfile(defaultProfile()), false);
 });
+
+test('a win that is the first thing seen in a new week counts its own seals toward that week', () => {
+  const g = new Game(); withSeals(g, 5); // 2 of these were settled by the win that just landed after Monday
+  assert.equal(g.dispatch({ type: 'weekly-sync', week, earned: 2 }), true);
+  assert.equal(g.profile.weekly!.baseSeals, 3);
+  assert.equal(weeklyStatus(g.profile, week).progress, 2);
+  const h = new Game(); withSeals(h, 1); h.dispatch({ type: 'weekly-sync', week, earned: 3 });
+  assert.equal(h.profile.weekly!.baseSeals, 0, 'never below zero');
+  for (const bad of [Number.NaN, -4, 1.5, 99, undefined]) {
+    const k = new Game(); withSeals(k, 5); k.dispatch({ type: 'weekly-sync', week, earned: bad as number });
+    assert.ok([5, 2].includes(k.profile.weekly!.baseSeals), `hostile earned ${String(bad)} is clamped, got ${k.profile.weekly!.baseSeals}`);
+  }
+  const same = new Game(); withSeals(same, 2); same.dispatch({ type: 'weekly-sync', week });
+  withSeals(same, 4); same.dispatch({ type: 'weekly-sync', week, earned: 2 });
+  assert.equal(same.profile.weekly!.baseSeals, 2, 'earned only matters when a week opens');
+});
+test('the app opens the week at battle start and passes the win receipt seals on a win', async () => {
+  const { readFileSync } = await import('node:fs');
+  const main = readFileSync(new URL('../src/main.ts', import.meta.url), 'utf8');
+  assert.match(main, /if\(a\.type==='start'\)game\.dispatch\(\{type:'weekly-sync',week:weekId\(localDay\(\)\)\}\);\n\s+unlockAudio/);
+  assert.match(main, /receipt\.settlement==='mastery-v1'\?receipt\.newMask:0;game\.dispatch\(\{type:'weekly-sync',week:weekId\(localDay\(\)\),earned:/);
+});

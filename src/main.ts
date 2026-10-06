@@ -190,6 +190,8 @@ function syncMarks(){document.documentElement.dataset.marks=game.profile.marks?'
 function syncMotion(){document.documentElement.dataset.motion=game.profile.motion==='reduced'||motionQuery.matches?'reduced':'full';syncMarks();}
 function action(a:Action):boolean{
   if(!guardAction())return false;
+  // A battle that starts in a new week opens it first, so nothing earned in it can become the base.
+  if(a.type==='start')game.dispatch({type:'weekly-sync',week:weekId(localDay())});
   unlockAudio(game.profile.sound);const ok=game.dispatch(a);
   if(ok){
     persist();syncPause();rebuildArmy();update(true);if(activeTab!=='battle')renderScreen(a.type==='select-legacy');
@@ -654,7 +656,7 @@ function events(batch:GameEvent[]){
   // Fresh terminal results are admitted before their dialog; menus and all
   // modal owners block new batches, including accepted menu confirmations.
   playCombatEvents(batch,game.profile.sound&&playable()&&!document.hidden&&!manualPaused&&!game.state.paused&&activeTab==='battle'&&modal===null);
-  if(batch.some(event=>event.type==='win'))game.dispatch({type:'weekly-sync',week:weekId(localDay())});
+  if(batch.some(event=>event.type==='win')){const receipt=game.profile.pendingVictory,mask=receipt&&receipt.settlement==='mastery-v1'?receipt.newMask:0;game.dispatch({type:'weekly-sync',week:weekId(localDay()),earned:(mask&1)+((mask>>1)&1)+((mask>>2)&1)});}
   if(batch.some(event=>event.type==='win'||event.type==='lose'))persist();
 }
 const port=createBattlefieldPort(()=>game,action,dt=>{syncPause();if(playable())game.step(dt*game.profile.speed);});

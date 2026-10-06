@@ -243,7 +243,7 @@ export class Game implements GamePort {
         return true;
       }
       case 'weekly-sync':
-        return syncWeekly(this.profile, action.week);
+        return syncWeekly(this.profile, action.week, action.earned);
       case 'weekly': {
         syncWeekly(this.profile, action.week);
         const status = weeklyStatus(this.profile, action.week);
