@@ -22,10 +22,13 @@ export function weeklyStatus(profile: Pick<Profile, 'weekly' | 'mastery' | 'time
 }
 
 /** Starts the week on first sight and rebases after a timeline reset (the seal total fell). Returns true if it changed. */
-export function syncWeekly(profile: Profile, week: number): boolean {
+export function syncWeekly(profile: Profile, week: number, justEarned = 0): boolean {
   if (!(week >= 0 && week <= MAX_WEEK)) return false;
   const seals = currentSealCount(profile), w = profile.weekly;
-  if (!w || w.week !== week) { profile.weekly = { week, baseSeals: seals }; return true; }
+  // `justEarned` is the seals a win has just settled: when that win is the first thing seen in a new week
+  // (a tab left open across Monday), they were earned this week and must count toward it.
+  const fresh = Number.isInteger(justEarned) ? Math.max(0, Math.min(3, justEarned)) : 0;
+  if (!w || w.week !== week) { profile.weekly = { week, baseSeals: Math.max(0, seals - fresh) }; return true; }
   if (seals < w.baseSeals) { w.baseSeals = seals; return true; }
   return false;
 }
