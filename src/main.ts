@@ -63,6 +63,7 @@ let villagePresentation:VillagePresentation|null=null;
 let atmosphereEnabled=loadAtmosphere();
 let audioMix=loadAudioMix();
 updateAudioMix(audioMix);
+let lastSavedAt=0;
 let lastUpdate=0,lastSave=0,resultShown='',lastPhase=game.state.phase,resultDue=0,toastTimer=0,focusFrame=0,modalVersion=0;
 let savedWarning=false,pendingImport:Profile|null=null;
 // Each file selection owns its asynchronous completion, even before a dialog changes.
@@ -163,7 +164,7 @@ function persist():boolean{
   if(!playable()||session.status==='temporary')return false;
   const result=session.save(game.profile),ok=result.ok;lastSave=performance.now();
   if(result.reason==='write-failed'&&!savedWarning){savedWarning=true;toast('Progress could not be saved. Export a backup from Settings before closing this tab.');}
-  if(ok)savedWarning=false;
+  if(ok){savedWarning=false;lastSavedAt=Date.now();}
   return ok;
 }
 function syncPause(){
@@ -394,7 +395,7 @@ function showSettings(){
   <div class="backup-actions"><button class="big-button blue" data-command="export">EXPORT SAVE</button><button class="big-button secondary" data-command="import" ${session.status!=='active'?'disabled':''}>IMPORT SAVE</button><button class="big-button secondary" data-command="reset" ${session.status!=='active'?'disabled':''}>START OVER</button><input id="import-save" type="file" accept=".json,application/json" hidden></div>
   <details class="help-box"><summary>How to play</summary><p>Tap Battle, collect food and deploy troops. Your army fights automatically.</p><p>Deployments and defeated enemies earn momentum. At 60, tap near your gate to Hold or near the enemy gate to Advance; the command buttons remain available. Advance adds 20% troop damage and 15% movement for 10 seconds; Hold reduces incoming troop and gate damage by 25% for 10 seconds.</p><p>Keep ranged troops behind a melee or heavy front line. Spend earned coins on food production and new troops.</p><p>Battle victories unlock opponents. Evolution upgrades your own army and resets coins and upgrades. Your selected opponent, unlocked battles and chapter seals stay.</p><small>1–3 troops · Q / W / E skills · Space pause · Escape closes menus.</small></details>
   <details class="help-box"><summary>About and privacy</summary><p>No accounts, tracking or servers. Progress stays in this browser; export keeps a copy you control. Code and art are original; Phaser (MIT) runs the battlefield. See CREDITS.md in the project.</p></details>
-  <p class="save-note">${session.status==='temporary'?temporarySessionNotice:savedWarning?'Saving is unavailable. Export a backup before closing.':'Progress saves on this browser. Export a backup to keep a separate copy.'}</p>`);
+  <p class="save-note">${session.status==='temporary'?temporarySessionNotice:savedWarning?'Saving is unavailable. Export a backup before closing.':`Progress saves on this browser. Export a backup to keep a separate copy.${lastSavedAt?` Last saved ${new Date(lastSavedAt).toLocaleTimeString([],{hour:'numeric',minute:'2-digit'})}.`:''}`}</p>`);
 }
 function dailyRow(p:Profile){
   const day=localDay(),reward=dailyReward(p,day);
@@ -532,7 +533,7 @@ lifetime.listen<MouseEvent>(root,'click',e=>{
     }
     case 'pause':if(game.state.phase==='running'){manualPaused=!manualPaused;syncPause();update(true);}break;
     case 'speed':game.profile.speed=game.profile.speed===1?2:1;persist();update(true);if(modal==='settings'&&playable())showSettings();break;
-    case 'settings':showSettings();break;
+    case 'settings':persist();showSettings();break;
     case 'quests':showQuests();break;
     case 'sound':game.profile.sound=!game.profile.sound;if(game.profile.sound)unlockAudio(true);else suspendAudio();persist();if(playable())showSettings();break;
     case 'atmosphere':atmosphereEnabled=!atmosphereEnabled;saveAtmosphere(atmosphereEnabled);syncPause();showSettings();break;
