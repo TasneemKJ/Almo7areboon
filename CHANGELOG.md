@@ -2,6 +2,9 @@
 
 Semantic versioning. Each merged batch adds an entry and a `vX.Y.Z` tag.
 
+## 0.3.6 - 2026-10-05
+- Settings: "Troop shapes" (off by default). Cards and the battlefield mark roles with a circle (melee), triangle (ranged) or square (heavy); filled shapes are yours, outlined are the enemy. Stored as an optional `marks: true` profile field, normalized on load, kept by Start over.
+
 ## 0.3.5 - 2026-10-05
 - Defeat recap: the result names the troop role that dealt the most damage and its share. Battle stats gain an optional, normalized `damageByKind` (older saves and receipts simply omit it).
 
