@@ -151,3 +151,4 @@
  background:var(--paper);
 }
 .reward strong { font-variant-numeric:tabular-nums; }
+.defeat-recap { margin:6px 0 10px; font-size:.8125rem; font-weight:700; color:var(--ink); text-align:center; }

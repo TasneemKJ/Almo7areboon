@@ -27,6 +27,9 @@ Ordered tasks. Tick a task when it is done and never delete finished tasks. This
 - [x] Count-up battle earnings on the result (round 6); victory/defeat motifs already existed
 - [x] Settings and other dialogs in short landscape: no empty header band (round 6)
 - [ ] Colour-blind-safe troop-type shapes; optional haptics
+- [x] Streak grace day (optional `graceDay` field)
+- [x] Colour-independent troop shapes (Settings, optional `marks` field)
+- [ ] Optional haptics
 - [ ] Streak grace day (needs an optional, normalized save field)
 - [ ] Capture and review victory/defeat, Journey, Chronicle and evolve-confirm screens on touch devices at 320, 360 and 412 widths
 - [ ] Migrate Phaser 4, TypeScript 7 and Vite 8 as separate batches (Dependabot #161 closed: 126 type errors, Vite 8 `manualChunks` must be a function)

@@ -6,6 +6,15 @@ Semantic versioning. Each merged batch adds an entry and a `vX.Y.Z` tag.
 - First battle ever: the Light Guard card gets a gold teaching ring until the first deployment (pulses only when motion is full; static ring otherwise).
 - A test now locks the result motifs: victory rises, defeat falls.
 
+## 0.3.7 - 2026-10-05
+- Streak grace day: one missed day keeps a daily-reward streak of two or more, at most once every seven days; the Quests row says so before claiming. Stored as an optional `graceDay` profile field, normalized on load and kept by Start over.
+
+## 0.3.6 - 2026-10-05
+- Settings: "Troop shapes" (off by default). Cards and the battlefield mark roles with a circle (melee), triangle (ranged) or square (heavy); filled shapes are yours, outlined are the enemy. Stored as an optional `marks: true` profile field, normalized on load, kept by Start over.
+
+## 0.3.5 - 2026-10-05
+- Defeat recap: the result names the troop role that dealt the most damage and its share. Battle stats gain an optional, normalized `damageByKind` (older saves and receipts simply omit it).
+
 ## 0.3.4 - 2026-10-05
 - First-Meteor cue: after Freeze is used, when three enemies gather, the deploy hint points at Meteor (first five wins only).
 

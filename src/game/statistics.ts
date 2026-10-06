@@ -6,11 +6,12 @@ export function battleStats(value?: unknown): BattleStats {
   const source = value as Record<string, unknown>;
   const count = (number: unknown) => typeof number === 'number' && Number.isFinite(number) ? Math.max(0,Math.min(Number.MAX_SAFE_INTEGER,Math.floor(number))) : 0;
   for (const key of Object.keys(result) as (keyof BattleStats)[]) {
-    if (key === 'deployedByKind') continue;
+    if (key === 'deployedByKind' || key === 'damageByKind') continue;
     const number = source[key];
     if (typeof number === 'number' && Number.isFinite(number)) result[key] = Math.max(0, Math.min(Number.MAX_SAFE_INTEGER, number));
   }
   for (const key of ['maxFreezeTargets','meteorKills'] as const) result[key] = count(source[key]);
   if (Array.isArray(source.deployedByKind)) result.deployedByKind = [count(source.deployedByKind[0]),count(source.deployedByKind[1]),count(source.deployedByKind[2])];
+  if (Array.isArray(source.damageByKind)) result.damageByKind = [count(source.damageByKind[0]),count(source.damageByKind[1]),count(source.damageByKind[2])];
   return result;
 }

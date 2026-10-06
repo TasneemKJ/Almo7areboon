@@ -72,8 +72,15 @@ export function localDay(now: Date = new Date()): number {
 export const MAX_DAILY_DAY = 1_000_000;
 
 /** Consecutive-day check-in: 30 gems, rising by 10 per day to 90 from day 7. */
-export function dailyReward(profile: Pick<Profile, 'dailyDay' | 'dailyStreak'>, day: number): { available: boolean; streak: number; gems: number } {
+export const GRACE_SPACING = 7;
+/** One missed day keeps a streak of two or more, at most once every seven days (`graceDay` is the day it was last used). */
+export function graceAvailable(profile: Pick<Profile, 'dailyDay' | 'dailyStreak' | 'graceDay'>, day: number): boolean {
+  return Number.isInteger(day) && day <= MAX_DAILY_DAY && profile.dailyDay > 0 && profile.dailyStreak >= 2 && day === profile.dailyDay + 2
+    && (profile.graceDay === undefined || day - profile.graceDay >= GRACE_SPACING);
+}
+export function dailyReward(profile: Pick<Profile, 'dailyDay' | 'dailyStreak' | 'graceDay'>, day: number): { available: boolean; streak: number; gems: number; graced: boolean } {
   const available = Number.isInteger(day) && day <= MAX_DAILY_DAY && day > profile.dailyDay;
-  const streak = available && profile.dailyDay > 0 && day === profile.dailyDay + 1 ? profile.dailyStreak + 1 : available ? 1 : profile.dailyStreak;
-  return { available, streak, gems: 30 + 10 * Math.min(6, Math.max(0, streak - 1)) };
+  const graced = available && graceAvailable(profile, day);
+  const streak = available && profile.dailyDay > 0 && (day === profile.dailyDay + 1 || graced) ? profile.dailyStreak + 1 : available ? 1 : profile.dailyStreak;
+  return { available, streak, gems: 30 + 10 * Math.min(6, Math.max(0, streak - 1)), graced };
 }
