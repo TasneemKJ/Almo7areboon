@@ -12,6 +12,7 @@ concurrency:
 env:
   SOURCE_SHA: 53f7bf91db2589e5590c890636c51e5f972b0269
   REVIEW_REVISION: candidate
+  REVIEW_PREFERENCES_ONLY: '1'
 jobs:
   field-390:
     name: Matched first deployment and ordinary120seconds at390
