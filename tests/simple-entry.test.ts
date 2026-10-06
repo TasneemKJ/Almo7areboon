@@ -5,7 +5,7 @@ import { entryCopy, entryScreenHtml } from '../src/ui/entry-screen.ts';
 
 test('Home presents only Play and Settings, with the actual chapter artwork',()=>{
  const p=defaultProfile(),before=JSON.stringify(p),html=entryScreenHtml(p);
- assert.equal((html.match(/<button\b/g)||[]).length,2);
+ assert.equal((html.match(/<button\b(?![^>]*\bhidden)/g)||[]).length,2);
  assert.match(html,/data-command="enter-world"/);
  assert.match(html,/data-command="settings"/);
  assert.doesNotMatch(html,/data-unit|data-order|data-skill|data-tab|data-command="reset"/);

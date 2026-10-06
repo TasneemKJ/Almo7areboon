@@ -1,4 +1,5 @@
-import {entryCopy} from '../src/ui/entry-screen.ts';
+import {preferencesHtml,saveRecoveryHtml} from '../src/ui/preferences-screen.ts';
+import {entryCopy,hasPriorPlay,entrySecondary} from '../src/ui/entry-screen.ts';
 import {chapterLandscape} from '../src/ui/chapter-presentation.ts';
 import {journeyScreenHtml} from '../src/ui/journey-screen.ts';
 import {updateOrderBanner} from '../src/ui/battle-orders.ts';
@@ -34,7 +35,7 @@ import { createModalTapGuard } from '../src/ui/modal-tap-guard.ts';
 // Execute the app's actual functions with a clock and minimal DOM boundary; no browser/debug hooks.
 const source = readFileSync(new URL('../src/main.ts', import.meta.url), 'utf8');
 const ast = ts.createSourceFile('main.ts', source, ts.ScriptTarget.Latest, true, ts.ScriptKind.TS);
-const names = new Set(['playable', 'guardAction', 'action', 'persist', 'update', 'renderScreen', 'sessionPresentation', 'showResult', 'acquireSession', 'dismissModal', 'returnToChapters', 'clearPrestigeContext', 'openPrestige', 'refreshPrestige', 'returnFromPrestige', 'dailyRow', 'showQuests', 'showSettings', 'entryReady', 'syncEntry', 'enterWorld', 'showResultDetails', 'showHome', 'continueWithProvision']);
+const names = new Set(['playable', 'guardAction', 'action', 'persist', 'update', 'renderScreen', 'sessionPresentation', 'showResult', 'acquireSession', 'dismissModal', 'returnToChapters', 'clearPrestigeContext', 'openPrestige', 'refreshPrestige', 'returnFromPrestige', 'dailyRow', 'showQuests', 'showSettings', 'showSaveRecovery', 'preferenceNotice', 'showFieldPause', 'showLeaveBattle', 'leaveBattle', 'enterCamp', 'entryReady', 'syncEntry', 'enterWorld', 'showResultDetails', 'showHome', 'continueWithProvision']);
 const functions = ast.statements.filter(node => ts.isFunctionDeclaration(node) && node.name && names.has(node.name.text));
 assert.equal(functions.length, names.size);
 const click=ast.statements.find(node=>ts.isExpressionStatement(node)&&ts.isCallExpression(node.expression)&&node.expression.expression.getText(ast)==='lifetime.listen'&&node.expression.arguments[0]?.getText(ast)==='root'&&node.expression.arguments[1]?.getText(ast)==="'click'") as ts.ExpressionStatement;
@@ -54,20 +55,21 @@ function harness(motion = 'full') {
     closest(selector:string){return selector==='button'||(selector==='#modal-layer'&&!this.dataset.tab)?this:null;}
   }
   class BoundaryInput {
-    type='radio';checked=true;id='';name:string;value:string;
+    type='radio';checked=true;id='';dataset:Record<string,string>={};name:string;value:string;
     constructor(name:string,value:string){this.name=name;this.value=value;}
-    closest(selector:string){return selector===(this.name==='prestige-legacy'?'#modal-layer':'#secondary-screen')?this:null;}
+    closest(selector:string){return selector===((this.dataset.preference||this.name==='prestige-legacy')?'#modal-layer':'#secondary-screen')?this:null;}
   }
+  class BoundarySelect extends BoundaryInput {}
   const root = node(), elements = new Map<string, ReturnType<typeof node>>();
   const context: any = {
-    Element:BoundaryButton,HTMLInputElement:BoundaryInput, Game, game: new Game(defaultProfile()), sessionReady: true, retriedSession: false, pagePresent: true, lifetime: { disposed: false },
-    acquiring: null, acquisitionVersion: 0, hasPlayed: true, entryEntered: true, entrySaved: true, resultDetailsOpen:false, atmosphereEnabled:true,audioMix:{effects:100,atmosphere:100}, manualPaused: false, savedWarning: false, pendingImport: null, modal: null, evolutionFromResult: false, modalPointerSequence: false,prestigeOrigin:null,prestigeDraft:null,prestigeExpectedTimeline:null,
+    Element:BoundaryButton,HTMLInputElement:BoundaryInput,HTMLSelectElement:BoundarySelect, Game, game: new Game(defaultProfile()), sessionReady: true, retriedSession: false, pagePresent: true, lifetime: { disposed: false },
+    settingsOrigin:null,acquiring: null, acquisitionVersion: 0, hasPlayed: true, entryEntered: true, entrySaved: true, resultDetailsOpen:false, atmosphereEnabled:true,audioMix:{effects:100,atmosphere:100}, manualPaused: false, savedWarning: false, pendingImport: null, modal: null, evolutionFromResult: false, modalPointerSequence: false,prestigeOrigin:null,prestigeDraft:null,prestigeExpectedTimeline:null,
     lastUpdate: 0, lastSave: 100, lastPhase: 'ready', resultDue: 0, resultShown: '', activeTab: 'battle', root,
     performance: { now: () => now }, document: { documentElement: { dataset: { motion } } },
-    fieldControls:{update(){},clear(){},select(){}},blockModalTap:createModalTapGuard(),startCountUp,journeyScreenHtml,updateOrderBanner,entryCopy,chapterLandscape,
+    fieldControls:{update(){},clear(){},select(){}},blockModalTap:createModalTapGuard(),startCountUp,journeyScreenHtml,updateOrderBanner,entryCopy,hasPriorPlay,entrySecondary,preferencesHtml,saveRecoveryHtml,chapterLandscape,
     $: (id: string) => { if (!elements.has(id)) {const element=node();if(id==='battlefield')element.dataset={renderer:'ready'};elements.set(id,element);} return elements.get(id); },
     chronicleScreenHtml,chronicleActionFromData,chronicleGuidance,CAPTAINS,routeDefinition,advanceStatus, battleSelectionHtml, evolutionDialogHtml, ERAS, QUESTS, foodRate, unlockCost, dailyReward, localDay, battleGuidance, baseHealthDisplay, compactNumber, waveLabel, waveAccessibleLabel, chapterPresentation, unitPresentationName, compactResultsHtml, expeditionChoiceHtml, resultsHtml,isLegacyChoice,legacyEffects,prestigePreview,prestigeDetailsHtml,prestigeDialogHtml,legacyCurrentHtml,evolutionScreenHtml,saveSessionDialogHtml,temporarySessionNotice,skillCue,troopUnlockMessage,nextGoalLabel, waveInspectionHtml,
-    earlierChapter,storybookArt: () => false, money: String, coin: String, icon:()=>'',textIfChanged(target:any,value:string){target.textContent=value;},htmlIfChanged(target:any,value:string){target.innerHTML=value;},unlockAudio() {}, syncPause() {}, rebuildArmy() {}, syncMotion() {}, isolateModal(){}, toast() {},
+    earlierChapter,storybookArt: () => false, money: String, coin: String, icon:()=>'',textIfChanged(target:any,value:string){target.textContent=value;},htmlIfChanged(target:any,value:string){target.innerHTML=value;},unlockAudio() {}, suspendAudio() {}, saveAtmosphere() {}, syncMarks() {}, syncPause() {}, rebuildArmy() {}, syncMotion() {}, isolateModal(){}, toast() {},
     closeModal() { context.modal=null; }, showModal: (id: string,html:string,focusCommand?:string) => {context.modal=id;context.dialogHtml=html;context.focusCommand=focusCommand;dialogs.push(id);},
     session: {
       status: 'active', check: () => {if(foreign){context.session.status='conflict';context.sessionPresentation('conflict');return false;}return true;},
@@ -75,9 +77,9 @@ function harness(motion = 'full') {
       acquire: async () => ({ status: 'active', profile: defaultProfile(), loadStatus: 'loaded' }),
     },
   };
-  context.switchTab = (tab:string) => {context.activeTab=tab;context.update(true);};
+  context.switchTab = (tab:string) => {context.activeTab=tab;context.update(true);if(context.entryEntered&&tab==='battle'&&!context.modal&&['won','lost'].includes(context.game.state.phase))context.api.showResult();};
   runInNewContext(`${code}\nthis.api = { update, action, acquireSession, dismissModal, returnToChapters, showResult, renderScreen }; this.update = update;`, context);
-  return { context, dialogs, click:(command:string,detail=0)=>context.handleClick({target:new BoundaryButton({command}),detail,preventDefault(){}}), clickData:(dataset:Record<string,string>,detail=0,extra={})=>context.handleClick({target:new BoundaryButton(dataset),detail,preventDefault(){},...extra}), change:(name:string,value:string)=>context.handleChange({target:new BoundaryInput(name,value)}),clock: (value: number) => { now = value; }, foreign: () => { foreign = true; } };
+  return { context, dialogs, click:(command:string,detail=0)=>context.handleClick({target:new BoundaryButton({command}),detail,preventDefault(){}}), clickData:(dataset:Record<string,string>,detail=0,extra={})=>context.handleClick({target:new BoundaryButton(dataset),detail,preventDefault(){},...extra}), change:(name:string,value:string)=>context.handleChange({target:new BoundaryInput(name,value)}),preference:(name:string,value:string|boolean)=>{const input=['speed','motion'].includes(name)?new BoundarySelect('',String(value)):new BoundaryInput('',String(value));input.dataset.preference=name;input.type=typeof value==='boolean'?'checkbox':'select-one';input.checked=value===true;context.document.activeElement=input;context.handleChange({target:input});return input;},clock: (value: number) => { now = value; }, foreign: () => { foreign = true; } };
 }
 test('rapid touch continuation cannot activate the navigation exposed under the result',()=>{
  const h=harness(),c=h.context;
@@ -476,17 +478,120 @@ test('selecting a physical enemy or supplies never casts or spends on the first 
  h.clickData({fieldContext:'enemy'});assert.equal(selected,'enemy');assert.equal(JSON.stringify([c.game.profile,c.game.state]),before);
  h.clickData({fieldContext:'supplies'});assert.equal(selected,'supplies');assert.equal(JSON.stringify([c.game.profile,c.game.state]),before);
 });
-test('field Pause has exactly three focused actions and Camp preserves the live encounter',()=>{
+test('field Pause offers Resume Settings Home and holds the live encounter on Home',()=>{
  const h=harness(),c=h.context;c.game.dispatch({type:'start'});c.game.dispatch({type:'spawn',kind:0});
- const before=JSON.stringify([c.game.profile,c.game.state]);h.click('field-pause');assert.equal(c.modal,'field-pause');
+ const before=JSON.stringify([c.game.profile,c.game.state]);h.click('field-pause');
  assert.equal((c.dialogHtml.match(/<button\b/g)||[]).length,3);
- h.click('field-camp');assert.equal(c.root.dataset.fieldMode,'camp');assert.equal(c.manualPaused,true);assert.equal(c.modal,null);
- assert.equal(JSON.stringify([c.game.profile,c.game.state]),before);
- h.click('field-return');assert.equal(c.root.dataset.fieldMode,'field');assert.equal(c.manualPaused,false);
+ assert.match(c.dialogHtml,/data-command="home"/);assert.doesNotMatch(c.dialogHtml,/field-camp/);
+ h.click('home');assert.equal(c.entryEntered,false);assert.equal(c.modal,null);
  assert.equal(JSON.stringify([c.game.profile,c.game.state]),before);
 });
 test('explicit field Resume releases a manual pause without restarting the battle',()=>{
  const h=harness(),c=h.context;c.game.dispatch({type:'start'});c.manualPaused=true;
  const before=JSON.stringify([c.game.profile,c.game.state]);h.click('field-pause');h.click('field-resume');
  assert.equal(c.manualPaused,false);assert.equal(c.modal,null);assert.equal(JSON.stringify([c.game.profile,c.game.state]),before);
+});
+
+test('Preferences is seven native fields and three direct actions, with no nested catalogue',()=>{
+ const h=harness(),c=h.context;h.click('settings');
+ assert.equal((c.dialogHtml.match(/<button\b/g)||[]).length,3);
+ assert.equal((c.dialogHtml.match(/<input\b|<select\b/g)||[]).length,7);
+ for(const label of ['Sound','Atmosphere','Effects','Battle speed','Motion','Troop shapes','Save &amp; recovery','Start over','Done'])assert.match(c.dialogHtml,new RegExp(label));
+ assert.doesNotMatch(c.dialogHtml,/<details|data-command="retreat"|data-command="export"|data-command="import"/);
+});
+test('Settings Done returns to the paused surface without clearing manual pause',()=>{
+ const h=harness(),c=h.context;c.game.dispatch({type:'start'});c.manualPaused=true;
+ h.click('field-pause');h.click('settings');h.click('close');
+ assert.equal(c.modal,'field-pause');assert.equal(c.manualPaused,true);
+});
+test('ready Home Camp requires real prior play and never starts time or a wave',()=>{
+ const h=harness(),c=h.context;c.entryEntered=false;c.entrySaved=false;
+ h.click('home-camp');assert.equal(c.entryEntered,false);
+ c.game.dispatch({type:'start'});c.game.dispatch({type:'retreat'});c.game.dispatch({type:'retry'});
+ const before=JSON.stringify([c.game.profile,c.game.state]);h.click('home-camp');
+ assert.equal(c.entryEntered,true);assert.equal(c.root.dataset.fieldMode,'camp');assert.equal(c.game.state.phase,'ready');
+ assert.equal(c.game.state.time,0);assert.equal(c.game.state.wave,0);assert.equal(JSON.stringify([c.game.profile,c.game.state]),before);
+});
+test('Home leave requires a consequence confirmation and canonical defeat before ready Camp',()=>{
+ const h=harness(),c=h.context;c.game.dispatch({type:'start'});c.game.dispatch({type:'spawn',kind:0});
+ h.click('field-pause');h.click('home');const before=JSON.stringify([c.game.profile,c.game.state]);
+ h.click('leave-battle');assert.equal(c.modal,'leave-battle');assert.match(c.dialogHtml,/counts as a loss/i);assert.match(c.dialogHtml,/coins.*kept/i);
+ assert.equal((c.dialogHtml.match(/<button\b/g)||[]).length,2);assert.equal(JSON.stringify([c.game.profile,c.game.state]),before);
+ h.click('close');assert.equal(c.modal,null);assert.equal(c.entryEntered,false);assert.equal(JSON.stringify([c.game.profile,c.game.state]),before);
+ h.click('leave-battle');const dispatched:string[]=[];const dispatch=c.game.dispatch.bind(c.game);c.game.dispatch=(a:any)=>{dispatched.push(a.type);return dispatch(a);};
+ h.click('confirm-leave-battle');assert.deepEqual(dispatched,['retreat','retry']);assert.equal(c.root.dataset.fieldMode,'camp');assert.equal(c.entryEntered,true);assert.equal(c.game.state.phase,'ready');assert.equal(c.modal,null);
+ const after=JSON.stringify([c.game.profile,c.game.state]);h.click('confirm-leave-battle');assert.equal(JSON.stringify([c.game.profile,c.game.state]),after);
+});
+test('held victory and expedition receipt reject Home Camp without consuming the receipt',()=>{
+ for(const h of [settledHarness(),expeditionResultHarness()]){
+  const c=h.context;h.click('home');const before=JSON.stringify([c.game.profile,c.game.state]);h.click('home-camp');
+  assert.equal(c.entryEntered,false);assert.equal(JSON.stringify([c.game.profile,c.game.state]),before);
+  c.api.update(true);assert.equal(c.$('entry-secondary').hidden,true);
+  h.click('enter-world');assert.equal(c.modal,'result');assert.equal(JSON.stringify([c.game.profile,c.game.state]),before);
+ }
+});
+test('Home leave yields to ownership recovery before or during the canonical transition',()=>{
+ for(const during of [false,true]){const h=harness(),c=h.context;c.game.dispatch({type:'start'});h.click('field-pause');h.click('home');h.click('leave-battle');
+  if(during)c.session.save=()=>{c.session.status='conflict';c.sessionPresentation('conflict');return {ok:false};};else h.foreign();
+  h.click('confirm-leave-battle');assert.equal(c.modal,'session');assert.equal(c.entryEntered,false);assert.notEqual(c.game.state.phase,'ready');
+ }
+});
+
+test('native preference fields keep their node and independent audio intent while persisting exact choices',()=>{
+ const h=harness(),c=h.context;h.click('settings');const html=c.dialogHtml,mix=c.audioMix;let writes=0,suspended=0,unlocks=0;const atmosphere:boolean[]=[];
+ c.session.save=()=>{writes++;return {ok:true};};c.suspendAudio=()=>suspended++;c.unlockAudio=()=>unlocks++;c.saveAtmosphere=(v:boolean)=>atmosphere.push(v);
+ const sound=h.preference('sound',false);assert.equal(c.game.profile.sound,false);assert.equal(c.document.activeElement,sound);assert.equal(suspended,1);
+ h.preference('atmosphere',false);assert.equal(c.atmosphereEnabled,false);assert.deepEqual(atmosphere,[false]);assert.equal(writes,1);
+ h.preference('speed','2');h.preference('motion','reduced');h.preference('marks',true);
+ assert.equal(c.game.profile.speed,2);assert.equal(c.game.profile.motion,'reduced');assert.equal(c.game.profile.marks,true);assert.equal(writes,4);
+ h.preference('marks',false);assert.equal(c.game.profile.marks,undefined);
+ h.preference('sound',true);assert.equal(unlocks,1);assert.equal(c.atmosphereEnabled,false);assert.equal(c.audioMix,mix);
+ assert.equal(c.dialogHtml,html,'changing a field never replaces focused controls');assert.equal(c.modal,'settings');
+});
+test('native preference mutations reject invalid values, stale owner and foreign writer',()=>{
+ const h=harness(),c=h.context;h.click('settings');let writes=0;c.session.save=()=>{writes++;return {ok:true};};const before=JSON.stringify(c.game.profile);
+ h.preference('speed','3');h.preference('motion','spin');h.preference('unknown',true);assert.equal(JSON.stringify(c.game.profile),before);assert.equal(writes,0);
+ c.modal='save-recovery';h.preference('sound',false);assert.equal(JSON.stringify(c.game.profile),before);
+ c.modal='settings';h.foreign();h.preference('sound',false);assert.equal(c.modal,'session');assert.equal(JSON.stringify(c.game.profile),before);assert.equal(writes,0);
+});
+test('native preferences preserve future read-only sessions and allow temporary in-memory choices only',()=>{
+ for(const status of ['unsupported','conflict','unavailable']){const h=harness(),c=h.context;c.session.status=status;c.modal='settings';const before=JSON.stringify(c.game.profile);h.preference('sound',false);assert.equal(JSON.stringify(c.game.profile),before);}
+ const h=harness(),c=h.context;c.session.status='temporary';c.modal='settings';let writes=0;c.session.save=()=>{writes++;return {ok:true};};h.preference('sound',false);assert.equal(c.game.profile.sound,false);assert.equal(writes,0);
+});
+test('a failed preference save leaves a durable notice beside the still-focused controls',()=>{
+ const h=harness(),c=h.context;h.click('settings');c.session.save=()=>({ok:false,reason:'write-failed'});
+ const input=h.preference('speed','2');assert.equal(c.savedWarning,true);assert.match(c.$('preference-status').textContent,/Saving is unavailable/);assert.equal(c.document.activeElement,input);
+});
+test('Save Back and reset cancellation return to Preferences, then Done returns to the Pause Settings control',()=>{
+ const h=harness(),c=h.context;c.game.dispatch({type:'start'});h.click('field-pause');h.click('settings');
+ h.click('save-recovery');assert.equal(c.modal,'save-recovery');assert.equal((c.dialogHtml.match(/<button\b/g)||[]).length,3);
+ assert.match(c.dialogHtml,/data-command="export"/);assert.match(c.dialogHtml,/data-command="import"/);h.click('close');assert.equal(c.modal,'settings');assert.equal(c.focusCommand,'save-recovery');
+ h.click('reset');assert.equal(c.modal,'reset');assert.equal((c.dialogHtml.match(/<button\b/g)||[]).length,3);h.click('close');assert.equal(c.modal,'settings');assert.equal(c.focusCommand,'reset');
+ h.click('close');assert.equal(c.modal,'field-pause');assert.equal(c.focusCommand,'settings');
+});
+test('Home exposes the correct secondary action for a held battle, ready history and pending receipts',()=>{
+ const h=harness(),c=h.context;c.entryEntered=false;c.entrySaved=false;c.api.update(true);assert.equal(c.$('entry-play').textContent,'Play');assert.equal(c.$('entry-secondary').hidden,true);
+ c.game.dispatch({type:'start'});c.api.update(true);assert.equal(c.$('entry-play').textContent,'Continue');assert.equal(c.$('entry-secondary').textContent,'Leave battle…');assert.equal(c.$('entry-secondary').hidden,false);
+ c.game.dispatch({type:'retreat'});c.api.update(true);assert.equal(c.$('entry-secondary').hidden,true);
+ c.game.dispatch({type:'retry'});c.api.update(true);assert.equal(c.$('entry-secondary').textContent,'Camp');assert.equal(c.$('entry-secondary').hidden,false);
+ c.$('battlefield').dataset.renderer='failed';c.api.update(true);assert.equal(c.$('entry-secondary').hidden,true);
+});
+test('Camp Home returns to a ready Continue and starting from Camp restores physical field ownership',()=>{
+ const h=harness(),c=h.context;c.game.profile.deployed=1;c.entryEntered=false;h.click('home-camp');h.click('home');
+ assert.equal(c.entryEntered,false);assert.equal(c.game.state.phase,'ready');h.click('home-camp');h.click('start');assert.equal(c.game.state.phase,'running');assert.equal(c.root.dataset.fieldMode,'field');
+});
+test('Camp Home clears preparation chrome before exposing the three Home actions',()=>{
+ const h=harness(),c=h.context;c.game.profile.deployed=1;c.entryEntered=false;h.click('home-camp');h.click('home');
+ assert.equal(c.entryEntered,false);assert.equal(c.root.dataset.fieldMode,'field','the Camp Home control must not overlay Home');
+});
+test('Escape from Save or reset yields to a newly foreign writer instead of replacing recovery',()=>{
+ for(const owner of ['save-recovery','reset']){const h=harness(),c=h.context;h.click('settings');h.click(owner);h.foreign();c.api.dismissModal();assert.equal(c.modal,'session');}
+});
+test('Continue releases a held live battle without replacing troops or starting it again',()=>{
+ const h=harness(),c=h.context;c.game.dispatch({type:'start'});c.game.dispatch({type:'spawn',kind:0});c.game.step(1);c.manualPaused=true;
+ h.click('field-pause');h.click('home');const state=c.game.state,food=state.food;h.click('enter-world');
+ assert.equal(c.game.state,state);assert.equal(c.game.state.food,food);assert.equal(c.manualPaused,false);assert.equal(c.entryEntered,true);assert.equal(c.modal,null);
+});
+test('Start over confirmation focuses Keep my progress instead of a destructive action',()=>{
+ const h=harness(),c=h.context;h.click('settings');h.click('reset');assert.equal(c.focusCommand,'close');
 });

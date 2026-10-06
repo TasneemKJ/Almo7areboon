@@ -77,3 +77,12 @@ Ordered tasks. Tick a task when it is done and never delete finished tasks. This
 
 - [x] Give the temporary-session notice its own intrinsic row beneath physical play; retain optional role shapes on waiting recruits.
 - [ ] Native verify temporary-session warning, actual recruit ownership after resize, role shapes and later Camp/Chronicle paths on the integrated source.
+
+## Flat Preferences and Home/Camp ownership — 2026-10-06
+- [x] Source: seven flat native preference fields, three actions, focused save/recovery and explicit import/reset confirmation owners.
+- [x] Source: Pause Resume/Settings/Home, actual-play Home history, receipt-first Continue and confirmed canonical leave-battle to noncombat ready Camp.
+- [x] Source: preference node/focus preservation, persistent save warning, session conflict interruption, optional exact-true history normalization/reset tests.
+- [ ] Exact-candidate native verification: seven fields/three actions, 320px/portrait/short-landscape, keyboard/reader semantics, focus/scroll, reset/import cancellation, temporary/future/conflict saves, held receipts and expedition provision paths.
+- [ ] Adapt inherited browser scripts that still assume old Settings buttons, one-step retreat and pre-physical-field dashboard; they are not final-candidate acceptance evidence.
+- [ ] Replace existing dense Camp and result Details catalogue in a separate approved slice; this batch is not all-screen simplicity acceptance.
+- [ ] Native blocker from exact base 27917fe2: at 320×568 Camp food upgrade y528–572 is effectively 40px and covered by bottom navigation. Resolve through the next Camp redesign, preserving the real upgrade and 44px minimum; source-green Preferences is not publication acceptance.

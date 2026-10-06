@@ -61,3 +61,12 @@ test('replacing another modal with results resets scroll and focuses the outcome
  assert.equal(dialog.scrollTop,0,'scroll belongs only to a rerender of the same modal');
  assert.equal(document.activeElement,heading,'a cross-modal result transition must announce its outcome');
 });
+test('focused Preferences, recovery and consequence dialogs do not add a fourth Close control',()=>{
+ const layer:any={hidden:true,innerHTML:'',querySelector(){return null;},querySelectorAll(){return [];}};
+ const context:any={modal:null,modalVersion:0,focusFrame:0,focusBefore:null,document:{activeElement:null},lifetime:{disposed:false},playable:()=>true,$:()=>layer,icon:()=>'',isolateModal(){},syncPause(){},modalFocusables:()=>[],chronicleActionFromData,window:{cancelAnimationFrame(){}},requestAnimationFrame(){return 1;}};
+ runInNewContext(code,context);
+ for(const [name,count] of [['settings',3],['save-recovery',3],['reset',3],['import',2],['leave-battle',2],['field-pause',3]] as const){
+  context.showModal(name,'<h2 id="dialog-title">Test</h2>'+Array.from({length:count},(_,i)=>`<button data-command="test-${i}">Action</button>`).join(''));
+  assert.equal((layer.innerHTML.match(/<button\b/g)||[]).length,count,name);assert.doesNotMatch(layer.innerHTML,/close-button/);
+ }
+});

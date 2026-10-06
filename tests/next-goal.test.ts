@@ -36,5 +36,7 @@ test('programmatically focused dialog titles show no boxed outline unless keyboa
 test('baseline docs and automation exist and version is semantic', () => {
   for (const f of ['CREDITS.md', 'CHANGELOG.md', '.github/dependabot.yml', 'docs/performance-budgets.md']) assert.ok(readFileSync(f, 'utf8').length > 100, f);
   assert.match(JSON.parse(readFileSync('package.json', 'utf8')).version, /^\d+\.\d+\.\d+$/);
-  assert.match(readFileSync('src/main.ts', 'utf8'), /About and privacy/);
+  const preferences=readFileSync('src/ui/preferences-screen.ts','utf8');
+  assert.match(preferences,/Game progress stays in this browser/);
+  assert.doesNotMatch(preferences,/No accounts, tracking or servers/);
 });

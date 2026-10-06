@@ -19,6 +19,7 @@ import './ui/layout-polish.css';
 import './ui/skill-cues.css';
 import './ui/battle-banner.css';
 import './ui/simple-entry.css';
+import './ui/preferences.css';
 import './ui/landscape-rail.css';
 import { Game } from './game/simulation.ts';
 import { createBattlefieldPort } from './game/battlefield-port.ts';
@@ -35,7 +36,8 @@ import type { Action, GameEvent, LegacyChoice, Profile, Skill, UnitKind } from '
 import {advanceVillagePresentation,type VillagePresentation} from './view/village-mood.ts';
 import { unitPortrait } from './view/unit-illustrations.ts';
 import { chapterLandscape, chapterPresentation } from './ui/chapter-presentation.ts';
-import { entryCopy, entryScreenHtml } from './ui/entry-screen.ts';
+import { entryCopy, entryScreenHtml, hasPriorPlay, entrySecondary } from './ui/entry-screen.ts';
+import { preferencesHtml, saveRecoveryHtml } from './ui/preferences-screen.ts';
 import { evolutionScreenHtml } from './ui/evolution-screen.ts';
 import { icon } from './view/icons.ts';
 import { playCombatEvents, playSummonAudio, stopCombatAudio, unlockAudio, suspendAudio, disposeAudio, updateSoundscape, updateAudioMix } from './view/audio.ts';
@@ -81,6 +83,7 @@ let modalPointerSequence=false;
 const blockModalTap=createModalTapGuard();
 let sessionReady=false,pagePresent=true,resumeOwnership=false,acquisitionVersion=0,hasPlayed=false;
 let entryEntered=false,entrySaved=false,resultDetailsOpen=false;
+let settingsOrigin:'field-pause'|null=null;
 let acquiring:Promise<void>|null=null;
 const money=(value:number)=>value>=10000?compactNumber(value):Math.floor(value).toLocaleString('en-US');
 const coin=(value:number)=>`${icon('coin')}<span>${money(value)}</span>`;
@@ -106,7 +109,7 @@ root.innerHTML = `
     </section>
     <section class="upgrades" aria-label="Army upgrades"><div class="upgrade-row"><div class="upgrade-label">${icon('food')}<div>Food Production<small id="food-level"></small></div></div><button id="food-upgrade" class="buy-button" data-command="upgrade-food"></button></div><div class="upgrade-row"><div class="upgrade-label">${icon('heart')}<div>Base Health<small id="base-level"></small></div></div><button id="base-upgrade" class="buy-button" data-command="upgrade-base"></button></div></section>
   </div>
-  <button id="field-return" data-command="field-return">Back to battlefield</button>
+  <button id="field-return" data-command="home">Home</button>
   <section id="secondary-screen" class="secondary-screen" aria-labelledby="secondary-title" hidden></section>
   <p id="session-notice" class="session-notice" role="status" aria-live="polite" hidden></p>
   <nav class="bottom-nav" aria-label="Game screens">${[['battle','Battle'],['evolution','Evolution'],['cards','Cards'],['skills','Skills']].map(([id,label])=>`<button data-tab="${id}" class="nav-item ${id==='battle'?'active':''}" aria-label="${label}" aria-current="${id==='battle'?'page':'false'}">${icon(id)}<span>${label}</span></button>`).join('')}</nav>
@@ -152,7 +155,7 @@ async function acquireSession(){
     const loaded=await session.acquire();
     if(lifetime.disposed||version!==acquisitionVersion||!pagePresent)return;
     if(loaded.status==='active'&&loaded.profile){
-      game=new Game(loaded.profile);lastPhase=game.state.phase;resultDue=0;hasPlayed=true;sessionReady=true;entrySaved=loaded.loadStatus!=='new'&&loaded.loadStatus!=='corrupt';
+      game=new Game(loaded.profile);lastPhase=game.state.phase;resultDue=0;hasPlayed=true;sessionReady=true;entrySaved=hasPriorPlay(game.profile);
       manualPaused=false;resultShown='';savedWarning=false;pendingImport=null;evolutionFromResult=false;clearPrestigeContext();
       closeModal(false);rebuildArmy();syncMotion();switchTab('battle');
       if(loaded.loadStatus==='recovered')toast('Recovered your progress from the backup save.');
@@ -171,20 +174,24 @@ function syncEntry(){
   if(root!.dataset.entry!==mode)root!.dataset.entry=mode;
   if($('entry-screen').hidden!==entryEntered)$('entry-screen').hidden=entryEntered;
   if(entryEntered)return;
-  const copy=entryCopy(game.profile,entrySaved),failed=$('battlefield').dataset.renderer==='failed';
+  const copy=entryCopy(game.profile,entrySaved||hasPriorPlay(game.profile)),failed=$('battlefield').dataset.renderer==='failed';
   textIfChanged($('entry-play'),failed?'Reload':entryReady()?copy.action:'Loading…');
   $('entry-play').dataset.command=failed?'reload-world':'enter-world';
   textIfChanged($('entry-chapter'),copy.chapter);
   textIfChanged($('entry-subtitle'),failed?'The battlefield could not load. Reload to try again; your saved progress is kept.':copy.subtitle);
   const art=$('entry-art'),source=chapterLandscape(game.profile.enemyAge);
   if(art.dataset.source!==source){art.setAttribute('src',source);art.dataset.source=source;}
+  const secondary=entrySecondary(game.profile,game.state),extra=$('entry-secondary');
+  extra.hidden=failed||secondary===null;extra.dataset.command=secondary==='leave'?'leave-battle':'home-camp';
+  textIfChanged(extra,secondary==='leave'?'Leave battle…':'Camp');extra.toggleAttribute('disabled',!entryReady());
   $('entry-play').toggleAttribute('disabled',!playable()||(!failed&&!entryReady()));$('entry-settings').toggleAttribute('disabled',!playable());
 }
 function enterWorld(){
   if(entryEntered||modal||!guardAction()||!entryReady())return;
   root!.dataset.fieldMode='field';
   entryEntered=true;entrySaved=true;syncEntry();
-  if(game.state.phase==='ready'){manualPaused=false;action({type:'start'});}
+  manualPaused=false;
+  if(game.state.phase==='ready')action({type:'start'});
   switchTab('battle');
   if(!modal)$('world').focus({preventScroll:true});
 }
@@ -335,8 +342,8 @@ function showModal(id:string,html:string,focusCommand?:string){
   if(!replacing)focusBefore=document.activeElement as HTMLElement;
   modal=id;modalVersion++;const version=modalVersion;
   const dismissButton=`<button class="close-button" data-command="close" aria-label="Close">${icon('close')}</button>`;
-  const dismissMarkup=id==='field-pause'||id==='result'||id==='result-expedition'||id==='session'?'':id==='chronicle'?dismissButton:`<div class="dialog-dismiss">${dismissButton}</div>`;
-  layer.hidden=false;layer.innerHTML=`<section class="dialog ${(id==='result'||id==='result-expedition')?'result-dialog':id==='session'?'session-dialog':id==='prestige'?'prestige-dialog':id==='chronicle'?'chronicle-dialog':''}" role="dialog" tabindex="-1" aria-modal="true" aria-labelledby="dialog-title">${dismissMarkup}${html}</section>`;
+  const dismissMarkup=['field-pause','settings','save-recovery','reset','import','leave-battle','result','result-expedition','session'].includes(id)?'':id==='chronicle'?dismissButton:`<div class="dialog-dismiss">${dismissButton}</div>`;
+  layer.hidden=false;layer.innerHTML=`<section class="dialog ${(id==='result'||id==='result-expedition')?'result-dialog':id==='session'?'session-dialog':id==='settings'?'preferences-dialog':id==='prestige'?'prestige-dialog':id==='chronicle'?'chronicle-dialog':''}" role="dialog" tabindex="-1" aria-modal="true" aria-labelledby="dialog-title">${dismissMarkup}${html}</section>`;
   isolateModal(true);syncPause();window.cancelAnimationFrame(focusFrame);
   focusFrame=requestAnimationFrame(()=>{
     if(lifetime.disposed||layer.hidden||version!==modalVersion)return;
@@ -380,11 +387,31 @@ function showResultDetails(){
   showModal('result',`<button class="big-button secondary result-back" data-command="result-back">Back to result</button>${resultsHtml(game.profile,game.state)}`,'result-back');
 }
 function showHome(){
-  if(!guardAction()||(modal!=='field-pause'&&(modal!=='result'||!['won','lost'].includes(game.state.phase))))return;
+  const fromCamp=entryEntered&&root!.dataset.fieldMode==='camp'&&modal===null;
+  if(!guardAction()||(!fromCamp&&modal!=='field-pause'&&(modal!=='result'||!['won','lost'].includes(game.state.phase))))return;
   const owner=modal;persist();if(!playable()||modal!==owner)return;
   fieldControls.clear();
-  entryEntered=false;entrySaved=true;resultDetailsOpen=false;syncEntry();closeModal(false);syncPause();
+  entryEntered=false;entrySaved=hasPriorPlay(game.profile);root!.dataset.fieldMode='field';resultDetailsOpen=false;syncEntry();closeModal(false);syncPause();
   $('entry-play').focus({preventScroll:true});
+}
+function enterCamp(){
+  if(entryEntered||modal||!guardAction()||!entryReady()||entrySecondary(game.profile,game.state)!=='camp')return;
+  entryEntered=true;entrySaved=true;root!.dataset.fieldMode='camp';manualPaused=false;
+  fieldControls.clear();syncEntry();switchTab('battle');syncPause();$('field-return').focus({preventScroll:true});
+}
+function showFieldPause(focusCommand?:string){
+  if(!entryEntered||!guardAction()||game.state.phase!=='running')return;
+  fieldControls.clear();showModal('field-pause','<h2 id="dialog-title">A moment by the fire</h2><button class="big-button green" data-command="field-resume">Resume</button><button class="big-button secondary" data-command="settings">Settings</button><button class="big-button secondary" data-command="home">Home</button>',focusCommand);
+}
+function showLeaveBattle(){
+  if(entryEntered||modal||!guardAction()||entrySecondary(game.profile,game.state)!=='leave')return;
+  showModal('leave-battle','<h2 id="dialog-title">Leave this battle?</h2><p>Leaving counts as a loss. Coins you already earned are kept. Your current troops and battle progress end before you return to Camp.</p><button class="big-button danger" data-command="confirm-leave-battle">Leave for Camp</button><button class="big-button secondary" data-command="close">Keep this battle</button>','close');
+}
+function leaveBattle(){
+  if(entryEntered||modal!=='leave-battle'||!guardAction()||game.state.phase!=='running'||game.profile.pendingVictory)return;
+  if(!action({type:'retreat'})||!playable()||modal!=='leave-battle')return;
+  if(!action({type:'retry'})||!playable()||modal!=='leave-battle')return;
+  closeModal(false);enterCamp();
 }
 function continueWithProvision(provision:string|undefined){
   const run=game.profile.chronicle?.expedition;
@@ -425,7 +452,10 @@ function returnToChapters(){
   showModal('battles',battleSelectionHtml(game.profile,game.state));
 }
 function dismissModal(){
-  if(modal==='session')return;
+  if(modal==='session'||!guardAction())return;
+  if(modal==='settings'){const origin=settingsOrigin;settingsOrigin=null;if(origin==='field-pause'){showFieldPause('settings');return;}closeModal();return;}
+  if(modal==='save-recovery'||modal==='reset'){showSettings(modal==='reset'?'reset':'save-recovery');return;}
+  if(modal==='import'){pendingImport=null;showSaveRecovery('import');return;}
   if((modal==='chronicle'||modal==='journey'||modal==='quests')&&(game.state.phase==='won'||game.state.phase==='lost')){showResult();return;}
   if(modal==='prestige'){returnFromPrestige();return;}
   if(modal==='result-expedition'){showResult();return;}
@@ -437,21 +467,14 @@ function dismissModal(){
   if(modal==='evolve'&&evolutionFromResult){evolutionFromResult=false;showResult();return;}
   evolutionFromResult=false;closeModal();
 }
-function showSettings(){
-  showModal('settings',`<span class="eyebrow">ALMO7AREBOON</span><h2 id="dialog-title">Settings</h2>
-  <button class="setting-row" data-command="sound" aria-pressed="${game.profile.sound}">${icon('sound')} Sound <b>${game.profile.sound?'ON':'OFF'}</b></button>
-  <button class="setting-row" data-command="atmosphere" aria-pressed="${atmosphereEnabled}" aria-label="Music and environmental sound">Atmosphere <b>${atmosphereEnabled?'ON':'OFF'}</b></button>
-  <p class="save-note">Music and environmental sound. Pauses in menus and when the battle is paused. Sound is the master switch.</p>
-  <div class="audio-volume"><div class="audio-volume-label"><label for="effects-volume">Effects volume</label><output id="effects-volume-value" for="effects-volume">${audioMix.effects}%</output></div><input id="effects-volume" type="range" min="0" max="100" step="5" value="${audioMix.effects}" aria-valuetext="${audioMix.effects}%"></div>
-  <div class="audio-volume"><div class="audio-volume-label"><label for="atmosphere-volume">Atmosphere volume</label><output id="atmosphere-volume-value" for="atmosphere-volume">${audioMix.atmosphere}%</output></div><input id="atmosphere-volume" type="range" min="0" max="100" step="5" value="${audioMix.atmosphere}" aria-valuetext="${audioMix.atmosphere}%"></div>
-  <button class="setting-row" data-command="speed">${icon('evolution')} Battle speed <b>${game.profile.speed}×</b></button>
-  <button class="setting-row" data-command="marks" aria-pressed="${game.profile.marks===true}" aria-label="Troop shapes: circle melee, triangle ranged, square heavy">Troop shapes <b>${game.profile.marks?'ON':'OFF'}</b></button>
-  <button class="setting-row" data-command="motion" aria-pressed="${game.profile.motion==='reduced'}">Motion <b>${game.profile.motion==='reduced'?'REDUCED':'SYSTEM'}</b></button>
-  ${game.state.phase==='running'?'<button class="big-button secondary retreat-button" data-command="retreat">RETREAT FROM THIS BATTLE</button><p class="save-note">Retreating counts as a loss. Coins you already earned are kept.</p>':''}
-  <div class="backup-actions"><button class="big-button blue" data-command="export">EXPORT SAVE</button><button class="big-button secondary" data-command="import" ${session.status!=='active'?'disabled':''}>IMPORT SAVE</button><button class="big-button secondary" data-command="reset" ${session.status!=='active'?'disabled':''}>START OVER</button><input id="import-save" type="file" accept=".json,application/json" hidden></div>
-  <details class="help-box"><summary>How to play</summary><p>Tap Battle, collect food and deploy troops. Your army fights automatically.</p><p>Deployments and defeated enemies earn momentum. At 60, tap near your gate to Hold or near the enemy gate to Advance; the command buttons remain available. Advance adds 20% troop damage and 15% movement for 10 seconds; Hold reduces incoming troop and gate damage by 25% for 10 seconds.</p><p>Keep ranged troops behind a melee or heavy front line. Spend earned coins on food production and new troops.</p><p>Battle victories unlock opponents. Evolution upgrades your own army and resets coins and upgrades. Your selected opponent, unlocked battles and chapter seals stay.</p><small>1–3 troops · Q / W / E skills · Space pause · Escape closes menus.</small></details>
-  <details class="help-box"><summary>About and privacy</summary><p>No accounts, tracking or servers. Progress stays in this browser; export keeps a copy you control. Code and art are original; Phaser (MIT) runs the battlefield. See CREDITS.md in the project.</p></details>
-  <p class="save-note">${session.status==='temporary'?temporarySessionNotice:savedWarning?'Saving is unavailable. Export a backup before closing.':'Progress saves on this browser. Export a backup to keep a separate copy.'}</p>`);
+function preferenceNotice(){return session.status==='temporary'?temporarySessionNotice:savedWarning?'Saving is unavailable. Export a backup before closing.':'Progress saves in this browser. Export keeps a separate copy.';}
+function showSettings(focusCommand?:string){
+  if(!['settings','save-recovery','reset','import'].includes(modal??''))settingsOrigin=modal==='field-pause'?'field-pause':null;
+  showModal('settings',preferencesHtml(game.profile,atmosphereEnabled,audioMix,session.status==='active',preferenceNotice()),focusCommand);
+}
+function showSaveRecovery(focusCommand?:string){
+  if(!guardAction()||!['settings','import','save-recovery'].includes(modal??''))return;
+  showModal('save-recovery',saveRecoveryHtml(session.status==='active',preferenceNotice()),focusCommand);
 }
 function dailyRow(p:Profile){
   const day=localDay(),reward=dailyReward(p,day);
@@ -500,7 +523,6 @@ lifetime.listen<MouseEvent>(root,'click',e=>{
   }
   const command=button.dataset.command;
   if(command==='export'){exportSave();return;}
-  if(command==='retreat'){if(game.state.phase==='running'&&action({type:'retreat'})){manualPaused=false;closeModal(false);switchTab('battle');}return;}
   if(command==='session-continue'){retriedSession=true;void acquireSession();return;}
   if(command==='session-temporary'){
     if(pagePresent&&session.playTemporarily()){
@@ -510,15 +532,16 @@ lifetime.listen<MouseEvent>(root,'click',e=>{
   // Also protects direct preference mutations and synthetic clicks on isolated controls.
   if(!guardAction())return;
   if(modal&&!button.closest('#modal-layer'))return;
-  if(!entryEntered&&!modal&&command!=='enter-world'&&command!=='reload-world'&&command!=='settings')return;
+  if(!entryEntered&&!modal&&command!=='enter-world'&&command!=='reload-world'&&command!=='settings'&&command!=='home-camp'&&command!=='leave-battle')return;
   unlockAudio(game.profile.sound);
   if(command==='reload-world'){if(!entryEntered&&!modal&&$('battlefield').dataset.renderer==='failed')window.location.reload();return;}
   if(command==='enter-world'){enterWorld();return;}
   if(command==='home'){showHome();return;}
-  if(command==='field-pause'){fieldControls.clear();showModal('field-pause','<h2 id="dialog-title">A moment by the fire</h2><button class="big-button green" data-command="field-resume">Resume</button><button class="big-button secondary" data-command="settings">Settings</button><button class="big-button secondary" data-command="field-camp">Camp</button>');return;}
-  if(command==='field-resume'){manualPaused=false;closeModal();return;}
-  if(command==='field-camp'){root!.dataset.fieldMode='camp';manualPaused=true;fieldControls.clear();closeModal(false);switchTab('battle');return;}
-  if(command==='field-return'){root!.dataset.fieldMode='field';manualPaused=false;fieldControls.clear();switchTab('battle');root!.querySelector<HTMLElement>('[data-command="field-pause"]')?.focus({preventScroll:true});return;}
+  if(command==='home-camp'){enterCamp();return;}
+  if(command==='leave-battle'){showLeaveBattle();return;}
+  if(command==='confirm-leave-battle'){leaveBattle();return;}
+  if(command==='field-pause'){showFieldPause();return;}
+  if(command==='field-resume'){if(modal==='field-pause'){manualPaused=false;closeModal();}return;}
   if(command==='field-dismiss'){fieldControls.clear();return;}
   if(button.dataset.fieldContext){fieldControls.select(button.dataset.fieldContext,game);return;}
   if(button.closest('#field-targets'))fieldControls.clear();
@@ -560,7 +583,7 @@ lifetime.listen<MouseEvent>(root,'click',e=>{
     else toast('This pack is unavailable. Your gems were not spent.');return;
   }
   switch(button.dataset.command){
-    case 'start':manualPaused=false;action({type:'start'});break;
+    case 'start':manualPaused=false;if(action({type:'start'})){root!.dataset.fieldMode='field';update(true);}break;
     case 'upgrade-food':action({type:'upgrade',stat:'food'});break;
     case 'upgrade-base':action({type:'upgrade',stat:'base'});break;
     case 'battles':showModal('battles',battleSelectionHtml(game.profile,game.state));break;
@@ -607,22 +630,19 @@ lifetime.listen<MouseEvent>(root,'click',e=>{
     case 'speed':game.profile.speed=game.profile.speed===1?2:1;persist();update(true);if(modal==='settings'&&playable())showSettings();break;
     case 'settings':showSettings();break;
     case 'quests':showQuests();break;
-    case 'sound':game.profile.sound=!game.profile.sound;if(game.profile.sound)unlockAudio(true);else suspendAudio();persist();if(playable())showSettings();break;
-    case 'atmosphere':atmosphereEnabled=!atmosphereEnabled;saveAtmosphere(atmosphereEnabled);syncPause();showSettings();break;
-    case 'marks':if(game.profile.marks)delete game.profile.marks;else game.profile.marks=true;syncMarks();persist();if(playable())showSettings();break;
-    case 'motion':game.profile.motion=game.profile.motion==='reduced'?'system':'reduced';syncMotion();persist();if(playable())showSettings();break;
-    case 'import':$('import-save')?.click();break;
-    case 'reset':if(session.status!=='active')break;showModal('reset',`<h2 id="dialog-title">Start over?</h2><p>This deletes your progress on this browser: your age, coins, upgrades, unlocked battles, every card and all gems, quests and records.</p><p>Your sound, speed and motion choices stay. Export a save first if you might want this progress back.</p><button class="big-button blue" data-command="export">EXPORT SAVE FIRST</button><button class="big-button danger" data-command="confirm-reset">DELETE PROGRESS AND START OVER</button><button class="big-button secondary" data-command="close">KEEP MY PROGRESS</button>`);break;
+    case 'save-recovery':showSaveRecovery();break;
+    case 'import':if(modal==='save-recovery'&&session.status==='active')$('import-save')?.click();break;
+    case 'reset':if(modal!=='settings'||session.status!=='active')break;showModal('reset',`<h2 id="dialog-title">Start over?</h2><p>This deletes your progress on this browser: your age, coins, upgrades, unlocked battles, every card and all gems, quests and records.</p><p>Your sound, speed, motion and troop-shape choices stay. Export a save first if you might want this progress back.</p><button class="big-button blue" data-command="export">EXPORT SAVE FIRST</button><button class="big-button danger" data-command="confirm-reset">DELETE PROGRESS AND START OVER</button><button class="big-button secondary" data-command="close">KEEP MY PROGRESS</button>`,'close');break;
     case 'confirm-reset':{
-      if(session.status!=='active')break;
+      if(modal!=='reset'||session.status!=='active')break;
       const restored=restoreBackupWithSave(game,startOverProfile(game.profile),profile=>session.save(profile).ok);
       if(!restored.ok){toast('The new game could not be saved. Your current progress was not deleted.');break;}
-      game=restored.game;lastPhase=game.state.phase;resultDue=0;manualPaused=false;resultShown='';savedWarning=false;clearPrestigeContext();rebuildArmy();syncMotion();closeModal(false);switchTab('battle');toast('Started a new game.');break;
+      game=restored.game;entryEntered=false;entrySaved=hasPriorPlay(game.profile);settingsOrigin=null;root!.dataset.fieldMode='field';lastPhase=game.state.phase;resultDue=0;manualPaused=false;resultShown='';savedWarning=false;clearPrestigeContext();rebuildArmy();syncMotion();closeModal(false);switchTab('battle');toast('Started a new game.');break;
     }
     case 'confirm-import':{
-      if(!pendingImport||session.status!=='active')break;const restored=restoreBackupWithSave(game,pendingImport,profile=>session.save(profile).ok);
+      if(modal!=='import'||!pendingImport||session.status!=='active')break;const restored=restoreBackupWithSave(game,pendingImport,profile=>session.save(profile).ok);
       if(!restored.ok){toast('The save could not be written. Your current game was not replaced.');break;}
-      game=restored.game;lastPhase=game.state.phase;resultDue=0;manualPaused=false;resultShown='';savedWarning=false;clearPrestigeContext();rebuildArmy();syncMotion();closeModal(false);switchTab('battle');toast('Save restored.');break;
+      game=restored.game;entryEntered=false;entrySaved=hasPriorPlay(game.profile);settingsOrigin=null;root!.dataset.fieldMode='field';lastPhase=game.state.phase;resultDue=0;manualPaused=false;resultShown='';savedWarning=false;clearPrestigeContext();rebuildArmy();syncMotion();closeModal(false);switchTab('battle');toast('Save restored.');break;
     }
     case 'close':dismissModal();break;
   }
@@ -641,7 +661,25 @@ lifetime.listen<Event>(root,'input',e=>{
   textIfChanged($(`${input.id}-value`),percentage);
 });
 lifetime.listen<Event>(root,'change',async e=>{
-  const input=e.target;if(!(input instanceof HTMLInputElement))return;
+  const input=e.target;
+  if(input instanceof HTMLInputElement||input instanceof HTMLSelectElement){
+    const preference=input.dataset.preference;
+    if(preference){
+      if(modal!=='settings'||!input.closest('#modal-layer')||!guardAction()||modal!=='settings')return;
+      if(input instanceof HTMLInputElement&&input.type==='checkbox'){
+        if(preference==='sound'){game.profile.sound=input.checked;if(input.checked)unlockAudio(true);else suspendAudio();}
+        else if(preference==='atmosphere'){atmosphereEnabled=input.checked;saveAtmosphere(atmosphereEnabled);syncPause();return;}
+        else if(preference==='marks'){if(input.checked)game.profile.marks=true;else delete game.profile.marks;syncMarks();}
+        else return;
+      }else if(input instanceof HTMLSelectElement){
+        if(preference==='speed'&&(input.value==='1'||input.value==='2'))game.profile.speed=Number(input.value) as 1|2;
+        else if(preference==='motion'&&(input.value==='system'||input.value==='reduced')){game.profile.motion=input.value;syncMotion();}
+        else return;
+      }else return;
+      persist();syncPause();update(true);if(modal==='settings')textIfChanged($('preference-status'),preferenceNotice());return;
+    }
+  }
+  if(!(input instanceof HTMLInputElement))return;
   if(input.type==='radio'&&isLegacyChoice(input.value)&&input.checked){
     if(input.name==='prestige-legacy'){
       if(modal!=='prestige'||!input.closest('#modal-layer')||!guardAction())return;
@@ -654,19 +692,19 @@ lifetime.listen<Event>(root,'change',async e=>{
       return;
     }
   }
-  if(input.id!=='import-save')return;
+  if(input.id!=='import-save'||modal!=='save-recovery')return;
   const request=++importRequest;
   if(session.status!=='active'||!guardAction())return;
   const file=input.files?.[0],version=modalVersion;if(!file)return;
   if(file.size>MAX_SAVE_CHARS){toast('Choose a save file smaller than 100 KB.');input.value='';return;}
   try{
     const decoded=importBackup(await file.text());
-    if(request!==importRequest||lifetime.disposed||version!==modalVersion||modal!=='settings'||session.status!=='active'||!guardAction())return;
+    if(request!==importRequest||lifetime.disposed||version!==modalVersion||modal!=='save-recovery'||session.status!=='active'||!guardAction())return;
     if(!decoded.ok){toast(decoded.error);input.value='';return;}
     pendingImport=decoded.profile;
-    showModal('import',`<h2 id="dialog-title">Replace this save?</h2><p>Import timeline ${pendingImport.timeline}, ${chapterPresentation(pendingImport.age).title}, with ${money(pendingImport.coins)} coins.</p><p>Your current progress in this browser will be replaced. Export it first to keep a separate copy.</p><button class="big-button blue" data-command="confirm-import">REPLACE WITH THIS SAVE</button><button class="big-button secondary" data-command="close">CANCEL</button>`);
+    showModal('import',`<h2 id="dialog-title">Replace this save?</h2><p>Import timeline ${pendingImport.timeline}, ${chapterPresentation(pendingImport.age).title}, with ${money(pendingImport.coins)} coins.</p><p>Your current progress in this browser will be replaced. Export it first to keep a separate copy.</p><button class="big-button blue" data-command="confirm-import">REPLACE WITH THIS SAVE</button><button class="big-button secondary" data-command="close">CANCEL</button>`,'close');
   }catch{
-    if(request!==importRequest||lifetime.disposed||version!==modalVersion||modal!=='settings'||session.status!=='active'||!guardAction())return;
+    if(request!==importRequest||lifetime.disposed||version!==modalVersion||modal!=='save-recovery'||session.status!=='active'||!guardAction())return;
     input.value='';
     toast('The selected file could not be read. Your current game was not changed.');
   }

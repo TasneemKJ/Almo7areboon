@@ -110,6 +110,7 @@ export class Game implements GamePort {
       case 'start':
         if (this.state.phase !== 'ready') return false;
         this.state.phase = 'running';
+        this.profile.played = true;
         return true;
       case 'retreat':
         // Some fights stall (long-range defenders against a weak army), and only a reload could end them. Retreating is an ordinary
