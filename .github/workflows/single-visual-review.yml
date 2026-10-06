@@ -1,5 +1,5 @@
-# Disposable QA branch only. Exactly two bounded entry/result jobs; no manual dispatch or artifact quota gate.
-name: Almo physical-play first120seconds
+# Prepared disposable QA workflow only. Three independently scoped native jobs, no dispatch or artifact quota gate.
+name: Almo physical Camp exact-source review
 'on':
   push:
     branches:
@@ -7,19 +7,20 @@ name: Almo physical-play first120seconds
 permissions:
   contents: read
 concurrency:
-  group: almo-world-play-${{ github.ref }}
+  group: almo-physical-camp-${{ github.ref }}
   cancel-in-progress: false
 env:
-  SOURCE_SHA: 53f7bf91db2589e5590c890636c51e5f972b0269
+  SOURCE_SHA: e2d8f2f59b86caa8caf4c80bbf49ccb2e7f2b7ce
+  SOURCE_TREE: dd2e1d9c59666d4ed5441514854b1275a6e44b5e
   REVIEW_REVISION: candidate
-  REVIEW_PREFERENCES_ONLY: '1'
+  npm_config_update_notifier: 'false'
 jobs:
-  field-390:
-    name: Matched first deployment and ordinary120seconds at390
+  camp-390:
+    name: Same returning-profile ready Camp before and after at390
     runs-on: ubuntu-latest
     timeout-minutes: 15
     env:
-      REVIEW_CASE: field-390
+      REVIEW_CASE: camp-390
     steps:
       - uses: actions/checkout@v7
         with:
@@ -33,47 +34,51 @@ jobs:
       - uses: actions/checkout@v7
         with:
           path: baseline
-          ref: bf79938e26ed2d963a76fa4db3102dd4e30fe822
+          ref: 53f7bf91db2589e5590c890636c51e5f972b0269
           persist-credentials: false
       - uses: actions/setup-node@v7
         with:
           node-version: '22'
-      - name: Verify and build immutable sources with bounded setup output
+      - name: Verify immutable source and build with bounded setup output
         id: build
         shell: bash
         run: |
           set -euo pipefail
           bounded() {
-            local log="${RUNNER_TEMP}/almo-entry-setup.log"
+            local log="${RUNNER_TEMP}/almo-camp-setup.log"
             if "$@" >"$log" 2>&1; then tail -c 12000 "$log"; else tail -c 24000 "$log"; return 1; fi
           }
           test "$(git -C candidate rev-parse HEAD)" = "$SOURCE_SHA"
-          test "$(git -C candidate rev-parse HEAD^{tree})" = 49bb9cf35feda86a15797573d1e2df4b756065dd
-          test "$(git -C baseline rev-parse HEAD)" = bf79938e26ed2d963a76fa4db3102dd4e30fe822
+          test "$(git -C candidate rev-parse HEAD^{tree})" = "$SOURCE_TREE"
           git -C candidate diff --exit-code HEAD --
+          test -z "$(git -C candidate ls-files --others --exclude-standard)"
+          (cd candidate; bounded npm ci --ignore-scripts; bounded npm run build; bounded npx --no-install playwright install --with-deps chromium)
+          test "$(git -C baseline rev-parse HEAD)" = 53f7bf91db2589e5590c890636c51e5f972b0269
+          test "$(git -C baseline rev-parse HEAD^{tree})" = 49bb9cf35feda86a15797573d1e2df4b756065dd
           git -C baseline diff --exit-code HEAD --
-          (cd candidate; bounded npm ci --ignore-scripts; bounded npm run build; bounded npx playwright install --with-deps chromium)
+          test -z "$(git -C baseline ls-files --others --exclude-standard)"
           (cd baseline; bounded npm ci --ignore-scripts; bounded npm run build)
-      - name: Baseline initial empty-profile screen
+      - name: Baseline ready Camp with identical returning profile
         if: ${{ !cancelled() && steps.build.outcome == 'success' }}
         working-directory: baseline
         env:
-          SOURCE_SHA: bf79938e26ed2d963a76fa4db3102dd4e30fe822
+          SOURCE_SHA: 53f7bf91db2589e5590c890636c51e5f972b0269
+          SOURCE_TREE: 49bb9cf35feda86a15797573d1e2df4b756065dd
           REVIEW_REVISION: baseline
         run: flock /tmp/browser.lock node --experimental-strip-types ../harness/scripts/capture-entry.mjs
-      - name: Candidate physical recruitment and ordinary120seconds
+      - name: Candidate native scoped checks
         if: ${{ !cancelled() && steps.build.outcome == 'success' }}
         working-directory: candidate
         run: flock /tmp/browser.lock node --experimental-strip-types ../harness/scripts/capture-entry.mjs
-      - name: Atomically transport at most three untouched originals for whole job
+      - name: Atomically transport at most three untouched original PNGs for whole job
         if: ${{ !cancelled() && steps.build.outcome == 'success' }}
         run: python3 harness/scripts/emit-originals.py baseline/artifacts/entry-review candidate/artifacts/entry-review
-  field-320-rotate:
-    name: Physical targets, Gather and rotation during120seconds at320
+  camp-320-rotate:
+    name: Physical places, exact paid upgrades, rotation and deliberate Battle
     runs-on: ubuntu-latest
     timeout-minutes: 15
     env:
-      REVIEW_CASE: field-320-rotate
+      REVIEW_CASE: camp-320-rotate
     steps:
       - uses: actions/checkout@v7
         with:
@@ -87,26 +92,64 @@ jobs:
       - uses: actions/setup-node@v7
         with:
           node-version: '22'
-      - name: Verify and build immutable source with bounded setup output
+      - name: Verify immutable source and build with bounded setup output
         id: build
         shell: bash
         run: |
           set -euo pipefail
           bounded() {
-            local log="${RUNNER_TEMP}/almo-entry-setup.log"
+            local log="${RUNNER_TEMP}/almo-camp-setup.log"
             if "$@" >"$log" 2>&1; then tail -c 12000 "$log"; else tail -c 24000 "$log"; return 1; fi
           }
           test "$(git -C candidate rev-parse HEAD)" = "$SOURCE_SHA"
-          test "$(git -C candidate rev-parse HEAD^{tree})" = 49bb9cf35feda86a15797573d1e2df4b756065dd
+          test "$(git -C candidate rev-parse HEAD^{tree})" = "$SOURCE_TREE"
           git -C candidate diff --exit-code HEAD --
-          cd candidate
-          bounded npm ci --ignore-scripts
-          bounded npm run build
-          bounded npx playwright install --with-deps chromium
-      - name: Candidate physical targets, Gather, commands and rotation
+          test -z "$(git -C candidate ls-files --others --exclude-standard)"
+          (cd candidate; bounded npm ci --ignore-scripts; bounded npm run build; bounded npx --no-install playwright install --with-deps chromium)
+      - name: Candidate native scoped checks
         if: ${{ !cancelled() && steps.build.outcome == 'success' }}
         working-directory: candidate
         run: flock /tmp/browser.lock node --experimental-strip-types ../harness/scripts/capture-entry.mjs
-      - name: Atomically transport at most three untouched originals for whole job
+      - name: Atomically transport at most three untouched original PNGs for whole job
+        if: ${{ !cancelled() && steps.build.outcome == 'success' }}
+        run: python3 harness/scripts/emit-originals.py candidate/artifacts/entry-review
+  preferences-home-390:
+    name: Separate Preferences, Home, late saving warning and recovery ownership
+    runs-on: ubuntu-latest
+    timeout-minutes: 15
+    env:
+      REVIEW_CASE: preferences-home-390
+    steps:
+      - uses: actions/checkout@v7
+        with:
+          path: harness
+          persist-credentials: false
+      - uses: actions/checkout@v7
+        with:
+          path: candidate
+          ref: ${{ env.SOURCE_SHA }}
+          persist-credentials: false
+      - uses: actions/setup-node@v7
+        with:
+          node-version: '22'
+      - name: Verify immutable source and build with bounded setup output
+        id: build
+        shell: bash
+        run: |
+          set -euo pipefail
+          bounded() {
+            local log="${RUNNER_TEMP}/almo-camp-setup.log"
+            if "$@" >"$log" 2>&1; then tail -c 12000 "$log"; else tail -c 24000 "$log"; return 1; fi
+          }
+          test "$(git -C candidate rev-parse HEAD)" = "$SOURCE_SHA"
+          test "$(git -C candidate rev-parse HEAD^{tree})" = "$SOURCE_TREE"
+          git -C candidate diff --exit-code HEAD --
+          test -z "$(git -C candidate ls-files --others --exclude-standard)"
+          (cd candidate; bounded npm ci --ignore-scripts; bounded npm run build; bounded npx --no-install playwright install --with-deps chromium)
+      - name: Candidate native scoped checks
+        if: ${{ !cancelled() && steps.build.outcome == 'success' }}
+        working-directory: candidate
+        run: flock /tmp/browser.lock node --experimental-strip-types ../harness/scripts/capture-entry.mjs
+      - name: Atomically transport at most three untouched original PNGs for whole job
         if: ${{ !cancelled() && steps.build.outcome == 'success' }}
         run: python3 harness/scripts/emit-originals.py candidate/artifacts/entry-review

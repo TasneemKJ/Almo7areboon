@@ -1,11 +1,49 @@
-/** Pure contract checks; no browser/server and fixture pixels are not game evidence. */
-import test from 'node:test';import assert from 'node:assert/strict';import {readFileSync} from 'node:fs';
+/** Static preparation checks only; never launches a browser or server. */
+import test from 'node:test';
+import assert from 'node:assert/strict';
+import {readFileSync} from 'node:fs';
 import {assertReachable} from './review-geometry.mjs';
-const capture=readFileSync(new URL('./capture-entry.mjs',import.meta.url),'utf8'),workflow=readFileSync(new URL('../.github/workflows/single-visual-review.yml',import.meta.url),'utf8'),emitter=readFileSync(new URL('./emit-originals.py',import.meta.url),'utf8');
-test('both real field case IDs are accepted by capture, workflow and transport',()=>{for(const id of ['field-390','field-320-rotate'])for(const text of [capture,workflow,emitter])assert(text.includes(id));assert(!emitter.includes('compare-390'));});
-test('the fresh first120seconds has no prepared profile or direct game mutation',()=>{const flow=capture.slice(capture.indexOf('async function ordinaryField()'));assert.match(flow,/open\('ordinary-empty-profile-120seconds'\)/);assert(!flow.includes('fixture:'));assert.match(flow,/performance\.now\(\).*120000/);assert.match(capture,/assert\.deepEqual\(initial,\[null,null\]/);for(const banned of [/addStyleTag/,/clock\.(install|pause|fastForward)/,/\.dispatch\(/,/\.step\(/,/dispatchEvent\(/,/\.focus\(/])assert(!banned.test(capture),String(banned));});
-test('keyboard modality is entered even if the recruit still owns touch focus',()=>{assert.match(capture,/await key\(page,'Tab'\);await tabTo\(page,recruit\);assert\(.*focusVisible/);});
-test('field uses real world targets and canonical observed progression',()=>{assert.match(capture,/\.deployed===n\+1/);assert.match(capture,/realGatherRelease:released/);assert.match(capture,/data-field-gate="advance"/);assert.match(capture,/selection alone cannot cast/);assert.match(capture,/native viewport rotation back to320x568/);});
-test('two bounded jobs build pinned immutable source and transport original images',()=>{assert.equal((workflow.match(/^  field-(390|320-rotate):$/gm)||[]).length,2);assert.match(workflow,/53f7bf91db2589e5590c890636c51e5f972b0269/);assert.match(workflow,/49bb9cf35feda86a15797573d1e2df4b756065dd/);assert(!workflow.includes('workflow_dispatch'));assert(!workflow.includes('upload-artifact'));assert.match(capture,/scale:'css'/);assert.match(workflow,/flock \/tmp\/browser\.lock/);});
-test('touch geometry still rejects clipped and occluded controls',()=>{const rect=(w,h)=>({left:0,top:0,right:w,bottom:h,width:w,height:h});const row={visible:true,name:'Recruit',box:rect(44,44),effective:rect(44,44),viewport:rect(390,844),hits:[{accepted:true}]};assert.doesNotThrow(()=>assertReachable(row));assert.throws(()=>assertReachable({...row,hits:[{accepted:false}]}));assert.throws(()=>assertReachable({...row,effective:rect(43,44)}));});
-test('rendered body readiness matches actual CSS viewport and failed points are retained',()=>{assert.match(capture,/frame.width-world.clientWidth/);assert.match(capture,/frame.height-world.clientHeight/);assert(capture.indexOf('manifest.renderedContactAttempts')<capture.indexOf("assert(point&&point.owns"));});
+const read=p=>readFileSync(new URL(p,import.meta.url),'utf8');
+const capture=read('./capture-entry.mjs'),workflow=read('../.github/workflows/single-visual-review.yml'),emitter=read('./emit-originals.py');
+test('three independent native jobs separate Camp comparison, touch/rotation, and Preferences/Home',()=>{
+ for(const id of ['camp-390','camp-320-rotate','preferences-home-390'])for(const text of [capture,workflow,emitter])assert(text.includes(id),id);
+ assert.equal((workflow.match(/^  (camp-390|camp-320-rotate|preferences-home-390):$/gm)||[]).length,3);
+ assert(!workflow.includes('workflow_dispatch'));assert(!workflow.includes('upload-artifact'));
+});
+test('matched ready Camp seeds the identical fixture without first starting battle',()=>{
+ assert.match(capture,/fixtures\/returning-profile\.json/);
+ const flow=capture.slice(capture.indexOf('async function matchedCamp()'),capture.indexOf('async function campTouchRotation()'));
+ assert.match(flow,/enterReadyCamp/);assert(!flow.includes('#entry-play'));assert.match(capture,/fixtureSha256/);
+});
+test('read-only ready observations retain food, waves, profile and phase',()=>{
+ assert.match(capture,/async function assertReadyFrozen/);assert.match(capture,/after\.phase,'ready'/);
+ assert.match(capture,/after\.food,before\.food/);assert.match(capture,/after\.wave,before\.wave/);assert.match(capture,/after\.saved,before\.saved/);
+});
+test('all four physical targets and canonical purchases are observed by native touch',()=>{
+ for(const place of ['storehouse','gate','company','journal'])assert(capture.includes(place));
+ assert.match(capture,/foodUpgradeCost/);assert.match(capture,/before\.coins-cost/);assert.match(capture,/data-work-level/);
+ assert.match(capture,/camp-battle/);assert.match(capture,/native viewport rotation to844x390/);
+});
+test('Preferences selectors are modal scoped and input fields are distinct from buttons',()=>{
+ assert.match(capture,/fields,7/);assert.match(capture,/\#modal-layer \[data-command="settings"\]/);assert.match(capture,/\#modal-layer \[data-command="home"\]/);
+ for(const name of ['settings','home','close','reset','save-recovery'])assert(!capture.includes(`tap(page,'[data-command="${name}"]')`));
+ assert.match(capture,/const footer=async command=>.*#modal-layer/s);
+});
+test('late warning fixture keeps native focus and scroll while real autosave runs',()=>{
+ assert.match(capture,/Storage\.prototype\.setItem/);assert.match(capture,/fault\.armed/);assert.match(capture,/same warning node/);
+ assert.match(capture,/same focused element/);assert.match(capture,/same dialog scroll/);assert.match(capture,/same-origin foreign storage write/);
+});
+test('no simulation, renderer, CSS, or clock shortcuts; bounded actual animation settling',()=>{
+ for(const banned of [/addStyleTag/,/clock\.(install|pause|fastForward)/,/\.dispatch\(/,/\.step\(/,/dispatchEvent\(/,/\.focus\(/])assert(!banned.test(capture),String(banned));
+ assert.match(capture,/async function settle/);assert.match(capture,/timeout:2500/);assert.match(capture,/isTrusted/);assert.match(capture,/scale:'css'/);
+});
+test('44px topmost geometry rejects clipping and occlusion',()=>{
+ const rect=(w,h)=>({left:0,top:0,right:w,bottom:h,width:w,height:h});
+ const row={visible:true,name:'Storehouse',box:rect(44,44),effective:rect(44,44),viewport:rect(390,844),hits:[{accepted:true}]};
+ assert.doesNotThrow(()=>assertReachable(row));assert.throws(()=>assertReachable({...row,hits:[{accepted:false}]}));assert.throws(()=>assertReachable({...row,effective:rect(43,44)}));
+});
+test('runtime verifies exact source/tree and preserves explicit unaccepted advanced leaves',()=>{
+ assert.match(workflow,/53f7bf91db2589e5590c890636c51e5f972b0269/);assert.match(workflow,/49bb9cf35feda86a15797573d1e2df4b756065dd/);
+ assert.match(capture,/expectedTree/);assert.match(capture,/advancedLeavesAccepted:false/);assert.match(capture,/buildTreeSha256/);
+ assert.match(workflow,/npm ci --ignore-scripts/);assert.match(workflow,/npx --no-install playwright install/);
+});

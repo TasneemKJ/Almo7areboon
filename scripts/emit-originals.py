@@ -11,9 +11,10 @@ import sys
 MAX_JOB_BYTES = 3_932_160  # Strictly below 3.75 MiB including timestamp estimates and reserved workflow output.
 RESERVED_OTHER_LOG_BYTES = 524_288
 MAX_TRANSPORT_BYTES = MAX_JOB_BYTES - RESERVED_OTHER_LOG_BYTES
-CASE_VIEWPORT = {'field-390': '390x844', 'field-320-rotate': '320x568'}
+CASE_VIEWPORT = {'camp-390': '390x844', 'camp-320-rotate': '320x568', 'preferences-home-390': '390x844'}
 DIMENSIONS = {'390x844': {(390, 844)}, '320x568': {(320, 568), (844, 390)}}
-BASELINE_SHA = 'bf79938e26ed2d963a76fa4db3102dd4e30fe822'
+BASELINE_TREE = '49bb9cf35feda86a15797573d1e2df4b756065dd'
+BASELINE_SHA = '53f7bf91db2589e5590c890636c51e5f972b0269'
 
 def require(condition, message):
     if not condition:
@@ -21,9 +22,11 @@ def require(condition, message):
 
 def encode_batch(roots, env):
     candidate = env['SOURCE_SHA']
+    candidate_tree = env['SOURCE_TREE']
     case = env['REVIEW_CASE']
     workflow = env['GITHUB_SHA']
     require(re.fullmatch('[0-9a-f]{40}', candidate), 'Missing exact candidate source commit.')
+    require(re.fullmatch('[0-9a-f]{40}', candidate_tree), 'Missing exact candidate source tree.')
     require(re.fullmatch('[0-9a-f]{40}', workflow), 'Missing exact workflow commit.')
     require(case in CASE_VIEWPORT, 'Unexpected review case.')
     manifests, selected, revisions = [], [], []
@@ -34,7 +37,7 @@ def encode_batch(roots, env):
         require(revision in ('baseline', 'candidate'), 'Unknown source revision.')
         revisions.append(revision)
         require(manifest['sourceCommit'] == (BASELINE_SHA if revision == 'baseline' else candidate), 'Screenshot source mismatch.')
-        require(re.fullmatch('[0-9a-f]{40}', manifest['sourceTree']), 'Missing exact source tree.')
+        require(manifest['sourceTree'] == (BASELINE_TREE if revision == 'baseline' else candidate_tree), 'Exact source tree mismatch.')
         require(manifest['workflowCommit'] == workflow, 'Workflow source mismatch.')
         require(manifest['reviewCase'] == case and manifest['viewportName'] == CASE_VIEWPORT[case], 'Job identity mismatch.')
         require(re.fullmatch('[0-9a-f]{64}', manifest['buildTreeSha256']), 'Missing build identity.')
@@ -43,8 +46,10 @@ def encode_batch(roots, env):
         for row in manifest['images']:
             if row.get('transport'):
                 selected.append((root, manifest, row))
-    expected_revisions = ['baseline', 'candidate'] if case == 'field-390' else ['candidate']
+    expected_revisions = ['baseline', 'candidate'] if case == 'camp-390' else ['candidate']
     require(revisions == expected_revisions, 'Expected one exact batch of job manifests in baseline/candidate order.')
+    if case == 'camp-390':
+        require(len({m.get('fixtureSha256') for m in manifests}) == 1 and re.fullmatch('[0-9a-f]{64}', manifests[0].get('fixtureSha256', '')), 'Comparison requires identical returning-profile fixture bytes.')
     require(1 <= len(selected) <= 3, 'Expected one to three selected originals across the whole job.')
     require(len({row['path'] for _, _, row in selected}) == len(selected), 'Duplicate image name across the job.')
     # Full native metadata is emitted; neither manifests nor image data are silently truncated.
@@ -57,7 +62,7 @@ def encode_batch(roots, env):
         width, height = struct.unpack('>II', data[16:24])
         allowed = DIMENSIONS[manifest['viewportName']]
         require((width, height) in allowed, 'Image dimensions are not on the explicit job rotation allowlist.')
-        require(case == 'field-320-rotate' or (width, height) == (390, 844), 'Unexpected rotation.')
+        require(case == 'camp-320-rotate' or (width, height) == (390, 844), 'Unexpected rotation.')
         require(row['viewport'] == {'width': width, 'height': height} and row['screenshotScale'] == 'css', 'CSS-pixel dimension mismatch.')
         require(hashlib.sha256(data).hexdigest() == row['sha256'] and len(data) == row['bytes'], 'Original bytes changed after capture.')
         encoded = base64.b64encode(data).decode('ascii')

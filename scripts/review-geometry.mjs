@@ -30,7 +30,7 @@ export function inspectControl(node) {
     const px=r.left+r.width*x,py=r.top+r.height*y,target=document.elementFromPoint(px,py);
     return {x:px,y:py,accepted:!!target&&(target===node||node.contains(target)),topElement:target?.id||target?.tagName||null};
   });
-  return {key:node.id||node.dataset.tab||node.dataset.unit||node.dataset.skill||node.dataset.order,
+  return {key:node.id||node.dataset.campStation||node.dataset.campRecruit||node.dataset.command||node.dataset.tab||node.dataset.unit||node.dataset.skill||node.dataset.order,
     name:node.getAttribute('aria-label')||node.textContent||'', disabled:node.disabled,
     visible:node.checkVisibility()&&!node.closest('[hidden],[inert]')&&style.visibility!=='hidden',
     box:r,effective,viewport,hits,clippingAncestors,focused:node===document.activeElement,

@@ -4,14 +4,17 @@ import hashlib
 import json
 from pathlib import Path
 import struct
+import re
 import sys
 
 MAX_JOB_BYTES = 3_932_160
-CANDIDATE_SHA = '53f7bf91db2589e5590c890636c51e5f972b0269'
-CANDIDATE_TREE = '49bb9cf35feda86a15797573d1e2df4b756065dd'
-BASELINE_SHA = 'bf79938e26ed2d963a76fa4db3102dd4e30fe822'
+PINS = json.loads((Path(__file__).parent.parent / 'source-pins.json').read_text())
+CANDIDATE_SHA = PINS['candidateSha']
+CANDIDATE_TREE = PINS['candidateTree']
+BASELINE_SHA = PINS['baselineSha']
+BASELINE_TREE = PINS['baselineTree']
 
-def verify(raw):
+def verify(raw, candidate=CANDIDATE_SHA, tree=CANDIDATE_TREE, workflow=None, case=None):
     if len(raw) >= MAX_JOB_BYTES:
         raise ValueError('Raw job text reaches/exceeds 3.75 MiB; truncation or budget failure cannot be accepted.')
     manifests, images, transport, pending, chunks = [], [], None, None, []
@@ -53,12 +56,35 @@ def verify(raw):
         raise ValueError('Transport count mismatch.')
     if len({meta['path'] for meta, _ in images}) != len(images):
         raise ValueError('Duplicate image output path.')
+    if not manifests:
+        raise ValueError('No canonical source manifests.')
+    cases = {m['reviewCase'] for m in manifests}
+    if len(cases) != 1 or next(iter(cases)) not in ('camp-390', 'camp-320-rotate', 'preferences-home-390'):
+        raise ValueError('Mixed or invalid job case.')
+    actual_case = next(iter(cases))
+    expected_revisions = ['baseline', 'candidate'] if actual_case == 'camp-390' else ['candidate']
+    if [m['revision'] for m in manifests] != expected_revisions:
+        raise ValueError('Missing or duplicate source revision.')
+    if case is not None and actual_case != case:
+        raise ValueError('Unexpected requested job case.')
+    workflows = {m['workflowCommit'] for m in manifests}
+    if len(workflows) != 1 or not re.fullmatch('[0-9a-f]{40}', next(iter(workflows))):
+        raise ValueError('Mixed or invalid workflow identity.')
+    if workflow is not None and workflows != {workflow}:
+        raise ValueError('Unexpected requested workflow SHA.')
+    if actual_case == 'camp-390' and (len({m.get('fixtureSha256') for m in manifests}) != 1 or not re.fullmatch('[0-9a-f]{64}', manifests[0].get('fixtureSha256', ''))):
+        raise ValueError('Mismatched returning-profile fixture.')
     for manifest in manifests:
-        if manifest['revision'] not in ('candidate', 'baseline') or manifest['sourceCommit'] != (CANDIDATE_SHA if manifest['revision'] == 'candidate' else BASELINE_SHA):
+        if manifest['revision'] not in ('candidate', 'baseline') or manifest['sourceCommit'] != (candidate if manifest['revision'] == 'candidate' else BASELINE_SHA):
             raise ValueError('Unexpected product source in downloaded job log.')
-        if manifest['revision'] == 'candidate' and manifest['sourceTree'] != CANDIDATE_TREE:
+        if manifest['sourceTree'] != (tree if manifest['revision'] == 'candidate' else BASELINE_TREE):
             raise ValueError('Unexpected candidate source tree in downloaded job log.')
     for meta, _ in images:
+        if meta['reviewCase'] != actual_case:
+            raise ValueError('Image job identity mismatch.')
+        allowed = {(320,568),(844,390)} if actual_case == 'camp-320-rotate' else {(390,844)}
+        if (meta['width'],meta['height']) not in allowed:
+            raise ValueError('Image rotation allowlist mismatch.')
         matches = [m for m in manifests if m['sourceCommit'] == meta['sourceCommit'] and m['sourceTree'] == meta['sourceTree'] and m['revision'] == meta['revision'] and m['workflowCommit'] == meta['workflowCommit']]
         if len(matches) != 1 or not any(row['path'] == meta['path'] and row['sha256'] == meta['sha256'] for row in matches[0]['images']):
             raise ValueError('Image provenance does not match one canonical manifest.')
@@ -67,7 +93,9 @@ def verify(raw):
 if __name__ == '__main__':
     try:
         raw = Path(sys.argv[1]).read_bytes()
-        manifests, images, transport = verify(raw)
+        if len(sys.argv) != 5 or not re.fullmatch('[0-9a-f]{40}', sys.argv[3]):
+            raise ValueError('Usage: verify-job-log.py RAW_LOG OUTPUT_DIR EXPECTED_WORKFLOW_SHA REVIEW_CASE')
+        manifests, images, transport = verify(raw, workflow=sys.argv[3], case=sys.argv[4])
         output = Path(sys.argv[2]); output.mkdir(parents=True, exist_ok=True)
         for meta, data in images:
             (output / meta['path']).write_bytes(data)

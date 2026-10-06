@@ -16,9 +16,10 @@ spec.loader.exec_module(emitter)
 verify_spec = importlib.util.spec_from_file_location('verify_log', Path(__file__).with_name('verify-job-log.py'))
 verifier = importlib.util.module_from_spec(verify_spec)
 verify_spec.loader.exec_module(verifier)
-CANDIDATE = '53f7bf91db2589e5590c890636c51e5f972b0269'
+CANDIDATE = 'e' * 40
+TREE = 'f' * 40
 WORKFLOW = 'b' * 40
-ENV = {'SOURCE_SHA': CANDIDATE, 'REVIEW_CASE': 'field-390', 'GITHUB_SHA': WORKFLOW, 'GITHUB_RUN_ID': 'unit-only'}
+ENV = {'SOURCE_SHA': CANDIDATE, 'SOURCE_TREE': TREE, 'REVIEW_CASE': 'camp-390', 'GITHUB_SHA': WORKFLOW, 'GITHUB_RUN_ID': 'unit-only'}
 
 def png(width=390, height=844, noisy=False):
     def chunk(kind, data):
@@ -26,9 +27,9 @@ def png(width=390, height=844, noisy=False):
     raw = b''.join(b'\x00' + (os.urandom(width * 4) if noisy else bytes(width * 4)) for _ in range(height))
     return b'\x89PNG\r\n\x1a\n' + chunk(b'IHDR', struct.pack('>IIBBBBB', width, height, 8, 6, 0, 0, 0)) + chunk(b'IDAT', zlib.compress(raw)) + chunk(b'IEND', b'')
 
-def prepare(root, revision, count, case='field-390', dimensions=None, noisy=False):
+def prepare(root, revision, count, case='camp-390', dimensions=None, noisy=False):
     root.mkdir()
-    dimensions = dimensions or ([(390, 844)] * count if case == 'field-390' else [(320, 568)] * count)
+    dimensions = dimensions or ([(390, 844)] * count if case == 'camp-390' else [(320, 568)] * count)
     rows = []
     for index, (width, height) in enumerate(dimensions):
         data = png(width, height, noisy)
@@ -36,9 +37,9 @@ def prepare(root, revision, count, case='field-390', dimensions=None, noisy=Fals
         (root / name).write_bytes(data)
         rows.append({'path': name, 'bytes': len(data), 'sha256': hashlib.sha256(data).hexdigest(), 'screenshotScale': 'css',
                      'viewport': {'width': width, 'height': height}, 'purpose': 'unit-fixture-not-game-evidence', 'transport': True})
-    manifest = {'sourceCommit': emitter.BASELINE_SHA if revision == 'baseline' else CANDIDATE, 'sourceTree': verifier.CANDIDATE_TREE if revision == 'candidate' else 'a' * 40,
+    manifest = {'sourceCommit': emitter.BASELINE_SHA if revision == 'baseline' else CANDIDATE, 'sourceTree': TREE if revision == 'candidate' else emitter.BASELINE_TREE,
                 'revision': revision, 'reviewCase': case, 'viewportName': emitter.CASE_VIEWPORT[case], 'workflowCommit': WORKFLOW,
-                'buildTreeSha256': 'c' * 64, 'harnessFilesSha256': {'capture-entry.mjs': 'd' * 64}, 'images': rows}
+                'fixtureSha256': '9' * 64, 'buildTreeSha256': 'c' * 64, 'harnessFilesSha256': {'capture-entry.mjs': 'd' * 64}, 'images': rows}
     (root / 'review-manifest.json').write_text(json.dumps(manifest))
     return manifest
 
@@ -82,8 +83,8 @@ class TransportTests(unittest.TestCase):
             emitter.encode_batch(roots, ENV)
     def test_one_explicit_320_to_844_rotation_is_preserved(self):
         root = self.root / 'candidate'
-        prepare(root, 'candidate', 3, case='field-320-rotate', dimensions=[(320,568),(320,568),(844,390)])
-        output = emitter.encode_batch([root], {**ENV, 'REVIEW_CASE': 'field-320-rotate'})
+        prepare(root, 'candidate', 3, case='camp-320-rotate', dimensions=[(320,568),(320,568),(844,390)])
+        output = emitter.encode_batch([root], {**ENV, 'REVIEW_CASE': 'camp-320-rotate'})
         self.assertIn('"width":844,"height":390', output)
         self.assertEqual(output.count('SCENE_IMAGE_BEGIN '), 3)
     def test_comparison_rotation_is_rejected(self):
@@ -123,14 +124,40 @@ class TransportTests(unittest.TestCase):
     def test_raw_job_log_preserves_images_and_requires_complete_end(self):
         roots, _ = self.comparison(); output = emitter.encode_batch(roots, ENV)
         raw = ('setup log\n' + '\n'.join('2026-10-05T22:00:00Z ' + line for line in output.splitlines()) + '\ncleanup log\n').encode()
-        manifests, images, transport = verifier.verify(raw)
+        manifests, images, transport = verifier.verify(raw, CANDIDATE, TREE)
         self.assertEqual(len(images), 3)
         self.assertEqual(len(manifests), 2)
         with self.assertRaisesRegex(ValueError, 'terminator is missing'):
-            verifier.verify(raw.split(b'SCENE_TRANSPORT_VERIFIED ')[0])
+            verifier.verify(raw.split(b'SCENE_TRANSPORT_VERIFIED ')[0], CANDIDATE, TREE)
     def test_raw_job_log_over_budget_is_not_accepted(self):
         with self.assertRaisesRegex(ValueError, '3.75 MiB'):
             verifier.verify(b'x' * emitter.MAX_JOB_BYTES)
+    def test_separate_preferences_job_roundtrip(self):
+        root = self.root / 'candidate'
+        prepare(root, 'candidate', 3, case='preferences-home-390', dimensions=[(390,844)] * 3)
+        output = emitter.encode_batch([root], {**ENV, 'REVIEW_CASE': 'preferences-home-390'})
+        manifests, images, _ = verifier.verify(output.encode(), CANDIDATE, TREE, WORKFLOW, 'preferences-home-390')
+        self.assertEqual(len(manifests), 1)
+        self.assertEqual(len(images), 3)
+    def test_matched_profile_fixture_mismatch_rejected(self):
+        roots, manifests = self.comparison()
+        manifests[1]['fixtureSha256'] = '8' * 64
+        save(roots[1], manifests[1])
+        with self.assertRaisesRegex(ValueError, 'identical returning-profile'):
+            emitter.encode_batch(roots, ENV)
+    def test_exact_candidate_tree_rejected(self):
+        roots, manifests = self.comparison()
+        manifests[1]['sourceTree'] = '7' * 40
+        save(roots[1], manifests[1])
+        with self.assertRaisesRegex(ValueError, 'Exact source tree'):
+            emitter.encode_batch(roots, ENV)
+    def test_expected_download_workflow_and_case_are_enforced(self):
+        roots, _ = self.comparison()
+        raw = emitter.encode_batch(roots, ENV).encode()
+        with self.assertRaisesRegex(ValueError, 'requested workflow'):
+            verifier.verify(raw, CANDIDATE, TREE, '9' * 40, 'camp-390')
+        with self.assertRaisesRegex(ValueError, 'requested job case'):
+            verifier.verify(raw, CANDIDATE, TREE, WORKFLOW, 'preferences-home-390')
     def test_dpr_screenshot_is_rejected(self):
         roots, manifests = self.comparison(); manifests[1]['images'][0]['screenshotScale'] = 'device'; save(roots[1], manifests[1])
         with self.assertRaisesRegex(ValueError, 'CSS-pixel'):
