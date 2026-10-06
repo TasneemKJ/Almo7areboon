@@ -57,7 +57,8 @@ test('disposed-context resume callbacks cannot attach a loop to a replacement se
 });
 test('settings and existing pause lifecycle are wired to the ambience gate (source contract)',()=>{
  const source=readFileSync(new URL('../src/main.ts',import.meta.url),'utf8');
- assert.match(source,/data-command="atmosphere"/);assert.match(source,/case 'atmosphere'/);
+ const preferences=readFileSync(new URL('../src/ui/preferences-screen.ts',import.meta.url),'utf8');
+ assert.match(preferences,/check\('atmosphere','Atmosphere'/);assert.match(source,/preference==='atmosphere'/);
  assert.match(source,/updateSoundscape\(game.profile.age,ambienceAllowed\(/);
  assert.match(source,/atmosphere:atmosphereEnabled/);assert.match(source,/modal,hidden:document.hidden/);
  assert.match(source,/saveAtmosphere\(atmosphereEnabled\)/);

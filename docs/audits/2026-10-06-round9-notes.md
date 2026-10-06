@@ -5,3 +5,5 @@ The 0.3.9 heavy-death emphasis was verified with real frames. A webdriver-only h
 
 ## Chosen from the round 8 brainstorm (idea 10, session design)
 A returning player (at least one win, away six hours or more) sees one toast: "Welcome back. The village kept the lamps lit for 3 days." Nothing is granted. Data: an optional `lastSeen` (epoch ms) that rides on the saved copy of the profile at save time only (the live profile is untouched, so every "progress unchanged" invariant still holds); normalized on load (positive integer before 2100, else dropped); future or garbage times show nothing.
+
+Integration note: the returning line now replaces the Home subtitle before deliberate Play or Camp; the boot toast described above was removed to keep entry quiet. Recovery and load failures take priority.

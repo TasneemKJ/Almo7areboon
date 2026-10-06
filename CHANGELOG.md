@@ -74,3 +74,7 @@ Semantic versioning. Each merged batch adds an entry; `package.json` and the top
 
 ## 0.1.0
 - Initial playable release (see `docs/ITERATIONS.md`).
+
+### Physical-world branch reconciliation of 0.3.14
+- Keeps the guarded pre-step and accepted-start weekly baseline, adds the clamped just-earned fallback for a calendar boundary between step and event drain, and preserves monotonic retained claims.
+- Quiet Home subtitle, focused Goal records, physical Camp, native accessibility and incoming regression provenance remain explicit.

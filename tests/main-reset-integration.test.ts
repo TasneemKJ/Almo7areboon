@@ -1,3 +1,5 @@
+import {preferencesHtml,saveRecoveryHtml} from '../src/ui/preferences-screen.ts';
+import {hasPriorPlay} from '../src/ui/entry-screen.ts';
 import {chronicleScreenHtml,chronicleActionFromData} from '../src/ui/chronicle-screen.ts';
 import {chronicleGuidance} from '../src/game/chronicle-combat.ts';
 import {CAPTAINS,routeDefinition,createChronicle} from '../src/game/chronicle.ts';
@@ -6,6 +8,8 @@ import assert from 'node:assert/strict';
 import { readFileSync } from 'node:fs';
 import { runInNewContext } from 'node:vm';
 import ts from 'typescript';
+import {syncWeekly,weekId} from '../src/game/weekly.ts';
+import {localDay} from '../src/game/data.ts';
 import { Game } from '../src/game/simulation.ts';
 import { defaultProfile, SAVE_KEY, BACKUP_KEY } from '../src/game/save.ts';
 import { createSaveSession, type SaveSessionLocks } from '../src/game/save-session.ts';
@@ -18,7 +22,7 @@ import { createModalTapGuard } from '../src/ui/modal-tap-guard.ts';
 // Run the actual UI handler and ownership presentation with the real guarded writer.
 const source = readFileSync(new URL('../src/main.ts', import.meta.url), 'utf8');
 const ast = ts.createSourceFile('main.ts', source, ts.ScriptTarget.Latest, true, ts.ScriptKind.TS);
-const names = new Set(['playable', 'guardAction', 'sessionPresentation', 'showSettings', 'clearPrestigeContext']);
+const names = new Set(['handleCampInput','playable', 'guardAction', 'sessionPresentation', 'showSettings', 'showSaveRecovery', 'preferenceNotice', 'clearPrestigeContext']);
 const functions = ast.statements.filter(node => ts.isFunctionDeclaration(node) && node.name && names.has(node.name.text));
 const listener = ast.statements.find(node => ts.isExpressionStatement(node) && ts.isCallExpression(node.expression) && node.expression.expression.getText(ast) === 'lifetime.listen' && node.expression.arguments[0]?.getText(ast) === 'root' && node.expression.arguments[1]?.getText(ast) === "'click'");
 assert.equal(functions.length, names.size); assert.ok(listener);
@@ -31,6 +35,7 @@ async function harness(mode = 'active') {
   old.mastery.timeline = 4;
   old.mastery.chapters[0] = { earnedMask: 7, bestSeconds: 60, bestGateDamage: 0 };
   old.cards[3] = 4;
+  old.weekly={week:weekId(localDay()),baseSeals:3,claimed:true};
   const values = new Map([[SAVE_KEY, JSON.stringify(old)], [BACKUP_KEY, JSON.stringify(old)]]);
   let quota = false, foreignAfterCheck = false;
   const dialogs: string[] = [], messages: string[] = [];
@@ -45,13 +50,13 @@ async function harness(mode = 'active') {
     if (!nodes.has(id)) nodes.set(id, { hidden: false, querySelector: () => null });
     return nodes.get(id);
   };
-  const context: any = {chronicleScreenHtml,chronicleActionFromData,chronicleGuidance,CAPTAINS,routeDefinition,
-    Element: ElementBoundary, root: { dataset: {} }, game: new Game(old), sessionReady: true, retriedSession: false, pagePresent: true,
-    pendingImport: null, hasPlayed: true, savedWarning: false, lastSavedAt: 0, manualPaused: true, lastPhase: 'won', resultDue: 99, resultShown: 'old', modal: 'settings', atmosphereEnabled: false, audioMix: { effects: 100, atmosphere: 100 }, evolutionFromResult: false, modalPointerSequence: false,prestigeOrigin:null,prestigeDraft:null,prestigeExpectedTimeline:null,
+  const context: any = {syncWeekly,weekId,localDay,chronicleScreenHtml,chronicleActionFromData,chronicleGuidance,CAPTAINS,routeDefinition,
+    Element: ElementBoundary, root: { dataset: {} }, game: new Game(old), entryWelcome:null,entryEntered:true,sessionReady: true, retriedSession: false, pagePresent: true,
+    campOwner:null,settingsOrigin:null,pendingImport: null, hasPlayed: true, savedWarning: false, lastSavedAt:0, manualPaused: true, lastPhase: 'won', resultDue: 99, resultShown: 'old', modal: 'settings', atmosphereEnabled: false, audioMix: { effects: 100, atmosphere: 100 }, evolutionFromResult: false, modalPointerSequence: false,prestigeOrigin:null,prestigeDraft:null,prestigeExpectedTimeline:null,
     lifetime: { disposed: false, listen: (_root: unknown, _event: string, handler: Function) => { context.click = handler; } },
     $: node, textIfChanged() {}, syncPause() {}, isolateModal() {}, icon: () => '', unlockAudio() {},
     blockModalTap:createModalTapGuard(),performance:{now:()=>100},
-    saveSessionDialogHtml, temporarySessionNotice, restoreBackup, restoreBackupWithSave, startOverProfile,
+    saveSessionDialogHtml, temporarySessionNotice, preferencesHtml,saveRecoveryHtml,hasPriorPlay,restoreBackup, restoreBackupWithSave, startOverProfile,
     toast: (message: string) => messages.push(message), showModal: (id: string, html: string) => { context.modal = id; context.html = html; dialogs.push(id); },
     closeModal: () => { context.modal = null; }, rebuildArmy() {}, syncMotion() {}, switchTab: (tab: string) => { context.activeTab = tab; },
   };
@@ -86,9 +91,11 @@ test('confirmed Start over commits fresh progress and keeps preferences and dail
   try {
     h.click('reset'); assert.equal(h.context.modal, 'reset'); assert.equal(h.context.game, current); assert.deepEqual(h.bytes(), before);
     h.click('confirm-reset'); const fresh = h.context.game.profile;
-    assert.notEqual(h.context.game, current); assert.equal(h.context.modal, null); assert.equal(h.context.activeTab, 'battle');
+    assert.notEqual(h.context.game, current); assert.equal(h.context.entryEntered,false);assert.equal(h.context.entrySaved,false);assert.equal(h.context.game.profile.played,undefined);assert.equal(h.context.modal, null); assert.equal(h.context.activeTab, 'battle');
     assert.deepEqual([fresh.timeline, fresh.age, fresh.coins, fresh.gems, fresh.kills, fresh.cards[3]], [1, 0, 0, 100, 0, 0]);
     assert.equal(fresh.mastery.timeline, 1);
+    assert.deepEqual(fresh.weekly,{week:weekId(localDay()),baseSeals:0,claimed:true});
+    assert.deepEqual(JSON.parse(h.bytes()[0]!).weekly,fresh.weekly);
     assert.ok(fresh.mastery.chapters.every((chapter: Profile['mastery']['chapters'][number]) => chapter.earnedMask === 0 && chapter.bestSeconds === null && chapter.bestGateDamage === null), 'Start over clears all paid chapter seals and records');
     assert.deepEqual([fresh.sound, fresh.speed, fresh.motion, fresh.dailyDay, fresh.dailyStreak], [false, 2, 'reduced', 20000, 5]);
     assert.equal(h.context.game.dispatch({ type: 'daily', day: 20000 }), false);
@@ -104,7 +111,7 @@ for (const failure of ['foreign', 'writer-conflict', 'quota', 'temporary', 'susp
     if (failure === 'writer-conflict') h.writerConflict();
     if (failure === 'quota') h.quota();
     const before = h.bytes();
-    h.click('confirm-reset');
+    h.context.modal='reset';h.click('confirm-reset');
     assert.equal(h.context.game, current); assert.equal(JSON.stringify(current.profile), inMemory);
     const expected = failure === 'writer-conflict' ? [JSON.stringify({ ...current.profile, coins: 9001 }), before[1]] : before;
     assert.deepEqual(h.bytes(), expected); assert.ok(!h.messages.includes('Started a new game.'));
@@ -112,7 +119,7 @@ for (const failure of ['foreign', 'writer-conflict', 'quota', 'temporary', 'susp
     if (failure === 'quota') assert.deepEqual(h.messages, ['The new game could not be saved. Your current progress was not deleted.']);
     if (failure === 'temporary' || failure === 'suspended') {
       h.context.showSettings();
-      assert.match(h.context.html, /data-command="reset" disabled/); assert.match(h.context.html, /data-command="import" disabled/);
+      assert.match(h.context.html, /data-command="reset" disabled/); if(failure==='temporary'){h.context.modal='settings';h.context.showSaveRecovery();assert.match(h.context.html, /data-command="import" disabled/);}else assert.equal(h.context.modal,'settings','a suspended writer cannot enter save recovery');
     }
   } finally { h.session.dispose(); }
 });

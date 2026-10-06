@@ -11,7 +11,7 @@ import { battleStats } from './statistics.ts';
 import { cardPackCost, drawCard, nextCardRandom } from './cards.ts';
 import { ERAS, QUESTS, dailyReward, eraEconomyScale, baseUpgradeCost, cardBonus, foodRate, foodUpgradeCost, unlockCost } from './data.ts';
 import { defaultProfile, loadProfile } from './save.ts';
-import { syncWeekly, weeklyStatus } from './weekly.ts';
+import { MAX_WEEK, syncWeekly, weeklyStatus } from './weekly.ts';
 import type { Action, BattleState, DeploymentStatus, GameEvent, GamePort, Profile, Side, Skill, Unit, UnitKind } from './types.ts';
 
 const FIXED_STEP = 1 / 60;
@@ -111,6 +111,7 @@ export class Game implements GamePort {
       case 'start':
         if (this.state.phase !== 'ready') return false;
         this.state.phase = 'running';
+        this.profile.played = true;
         return true;
       case 'retreat':
         // Some fights stall (long-range defenders against a weak army), and only a reload could end them. Retreating is an ordinary
@@ -245,7 +246,8 @@ export class Game implements GamePort {
       case 'weekly-sync':
         return syncWeekly(this.profile, action.week, action.earned);
       case 'weekly': {
-        syncWeekly(this.profile, action.week);
+        // Claim admission is read-only: only an explicitly synchronized week can pay.
+        if (!Number.isInteger(action.week) || action.week < 0 || action.week > MAX_WEEK || this.profile.weekly?.week !== action.week) return false;
         const status = weeklyStatus(this.profile, action.week);
         if (!status.ready) return false;
         this.profile.weekly = { ...this.profile.weekly!, claimed: true };

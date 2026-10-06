@@ -1,0 +1,45 @@
+/* Physical play owns the whole viewport. The old preparation owners remain in
+   Camp until their separate focused-surface replacement is verified. */
+#app[data-field-mode="field"][data-entry="play"] .game-shell{height:100dvh;min-height:0;max-height:none;max-width:1100px;display:grid;grid-template-rows:minmax(0,1fr) auto;padding:0}
+#app[data-field-mode="field"][data-entry="play"] .battle-view{grid-row:1;display:block;height:100%;min-height:0}
+#app[data-field-mode="field"][data-entry="play"] .world{height:100%;min-height:0}
+#app[data-field-mode="field"] .resources,#app[data-field-mode="field"] .deployment,#app[data-field-mode="field"] .upgrades,#app[data-field-mode="field"] .bottom-nav,
+#app[data-field-mode="field"] .world-tools,#app[data-field-mode="field"] .battle-meta,#app[data-field-mode="field"] .battle-skills,
+#app[data-field-mode="field"] .stage .eyebrow,#app[data-field-mode="field"] .stage .scene-name,#app[data-field-mode="field"] .stage .battle-select{display:none!important}
+#app[data-field-mode="field"] .stage{position:absolute;top:max(20px,env(safe-area-inset-top));left:64px;right:64px;margin:0;pointer-events:none}
+#app[data-field-mode="field"] .stage h1{font-size:21px;margin:0;text-align:center}
+.field-targets{position:absolute;inset:0;pointer-events:none;z-index:5}
+.world-hit{position:absolute;border:0;background:transparent;padding:0;border-radius:50%;box-shadow:none;pointer-events:auto;touch-action:manipulation;color:#fff4d0;cursor:pointer}
+.world-hit[hidden],#field-context[hidden]{display:none!important}
+.world-hit:focus-visible{outline:3px solid #ffe8a0;outline-offset:2px;background:#e8c77918}
+.world-hit[aria-disabled="true"]{cursor:default}
+.recruit-cost{position:absolute;inset-inline:-10px;top:100%;font-size:11px;line-height:15px;font-weight:800;text-shadow:0 1px 3px #172c26,0 0 5px #172c26;white-space:nowrap}
+.world-target-name{position:absolute;bottom:100%;left:50%;transform:translateX(-50%);font-size:12px;line-height:1.3;white-space:nowrap;padding:3px 6px;border-radius:5px;background:#18342beb;opacity:0;pointer-events:none}
+.world-hit:focus-visible .world-target-name,.world-hit:hover .world-target-name{opacity:1}
+.gate-hit.order-ready{box-shadow:0 0 0 2px #eac16a88,0 0 16px #f1c57344}
+.enemy-hit.selected{box-shadow:0 0 0 2px #efc767}
+.field-chrome{position:absolute;right:max(12px,env(safe-area-inset-right));top:max(12px,env(safe-area-inset-top));z-index:8;display:flex;align-items:flex-start;gap:8px}
+.field-chrome button{min-width:44px;min-height:44px;border:1px solid #d8bd7f88;border-radius:12px;background:#16352ee6;color:#fff0c9;font:inherit;font-size:13px;padding:8px 12px}
+.field-chrome button:focus-visible{outline:3px solid #fff0c9;outline-offset:3px}
+#field-context{display:flex;gap:6px}.field-chrome button:disabled{opacity:.55}
+.field-cue{position:absolute;top:14%;left:24px;right:24px;margin:0;text-align:center;color:#fff0d0;text-shadow:0 2px 5px #0b251d;font-size:13px;line-height:1.45;pointer-events:none;z-index:4}
+#field-return{display:none}
+#app[data-field-mode="camp"] .field-targets,#app[data-field-mode="camp"] .field-chrome,#app[data-field-mode="camp"] .field-cue{display:none}
+#app[data-field-mode="camp"] #field-return{display:block;position:absolute;top:12px;left:12px;z-index:12;min-height:44px;padding:8px 12px;background:#efe0ba;border:1px solid #786348;border-radius:9px}
+#app[data-field-mode="field"][data-entry="play"] .session-notice{grid-row:2;height:auto;min-height:28px;align-self:end}
+@media(orientation:landscape) and (max-height:540px){#app[data-field-mode="field"] .stage h1{font-size:18px}.field-cue{top:18%}}
+
+#app[data-field-mode="field"] .ready-title,#app[data-field-mode="field"] .ready>p,#app[data-field-mode="field"] .ready-paths{display:none}
+
+/* A quiet ground light communicates readiness on the real waiting figure. */
+.recruit-hit.recruit-ready::after{content:"";position:absolute;width:36px;height:9px;left:calc(50% - 18px);bottom:1px;border:1px solid #efd18da8;border-radius:50%;box-shadow:0 0 12px #efce8170;pointer-events:none}
+.recruit-hit[aria-disabled="true"] .recruit-cost{color:#d1c7ad}
+.world:has(#field-context:not([hidden])) .stage{visibility:hidden}
+
+/* Optional colour-independent role cue stays with each real waiting figure. */
+.recruit-hit .troop-mark{top:-8px;left:calc(50% - 4px);width:8px;height:8px;filter:drop-shadow(0 1px 2px #10242f)}
+
+/* Incoming first-deployment teaching follows the real waiting defender too. */
+.recruit-hit.teach.recruit-ready::after{border-width:2px;box-shadow:0 0 16px #ffd27a99}
+:root[data-motion="full"] .recruit-hit.teach.recruit-ready::after{animation:field-teach-ring 1.3s ease-in-out infinite}
+@keyframes field-teach-ring{0%,100%{box-shadow:0 0 6px #ffd27a55}50%{box-shadow:0 0 20px #ffd27acc}}

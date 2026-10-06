@@ -58,7 +58,7 @@ test('piling food: the hint and ring chase a first-timer who banks food after th
   const foe = () => ({ ...(g.state.units[0] ?? {}), side: 'enemy', hp: 10 } as any);
   g.state.units = [mine(), foe(), foe(), foe()];
   assert.equal(foodIsPiling(g.profile, g.state), true);
-  assert.match(battleGuidance(g.profile, g.state), /^Food is piling up \(26\)\. Keep tapping the melee card/, 'outranks the Freeze cue');
+  assert.match(battleGuidance(g.profile, g.state), /^Food is piling up \(26\)\. Tap the waiting defender again/, 'outranks the Freeze cue');
   g.state.units = [mine(), mine(), mine(), foe()];
   assert.equal(foodIsPiling(g.profile, g.state), false, 'three fighters is enough');
   g.state.units = [mine()]; g.state.food = 8;
@@ -69,4 +69,11 @@ test('piling food: the hint and ring chase a first-timer who banks food after th
   assert.equal(foodIsPiling(g.profile, g.state), false, 'the opening ring covers the very first deploy');
   g.state.stats.deployed = 2; g.state.paused = true;
   assert.equal(foodIsPiling(g.profile, g.state), false);
+});
+test('incoming first-deployment teaching also follows the physical waiting defender',()=>{
+ const controller=readFileSync(new URL('../src/ui/field-controller.ts',import.meta.url),'utf8');
+ assert.match(controller,/classList\.toggle\('teach',kind===0&&status\.allowed&&\(\(p\.wins===0&&running&&!s\.paused&&s\.stats\.deployed===0\)\|\|foodIsPiling\(p,s\)\)\)/);
+ const fieldCSS=readFileSync(new URL('../src/ui/world-play.css',import.meta.url),'utf8');
+ assert.match(fieldCSS,/\.recruit-hit\.teach\.recruit-ready::after\{border-width:2px/);
+ assert.match(fieldCSS,/:root\[data-motion="full"\] \.recruit-hit\.teach\.recruit-ready::after\{animation:field-teach-ring/);
 });

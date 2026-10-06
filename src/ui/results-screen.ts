@@ -54,3 +54,19 @@ export function resultsHtml(profile: Profile, state: BattleState): string {
  <dl class="battle-statistics"><div><dt>Battle time</dt><dd>${battleClock(state.time)}</dd></div><div><dt>Warriors deployed</dt><dd>${stats.deployed}</dd></div><div><dt>Enemies defeated</dt><dd>${stats.kills}</dd></div><div><dt>Food spent</dt><dd>${compactNumber(stats.foodSpent)}</dd></div><div><dt>Damage dealt</dt><dd>${compactNumber(stats.damageDealt)}</dd></div><div><dt>Largest army</dt><dd>${stats.peakArmy}</dd></div><div><dt>Orders issued</dt><dd>${stats.ordersCast??0}</dd></div></dl>
  ${!won&&advance.target==='timeline'?`<p>${timelineResetText}</p>`:''}${chronicleResultHtml(profile,state)}${continuation}${retry}${evolve}${journeyButton(profile)}${terminal?'<button class="big-button blue" data-command="return-chapters">Return to chapters</button>':''}`;
 }
+
+/** Ordinary completion is a short decision. The full receipt stays optional. */
+export function compactResultsHtml(profile:Profile,state:BattleState):string {
+ const won=state.phase==='won',advance=advanceStatus(profile,state),run=profile.chronicle?.expedition;
+ let command='retry',label='Retry',next='Your earned coins stay with you.';
+ if(advance.reason==='complete'){command='return-chapters';label='Return to chapters';next='Your journey is complete. Your progress stays.';}
+ else if(run&&won){command=run.stage<2?'result-expedition':'story-continue';label=run.stage<2?'Choose help & continue':'Bring the company home';next=`Encounter ${run.stage+1} of 3 complete.`;}
+ else if(won&&advance.allowed){command='next';label=advance.target==='timeline'?'Preview next timeline':'Continue';next=advance.target==='timeline'?'Review the next timeline before changing your progress.':`${chapterPresentation(advance.nextBattle!).title} is next.`;}
+ const gems=won&&profile.pendingVictory?.settlement==='mastery-v1'?profile.pendingVictory.masteryGems:0;
+ return `<div class="compact-result" data-outcome="${won?'won':'lost'}"><div class="result-landscape" aria-hidden="true"><img alt="" src="${chapterLandscape(profile.enemyAge)}"/></div><span class="eyebrow">${won?'THE BATTLE IS YOURS':'THE ROAD CONTINUES'}</span><h2 id="dialog-title" tabindex="-1" data-initial-focus>${won?'Victory':'Regroup'}</h2><p class="compact-result-reward" aria-label="${amount(state.earned)} coins earned${gems?` · ${amount(gems)} mastery gems`:``}"><span data-count-to="${state.earned}" aria-hidden="true">${amount(state.earned)}</span> coins earned${gems?` · ${amount(gems)} mastery gems`:''}</p>${won&&state.earned>0?'<p class="compact-result-settled">Already added to your total.</p>':''}<p class="compact-result-next">${next}</p><div class="compact-result-actions"><button class="big-button green" data-command="${command}">${label}</button><button class="big-button secondary" data-command="result-details">Details</button><button class="big-button secondary" data-command="home">Home</button></div></div>`;
+}
+
+/** Both existing provision choices are explicit; neither is selected by rendering. */
+export function expeditionChoiceHtml():string {
+ return `<div class="compact-result"><span class="eyebrow">THE NEXT ENCOUNTER</span><h2 id="dialog-title" tabindex="-1" data-initial-focus>What will help?</h2><p>Choose your provision and continue the expedition.</p><div class="compact-result-actions"><button class="big-button green" data-command="continue-with-provision" data-provision="supplies">Two extra food & continue</button><button class="big-button secondary" data-command="continue-with-provision" data-provision="shelter">Reinforce the gate & continue</button><button class="big-button secondary" data-command="result-back">Back</button></div></div>`;
+}

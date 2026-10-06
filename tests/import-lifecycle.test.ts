@@ -22,17 +22,17 @@ function setup(){
  const messages:string[]=[],dialogs:string[]=[];
  class Input {
   id='import-save';type='file';value='selected-save.json';files:any[]=[];
-  checked=false;name='';isConnected=true;
+  checked=false;name='';dataset={};isConnected=true;
   closest(){return null;}
  }
  const input=new Input();
  const context:any={
-  root:{},HTMLInputElement:Input,MAX_SAVE_CHARS,importBackup,chapterPresentation,money:String,
-  modal:'settings',modalVersion:1,importRequest:0,pendingImport:null,session:{status:'active'},allowed:true,
+  root:{},HTMLInputElement:Input,HTMLSelectElement:class {},MAX_SAVE_CHARS,importBackup,chapterPresentation,money:String,
+  modal:'save-recovery',modalVersion:1,importRequest:0,pendingImport:null,session:{status:'active'},allowed:true,
   lifetime:{disposed:false,listen(_root:any,_event:string,callback:any){handler=callback;}},
   guardAction:()=>context.allowed,
   toast:(message:string)=>messages.push(message),
-  showModal:(name:string,html:string)=>{context.modal=name;context.modalVersion++;dialogs.push(html);},
+  showModal:(name:string,html:string,focusCommand?:string)=>{context.focusCommand=focusCommand;context.modal=name;context.modalVersion++;dialogs.push(html);},
   isLegacyChoice:()=>false,
  };
  runInNewContext(code,context);
@@ -61,7 +61,7 @@ for(const reason of ['dismissed','replaced','ownership-lost','disposed'] as cons
 test('an older successful read cannot replace a later pending selection',async()=>{
  const h=setup(),first=h.select(),second=h.select();
  first.resolve(JSON.stringify({...defaultProfile(),coins:111}));await first.completion;
- assert.equal(h.context.modal,'settings');assert.equal(h.context.pendingImport,null);
+ assert.equal(h.context.modal,'save-recovery');assert.equal(h.context.pendingImport,null);
  second.resolve(JSON.stringify({...defaultProfile(),coins:222}));await second.completion;
  assert.equal(h.context.pendingImport.coins,222);assert.equal(h.dialogs.length,1);
 });
@@ -84,4 +84,9 @@ test('clearing the file input invalidates its pending read',async()=>{
  const h=setup(),first=h.select();await h.clear();
  first.resolve(JSON.stringify(defaultProfile()));await first.completion;
  assert.equal(h.context.pendingImport,null);assert.equal(h.dialogs.length,0);
+});
+
+test('import confirmation focuses Cancel instead of replacing progress',async()=>{
+ const h=setup(),read=h.select();read.resolve(JSON.stringify(defaultProfile()));await read.completion;
+ assert.equal(h.context.modal,'import');assert.equal(h.context.focusCommand,'close');
 });

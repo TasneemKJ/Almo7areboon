@@ -38,6 +38,7 @@ function validate(value: unknown): Profile {
   clean.kills = integer(data.kills, 0, 0, 1e9);
   clean.wins = integer(data.wins, 0, 0, 1e9);
   clean.deployed = integer(data.deployed, 0, 0, 1e9);
+  if (data.played === true) clean.played = true;
   if (Array.isArray(data.unlocked)) clean.unlocked = [true, data.unlocked[1] === true, data.unlocked[2] === true];
   if (Array.isArray(data.cards)) {
     if (data.version === 1 && data.cards.length <= 6) {

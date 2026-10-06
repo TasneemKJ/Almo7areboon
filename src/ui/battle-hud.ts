@@ -36,7 +36,7 @@ export function battleGuidance(profile: Profile, state: BattleState, preview?: W
   if (state.stats.deployed === 0 && state.food >= ERAS[profile.age].units[0].cost) return 'Deploy a melee warrior. Save some food for the next wave.';
   const captain=profile.chronicle?.enabled&&profile.chronicle.captain!=='none'?CAPTAINS.find(c=>c.id===profile.chronicle!.captain):undefined;
   // A first-timer who banks food loses the battle with it unspent, so this outranks the skill cues below.
-  if (foodIsPiling(profile, state)) return `Food is piling up (${Math.floor(state.food)}). Keep tapping the melee card to send more warriors.`;
+  if (foodIsPiling(profile, state)) return `Food is piling up (${Math.floor(state.food)}). Tap the waiting defender again to send more warriors.`;
   // First-Freeze cue: teach the skill at the moment it pays off, while three or more enemies gather.
   if (profile.wins < 5 && state.stats.skillsCast === 0 && !state.skillsUsed.includes('freeze') && state.units.filter(unit => unit.side === 'enemy' && unit.hp > 0).length >= 3) return 'Enemies are gathering. Tap Freeze to hold them while your army strikes.';
   // First-Meteor cue: once Freeze has been tried, point at the skill that damages every living enemy at once.

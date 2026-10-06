@@ -50,5 +50,6 @@ test('memory reuses the existing ambience plane behind actors without burying co
  assert.match(code,/dataset\.battlefieldEnemyViews=String/,'native evidence must wait for a truthful current Meteor target');
  assert.match(code,/if\(reduced&&!this\.reduce\)this\.resetEffects\('motion'\)/,'entering reduced motion must preserve active road memory');
  const allocations=code.match(/this\.add\.graphics\(\)/g)??[];
- assert.equal(allocations.length,12,'battlefield memory must not allocate another scene-lifetime graphics object');
+ assert.equal(allocations.length,13,'twelve established planes plus one fixed camp-prop plane; no per-frame graphics allocation');
+ assert.match(code,/this\.campProps=this\.add\.graphics\(\)/);
 });

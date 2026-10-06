@@ -3,12 +3,12 @@ import assert from 'node:assert/strict';
 import { readFileSync } from 'node:fs';
 import { runInNewContext } from 'node:vm';
 import ts from 'typescript';
+import { weekId } from '../src/game/weekly.ts';
+import { localDay } from '../src/game/data.ts';
 import { Game } from '../src/game/simulation.ts';
 import { pauseReason } from '../src/ui/pause.ts';
 import { ambienceAllowed } from '../src/ui/audio-preferences.ts';
 import { advanceVillagePresentation } from '../src/view/village-mood.ts';
-import { weekId } from '../src/game/weekly.ts';
-import { localDay } from '../src/game/data.ts';
 
 const source=readFileSync(new URL('../src/main.ts',import.meta.url),'utf8');
 const ast=ts.createSourceFile('main.ts',source,ts.ScriptTarget.Latest,true,ts.ScriptKind.TS);
@@ -19,7 +19,7 @@ const code=ts.transpile(functions.map(node=>node.getText(ast)).join('\n'),{targe
 
 test('actual village owner freezes and silences ambience without save ownership',()=>{
   const audible:boolean[]=[],game=new Game();game.dispatch({type:'start'});
-  const context:any={weekId,localDay,game,sessionReady:true,pagePresent:true,lifetime:{disposed:false},session:{status:'active'},
+  const context:any={weekId,localDay,game,entryEntered:true,sessionReady:true,pagePresent:true,lifetime:{disposed:false},session:{status:'active',check:()=>true},
     manualPaused:false,activeTab:'battle',modal:null,document:{hidden:false},atmosphereEnabled:true,villagePresentation:null,
     stopCombatAudio(){},pauseReason,ambienceAllowed,advanceVillagePresentation,updateSoundscape:(_age:number,allowed:boolean)=>audible.push(allowed)};
   runInNewContext(`${code}\nthis.api={syncPause,syncVillagePresentation};`,context);
@@ -45,7 +45,7 @@ import {recordedContext,installContext} from './helpers/audio-context.ts';
 function combatHarness(){
  audio.disposeAudio();const c=recordedContext(),restore=installContext(c);audio.unlockAudio();
  const game=new Game();game.dispatch({type:'start'});const persisted:number[]=[];
- const context:any={weekId,localDay,game,sessionReady:true,pagePresent:true,lifetime:{disposed:false},session:{status:'active'},
+ const context:any={weekId,localDay,game,entryEntered:true,sessionReady:true,pagePresent:true,lifetime:{disposed:false},session:{status:'active',check:()=>true},
   manualPaused:false,activeTab:'battle',modal:null,document:{hidden:false},atmosphereEnabled:false,villagePresentation:null,
   pauseReason,ambienceAllowed,advanceVillagePresentation,updateSoundscape:audio.updateSoundscape,
   unlockAudio:audio.unlockAudio,playSummonAudio:audio.playSummonAudio,rebuildArmy(){},update(){},renderScreen(){},
@@ -57,7 +57,7 @@ test('actual main preserves metadata and silences menu, modal, manual pause, hid
  const h=combatHarness(),c=h.context;try{
   c.api.syncPause();c.api.events([{type:'hit',source:{kind:1}}]);assert.equal(h.oscillators[0].type,'sawtooth','full batch keeps material kind');
   for(const changes of [{activeTab:'cards'},{modal:'settings'},{manualPaused:true},{document:{hidden:true}},{session:{status:'conflict'}},{pagePresent:false},{sessionReady:false},{lifetime:{disposed:true}}]){
-   Object.assign(c,{activeTab:'battle',modal:null,manualPaused:false,document:{hidden:false},session:{status:'active'},pagePresent:true,sessionReady:true,lifetime:{disposed:false}},changes);
+   Object.assign(c,{activeTab:'battle',modal:null,manualPaused:false,document:{hidden:false},session:{status:'active',check:()=>true},pagePresent:true,entryEntered:true,sessionReady:true,lifetime:{disposed:false}},changes);
    const count=h.oscillators.length;c.api.syncPause();assert.equal(h.live(),0);c.api.events([{type:'skill',skill:'freeze'}]);assert.equal(h.oscillators.length,count,JSON.stringify(changes));
   }
  }finally{h.close();}
@@ -92,4 +92,15 @@ test('direct summon stays silent on rejected action, mute, hidden, settings or l
    c.api.action({type:'summon',count:1});assert.equal(h.oscillators.length,0,JSON.stringify(changes));
   }finally{h.close();}
  }
+});
+test('Home freezes the actual village owner and keeps ambience silent until entry',()=>{
+ const audible:boolean[]=[],game=new Game();game.dispatch({type:'start'});
+ const context:any={weekId,localDay,game,entryEntered:false,sessionReady:true,pagePresent:true,lifetime:{disposed:false},session:{status:'active',check:()=>true},
+  manualPaused:false,activeTab:'battle',modal:null,document:{hidden:false},atmosphereEnabled:true,villagePresentation:null,
+  stopCombatAudio(){},pauseReason,ambienceAllowed,advanceVillagePresentation,updateSoundscape:(_age:number,allowed:boolean)=>audible.push(allowed)};
+ runInNewContext(`${code}\nthis.api={syncPause,syncVillagePresentation};`,context);
+ context.api.syncPause();context.api.syncVillagePresentation(1);
+ assert.equal(game.state.paused,true);assert.equal(audible.at(-1),false);
+ const before=context.villagePresentation.mood.time;context.api.syncVillagePresentation(1);assert.equal(context.villagePresentation.mood.time,before);
+ context.entryEntered=true;context.api.syncPause();assert.equal(game.state.paused,false);assert.equal(audible.at(-1),true);
 });

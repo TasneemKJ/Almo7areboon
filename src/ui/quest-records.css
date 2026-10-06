@@ -1,0 +1,25 @@
+/* One open page of the company journal; the native picker owns its popup.
+   Root-relative type preserves the 16px-root design and honors text enlargement. */
+.quest-record-dialog .quest-records h2{font-size:1.8125rem}
+.quest-records>.eyebrow{font-size:.625rem}
+.quest-record-dialog h2{margin:0 0 18px;font-family:Georgia,serif}
+.quest-records{text-align:start}
+.quest-records>label{font-size:1rem;display:block;margin-bottom:6px;font-weight:700}
+.quest-records select{display:block;width:100%;max-width:100%;min-height:48px;padding:10px 8px;border:1px solid var(--craft-brass);border-radius:8px;background:var(--paper);color:var(--ink);font:inherit;font-size:1rem;cursor:pointer}
+.quest-records select:focus-visible{outline:3px solid var(--blue);outline-offset:3px}
+.quest-records select:hover{border-color:var(--blue)}
+.quest-records .quest-record-note{margin:7px 0 14px;font-size:.75rem;line-height:1.5}
+.quest-record{padding:15px 0 12px;border-top:1px solid var(--craft-brass)}
+.quest-records .quest-record-kind{margin:0 0 7px;font-size:.75rem;color:var(--ink)}
+.quest-record h3{margin:0 0 12px;color:var(--navy);font:700 1.375rem/1.25 Georgia,serif;overflow-wrap:anywhere}
+.quest-records .quest-record-count{margin:0 0 8px;font:700 1.75rem/1.25 Georgia,serif;color:var(--navy)}
+.quest-record-count span{font:400 .875rem/1.4 'Trebuchet MS',Arial,sans-serif}
+.quest-record-meter{height:5px;overflow:hidden;background:var(--paper-edge);border-radius:3px}
+.quest-record-meter i{display:block;width:100%;height:100%;background:var(--blue);transform-origin:left}
+.quest-records #quest-eligibility{margin:12px 0;font-size:.875rem;line-height:1.5;min-height:3em}
+.quest-records .quest-record-reward{display:flex;justify-content:space-between;flex-wrap:wrap;gap:6px;margin:14px 0;font-size:.875rem;color:var(--ink)}
+.quest-record-reward strong{color:var(--navy)}
+.quest-records .big-button{min-height:48px;margin:0;width:100%;font-size:1rem;letter-spacing:0;white-space:normal}
+.quest-records .quest-record-save{margin:0 0 12px;font-size:.8125rem;line-height:1.5;color:var(--ink)}
+@media(forced-colors:active){.quest-records select:focus-visible{outline-color:Highlight}.quest-record-meter{border:1px solid CanvasText}.quest-record-meter i{background:Highlight}}
+@media(orientation:landscape) and (max-height:540px){.quest-record-dialog .quest-records h2{font-size:1.5rem}}

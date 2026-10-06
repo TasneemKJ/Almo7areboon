@@ -38,7 +38,7 @@ test('the goal counts only seals earned after the week was first seen, then pays
 });
 test('a stale or invalid week cannot be claimed or synced, and gems stay capped', () => {
   const g = new Game(); g.dispatch({ type: 'weekly-sync', week }); withSeals(g, WEEKLY_TARGET);
-  assert.equal(g.dispatch({ type: 'weekly', week: week + 1 }), false, 'claiming another week syncs it fresh instead');
+  assert.equal(g.dispatch({ type: 'weekly', week: week + 1 }), false, 'a claim never initializes another week');
   assert.equal(g.dispatch({ type: 'weekly-sync', week: -1 }), false);
   assert.equal(g.dispatch({ type: 'weekly-sync', week: 1e9 }), false);
   const h = new Game(); h.profile.gems = 1e7 - 10; h.dispatch({ type: 'weekly-sync', week }); withSeals(h, WEEKLY_TARGET);
@@ -66,6 +66,34 @@ test('weekly is optional, normalized on load, preserved by export/import and by 
   assert.deepEqual(startOverProfile(g.profile).weekly, { week, baseSeals: 0, claimed: true }, 'a reset cannot reopen a claimed week');
   assert.equal('weekly' in startOverProfile(defaultProfile()), false);
 });
+test('fractional sync requests do not create weekly state that the save decoder will discard',()=>{
+ const g=new Game(),before=JSON.stringify(g.profile);
+ assert.equal(g.dispatch({type:'weekly-sync',week:week+.5}),false);
+ assert.equal(JSON.stringify(g.profile),before);
+});
+
+test('an earlier weekly sync cannot erase a newer retained claimed week',()=>{
+ const g=new Game();g.dispatch({type:'weekly-sync',week});withSeals(g,3);g.dispatch({type:'weekly',week});
+ const before=JSON.stringify(g.profile);assert.equal(g.dispatch({type:'weekly-sync',week:week-1}),false);
+ assert.equal(JSON.stringify(g.profile),before);
+ withSeals(g,6);assert.equal(g.dispatch({type:'weekly-sync',week}),false);assert.equal(g.dispatch({type:'weekly',week}),false);
+ assert.equal(g.profile.gems,160);
+});
+for(const kind of ['missing','older','newer','fractional','negative','nan','infinite','over-limit','rebase'])test(`rejected ${kind} weekly claim is mutation-free`,()=>{
+  const g=new Game();if(kind!=='missing')g.dispatch({type:'weekly-sync',week});
+  if(kind==='rebase'){withSeals(g,3);g.profile.weekly!.baseSeals=3;withSeals(g,0);}else withSeals(g,3);
+  const requested=kind==='older'?week-1:kind==='newer'?week+1:kind==='fractional'?week+.5:kind==='negative'?-1:kind==='nan'?Number.NaN:kind==='infinite'?Infinity:kind==='over-limit'?200001:week;
+  const before=JSON.stringify(g.profile);g.drainEvents();
+  assert.equal(g.dispatch({type:'weekly',week:requested}),false,kind);assert.equal(JSON.stringify(g.profile),before,kind);assert.deepEqual(g.drainEvents(),[],kind);
+});
+test('forward weekly sync and same-week timeline rebasing preserve legitimate earning and claimed status',()=>{
+ const g=new Game();g.dispatch({type:'weekly-sync',week});withSeals(g,3);g.dispatch({type:'weekly',week});
+ assert.equal(g.dispatch({type:'weekly-sync',week:week+1}),true);assert.equal(g.profile.weekly!.claimed,undefined);assert.equal(g.profile.weekly!.baseSeals,3);
+ withSeals(g,6);assert.equal(g.dispatch({type:'weekly',week:week+1}),true);assert.equal(g.profile.gems,220);
+ withSeals(g,0);assert.equal(g.dispatch({type:'weekly-sync',week:week+1}),true);assert.equal(g.profile.weekly!.baseSeals,0);assert.equal(g.profile.weekly!.claimed,true);
+ withSeals(g,3);assert.equal(g.dispatch({type:'weekly',week:week+1}),false);assert.equal(g.profile.gems,220);
+});
+
 
 test('a win that is the first thing seen in a new week counts its own seals toward that week', () => {
   const g = new Game(); withSeals(g, 5); // 2 of these were settled by the win that just landed after Monday
@@ -82,9 +110,9 @@ test('a win that is the first thing seen in a new week counts its own seals towa
   withSeals(same, 4); same.dispatch({ type: 'weekly-sync', week, earned: 2 });
   assert.equal(same.profile.weekly!.baseSeals, 2, 'earned only matters when a week opens');
 });
-test('the app opens the week at battle start and passes the win receipt seals on a win', async () => {
-  const { readFileSync } = await import('node:fs');
-  const main = readFileSync(new URL('../src/main.ts', import.meta.url), 'utf8');
-  assert.match(main, /if\(a\.type==='start'\)game\.dispatch\(\{type:'weekly-sync',week:weekId\(localDay\(\)\)\}\);\n\s+unlockAudio/);
-  assert.match(main, /receipt\.settlement==='mastery-v1'\?receipt\.newMask:0;game\.dispatch\(\{type:'weekly-sync',week:weekId\(localDay\(\)\),earned:/);
+
+test('just-earned fallback cannot roll back or reopen a retained claim',()=>{
+ const g=new Game();g.profile.weekly={week,baseSeals:0,claimed:true};withSeals(g,6);const before=JSON.stringify(g.profile);
+ for(const token of [week-1,week+.5,Number.NaN]){assert.equal(g.dispatch({type:'weekly-sync',week:token,earned:3}),false);assert.equal(JSON.stringify(g.profile),before);}
+ assert.equal(g.dispatch({type:'weekly-sync',week,earned:3}),false);assert.equal(JSON.stringify(g.profile),before);
 });

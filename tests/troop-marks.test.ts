@@ -27,3 +27,11 @@ test('cards carry a shape per role and the battlefield draws circle, triangle an
   assert.match(field, /if\(game\.profile\.marks\)for\(const unit of s\.units\)/);
   assert.match(field, /fillTriangle/); assert.match(field, /fillCircle/);
 });
+
+test('optional role shapes also belong to the physical waiting recruits, not only hidden army cards',async()=>{
+ const {fieldControlsHtml}=await import('../src/ui/field-controls.ts');
+ const html=fieldControlsHtml();
+ for(const kind of [0,1,2])assert.match(html,new RegExp(`data-field-recruit="${kind}"[^>]*><span class="troop-mark troop-mark-${kind}" aria-hidden="true"`));
+ const css=readFileSync(new URL('../src/ui/world-play.css',import.meta.url),'utf8');
+ assert.match(css,/\.recruit-hit \.troop-mark\{[^}]*top:-8px/);
+});
