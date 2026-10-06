@@ -2,6 +2,10 @@
 
 Semantic versioning. Each merged batch adds an entry and a `vX.Y.Z` tag.
 
+## 0.3.8 - 2026-10-06
+- First battle ever: the Light Guard card gets a gold teaching ring until the first deployment (pulses only when motion is full; static ring otherwise).
+- A test now locks the result motifs: victory rises, defeat falls.
+
 ## 0.3.7 - 2026-10-05
 - Streak grace day: one missed day keeps a daily-reward streak of two or more, at most once every seven days; the Quests row says so before claiming. Stored as an optional `graceDay` profile field, normalized on load and kept by Start over.
 
