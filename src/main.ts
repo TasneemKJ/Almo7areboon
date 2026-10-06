@@ -585,7 +585,7 @@ function refreshQuestRecord(focus=false){
   select.value=selected.key;
   htmlIfChanged($('quest-record-detail'),questRecordDetailHtml(selected,modalVersion));
   const notice=$('quest-save-status'),message=questSaveNotice();notice.hidden=!message;textIfChanged(notice,message);
-  if(focus||focusedClaim)select.focus({preventScroll:true});
+  if(focus||focusedClaim)select.focus();
 }
 function claimQuestRecord(button:HTMLButtonElement){
   if(modal!=='quests'||!$('modal-layer').contains(button)||!guardAction()||modal!=='quests')return;

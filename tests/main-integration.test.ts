@@ -920,3 +920,19 @@ test('midnight refresh preserves a late saving warning and synchronous recovery 
  const detail=c.$('quest-record-detail').innerHTML;day++;c.session.check=()=>{c.session.status='conflict';c.sessionPresentation('conflict');return false;};c.update(true);
  assert.equal(c.modal,'session');assert.equal(c.$('quest-record-detail').innerHTML,detail);assert.match(c.dialogHtml,/Progress|progress|tab/);
 });
+test('a deliberate quest Claim focus return allows native reveal after the record has scrolled',()=>{
+ const h=harness(),c=h.context;h.click('quests');const input=h.questSelect('daily'),calls:any[]=[];
+ input.focus=(options:any)=>{calls.push(options);c.document.activeElement=input;};h.clickData(questClaimToken(c));
+ assert.equal(c.game.profile.gems,130);assert.equal(c.document.activeElement,input);assert.equal(calls.length,1);assert.notEqual(calls[0]?.preventScroll,true,'deliberate return must let the browser reveal Goal');
+ calls.length=0;h.questSelect('weekly');assert.equal(calls.length,0,'read-only native selection must not move focus or scroll');
+});
+test('an expired focused Claim falls back to Goal with native reveal allowed',()=>{
+ const h=harness(),c=h.context;let day=20002;c.localDay=()=>day;c.game=new Game();c.game.dispatch({type:'weekly-sync',week:weekId(day)});c.game.profile.mastery.chapters[0].earnedMask=7;h.click('quests');const input=h.questSelect('weekly'),calls:any[]=[];
+ input.focus=(options:any)=>{calls.push(options);c.document.activeElement=input;};c.document.activeElement=new c.HTMLButtonElement({command:'quest-claim'});day++;c.update(true);
+ assert.equal(c.document.activeElement,input);assert.equal(calls.length,1);assert.notEqual(calls[0]?.preventScroll,true);
+});
+test('late quest saving warnings keep the current picker focus without an explicit reveal',()=>{
+ const h=harness(),c=h.context;h.click('quests');const input=h.questSelect('annihilator');let focusCalls=0;
+ input.focus=()=>{focusCalls++;c.document.activeElement=input;};c.session.save=()=>({ok:false,reason:'write-failed'});c.persist();c.update(true);
+ assert.equal(focusCalls,0);assert.equal(c.document.activeElement,input);assert.match(c.$('quest-save-status').textContent,/Saving is unavailable/);
+});

@@ -14,3 +14,8 @@ test('Camp removes the old Space-start shortcut and excludes automatic modal clo
  assert.match(main,/campOwner\|\|.*activeTab|campOwner\)return/);
  assert.match(main,/\[.*'camp-focus'.*'field-pause'/);
 });
+
+test('desktop Camp stations keep bounded physical hit regions instead of stretching across empty courtyard',()=>{
+ assert.match(css,/\.camp-place\{[^}]*max-width:210px/);
+ assert.match(css,/\.camp-place\{[^}]*justify-self:center/);
+});

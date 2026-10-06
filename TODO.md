@@ -130,3 +130,8 @@ Advanced Camp leaves remain dense and unaccepted. This work does not claim all-s
 - [x] Test real native change/click handlers for selection/focus preservation, once-only live claims, stale tokens/day rollover, session recovery, failed/temporary persistence, held receipts and Camp return.
 - [ ] Complete exact-source browser and physical-device picker, keyboard, touch/rotation/200%-text and visual review before publication; keep remaining dense leaves explicitly unaccepted.
 - [x] Refresh open quest details across midnight/Monday without sync/save/reward; retain native focus, explain future/invalid device dates, and verify existing returning-save Journey routes.
+
+### Desktop Camp contact bounds
+- [x] Record the actual 1280px station bounds: 476px native buttons surrounded much narrower painted objects.
+- [x] Limit each shared object/label button to210px and center it in the unchanged grid. Phone and short-landscape columns are already narrower.
+- [ ] Recheck native center/corner/label contact, empty-courtyard rejection and unchanged phone composition on the final combined source.
