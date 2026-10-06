@@ -48,6 +48,7 @@ import { createArmyUpdater, troopControlLabel, troopUnlockMessage } from './ui/a
 import { cardsScreenHtml, summonedCardsHtml } from './ui/cards-screen.ts';
 import { compactResultsHtml, expeditionChoiceHtml, resultsHtml } from './ui/results-screen.ts';
 import { startCountUp } from './ui/count-up.ts';
+import { welcomeBackLine } from './ui/welcome-back.ts';
 import { earlierChapter } from './ui/regroup-learning.ts';
 import { legacyCurrentHtml, prestigeDetailsHtml, prestigeDialogHtml } from './ui/prestige-presentation.ts';
 import { battleGuidance, baseHealthDisplay, compactNumber, waveLabel, waveAccessibleLabel } from './ui/battle-hud.ts';
@@ -87,6 +88,7 @@ let modalPointerSequence=false;
 const blockModalTap=createModalTapGuard();
 let sessionReady=false,pagePresent=true,resumeOwnership=false,acquisitionVersion=0,hasPlayed=false;
 let entryEntered=false,entrySaved=false,resultDetailsOpen=false;
+let entryWelcome:string|null=null;
 let settingsOrigin:'field-pause'|null=null;
 let campOwner:CampOwner|null=null,campRenderKey='';
 let acquiring:Promise<void>|null=null;
@@ -143,7 +145,7 @@ function sessionPresentation(status:SaveSessionStatus){
   const notice=$('session-notice');
   notice.hidden=status!=='starting'&&status!=='temporary';
   textIfChanged(notice,status==='temporary'?temporarySessionNotice:'Opening your saved game…');
-  if(status!=='active'&&status!=='temporary'){sessionReady=false;campOwner=null;clearPrestigeContext();}
+  if(status!=='active'&&status!=='temporary'){sessionReady=false;campOwner=null;entryWelcome=null;clearPrestigeContext();}
   if(status==='active'||status==='temporary')retriedSession=false;
   const html=saveSessionDialogHtml(status,retriedSession);
   if(html){pendingImport=null;evolutionFromResult=false;showModal('session',html);}
@@ -163,12 +165,13 @@ async function acquireSession(){
     if(loaded.status==='active'&&loaded.profile){
       game=new Game(loaded.profile);lastPhase=game.state.phase;resultDue=0;hasPlayed=true;sessionReady=true;entrySaved=hasPriorPlay(game.profile);
       manualPaused=false;resultShown='';savedWarning=false;pendingImport=null;evolutionFromResult=false;clearPrestigeContext();
+      entryWelcome=loaded.loadStatus==='recovered'||loaded.loadStatus==='corrupt'?null:welcomeBackLine(loaded.profile.lastSeen,Date.now(),loaded.profile.wins);
       closeModal(false);rebuildArmy();syncMotion();switchTab('battle');
       if(loaded.loadStatus==='recovered')toast('Recovered your progress from the backup save.');
       else if(loaded.loadStatus==='corrupt')toast('The stored save could not be recovered. A new game has started.');
     }else if(!hasPlayed&&loaded.profile){
       // Safe preview for explicit temporary play only; never replace conflicted work.
-      game=new Game(loaded.profile);lastPhase=game.state.phase;resultDue=0;rebuildArmy();syncMotion();update(true);
+      entryWelcome=null;game=new Game(loaded.profile);lastPhase=game.state.phase;resultDue=0;rebuildArmy();syncMotion();update(true);
     }
   })().finally(()=>{if(version===acquisitionVersion)acquiring=null;});
   return acquiring;
@@ -184,7 +187,7 @@ function syncEntry(){
   textIfChanged($('entry-play'),failed?'Reload':entryReady()?copy.action:'Loading…');
   $('entry-play').dataset.command=failed?'reload-world':'enter-world';
   textIfChanged($('entry-chapter'),copy.chapter);
-  textIfChanged($('entry-subtitle'),failed?'The battlefield could not load. Reload to try again; your saved progress is kept.':copy.subtitle);
+  textIfChanged($('entry-subtitle'),failed?'The battlefield could not load. Reload to try again; your saved progress is kept.':entryWelcome??copy.subtitle);
   const art=$('entry-art'),source=chapterLandscape(game.profile.enemyAge);
   if(art.dataset.source!==source){art.setAttribute('src',source);art.dataset.source=source;}
   const secondary=entrySecondary(game.profile,game.state),extra=$('entry-secondary');
@@ -195,7 +198,7 @@ function syncEntry(){
 function enterWorld(){
   if(entryEntered||modal||!guardAction()||!entryReady())return;
   root!.dataset.fieldMode='field';
-  entryEntered=true;entrySaved=true;syncEntry();
+  entryEntered=true;entrySaved=true;entryWelcome=null;syncEntry();
   manualPaused=false;
   if(game.state.phase==='ready')action({type:'start'});
   switchTab('battle');
@@ -208,7 +211,8 @@ function toast(message:string,duration=4200){
 }
 function persist():boolean{
   if(!playable()||session.status==='temporary')return false;
-  const result=session.save(game.profile),ok=result.ok;lastSave=performance.now();
+  // lastSeen rides on the saved copy only, so the live profile (and every "unchanged progress" check) is untouched.
+  const result=session.save({...game.profile,lastSeen:Date.now()}),ok=result.ok;lastSave=performance.now();
   if(result.reason==='write-failed'&&!savedWarning){savedWarning=true;toast('Progress could not be saved. Export a backup from Settings before closing this tab.');}
   if(ok){savedWarning=false;lastSavedAt=Date.now();}
   return ok;
@@ -407,7 +411,7 @@ function showHome(){
 }
 function enterCamp(){
   if(entryEntered||modal||!guardAction()||!entryReady()||entrySecondary(game.profile,game.state)!=='camp')return;
-  entryEntered=true;entrySaved=true;root!.dataset.fieldMode='camp';manualPaused=false;
+  entryEntered=true;entrySaved=true;entryWelcome=null;root!.dataset.fieldMode='camp';manualPaused=false;
   fieldControls.clear();syncEntry();switchTab('battle');syncPause();root!.querySelector<HTMLElement>('[data-command="camp-battle"]')?.focus({preventScroll:true});
 }
 /** Camp is presentation only. The renderer continues to receive canonical ready state. */
@@ -720,12 +724,12 @@ lifetime.listen<MouseEvent>(root,'click',e=>{
       if(modal!=='reset'||session.status!=='active')break;
       const restored=restoreBackupWithSave(game,startOverProfile(game.profile),profile=>session.save(profile).ok);
       if(!restored.ok){toast('The new game could not be saved. Your current progress was not deleted.');break;}
-      game=restored.game;entryEntered=false;entrySaved=hasPriorPlay(game.profile);settingsOrigin=null;root!.dataset.fieldMode='field';lastPhase=game.state.phase;resultDue=0;manualPaused=false;resultShown='';savedWarning=false;clearPrestigeContext();rebuildArmy();syncMotion();closeModal(false);switchTab('battle');toast('Started a new game.');break;
+      game=restored.game;entryWelcome=null;entryEntered=false;entrySaved=hasPriorPlay(game.profile);settingsOrigin=null;root!.dataset.fieldMode='field';lastPhase=game.state.phase;resultDue=0;manualPaused=false;resultShown='';savedWarning=false;clearPrestigeContext();rebuildArmy();syncMotion();closeModal(false);switchTab('battle');toast('Started a new game.');break;
     }
     case 'confirm-import':{
       if(modal!=='import'||!pendingImport||session.status!=='active')break;const restored=restoreBackupWithSave(game,pendingImport,profile=>session.save(profile).ok);
       if(!restored.ok){toast('The save could not be written. Your current game was not replaced.');break;}
-      game=restored.game;entryEntered=false;entrySaved=hasPriorPlay(game.profile);settingsOrigin=null;root!.dataset.fieldMode='field';lastPhase=game.state.phase;resultDue=0;manualPaused=false;resultShown='';savedWarning=false;clearPrestigeContext();rebuildArmy();syncMotion();closeModal(false);switchTab('battle');toast('Save restored.');break;
+      game=restored.game;entryWelcome=null;entryEntered=false;entrySaved=hasPriorPlay(game.profile);settingsOrigin=null;root!.dataset.fieldMode='field';lastPhase=game.state.phase;resultDue=0;manualPaused=false;resultShown='';savedWarning=false;clearPrestigeContext();rebuildArmy();syncMotion();closeModal(false);switchTab('battle');toast('Save restored.');break;
     }
     case 'close':dismissModal();break;
   }

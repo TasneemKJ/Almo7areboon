@@ -2,6 +2,10 @@
 
 Semantic versioning. Each merged batch adds an entry and a `vX.Y.Z` tag.
 
+## 0.3.10 - 2026-10-06
+- Welcome-back line: after six hours or more away, a returning player sees "Welcome back. The village kept the lamps lit for 3 days." (grants nothing). Stored as an optional, normalized `lastSeen` written on the saved copy only.
+- Webdriver-only `canvas.dataset.lastDeath` hook so browser checks can find a heavy death.
+
 ## 0.3.9 - 2026-10-06
 - Settings shows when the game last saved (kept in memory for this visit; nothing new is stored).
 - Short-landscape dialogs: the close button no longer floats over scrolled controls (0.3.3 regression). The 44px header stays sticky and opaque, with the title pulled up into the same row.

@@ -94,3 +94,5 @@ Ordered tasks. Tick a task when it is done and never delete finished tasks. This
 - [ ] Exact candidate native matrix: touch/focus/topmost44px/short-phone/safe-area/200%-text/rotation/background/all-six-age art and real audio; no browser/server was run in this source slice.
 - [ ] Replace retained dense chapter/Chronicle/Journey/Cards/Quests/Evolution/result Details leaves with reviewed focused models. Temporary handoffs preserve access but are not all-screen acceptance.
 - [ ] Future cards: native quantity/cost preview; future quests: read-only records + selected Claim/Back; future chapters/routes: genuine illustrated spatial travel with selected Travel/Back, no binary picker maze.
+
+- [x] Integrate main badaba22 timestamp/evidence hooks; keep the welcome line as quiet Home subtitle rather than a boot toast. Cover recovery/failure priority and deliberate entry clearing, and align both lockfile versions.

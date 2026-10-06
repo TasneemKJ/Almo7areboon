@@ -26,6 +26,7 @@ import { battleGuidance, baseHealthDisplay, compactNumber, waveLabel, waveAccess
 import { chapterPresentation, unitPresentationName } from '../src/ui/chapter-presentation.ts';
 import { compactResultsHtml, expeditionChoiceHtml, resultsHtml } from '../src/ui/results-screen.ts';
 import { startCountUp } from '../src/ui/count-up.ts';
+import { welcomeBackLine } from '../src/ui/welcome-back.ts';
 import { earlierChapter } from '../src/ui/regroup-learning.ts';
 import { isLegacyChoice, legacyEffects, prestigePreview } from '../src/game/prestige.ts';
 import { legacyCurrentHtml, prestigeDetailsHtml, prestigeDialogHtml } from '../src/ui/prestige-presentation.ts';
@@ -69,10 +70,10 @@ function harness(motion = 'full') {
   const root = node(), elements = new Map<string, ReturnType<typeof node>>();
   const context: any = {
     HTMLElement:BoundaryButton,HTMLButtonElement:BoundaryButton,Element:BoundaryButton,HTMLInputElement:BoundaryInput,HTMLSelectElement:BoundarySelect, Game, game: new Game(defaultProfile()), sessionReady: true, retriedSession: false, pagePresent: true, lifetime: { disposed: false },
-    lastSavedAt:0,campOwner:null,campRenderKey:'',focusFrame:0,modalVersion:0,focusBefore:null,settingsOrigin:null,acquiring: null, acquisitionVersion: 0, hasPlayed: true, entryEntered: true, entrySaved: true, resultDetailsOpen:false, atmosphereEnabled:true,audioMix:{effects:100,atmosphere:100}, manualPaused: false, savedWarning: false, pendingImport: null, modal: null, evolutionFromResult: false, modalPointerSequence: false,prestigeOrigin:null,prestigeDraft:null,prestigeExpectedTimeline:null,
+    lastSavedAt:0,campOwner:null,campRenderKey:'',focusFrame:0,modalVersion:0,focusBefore:null,settingsOrigin:null,acquiring: null, acquisitionVersion: 0, hasPlayed: true, entryWelcome:null,entryEntered: true, entrySaved: true, resultDetailsOpen:false, atmosphereEnabled:true,audioMix:{effects:100,atmosphere:100}, manualPaused: false, savedWarning: false, pendingImport: null, modal: null, evolutionFromResult: false, modalPointerSequence: false,prestigeOrigin:null,prestigeDraft:null,prestigeExpectedTimeline:null,
     lastUpdate: 0, lastSave: 100, lastPhase: 'ready', resultDue: 0, resultShown: '', activeTab: 'battle', root,
     window:{cancelAnimationFrame(){}},requestAnimationFrame(){return 0;},performance: { now: () => now }, document: { documentElement: { dataset: { motion } } },
-    cardsScreenHtml,summonedCardsHtml,isEditingTarget,campRootHtml,campFocusHtml,canOwnCamp,isCampStation,campActionFromData,fieldControls:{update(){},clear(){},select(){}},blockModalTap:createModalTapGuard(),startCountUp,journeyScreenHtml,updateOrderBanner,entryCopy,hasPriorPlay,entrySecondary,preferencesHtml,saveRecoveryHtml,chapterLandscape,
+    cardsScreenHtml,summonedCardsHtml,isEditingTarget,campRootHtml,campFocusHtml,canOwnCamp,isCampStation,campActionFromData,fieldControls:{update(){},clear(){},select(){}},blockModalTap:createModalTapGuard(),startCountUp,welcomeBackLine,journeyScreenHtml,updateOrderBanner,entryCopy,hasPriorPlay,entrySecondary,preferencesHtml,saveRecoveryHtml,chapterLandscape,
     $: (id: string) => { if (!elements.has(id)) {const element=node();if(id==='battlefield')element.dataset={renderer:'ready'};elements.set(id,element);} return elements.get(id); },
     chronicleScreenHtml,chronicleActionFromData,chronicleGuidance,CAPTAINS,routeDefinition,advanceStatus, battleSelectionHtml, evolutionDialogHtml, ERAS, QUESTS, foodRate, unlockCost, dailyReward, localDay, battleGuidance, baseHealthDisplay, compactNumber, waveLabel, waveAccessibleLabel, chapterPresentation, unitPresentationName, compactResultsHtml, expeditionChoiceHtml, resultsHtml,isLegacyChoice,legacyEffects,prestigePreview,prestigeDetailsHtml,prestigeDialogHtml,legacyCurrentHtml,evolutionScreenHtml,saveSessionDialogHtml,temporarySessionNotice,skillCue,troopUnlockMessage,nextGoalLabel, waveInspectionHtml,
     earlierChapter,storybookArt: () => false, money: String, coin: String, icon:()=>'',textIfChanged(target:any,value:string){target.textContent=value;},htmlIfChanged(target:any,value:string){target.innerHTML=value;},unlockAudio() {}, suspendAudio() {}, saveAtmosphere() {}, syncMarks() {}, syncPause() {}, rebuildArmy() {}, syncMotion() {}, isolateModal(){}, toast() {},
@@ -697,4 +698,30 @@ test('background persistence failure reaches the existing focused warning on the
 test('save conflict preempts an open Camp warning without repainting the obsolete focus',()=>{
  const h=readyCamp(),c=h.context;h.clickData({campStation:'storehouse'});c.session.save=()=>{c.session.status='conflict';c.sessionPresentation('conflict');return{ok:false,reason:'conflict'};};c.persist();c.api.update(true);
  assert.equal(c.modal,'session');assert.equal(c.campOwner,null);assert.doesNotMatch(c.$('modal-layer').innerHTML,/camp-focus-save-status/);
+});
+
+test('returning Home keeps its welcome in the subtitle without a toast or starting play',async()=>{
+ const h=harness(),c=h.context,p=defaultProfile(),messages:string[]=[];
+ p.wins=5;p.lastSeen=Date.now()-3*86_400_000;
+ c.entryEntered=false;c.entryWelcome=null;c.hasPlayed=false;c.toast=(s:string)=>messages.push(s);
+ c.session.acquire=async()=>({status:'active',profile:p,loadStatus:'loaded'});
+ await c.api.acquireSession();c.syncEntry();
+ assert.equal(c.$('entry-subtitle').textContent,'Welcome back. The village kept the lamps lit for 3 days.');
+ assert.deepEqual(messages,[]);assert.equal(c.entryEntered,false);assert.equal(c.game.state.phase,'ready');assert.equal(c.game.state.time,0);
+ c.$('battlefield').dataset.renderer='failed';c.syncEntry();assert.match(c.$('entry-subtitle').textContent,/could not load/);
+ c.$('battlefield').dataset.renderer='ready';c.syncEntry();assert.match(c.$('entry-subtitle').textContent,/Welcome back/);
+ c.enterWorld();assert.equal(c.entryWelcome,null);
+ c.modal='field-pause';c.showHome();assert.equal(c.$('entry-subtitle').textContent,entryCopy(c.game.profile,true).subtitle);
+});
+for(const status of ['recovered','corrupt'])test(`returning Home does not replace the ${status} recovery notice`,async()=>{
+ const h=harness(),c=h.context,p=defaultProfile(),messages:string[]=[];
+ p.wins=5;p.lastSeen=Date.now()-3*86_400_000;
+ c.entryEntered=false;c.entryWelcome='stale welcome';c.hasPlayed=false;c.toast=(s:string)=>messages.push(s);
+ c.session.acquire=async()=>({status:'active',profile:p,loadStatus:status});await c.api.acquireSession();c.syncEntry();
+ assert.equal(c.entryWelcome,null);assert.equal(messages.length,1);assert.match(messages[0],status==='recovered'?/Recovered your progress/:/could not be recovered/);
+ assert.equal(c.$('entry-subtitle').textContent,entryCopy(c.game.profile,true).subtitle);
+});
+test('entering Camp consumes Home welcome context without starting a battle',()=>{
+ const h=harness(),c=h.context;c.game.profile.played=true;c.entryEntered=false;c.entryWelcome='Welcome back';c.enterCamp();
+ assert.equal(c.entryWelcome,null);assert.equal(c.game.state.phase,'ready');assert.equal(c.game.state.time,0);
 });

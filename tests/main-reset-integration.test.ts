@@ -48,7 +48,7 @@ async function harness(mode = 'active') {
     return nodes.get(id);
   };
   const context: any = {chronicleScreenHtml,chronicleActionFromData,chronicleGuidance,CAPTAINS,routeDefinition,
-    Element: ElementBoundary, root: { dataset: {} }, game: new Game(old), entryEntered:true,sessionReady: true, retriedSession: false, pagePresent: true,
+    Element: ElementBoundary, root: { dataset: {} }, game: new Game(old), entryWelcome:null,entryEntered:true,sessionReady: true, retriedSession: false, pagePresent: true,
     campOwner:null,settingsOrigin:null,pendingImport: null, hasPlayed: true, savedWarning: false, lastSavedAt:0, manualPaused: true, lastPhase: 'won', resultDue: 99, resultShown: 'old', modal: 'settings', atmosphereEnabled: false, audioMix: { effects: 100, atmosphere: 100 }, evolutionFromResult: false, modalPointerSequence: false,prestigeOrigin:null,prestigeDraft:null,prestigeExpectedTimeline:null,
     lifetime: { disposed: false, listen: (_root: unknown, _event: string, handler: Function) => { context.click = handler; } },
     $: node, textIfChanged() {}, syncPause() {}, isolateModal() {}, icon: () => '', unlockAudio() {},
