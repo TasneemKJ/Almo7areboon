@@ -38,6 +38,7 @@ import { createArmyUpdater, troopControlLabel, troopUnlockMessage } from './ui/a
 import { cardsScreenHtml, summonedCardsHtml } from './ui/cards-screen.ts';
 import { resultsHtml } from './ui/results-screen.ts';
 import { startCountUp } from './ui/count-up.ts';
+import { welcomeBackLine } from './ui/welcome-back.ts';
 import { earlierChapter } from './ui/regroup-learning.ts';
 import { legacyCurrentHtml, prestigeDetailsHtml, prestigeDialogHtml } from './ui/prestige-presentation.ts';
 import { battleGuidance, baseHealthDisplay, compactNumber, waveLabel, waveAccessibleLabel } from './ui/battle-hud.ts';
@@ -147,6 +148,7 @@ async function acquireSession(){
       closeModal(false);rebuildArmy();syncMotion();switchTab('battle');
       if(loaded.loadStatus==='recovered')toast('Recovered your progress from the backup save.');
       else if(loaded.loadStatus==='corrupt')toast('The stored save could not be recovered. A new game has started.');
+      else{const line=welcomeBackLine(loaded.profile.lastSeen,Date.now(),loaded.profile.wins);if(line)toast(line,6000);}
     }else if(!hasPlayed&&loaded.profile){
       // Safe preview for explicit temporary play only; never replace conflicted work.
       game=new Game(loaded.profile);lastPhase=game.state.phase;resultDue=0;rebuildArmy();syncMotion();update(true);
@@ -162,7 +164,8 @@ function toast(message:string,duration=4200){
 }
 function persist():boolean{
   if(!playable()||session.status==='temporary')return false;
-  const result=session.save(game.profile),ok=result.ok;lastSave=performance.now();
+  // lastSeen rides on the saved copy only, so the live profile (and every "unchanged progress" check) is untouched.
+  const result=session.save({...game.profile,lastSeen:Date.now()}),ok=result.ok;lastSave=performance.now();
   if(result.reason==='write-failed'&&!savedWarning){savedWarning=true;toast('Progress could not be saved. Export a backup from Settings before closing this tab.');}
   if(ok){savedWarning=false;lastSavedAt=Date.now();}
   return ok;
