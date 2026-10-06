@@ -7,7 +7,7 @@ const css = readFileSync(new URL('../src/ui/skill-cues.css', import.meta.url), '
 const audio = readFileSync(new URL('../src/view/audio.ts', import.meta.url), 'utf8');
 
 test('the first-battle teaching ring is limited to the first card of a first, undeployed battle', () => {
-  assert.match(main, /classList\.toggle\('teach',kind===0&&p\.wins===0&&s\.phase==='running'&&!s\.paused&&s\.stats\.deployed===0&&!button\.disabled\)/);
+  assert.match(main, /classList\.toggle\('teach',kind===0&&!button\.disabled&&\(\(p\.wins===0&&s\.phase==='running'&&!s\.paused&&s\.stats\.deployed===0\)\|\|foodIsPiling\(p,s\)\)\)/);
 });
 test('the ring is static unless motion is full', () => {
   assert.match(css, /\.unit-card\.teach\.affordable \{ box-shadow/);
@@ -48,4 +48,25 @@ test('death events carry the fallen unit role so a heavy can fall louder', async
   const field = readFileSync(new URL('../src/view/battlefield.ts', import.meta.url), 'utf8');
   assert.match(field, /e\.type==='death'&&e\.kind===2/);
   assert.match(field, /if\(!this\.reduce\)this\.cameras\.main\.shake\(70,\.0016\)/);
+});
+
+test('piling food: the hint and ring chase a first-timer who banks food after the first deployment', async () => {
+  const { battleGuidance, foodIsPiling } = await import('../src/ui/battle-hud.ts');
+  const { Game } = await import('../src/game/simulation.ts');
+  const g = new Game(); g.state.phase = 'running'; g.state.stats.deployed = 1; g.state.food = 26; g.state.time = 30;
+  const mine = () => ({ ...(g.state.units[0] ?? {}), side: 'player', hp: 10 } as any);
+  const foe = () => ({ ...(g.state.units[0] ?? {}), side: 'enemy', hp: 10 } as any);
+  g.state.units = [mine(), foe(), foe(), foe()];
+  assert.equal(foodIsPiling(g.profile, g.state), true);
+  assert.match(battleGuidance(g.profile, g.state), /^Food is piling up \(26\)\. Keep tapping the melee card/, 'outranks the Freeze cue');
+  g.state.units = [mine(), mine(), mine(), foe()];
+  assert.equal(foodIsPiling(g.profile, g.state), false, 'three fighters is enough');
+  g.state.units = [mine()]; g.state.food = 8;
+  assert.equal(foodIsPiling(g.profile, g.state), false, 'not enough food banked');
+  g.state.food = 26; g.profile.wins = 3;
+  assert.equal(foodIsPiling(g.profile, g.state), false, 'only for the first wins');
+  g.profile.wins = 0; g.state.stats.deployed = 0;
+  assert.equal(foodIsPiling(g.profile, g.state), false, 'the opening ring covers the very first deploy');
+  g.state.stats.deployed = 2; g.state.paused = true;
+  assert.equal(foodIsPiling(g.profile, g.state), false);
 });

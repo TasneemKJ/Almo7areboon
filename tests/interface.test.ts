@@ -227,6 +227,8 @@ test('the final victory spells out what the next timeline resets and keeps',()=>
 test('new players are pointed at the skill buttons once, until they cast one',()=>{
  const g=new Game();g.dispatch({type:'start'});g.dispatch({type:'spawn',kind:0});
  g.state.food=50;g.state.time=10;
+ // Three fighters on the field, so the food-piling cue does not outrank the skill tutorial under test.
+ for(let i=0;i<2;i++)g.dispatch({type:'spawn',kind:0});
  assert.doesNotMatch(battleGuidance(g.profile,g.state),/skill/i);
  g.state.time=30;
  assert.match(battleGuidance(g.profile,g.state),/Try a skill/);

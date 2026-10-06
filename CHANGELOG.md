@@ -2,6 +2,9 @@
 
 Semantic versioning. Each merged batch adds an entry and a `vX.Y.Z` tag.
 
+## 0.3.12 - 2026-10-06
+- Food-piling cue: in the first three wins, a player who deployed once and banks food for three or more warriors with fewer than three fighting sees "Food is piling up (N). Keep tapping the melee card to send more warriors." and the first card gets the teaching ring again. It outranks the skill cues. Found by a scripted first-timer run (docs/audits/2026-10-06-round10-first-timer.md).
+
 ## 0.3.11 - 2026-10-06
 - Hit-stop: a heavy blow on a unit freezes the scene for about 50 ms (at most twice a second); never with reduced motion. Webdriver-only `canvas.dataset.hitStops` counts them for browser checks.
 - `lastSeen` is rounded to the minute, which removes a rare flake where two back-to-back saves differed by a millisecond.

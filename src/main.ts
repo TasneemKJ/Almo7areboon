@@ -41,7 +41,7 @@ import { startCountUp } from './ui/count-up.ts';
 import { welcomeBackLine } from './ui/welcome-back.ts';
 import { earlierChapter } from './ui/regroup-learning.ts';
 import { legacyCurrentHtml, prestigeDetailsHtml, prestigeDialogHtml } from './ui/prestige-presentation.ts';
-import { battleGuidance, baseHealthDisplay, compactNumber, waveLabel, waveAccessibleLabel } from './ui/battle-hud.ts';
+import { battleGuidance, foodIsPiling, baseHealthDisplay, compactNumber, waveLabel, waveAccessibleLabel } from './ui/battle-hud.ts';
 import { waveInspectionHtml } from './ui/wave-inspection.ts';
 import { battleSelectionHtml, evolutionDialogHtml } from './ui/progression-screen.ts';
 import { createModalIsolation, modalFocusables, nextFocusIndex, isEditingTarget } from './ui/accessibility.ts';
@@ -234,7 +234,7 @@ function update(force=false){
     button.disabled=locked?p.coins<unlockCost(kind,p):!status.allowed;
     button.classList.toggle('affordable',!button.disabled);
     // First battle ever: ring the Light Guard card until the first deployment (static ring when motion is reduced).
-    button.classList.toggle('teach',kind===0&&p.wins===0&&s.phase==='running'&&!s.paused&&s.stats.deployed===0&&!button.disabled);
+    button.classList.toggle('teach',kind===0&&!button.disabled&&((p.wins===0&&s.phase==='running'&&!s.paused&&s.stats.deployed===0)||foodIsPiling(p,s)));
     const label=troopControlLabel(p,kind,status);
     button.title=label;if(button.getAttribute('aria-label')!==label)button.setAttribute('aria-label',label);
     (button.querySelector('.unit-fill') as HTMLElement).style.transform=`scaleX(${Math.max(0,Math.min(1,s.food/ERAS[p.age].units[kind].cost))})`;

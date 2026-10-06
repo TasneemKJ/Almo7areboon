@@ -32,6 +32,7 @@ test('the skill tutorial recommends combat skills only with real living enemy ta
   while(game.state.time<38.8)game.step(1/60);
   assert.ok(game.state.units.some(unit=>unit.side==='enemy'&&unit.hp>0));
   assert.equal(game.canUseSkill('meteor'),true);
+  game.state.food=10; // spent: banked food would (rightly) outrank the tutorial with the piling cue
   assert.match(battleGuidance(game.profile,game.state,game.waveStatus().preview),/Try a skill.*Freeze.*Meteor/);
   game.dispatch({type:'pause'});
   assert.doesNotMatch(battleGuidance(game.profile,game.state,game.waveStatus().preview),/Try a skill/);
