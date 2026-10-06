@@ -1,3 +1,4 @@
+import {questRecords,selectedQuestRecord,questRecordAction,questRecordLabel,questRecordsHtml,questRecordDetailHtml} from '../src/ui/quest-records.ts';
 import {cardsScreenHtml,summonedCardsHtml} from '../src/ui/cards-screen.ts';
 import {isEditingTarget} from '../src/ui/accessibility.ts';
 import {campRootHtml,campFocusHtml} from '../src/ui/camp-screen.ts';
@@ -22,10 +23,13 @@ import { saveSessionDialogHtml, temporarySessionNotice } from '../src/ui/save-se
 import { advanceStatus } from '../src/game/mastery.ts';
 import { battleSelectionHtml, evolutionDialogHtml } from '../src/ui/progression-screen.ts';
 import { ERAS, QUESTS, foodRate, unlockCost, dailyReward, localDay } from '../src/game/data.ts';
-import { battleGuidance, baseHealthDisplay, compactNumber, waveLabel, waveAccessibleLabel } from '../src/ui/battle-hud.ts';
+import { battleGuidance, foodIsPiling, baseHealthDisplay, compactNumber, waveLabel, waveAccessibleLabel } from '../src/ui/battle-hud.ts';
 import { chapterPresentation, unitPresentationName } from '../src/ui/chapter-presentation.ts';
 import { compactResultsHtml, expeditionChoiceHtml, resultsHtml } from '../src/ui/results-screen.ts';
 import { startCountUp } from '../src/ui/count-up.ts';
+import { restoreBackupWithSave } from '../src/game/backup.ts';
+import { startOverProfile } from '../src/game/reset.ts';
+import { syncWeekly, weekId, weeklyStatus } from '../src/game/weekly.ts';
 import { welcomeBackLine } from '../src/ui/welcome-back.ts';
 import { earlierChapter } from '../src/ui/regroup-learning.ts';
 import { isLegacyChoice, legacyEffects, prestigePreview } from '../src/game/prestige.ts';
@@ -40,7 +44,7 @@ import { createModalTapGuard } from '../src/ui/modal-tap-guard.ts';
 // Execute the app's actual functions with a clock and minimal DOM boundary; no browser/debug hooks.
 const source = readFileSync(new URL('../src/main.ts', import.meta.url), 'utf8');
 const ast = ts.createSourceFile('main.ts', source, ts.ScriptTarget.Latest, true, ts.ScriptKind.TS);
-const names = new Set(['switchTab','showModal','syncCamp','showCampFocus','returnToCamp','handleCampInput','playable', 'guardAction', 'action', 'persist', 'update', 'renderScreen', 'sessionPresentation', 'showResult', 'acquireSession', 'dismissModal', 'returnToChapters', 'clearPrestigeContext', 'openPrestige', 'refreshPrestige', 'returnFromPrestige', 'dailyRow', 'showQuests', 'showSettings', 'showSaveRecovery', 'preferenceNotice', 'showFieldPause', 'showLeaveBattle', 'leaveBattle', 'enterCamp', 'entryReady', 'syncEntry', 'enterWorld', 'showResultDetails', 'showHome', 'continueWithProvision']);
+const names = new Set(['switchTab','showModal','syncCamp','showCampFocus','returnToCamp','handleCampInput','playable', 'guardAction', 'action', 'persist', 'update', 'renderScreen', 'sessionPresentation', 'showResult', 'acquireSession', 'dismissModal', 'returnToChapters', 'clearPrestigeContext', 'openPrestige', 'refreshPrestige', 'returnFromPrestige', 'questSaveNotice', 'refreshQuestRecord', 'claimQuestRecord', 'showQuests', 'showSettings', 'showSaveRecovery', 'preferenceNotice', 'showFieldPause', 'showLeaveBattle', 'leaveBattle', 'enterCamp', 'entryReady', 'syncEntry', 'enterWorld', 'showResultDetails', 'showHome', 'continueWithProvision']);
 const functions = ast.statements.filter(node => ts.isFunctionDeclaration(node) && node.name && names.has(node.name.text));
 assert.equal(functions.length, names.size);
 const click=ast.statements.find(node=>ts.isExpressionStatement(node)&&ts.isCallExpression(node.expression)&&node.expression.expression.getText(ast)==='lifetime.listen'&&node.expression.arguments[0]?.getText(ast)==='root'&&node.expression.arguments[1]?.getText(ast)==="'click'") as ts.ExpressionStatement;
@@ -55,7 +59,7 @@ const code = ts.transpile(functions.map(node => node.getText(ast)).join('\n')+`\
 function harness(motion = 'full') {
   let now = 100, foreign = false;
   const dialogs: string[] = [];
-  const node = () => ({ dataset: {}, style: {}, focus() {}, hidden: false, innerHTML:'',textContent:'',classList: { toggle() {} }, setAttribute() {}, toggleAttribute() {}, querySelector() { return null; }, querySelectorAll():any[] { return []; } });
+  const node = () => ({ dataset: {}, style: {}, focus() { context.document.activeElement=this; }, contains(target:any) { return !target.detached; }, hidden: false, innerHTML:'',textContent:'',classList: { toggle() {} }, setAttribute() {}, toggleAttribute() {}, querySelector() { return null; }, querySelectorAll():any[] { return []; } });
   class BoundaryButton {
     dataset:Record<string,string>;disabled=false;
     constructor(dataset:Record<string,string>){this.dataset=dataset;}
@@ -64,17 +68,17 @@ function harness(motion = 'full') {
   class BoundaryInput {
     type='radio';checked=true;id='';dataset:Record<string,string>={};name:string;value:string;
     constructor(name:string,value:string){this.name=name;this.value=value;}
-    closest(selector:string){return selector===((this.dataset.preference||this.name==='prestige-legacy')?'#modal-layer':'#secondary-screen')?this:null;}
+    closest(selector:string){return selector===((this.dataset.preference||this.name==='quest-goal'||this.name==='prestige-legacy')?'#modal-layer':'#secondary-screen')?this:null;}
   }
-  class BoundarySelect extends BoundaryInput {}
-  const root = node(), elements = new Map<string, ReturnType<typeof node>>();
+  class BoundarySelect extends BoundaryInput { options:any[]=[];focus(){context.document.activeElement=this;} }
+  const root = node(), elements = new Map<string, any>();
   const context: any = {
     HTMLElement:BoundaryButton,HTMLButtonElement:BoundaryButton,Element:BoundaryButton,HTMLInputElement:BoundaryInput,HTMLSelectElement:BoundarySelect, Game, game: new Game(defaultProfile()), sessionReady: true, retriedSession: false, pagePresent: true, lifetime: { disposed: false },
-    lastSavedAt:0,campOwner:null,campRenderKey:'',focusFrame:0,modalVersion:0,focusBefore:null,settingsOrigin:null,acquiring: null, acquisitionVersion: 0, hasPlayed: true, entryWelcome:null,entryEntered: true, entrySaved: true, resultDetailsOpen:false, atmosphereEnabled:true,audioMix:{effects:100,atmosphere:100}, manualPaused: false, savedWarning: false, pendingImport: null, modal: null, evolutionFromResult: false, modalPointerSequence: false,prestigeOrigin:null,prestigeDraft:null,prestigeExpectedTimeline:null,
+    questSelection:null,questCalendarDay:null,questRecords,selectedQuestRecord,questRecordAction,questRecordLabel,questRecordsHtml,questRecordDetailHtml,lastSavedAt:0,campOwner:null,campRenderKey:'',focusFrame:0,modalVersion:0,focusBefore:null,settingsOrigin:null,acquiring: null, acquisitionVersion: 0, hasPlayed: true, entryWelcome:null,entryEntered: true, entrySaved: true, resultDetailsOpen:false, atmosphereEnabled:true,audioMix:{effects:100,atmosphere:100}, manualPaused: false, savedWarning: false, pendingImport: null, modal: null, evolutionFromResult: false, modalPointerSequence: false,prestigeOrigin:null,prestigeDraft:null,prestigeExpectedTimeline:null,
     lastUpdate: 0, lastSave: 100, lastPhase: 'ready', resultDue: 0, resultShown: '', activeTab: 'battle', root,
     window:{cancelAnimationFrame(){}},requestAnimationFrame(){return 0;},performance: { now: () => now }, document: { documentElement: { dataset: { motion } } },
-    cardsScreenHtml,summonedCardsHtml,isEditingTarget,campRootHtml,campFocusHtml,canOwnCamp,isCampStation,campActionFromData,fieldControls:{update(){},clear(){},select(){}},blockModalTap:createModalTapGuard(),startCountUp,welcomeBackLine,journeyScreenHtml,updateOrderBanner,entryCopy,hasPriorPlay,entrySecondary,preferencesHtml,saveRecoveryHtml,chapterLandscape,
-    $: (id: string) => { if (!elements.has(id)) {const element=node();if(id==='battlefield')element.dataset={renderer:'ready'};elements.set(id,element);} return elements.get(id); },
+    cardsScreenHtml,summonedCardsHtml,isEditingTarget,campRootHtml,campFocusHtml,canOwnCamp,isCampStation,campActionFromData,fieldControls:{update(){},clear(){},select(){}},blockModalTap:createModalTapGuard(),startCountUp,welcomeBackLine,restoreBackupWithSave,startOverProfile,syncWeekly,weekId,weeklyStatus,foodIsPiling,Date:class extends Date{static now(){return 1_800_000_000_000;}},journeyScreenHtml,updateOrderBanner,entryCopy,hasPriorPlay,entrySecondary,preferencesHtml,saveRecoveryHtml,chapterLandscape,
+    $: (id: string) => { if (!elements.has(id)) {const element:any=id==='quest-goal'?new BoundarySelect('quest-goal',''):node();if(id==='battlefield')element.dataset={renderer:'ready'};elements.set(id,element);} return elements.get(id); },
     chronicleScreenHtml,chronicleActionFromData,chronicleGuidance,CAPTAINS,routeDefinition,advanceStatus, battleSelectionHtml, evolutionDialogHtml, ERAS, QUESTS, foodRate, unlockCost, dailyReward, localDay, battleGuidance, baseHealthDisplay, compactNumber, waveLabel, waveAccessibleLabel, chapterPresentation, unitPresentationName, compactResultsHtml, expeditionChoiceHtml, resultsHtml,isLegacyChoice,legacyEffects,prestigePreview,prestigeDetailsHtml,prestigeDialogHtml,legacyCurrentHtml,evolutionScreenHtml,saveSessionDialogHtml,temporarySessionNotice,skillCue,troopUnlockMessage,nextGoalLabel, waveInspectionHtml,
     earlierChapter,storybookArt: () => false, money: String, coin: String, icon:()=>'',textIfChanged(target:any,value:string){target.textContent=value;},htmlIfChanged(target:any,value:string){target.innerHTML=value;},unlockAudio() {}, suspendAudio() {}, saveAtmosphere() {}, syncMarks() {}, syncPause() {}, rebuildArmy() {}, syncMotion() {}, isolateModal(){}, toast() {},
     closeModal() { context.modal=null; }, showModal: (id: string,html:string,focusCommand?:string) => {context.modal=id;context.dialogHtml=html;context.focusCommand=focusCommand;dialogs.push(id);},
@@ -85,9 +89,11 @@ function harness(motion = 'full') {
     },
   };
 
+  context.game.dispatch({type:'weekly-sync',week:weekId(localDay())});
   runInNewContext(`${code}\nthis.api = { update, action, acquireSession, dismissModal, returnToChapters, showResult, renderScreen }; this.update = update;`, context);
   const actualShowModal=context.showModal;context.showModal=(id:string,html:string,focusCommand?:string)=>{context.dialogHtml=html;context.focusCommand=focusCommand;dialogs.push(id);actualShowModal(id,html,focusCommand);};
-  return { context, dialogs, click:(command:string,detail=0)=>context.handleClick({target:new BoundaryButton({command}),detail,preventDefault(){}}), clickData:(dataset:Record<string,string>,detail=0,extra={})=>context.handleClick({target:new BoundaryButton(dataset),detail,preventDefault(){},...extra}), change:(name:string,value:string)=>context.handleChange({target:new BoundaryInput(name,value)}),preference:(name:string,value:string|boolean)=>{const input=['speed','motion'].includes(name)?new BoundarySelect('',String(value)):new BoundaryInput('',String(value));input.dataset.preference=name;input.type=typeof value==='boolean'?'checkbox':'select-one';input.checked=value===true;context.document.activeElement=input;context.handleChange({target:input});return input;},clock: (value: number) => { now = value; }, foreign: () => { foreign = true; } };
+  function cQuestSelect(){const input=context.$('quest-goal');input.dataset.questSelect='';input.options=questRecords(context.game.profile,context.localDay()).map(r=>({value:r.key,textContent:questRecordLabel(r)}));return input;}
+  return { context, dialogs, questSelect:(value:string)=>{const input=cQuestSelect();input.value=value;context.document.activeElement=input;context.handleChange({target:input});return input;}, click:(command:string,detail=0)=>context.handleClick({target:new BoundaryButton({command}),detail,preventDefault(){}}), clickData:(dataset:Record<string,string>,detail=0,extra={})=>context.handleClick({target:new BoundaryButton(dataset),detail,preventDefault(){},...extra}), change:(name:string,value:string)=>context.handleChange({target:new BoundaryInput(name,value)}),preference:(name:string,value:string|boolean)=>{const input=['speed','motion'].includes(name)?new BoundarySelect('',String(value)):new BoundaryInput('',String(value));input.dataset.preference=name;input.type=typeof value==='boolean'?'checkbox':'select-one';input.checked=value===true;context.document.activeElement=input;context.handleChange({target:input});return input;},clock: (value: number) => { now = value; }, foreign: () => { foreign = true; } };
 }
 test('rapid touch continuation cannot activate the navigation exposed under the result',()=>{
  const h=harness(),c=h.context;
@@ -397,7 +403,9 @@ test('Journey return restores a settled result without reissuing its rewards',()
  assert.equal(c.modal,'result');assert.equal(JSON.stringify(c.game.profile),before);
 });
 test('closing Quests opened from Journey restores the held result without reissuing rewards',()=>{
- const h=settledHarness(),c=h.context,before=JSON.stringify(c.game.profile);
+ const h=settledHarness(),c=h.context;
+ c.game.dispatch({type:'weekly-sync',week:weekId(localDay())});
+ const before=JSON.stringify(c.game.profile);
  h.click('journey');assert.equal(c.modal,'journey');h.click('quests');assert.equal(c.modal,'quests');
  c.api.dismissModal();assert.equal(c.modal,'result');assert.equal(JSON.stringify(c.game.profile),before);
 });
@@ -702,7 +710,7 @@ test('save conflict preempts an open Camp warning without repainting the obsolet
 
 test('returning Home keeps its welcome in the subtitle without a toast or starting play',async()=>{
  const h=harness(),c=h.context,p=defaultProfile(),messages:string[]=[];
- p.wins=5;p.lastSeen=Date.now()-3*86_400_000;
+ p.wins=5;p.lastSeen=c.Date.now()-3*86_400_000;
  c.entryEntered=false;c.entryWelcome=null;c.hasPlayed=false;c.toast=(s:string)=>messages.push(s);
  c.session.acquire=async()=>({status:'active',profile:p,loadStatus:'loaded'});
  await c.api.acquireSession();c.syncEntry();
@@ -715,7 +723,7 @@ test('returning Home keeps its welcome in the subtitle without a toast or starti
 });
 for(const status of ['recovered','corrupt'])test(`returning Home does not replace the ${status} recovery notice`,async()=>{
  const h=harness(),c=h.context,p=defaultProfile(),messages:string[]=[];
- p.wins=5;p.lastSeen=Date.now()-3*86_400_000;
+ p.wins=5;p.lastSeen=c.Date.now()-3*86_400_000;
  c.entryEntered=false;c.entryWelcome='stale welcome';c.hasPlayed=false;c.toast=(s:string)=>messages.push(s);
  c.session.acquire=async()=>({status:'active',profile:p,loadStatus:status});await c.api.acquireSession();c.syncEntry();
  assert.equal(c.entryWelcome,null);assert.equal(messages.length,1);assert.match(messages[0],status==='recovered'?/Recovered your progress/:/could not be recovered/);
@@ -724,4 +732,191 @@ for(const status of ['recovered','corrupt'])test(`returning Home does not replac
 test('entering Camp consumes Home welcome context without starting a battle',()=>{
  const h=harness(),c=h.context;c.game.profile.played=true;c.entryEntered=false;c.entryWelcome='Welcome back';c.enterCamp();
  assert.equal(c.entryWelcome,null);assert.equal(c.game.state.phase,'ready');assert.equal(c.game.state.time,0);
+});
+
+test('persist rounds lastSeen on saved copies without mutating live progress',()=>{
+ const h=harness(),c=h.context,saved:any[]=[];let wall=1_800_000_059_998;
+ c.Date=class extends Date{static now(){return wall;}};
+ c.session.save=(profile:any)=>{saved.push(profile);return{ok:true};};
+ const before=JSON.stringify(c.game.profile);
+ assert.equal(c.persist(),true);wall++;assert.equal(c.persist(),true);
+ assert.equal(saved[0].lastSeen,1_800_000_000_000);assert.equal(saved[1].lastSeen,saved[0].lastSeen);
+ wall++;assert.equal(c.persist(),true);assert.equal(saved[2].lastSeen,1_800_000_060_000);
+ assert.equal(JSON.stringify(c.game.profile),before);assert.notEqual(saved[0],c.game.profile);
+ c.session.status='temporary';assert.equal(c.persist(),false);assert.equal(saved.length,3);
+});
+
+test('weekly claim repaint yields to the real session conflict discovered by its writer',()=>{
+ const h=harness(),c=h.context,week=weekId(localDay());
+ c.game.dispatch({type:'weekly-sync',week});c.game.profile.mastery.chapters[0].earnedMask=7;c.modal='quests';
+ c.session.save=()=>{c.session.status='conflict';c.sessionPresentation('conflict');return {ok:false};};
+ h.clickData({weekly:String(week)});
+ assert.equal(c.modal,'session','Quests must not replace the required recovery dialog');
+});
+test('weekly Quests opening cannot sync or replace an unowned session',()=>{
+ const h=harness(),c=h.context,before=JSON.stringify(c.game.profile);h.foreign();
+ c.showQuests();assert.equal(c.modal,'session');assert.equal(JSON.stringify(c.game.profile),before);
+});
+for(const owner of ['import','reset'])test(`actual ${owner} transaction initializes the weekly baseline before the replacement is written`,()=>{
+ const h=harness(),c=h.context,week=weekId(localDay()),candidate=defaultProfile();
+ candidate.mastery.chapters[0].earnedMask=7;c.pendingImport=candidate;c.modal=owner;
+ c.game.profile.weekly={week,baseSeals:8,claimed:true};
+ const before=c.game;let saved:any;c.session.save=(p:any)=>{saved=JSON.parse(JSON.stringify(p));return {ok:true};};
+ h.click(`confirm-${owner}`);assert.notEqual(c.game,before);
+ assert.equal(saved.weekly.week,week);assert.equal(saved.weekly.baseSeals,owner==='reset'?0:3);
+ assert.equal(saved.weekly.claimed,owner==='reset'?true:undefined);assert.deepEqual(c.game.profile.weekly,saved.weekly);
+ assert.equal(c.entryEntered,false);assert.equal(c.game.state.phase,'ready');assert.equal(c.modal,null);
+});
+for(const owner of ['import','reset'])test(`a rejected ${owner} save leaves the original weekly claim and profile untouched`,()=>{
+ const h=harness(),c=h.context,week=weekId(localDay());c.pendingImport=defaultProfile();c.modal=owner;c.game.profile.weekly={week,baseSeals:8,claimed:true};
+ const game=c.game,before=JSON.stringify(c.game.profile);c.session.save=()=>({ok:false});h.click(`confirm-${owner}`);
+ assert.equal(c.game,game);assert.equal(JSON.stringify(c.game.profile),before);assert.equal(c.modal,owner);
+});
+
+for(const earned of [0,3])test(`a pre-Monday weekly claim token with ${earned} seals rejects without profile, reward, save or modal mutation`,()=>{
+ const h=harness(),c=h.context,monday=19996,previous=weekId(monday);let day=monday+6;c.localDay=()=>day;c.game=new Game();
+ c.game.dispatch({type:'weekly-sync',week:previous});c.game.profile.mastery.chapters[0].earnedMask=earned===3?7:0;c.modal='quests';
+ const before=JSON.stringify(c.game.profile);let writes=0;c.session.save=()=>{writes++;return {ok:true};};c.game.drainEvents();
+ day=monday+7;h.clickData({weekly:String(previous)});
+ assert.equal(JSON.stringify(c.game.profile),before);assert.equal(writes,0);assert.equal(c.modal,'quests');assert.deepEqual(c.game.drainEvents(),[]);
+ c.showQuests();assert.equal(c.game.profile.weekly.week,previous+1,'deliberate reopening still establishes the legitimate new week');assert.equal(c.game.profile.weekly.baseSeals,earned);
+});
+test('actual Quests rollback and stale claim preserve a newer claim through returning calendar and further earning',()=>{
+ const h=harness(),c=h.context,monday=19996,current=weekId(monday+7);let day=monday+7;c.localDay=()=>day;c.game=new Game();
+ c.game.dispatch({type:'weekly-sync',week:current});c.game.profile.mastery.chapters[0].earnedMask=7;c.modal='quests';h.clickData({weekly:String(current)});
+ const before=JSON.stringify(c.game.profile);assert.equal(c.game.profile.gems,160);assert.equal(c.game.profile.weekly.claimed,true);
+ day=monday+6;c.showQuests();assert.equal(JSON.stringify(c.game.profile),before,'earlier calendar must retain claim');
+ h.clickData({weekly:String(current-1)});assert.equal(JSON.stringify(c.game.profile),before,'older token is rejected without mutation');
+ day=monday+7;c.showQuests();c.game.profile.mastery.chapters[1].earnedMask=7;h.clickData({weekly:String(current)});
+ assert.equal(c.game.profile.gems,160);assert.equal(c.game.profile.weekly.claimed,true);
+});
+for(const token of ['fractional','nan','future','old'])test(`actual weekly click rejects ${token} token with no mutation even when its retained record is ready`,()=>{
+ const h=harness(),c=h.context,current=2858;c.localDay=()=>20003;c.game=new Game();
+ const requested=token==='fractional'?current+.5:token==='nan'?Number.NaN:token==='future'?current+1:current-1;
+ c.game.profile.weekly={week:Number.isInteger(requested)?requested:current,baseSeals:0};c.game.profile.mastery.chapters[0].earnedMask=7;c.modal='quests';c.game.drainEvents();
+ const before=JSON.stringify(c.game.profile);let writes=0;c.session.save=()=>{writes++;return {ok:true};};h.clickData({weekly:String(requested)});
+ assert.equal(JSON.stringify(c.game.profile),before);assert.equal(writes,0);assert.deepEqual(c.game.drainEvents(),[]);
+});
+test('accepted weekly claim remains claimed after failed persistence and repeated clicks cannot award twice',()=>{
+ const h=harness(),c=h.context,current=2858;c.localDay=()=>20003;c.game=new Game();c.game.dispatch({type:'weekly-sync',week:current});c.game.profile.mastery.chapters[0].earnedMask=7;c.modal='quests';
+ let writes=0;c.session.save=()=>{writes++;return {ok:false,reason:'write-failed'};};h.clickData({weekly:String(current)});
+ assert.equal(c.game.profile.gems,160);assert.equal(c.game.profile.weekly.claimed,true);assert.equal(writes,1);assert.equal(c.savedWarning,true);
+ const before=JSON.stringify(c.game.profile);h.clickData({weekly:String(current)});assert.equal(JSON.stringify(c.game.profile),before);assert.equal(writes,1);
+});
+for(const owner of ['import','reset'])test(`${owner} after calendar rollback retains a newer claimed week transactionally`,()=>{
+ const h=harness(),c=h.context;c.localDay=()=>20002;c.game=new Game();c.game.profile.weekly={week:2858,baseSeals:0,claimed:true};
+ c.pendingImport=defaultProfile();c.pendingImport.weekly={week:2858,baseSeals:0,claimed:true};c.modal=owner;let saved:any;c.session.save=(p:any)=>{saved=JSON.parse(JSON.stringify(p));return {ok:true};};
+ h.click(`confirm-${owner}`);assert.deepEqual(saved.weekly,{week:2858,baseSeals:0,claimed:true});assert.deepEqual(c.game.profile.weekly,saved.weekly);
+});
+test('one accepted weekly claim preserves a held victory receipt and cannot settle it again',()=>{
+ const h=settledHarness(),c=h.context,current=2858;c.localDay=()=>20003;c.game.profile.weekly={week:current,baseSeals:0};c.game.profile.mastery.chapters[0].earnedMask=7;c.modal='quests';
+ const receipt=JSON.stringify(c.game.profile.pendingVictory),gems=c.game.profile.gems,coins=c.game.profile.coins;h.clickData({weekly:String(current)});
+ assert.equal(c.game.profile.gems,gems+60);assert.equal(c.game.profile.coins,coins);assert.equal(JSON.stringify(c.game.profile.pendingVictory),receipt);assert.equal(c.game.state.phase,'won');
+ h.clickData({weekly:String(current)});assert.equal(c.game.profile.gems,gems+60);assert.equal(JSON.stringify(c.game.profile.pendingVictory),receipt);
+});
+
+function questClaimToken(c:any){return {command:'quest-claim',questKey:c.questSelection,questDay:String(c.localDay()),questVersion:String(c.modalVersion)};}
+test('quest records replace the dense leaf with one native selector and exactly Claim and Back, including shared chrome',()=>{
+ const h=harness(),c=h.context;let writes=0;c.session.save=()=>{writes++;return {ok:true};};const before=JSON.stringify(c.game.profile);h.click('quests');
+ assert.equal(c.modal,'quests');assert.equal(c.questSelection,'daily');assert.equal((c.dialogHtml.match(/<button\b/g)||[]).length,2);assert.match(c.dialogHtml,/<select/);assert.doesNotMatch(c.$('modal-layer').innerHTML,/close-button/);
+ assert.equal(JSON.stringify(c.game.profile),before);assert.equal(writes,0);
+});
+test('native quest selection preserves its node and focus through repeated read-only changes',()=>{
+ const h=harness(),c=h.context;h.click('quests');let writes=0;c.session.save=()=>{writes++;return {ok:true};};const before=JSON.stringify(c.game.profile),version=c.modalVersion,count=h.dialogs.length;
+ const input=h.questSelect('annihilator');for(let i=0;i<3;i++)h.questSelect('annihilator');
+ assert.equal(c.questSelection,'annihilator');assert.equal(c.$('quest-goal'),input);assert.equal(c.document.activeElement,input);assert.equal(c.modalVersion,version);assert.equal(h.dialogs.length,count);
+ assert.match(c.$('quest-record-detail').innerHTML,/2,500/);assert.match(c.$('quest-record-detail').innerHTML,/400 gems/);assert.match(c.$('quest-record-detail').innerHTML,/disabled/);
+ assert.equal(JSON.stringify(c.game.profile),before);assert.equal(writes,0);
+});
+for(const key of ['daily','weekly','first-blood'])test(`selected ${key} uses real Game admission, keeps identity and focuses the field after one claim`,()=>{
+ const h=harness(),c=h.context;c.game.profile.kills=10;c.game.profile.mastery.chapters[0].earnedMask=7;h.click('quests');h.questSelect(key);const gems=c.game.profile.gems,token=questClaimToken(c);let writes=0;c.session.save=()=>{writes++;return {ok:true};};
+ const reward=selectedQuestRecord(questRecords(c.game.profile,c.localDay()),key).reward;
+ h.clickData(token);assert.equal(c.game.profile.gems,gems+reward);assert.equal(c.questSelection,key);assert.equal(c.document.activeElement,c.$('quest-goal'));assert.match(c.$('quest-record-detail').innerHTML,/Already claimed/);
+ h.clickData(token);assert.equal(c.game.profile.gems,gems+reward);assert.equal(writes,1);
+});
+test('claim revalidates live progress, selected identity, modal version and day without giving a stale reward',()=>{
+ for(const reason of ['progress','selection','version','day','detached']){const h=harness(),c=h.context;c.game.profile.kills=10;h.click('quests');h.questSelect(reason==='day'?'daily':'first-blood');const token=questClaimToken(c);
+ if(reason==='progress')c.game.profile.kills=9;if(reason==='selection')h.questSelect('commander');if(reason==='version')token.questVersion=String(c.modalVersion-1);if(reason==='day'){const day=c.localDay();c.localDay=()=>day+1;}
+ const before=JSON.stringify(c.game.profile);let writes=0;c.session.save=()=>{writes++;return {ok:true};};
+ if(reason==='detached'){const oldContains=c.$('modal-layer').contains;c.$('modal-layer').contains=()=>false;h.clickData(token);c.$('modal-layer').contains=oldContains;}else h.clickData(token);
+ assert.equal(JSON.stringify(c.game.profile),before,reason);assert.equal(writes,0,reason);}
+});
+test('new record claim rejects a stale weekly day token across Monday without synchronizing the profile',()=>{
+ const h=harness(),c=h.context;let day=20002;c.localDay=()=>day;c.game=new Game();c.game.dispatch({type:'weekly-sync',week:weekId(day)});c.game.profile.mastery.chapters[0].earnedMask=7;h.click('quests');h.questSelect('weekly');const token=questClaimToken(c),before=JSON.stringify(c.game.profile);day++;
+ h.clickData(token);assert.equal(JSON.stringify(c.game.profile),before);assert.match(c.$('quest-record-detail').innerHTML,/0 <span>\/ 3/);
+});
+test('quota failure keeps the chosen claimed record and persistent warning; temporary claim never writes',()=>{
+ for(const temporary of [false,true]){const h=harness(),c=h.context;h.click('quests');if(temporary)c.session.status='temporary';let writes=0;c.session.save=()=>{writes++;return {ok:false,reason:'write-failed'};};const gems=c.game.profile.gems,token=questClaimToken(c);
+ h.clickData(token);assert.equal(c.game.profile.gems,gems+30);assert.equal(c.questSelection,'daily');assert.equal(writes,temporary?0:1);assert.equal(c.$('quest-save-status').hidden,false);assert.match(c.$('quest-save-status').textContent,temporary?/not be saved|not saved|temporary/i:/Saving is unavailable/);
+ h.clickData(token);assert.equal(c.game.profile.gems,gems+30);}
+});
+test('record claim and native selection yield to recovery before or during persistence',()=>{
+ for(const stage of ['select','before','save']){const h=harness(),c=h.context;h.click('quests');const token=questClaimToken(c),before=JSON.stringify(c.game.profile);
+ if(stage==='save')c.session.save=()=>{c.session.status='conflict';c.sessionPresentation('conflict');return {ok:false};};else h.foreign();
+ if(stage==='select')h.questSelect('first-blood');else h.clickData(token);
+ assert.equal(c.modal,'session');assert.match(c.dialogHtml,/Progress|progress|tab/);if(stage!=='save')assert.equal(JSON.stringify(c.game.profile),before);}
+});
+test('records retain a held result and manual pause through claim and Back without settling its receipt',()=>{
+ const h=settledHarness(),c=h.context;c.manualPaused=true;const receipt=JSON.stringify(c.game.profile.pendingVictory),coins=c.game.profile.coins;
+ h.click('journey');h.click('quests');h.clickData(questClaimToken(c));h.click('close');
+ assert.equal(c.modal,'result');assert.equal(c.game.state.phase,'won');assert.equal(c.manualPaused,true);assert.equal(JSON.stringify(c.game.profile.pendingVictory),receipt);assert.equal(c.game.profile.coins,coins);
+});
+test('records Back returns to the genuine Camp station and stays in ready preparation',()=>{
+ const h=harness(),c=h.context;c.root.dataset.fieldMode='camp';c.campOwner={kind:'root'};h.clickData({campStation:'journal'});h.click('camp-journal');let selector='';c.root.querySelector=(value:string)=>{selector=value;return {focus(){}};};h.click('quests');h.questSelect('commander');h.click('close');
+ assert.equal(c.modal,null);assert.equal(c.campOwner.kind,'root');assert.equal(c.game.state.phase,'ready');assert.equal(selector,'[data-camp-station="journal"]');
+});
+test('later saving failure and recovery reach the stable record warning without replacing the native picker',()=>{
+ const h=harness(),c=h.context;h.click('quests');const input=h.questSelect('annihilator'),version=c.modalVersion;
+ c.session.save=()=>({ok:false,reason:'write-failed'});c.persist();c.update(true);
+ assert.equal(c.$('quest-save-status').hidden,false);assert.match(c.$('quest-save-status').textContent,/Saving is unavailable/);assert.equal(c.modalVersion,version);assert.equal(c.document.activeElement,input);
+ c.session.save=()=>({ok:true});c.persist();c.update(true);assert.equal(c.$('quest-save-status').hidden,true);assert.equal(c.document.activeElement,input);
+});
+
+test('returning Home preserves a visible Camp to journal to Journey path without a Quests detour',()=>{
+ const h=harness(),c=h.context;c.entryEntered=false;c.entrySaved=true;c.game.profile.played=true;c.update(true);
+ assert.equal(c.$('entry-secondary').hidden,false);assert.equal(c.$('entry-secondary').dataset.command,'home-camp');h.click('home-camp');
+ assert.match(c.$('camp-view').innerHTML,/data-camp-station="journal"/);h.clickData({campStation:'journal'});
+ assert.match(c.dialogHtml,/data-command="camp-journal"[^>]*>Company journal/);h.click('camp-journal');assert.equal(c.modal,'journey');
+ assert.match(c.dialogHtml,/Your journey/);h.click('quests');assert.equal(c.modal,'quests');h.click('close');assert.equal(c.campOwner.kind,'root');assert.equal(c.game.state.phase,'ready');
+});
+test('held-result Home Continue exposes Details and Journey, and Quests Back retains the real receipt',()=>{
+ const h=settledHarness(),c=h.context,receipt=JSON.stringify(c.game.profile.pendingVictory);c.entryEntered=false;c.modal=null;c.manualPaused=true;
+ h.click('enter-world');assert.equal(c.modal,'result');assert.match(c.dialogHtml,/data-command="result-details"/);h.click('result-details');
+ assert.match(c.dialogHtml,/data-command="journey"/);h.click('journey');assert.equal(c.modal,'journey');h.click('quests');h.click('close');
+ assert.equal(c.modal,'result');assert.equal(JSON.stringify(c.game.profile.pendingVictory),receipt);assert.equal(c.game.state.phase,'won');
+});
+for(const key of ['daily','weekly'])test(`open ${key} record refreshes after midnight without saving, changing selection or replacing the field`,()=>{
+ const h=harness(),c=h.context;let day=20002;c.localDay=()=>day;c.game=new Game();c.game.profile.dailyDay=day;c.game.profile.dailyStreak=2;c.game.dispatch({type:'weekly-sync',week:weekId(day)});c.game.profile.mastery.chapters[0].earnedMask=7;
+ h.click('quests');const input=h.questSelect(key),before=JSON.stringify(c.game.profile),version=c.modalVersion;let writes=0;c.session.save=()=>{writes++;return {ok:true};};day++;c.update(true);
+ assert.equal(c.questSelection,key);assert.equal(c.$('quest-goal'),input);assert.equal(c.document.activeElement,input);assert.equal(c.modalVersion,version);
+ const html=c.$('quest-record-detail').innerHTML;if(key==='daily'){assert.match(html,/Day 3 reward is ready/);assert.doesNotMatch(html,/disabled/);}else{assert.match(html,/0 <span>\/ 3/);assert.match(html,/3 more mastery seals/);assert.match(html,/disabled/);}
+ assert.equal(JSON.stringify(c.game.profile),before);assert.equal(writes,0);
+ if(key==='daily'){h.clickData(questClaimToken(c));assert.equal(c.game.profile.dailyDay,day);assert.equal(c.game.profile.gems,150);}
+});
+test('Monday refresh moves focus from an expired ready Claim to the existing Goal field',()=>{
+ const h=harness(),c=h.context;let day=20002;c.localDay=()=>day;c.game=new Game();c.game.dispatch({type:'weekly-sync',week:weekId(day)});c.game.profile.mastery.chapters[0].earnedMask=7;
+ h.click('quests');const input=h.questSelect('weekly');c.document.activeElement=new c.HTMLButtonElement({command:'quest-claim'});day++;c.update(true);
+ assert.equal(c.document.activeElement,input);assert.match(c.$('quest-record-detail').innerHTML,/disabled/);assert.equal(c.questSelection,'weekly');
+});
+test('day-change refresh yields to session recovery without refreshing the obsolete selector',()=>{
+ const h=harness(),c=h.context;let day=20002;c.localDay=()=>day;h.click('quests');h.questSelect('daily');const before=JSON.stringify(c.game.profile),details=c.$('quest-record-detail').innerHTML;day++;h.foreign();c.update(true);
+ assert.equal(c.modal,'session');assert.equal(c.$('quest-record-detail').innerHTML,details);assert.equal(JSON.stringify(c.game.profile),before);
+});
+for(const invalid of [Number.NaN,Infinity,20002.5])test(`invalid clock ${String(invalid)} refresh is bounded and cannot claim or synchronize`,()=>{
+ const h=harness(),c=h.context;let day=20002;c.localDay=()=>day;h.click('quests');h.questSelect('daily');const before=JSON.stringify(c.game.profile);let writes=0,refreshes=0;c.session.save=()=>{writes++;return {ok:true};};
+ const refresh=c.refreshQuestRecord;c.refreshQuestRecord=(...args:any[])=>{refreshes++;return refresh(...args);};day=invalid;c.update(true);c.update(true);c.update(true);
+ assert.equal(refreshes,1,'an unchanged invalid clock cannot cause per-frame refresh');assert.equal(JSON.stringify(c.game.profile),before);assert.equal(writes,0);
+ h.clickData(questClaimToken(c));assert.equal(JSON.stringify(c.game.profile),before);assert.equal(writes,0);
+});
+test('calendar return to a retained future claimed week never clears it or shows a ready weekly reward',()=>{
+ const h=harness(),c=h.context;let day=20002;c.localDay=()=>day;c.game=new Game();c.game.profile.weekly={week:2858,baseSeals:0,claimed:true};c.game.profile.mastery.chapters[0].earnedMask=7;
+ h.click('quests');h.questSelect('weekly');const before=JSON.stringify(c.game.profile);day++;c.update(true);
+ assert.equal(JSON.stringify(c.game.profile),before);assert.match(c.$('quest-record-detail').innerHTML,/Already claimed this week/);assert.match(c.$('quest-record-detail').innerHTML,/disabled/);
+ h.clickData(questClaimToken(c));assert.equal(JSON.stringify(c.game.profile),before);
+});
+test('midnight refresh preserves a late saving warning and synchronous recovery wins over repaint',()=>{
+ const h=harness(),c=h.context;let day=20002;c.localDay=()=>day;h.click('quests');const input=h.questSelect('daily');c.savedWarning=true;day++;c.update(true);
+ assert.match(c.$('quest-save-status').textContent,/Saving is unavailable/);assert.equal(c.document.activeElement,input);
+ const detail=c.$('quest-record-detail').innerHTML;day++;c.session.check=()=>{c.session.status='conflict';c.sessionPresentation('conflict');return false;};c.update(true);
+ assert.equal(c.modal,'session');assert.equal(c.$('quest-record-detail').innerHTML,detail);assert.match(c.dialogHtml,/Progress|progress|tab/);
 });

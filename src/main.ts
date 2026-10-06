@@ -1,3 +1,5 @@
+import {questRecords,selectedQuestRecord,questRecordAction,questRecordLabel,questRecordsHtml,questRecordDetailHtml} from './ui/quest-records.ts';
+import './ui/quest-records.css';
 import {campRootHtml,campFocusHtml} from './ui/camp-screen.ts';
 import {canOwnCamp,isCampStation,campActionFromData,type CampOwner,type CampFocus} from './ui/camp-owner.ts';
 import './ui/camp.css';
@@ -48,10 +50,11 @@ import { createArmyUpdater, troopControlLabel, troopUnlockMessage } from './ui/a
 import { cardsScreenHtml, summonedCardsHtml } from './ui/cards-screen.ts';
 import { compactResultsHtml, expeditionChoiceHtml, resultsHtml } from './ui/results-screen.ts';
 import { startCountUp } from './ui/count-up.ts';
+import { syncWeekly, weekId, weeklyStatus } from './game/weekly.ts';
 import { welcomeBackLine } from './ui/welcome-back.ts';
 import { earlierChapter } from './ui/regroup-learning.ts';
 import { legacyCurrentHtml, prestigeDetailsHtml, prestigeDialogHtml } from './ui/prestige-presentation.ts';
-import { battleGuidance, baseHealthDisplay, compactNumber, waveLabel, waveAccessibleLabel } from './ui/battle-hud.ts';
+import { battleGuidance, foodIsPiling, baseHealthDisplay, compactNumber, waveLabel, waveAccessibleLabel } from './ui/battle-hud.ts';
 import { waveInspectionHtml } from './ui/wave-inspection.ts';
 import { battleSelectionHtml, evolutionDialogHtml } from './ui/progression-screen.ts';
 import { createModalIsolation, modalFocusables, nextFocusIndex, isEditingTarget } from './ui/accessibility.ts';
@@ -91,6 +94,7 @@ let entryEntered=false,entrySaved=false,resultDetailsOpen=false;
 let entryWelcome:string|null=null;
 let settingsOrigin:'field-pause'|null=null;
 let campOwner:CampOwner|null=null,campRenderKey='';
+let questSelection:string|null=null,questCalendarDay:number|null=null;
 let acquiring:Promise<void>|null=null;
 const money=(value:number)=>value>=10000?compactNumber(value):Math.floor(value).toLocaleString('en-US');
 const coin=(value:number)=>`${icon('coin')}<span>${money(value)}</span>`;
@@ -166,6 +170,7 @@ async function acquireSession(){
       game=new Game(loaded.profile);lastPhase=game.state.phase;resultDue=0;hasPlayed=true;sessionReady=true;entrySaved=hasPriorPlay(game.profile);
       manualPaused=false;resultShown='';savedWarning=false;pendingImport=null;evolutionFromResult=false;clearPrestigeContext();
       entryWelcome=loaded.loadStatus==='recovered'||loaded.loadStatus==='corrupt'?null:welcomeBackLine(loaded.profile.lastSeen,Date.now(),loaded.profile.wins);
+      if(guardAction())game.dispatch({type:'weekly-sync',week:weekId(localDay())});
       closeModal(false);rebuildArmy();syncMotion();switchTab('battle');
       if(loaded.loadStatus==='recovered')toast('Recovered your progress from the backup save.');
       else if(loaded.loadStatus==='corrupt')toast('The stored save could not be recovered. A new game has started.');
@@ -212,7 +217,7 @@ function toast(message:string,duration=4200){
 function persist():boolean{
   if(!playable()||session.status==='temporary')return false;
   // lastSeen rides on the saved copy only, so the live profile (and every "unchanged progress" check) is untouched.
-  const result=session.save({...game.profile,lastSeen:Date.now()}),ok=result.ok;lastSave=performance.now();
+  const result=session.save({...game.profile,lastSeen:Math.floor(Date.now()/60000)*60000}),ok=result.ok;lastSave=performance.now();
   if(result.reason==='write-failed'&&!savedWarning){savedWarning=true;toast('Progress could not be saved. Export a backup from Settings before closing this tab.');}
   if(ok){savedWarning=false;lastSavedAt=Date.now();}
   return ok;
@@ -238,6 +243,7 @@ function action(a:Action):boolean{
   if(!guardAction())return false;
   unlockAudio(game.profile.sound);const ok=game.dispatch(a);
   if(ok){
+    if(a.type==='prestige'||game.profile.weekly?.week!==weekId(localDay()))game.dispatch({type:'weekly-sync',week:weekId(localDay())});
     persist();syncPause();rebuildArmy();update(true);if(activeTab!=='battle')renderScreen(a.type==='select-legacy');
     if(a.type==='summon')playSummonAudio(game.profile.sound&&playable()&&!document.hidden&&!manualPaused&&activeTab==='cards'&&modal===null);
   }
@@ -247,6 +253,8 @@ function update(force=false){
   const now=performance.now();if(!force&&now-lastUpdate<80)return;lastUpdate=now;
  const p=game.profile,s=game.state;
  syncEntry();syncCamp();
+ if(modal==='quests'&&playable()&&!Object.is(questCalendarDay,localDay()))refreshQuestRecord();
+ if(modal==='quests'&&playable()){const notice=$('quest-save-status'),message=questSaveNotice();notice.hidden=!message;textIfChanged(notice,message);}
  if(!entryEntered)return;
  $('world').dataset.phase=s.phase;
  updateOrderBanner($('order-banner'),s);
@@ -282,7 +290,7 @@ function update(force=false){
     const kind=Number(button.dataset.unit) as UnitKind,locked=!p.unlocked[kind],status=game.deploymentStatus(kind);
     button.disabled=locked?p.coins<unlockCost(kind,p):!status.allowed;
     button.classList.toggle('affordable',!button.disabled);
-    button.classList.toggle('teach',kind===0&&p.wins===0&&s.phase==='running'&&!s.paused&&s.stats.deployed===0&&!button.disabled);
+    button.classList.toggle('teach',kind===0&&!button.disabled&&((p.wins===0&&s.phase==='running'&&!s.paused&&s.stats.deployed===0)||foodIsPiling(p,s)));
     const label=troopControlLabel(p,kind,status);
     button.title=label;if(button.getAttribute('aria-label')!==label)button.setAttribute('aria-label',label);
     const fill=button.querySelector<HTMLElement>('.unit-fill');if(fill)fill.style.transform=`scaleX(${Math.max(0,Math.min(1,s.food/ERAS[p.age].units[kind].cost))})`;
@@ -294,6 +302,7 @@ function update(force=false){
     button.classList.toggle('skill-opportunity',cue.opportunity);
     button.classList.toggle('freeze-active',cue.activeEffect);
     button.title=cue.label;button.setAttribute('aria-label',cue.label);
+    button.classList.toggle('badge-targets',/^\d+$/.test(cue.badge));
     const badge=button.querySelector('small');if(badge){badge.setAttribute('aria-hidden','true');textIfChanged(badge,cue.badge);}
   });
   const notification=$('quests').querySelector<HTMLElement>('.notification');
@@ -357,8 +366,8 @@ function showModal(id:string,html:string,focusCommand?:string){
   if(!replacing)focusBefore=document.activeElement as HTMLElement;
   modal=id;modalVersion++;const version=modalVersion;
   const dismissButton=`<button class="close-button" data-command="close" aria-label="Close">${icon('close')}</button>`;
-  const dismissMarkup=['camp-focus','field-pause','settings','save-recovery','reset','import','leave-battle','result','result-expedition','session'].includes(id)?'':id==='chronicle'?dismissButton:`<div class="dialog-dismiss">${dismissButton}</div>`;
-  layer.hidden=false;layer.innerHTML=`<section class="dialog ${(id==='result'||id==='result-expedition')?'result-dialog':id==='session'?'session-dialog':id==='camp-focus'?'camp-dialog':id==='settings'?'preferences-dialog':id==='prestige'?'prestige-dialog':id==='chronicle'?'chronicle-dialog':''}" role="dialog" tabindex="-1" aria-modal="true" aria-labelledby="dialog-title">${dismissMarkup}${html}</section>`;
+  const dismissMarkup=['quests','camp-focus','field-pause','settings','save-recovery','reset','import','leave-battle','result','result-expedition','session'].includes(id)?'':id==='chronicle'?dismissButton:`<div class="dialog-dismiss">${dismissButton}</div>`;
+  layer.hidden=false;layer.innerHTML=`<section class="dialog ${(id==='result'||id==='result-expedition')?'result-dialog':id==='session'?'session-dialog':id==='camp-focus'?'camp-dialog':id==='settings'?'preferences-dialog':id==='quests'?'quest-record-dialog':id==='prestige'?'prestige-dialog':id==='chronicle'?'chronicle-dialog':''}" role="dialog" tabindex="-1" aria-modal="true" aria-labelledby="dialog-title">${dismissMarkup}${html}</section>`;
   isolateModal(true);syncPause();window.cancelAnimationFrame(focusFrame);
   focusFrame=requestAnimationFrame(()=>{
     if(lifetime.disposed||layer.hidden||version!==modalVersion)return;
@@ -562,15 +571,40 @@ function showSaveRecovery(focusCommand?:string){
   if(!guardAction()||!['settings','import','save-recovery'].includes(modal??''))return;
   showModal('save-recovery',saveRecoveryHtml(session.status==='active',preferenceNotice()),focusCommand);
 }
-function dailyRow(p:Profile){
-  const day=localDay(),reward=dailyReward(p,day);
-  const label=reward.available?`Daily reward · day ${reward.streak}`:`Daily reward claimed · day ${p.dailyStreak}`;
-  const hint=reward.graced?'You missed a day. A grace day keeps your streak alive (once a week).':reward.available?'Come back every day to raise the reward.':'Return tomorrow to keep your streak going.';
-  return `<div class="quest-row"><div><h3>${label}</h3><small>${hint}</small></div><button class="buy-button" data-daily="${day}" aria-label="${reward.available?`Claim ${reward.gems} gems`:'Claimed today'}" ${reward.available?'':'disabled'}>${reward.available?icon('gem')+reward.gems:'✓'}</button></div>`;
+function questSaveNotice(){return session.status==='temporary'?temporarySessionNotice:savedWarning?'Saving is unavailable. Return Home, then open Settings to export a backup before closing.':'';}
+function refreshQuestRecord(focus=false){
+  if(modal!=='quests'||!guardAction()||modal!=='quests')return;
+  const day=localDay(),records=questRecords(game.profile,day),selected=selectedQuestRecord(records,questSelection);
+  const active=document.activeElement as HTMLElement|null,focusedClaim=active?.dataset.command==='quest-claim'&&$('modal-layer').contains(active);
+  questSelection=selected.key;questCalendarDay=day;
+  const select=$('quest-goal') as HTMLSelectElement;
+  // The platform owns the open native picker. Keep its node, focus and option nodes.
+  for(const option of Array.from(select.options)){
+    const record=records.find(r=>r.key===option.value);if(record)textIfChanged(option,questRecordLabel(record));
+  }
+  select.value=selected.key;
+  htmlIfChanged($('quest-record-detail'),questRecordDetailHtml(selected,modalVersion));
+  const notice=$('quest-save-status'),message=questSaveNotice();notice.hidden=!message;textIfChanged(notice,message);
+  if(focus||focusedClaim)select.focus({preventScroll:true});
+}
+function claimQuestRecord(button:HTMLButtonElement){
+  if(modal!=='quests'||!$('modal-layer').contains(button)||!guardAction()||modal!=='quests')return;
+  const day=localDay();
+  if(button.dataset.questKey!==questSelection||Number(button.dataset.questVersion)!==modalVersion)return;
+  if(!Number.isInteger(Number(button.dataset.questDay))||Number(button.dataset.questDay)!==day){refreshQuestRecord();return;}
+  const selected=questRecords(game.profile,day).find(r=>r.key===questSelection);
+  const claim=selected?questRecordAction(selected,day):null;
+  if(!claim){refreshQuestRecord();return;}
+  const accepted=action(claim);
+  // The writer may synchronously give ownership to recovery. Never replace it.
+  if(playable()&&modal==='quests')refreshQuestRecord(accepted);
 }
 function showQuests(){
-  const p=game.profile;
-  showModal('quests',`<span class="eyebrow">EARN YOUR GLORY</span><h2 id="dialog-title">Quests</h2><p>Complete milestones to earn gems for cards.</p><button class="big-button secondary" data-command="journey">Your journey and next goal</button><div class="quest-list">${dailyRow(p)}${QUESTS.map(q=>{const count=p[q.stat],done=count>=q.target,claimed=p.claimed.includes(q.id);return `<div class="quest-row"><div><h3>${q.title}</h3><div class="quest-meter"><i style="width:${Math.min(100,count/q.target*100)}%"></i></div><small>${Math.min(count,q.target).toLocaleString('en-US')} / ${q.target.toLocaleString('en-US')}</small></div><button class="buy-button" data-claim="${q.id}" aria-label="${claimed?'Claimed':`Claim ${q.reward} gems for ${q.title}`}" ${!done||claimed?'disabled':''}>${claimed?'✓':icon('gem')+q.reward}</button></div>`;}).join('')}</div>`);
+  if(!guardAction())return;
+  game.dispatch({type:'weekly-sync',week:weekId(localDay())});
+  const records=questRecords(game.profile,localDay()),selected=selectedQuestRecord(records,modal==='quests'?questSelection:null);
+  questSelection=selected.key;questCalendarDay=selected.day;
+  showModal('quests',questRecordsHtml(records,selected,modalVersion+1,questSaveNotice()));
 }
 function exportSave(){
   try{
@@ -612,7 +646,7 @@ lifetime.listen<MouseEvent>(root,'click',e=>{
   if(command==='session-continue'){retriedSession=true;void acquireSession();return;}
   if(command==='session-temporary'){
     if(pagePresent&&session.playTemporarily()){
-      sessionReady=true;hasPlayed=true;clearPrestigeContext();closeModal(false);rebuildArmy();syncMotion();switchTab('battle');
+      sessionReady=true;hasPlayed=true;clearPrestigeContext();game.dispatch({type:'weekly-sync',week:weekId(localDay())});closeModal(false);rebuildArmy();syncMotion();switchTab('battle');
     }return;
   }
   // Also protects direct preference mutations and synthetic clicks on isolated controls.
@@ -661,6 +695,13 @@ lifetime.listen<MouseEvent>(root,'click',e=>{
   if(button.dataset.tab){switchTab(button.dataset.tab);return;}
   if(button.dataset.unit!==undefined){const kind=Number(button.dataset.unit) as UnitKind;if(!game.profile.unlocked[kind]){if(action({type:'unlock',kind})&&playable()&&!savedWarning)toast(troopUnlockMessage(game.profile,game.state.phase,kind,game.deploymentStatus(kind)),7000);}else action({type:'spawn',kind});return;}
   if(button.dataset.skill){if(action({type:'skill',skill:button.dataset.skill as Skill}))fieldControls.clear();return;}
+  if(command==='quest-claim'){claimQuestRecord(button);return;}
+  if(button.dataset.weekly){
+    const week=Number(button.dataset.weekly);
+    // A previously rendered claim cannot settle an expired or future local week. Rejection never syncs.
+    if(!Number.isInteger(week)||week!==weekId(localDay()))return;
+    if(action({type:'weekly',week}))showQuests();return;
+  }
   if(button.dataset.daily){if(action({type:'daily',day:Number(button.dataset.daily)}))showQuests();return;}
   if(button.dataset.claim){const fromJourney=modal==='journey';if(action({type:'claim',id:button.dataset.claim})){if(fromJourney&&playable()&&modal!=='session')showModal('journey',journeyScreenHtml(game.profile,game.state));else showQuests();}return;}
   if(button.dataset.battle!==undefined){if(action({type:'select-battle',battle:Number(button.dataset.battle)}))closeModal();return;}
@@ -722,12 +763,12 @@ lifetime.listen<MouseEvent>(root,'click',e=>{
     case 'reset':if(modal!=='settings'||session.status!=='active')break;showModal('reset',`<h2 id="dialog-title">Start over?</h2><p>This deletes your progress on this browser: your age, coins, upgrades, unlocked battles, every card and all gems, quests and records.</p><p>Your sound, speed, motion and troop-shape choices stay. Export a save first if you might want this progress back.</p><button class="big-button blue" data-command="export">EXPORT SAVE FIRST</button><button class="big-button danger" data-command="confirm-reset">DELETE PROGRESS AND START OVER</button><button class="big-button secondary" data-command="close">KEEP MY PROGRESS</button>`,'close');break;
     case 'confirm-reset':{
       if(modal!=='reset'||session.status!=='active')break;
-      const restored=restoreBackupWithSave(game,startOverProfile(game.profile),profile=>session.save(profile).ok);
+      const restored=restoreBackupWithSave(game,startOverProfile(game.profile),profile=>{syncWeekly(profile,weekId(localDay()));return session.save(profile).ok;});
       if(!restored.ok){toast('The new game could not be saved. Your current progress was not deleted.');break;}
       game=restored.game;entryWelcome=null;entryEntered=false;entrySaved=hasPriorPlay(game.profile);settingsOrigin=null;root!.dataset.fieldMode='field';lastPhase=game.state.phase;resultDue=0;manualPaused=false;resultShown='';savedWarning=false;clearPrestigeContext();rebuildArmy();syncMotion();closeModal(false);switchTab('battle');toast('Started a new game.');break;
     }
     case 'confirm-import':{
-      if(modal!=='import'||!pendingImport||session.status!=='active')break;const restored=restoreBackupWithSave(game,pendingImport,profile=>session.save(profile).ok);
+      if(modal!=='import'||!pendingImport||session.status!=='active')break;const restored=restoreBackupWithSave(game,pendingImport,profile=>{syncWeekly(profile,weekId(localDay()));return session.save(profile).ok;});
       if(!restored.ok){toast('The save could not be written. Your current game was not replaced.');break;}
       game=restored.game;entryWelcome=null;entryEntered=false;entrySaved=hasPriorPlay(game.profile);settingsOrigin=null;root!.dataset.fieldMode='field';lastPhase=game.state.phase;resultDue=0;manualPaused=false;resultShown='';savedWarning=false;clearPrestigeContext();rebuildArmy();syncMotion();closeModal(false);switchTab('battle');toast('Save restored.');break;
     }
@@ -749,6 +790,11 @@ lifetime.listen<Event>(root,'input',e=>{
 });
 lifetime.listen<Event>(root,'change',async e=>{
   const input=e.target;
+  if(input instanceof HTMLSelectElement&&input.dataset.questSelect!==undefined){
+    if(modal!=='quests'||!$('modal-layer').contains(input)||input!==$('quest-goal')||!guardAction()||modal!=='quests')return;
+    if(!questRecords(game.profile,localDay()).some(record=>record.key===input.value))return;
+    questSelection=input.value;refreshQuestRecord();return;
+  }
   if(input instanceof HTMLInputElement||input instanceof HTMLSelectElement){
     const preference=input.dataset.preference;
     if(preference){
@@ -840,16 +886,25 @@ function events(batch:GameEvent[]){
   // Fresh terminal results are admitted before their dialog; menus and all
   // modal owners block new batches, including accepted menu confirmations.
   playCombatEvents(batch,game.profile.sound&&playable()&&!document.hidden&&!manualPaused&&!game.state.paused&&activeTab==='battle'&&modal===null);
+  if(batch.some(event=>event.type==='win')&&guardAction())game.dispatch({type:'weekly-sync',week:weekId(localDay())});
   if(batch.some(event=>event.type==='win'||event.type==='lose'))persist();
 }
-const port=createBattlefieldPort(()=>game,action,dt=>{syncPause();if(playable())game.step(dt*game.profile.speed);});
+const port=createBattlefieldPort(()=>game,action,dt=>{
+  syncPause();if(!playable())return;
+  // Establish the calendar baseline before this frame can award seals. Home and pause remain read-only.
+  if(game.state.phase==='running'&&!game.state.paused&&(game.state.time===0||!game.profile.weekly||game.profile.weekly.week<weekId(localDay()))){
+    if(!guardAction())return;
+    game.dispatch({type:'weekly-sync',week:weekId(localDay())});
+  }
+  game.step(dt*game.profile.speed);
+});
 rebuildArmy();syncMotion();syncPause();update(true);
 // Phaser (about 1.2 MB) loads after the shell is interactive, so weak phones see the game at once.
 let renderer:{destroy():void}|null=null,rendererClosed=false;
 $('battlefield').dataset.renderer='loading';
 void import('./view/battlefield.ts').then(({mountBattlefield})=>{
   if(rendererClosed)return;
-  renderer=mountBattlefield($('battlefield'),port,force=>update(force),events,{isVisible:()=>entryEntered&&activeTab==='battle'&&!document.hidden,villageMood:()=>villagePresentation!.mood,onPresentation:syncVillagePresentation});
+  renderer=mountBattlefield($('battlefield'),port,force=>update(force),events,{isVisible:()=>entryEntered&&root!.dataset.fieldMode==='field'&&activeTab==='battle'&&!document.hidden,villageMood:()=>villagePresentation!.mood,onPresentation:syncVillagePresentation});
   $('battlefield').dataset.renderer='ready';
 }).catch(()=>{$('battlefield').dataset.renderer='failed';syncEntry();toast('The battlefield could not load. Check your connection and reload.');});
 lifetime.add(()=>{rendererClosed=true;renderer?.destroy();});lifetime.add(disposeAudio);

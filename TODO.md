@@ -38,7 +38,7 @@ Ordered tasks. Tick a task when it is done and never delete finished tasks. This
 - [ ] Add `review:mobile-touch` to the weekly suite once its runtime is under ten minutes per engine
 - [x] Evolution reveal: one-shot card flare, static with reduced motion (round 5)
 - [x] First-Freeze cue when three enemies gather (Advance/Hold already cued by the order banner) (round 5)
-- [ ] True hit-stop on heavy hits (heavy base hits already shake the camera, absent with reduced motion; a render freeze needs its own design)
+- [x] True hit-stop on heavy hits (0.3.11; 50 ms, rate-limited, none with reduced motion) — original note: True hit-stop on heavy hits (heavy base hits already shake the camera, absent with reduced motion; a render freeze needs its own design)
 - [x] Unearned seals shown on the chapter picker (already present via `masteryMarksHtml`; verified round 4)
 - [x] RUSH wave panel moved out of the lane into the sky band (round 4)
 
@@ -96,3 +96,37 @@ Ordered tasks. Tick a task when it is done and never delete finished tasks. This
 - [ ] Future cards: native quantity/cost preview; future quests: read-only records + selected Claim/Back; future chapters/routes: genuine illustrated spatial travel with selected Travel/Back, no binary picker maze.
 
 - [x] Integrate main badaba22 timestamp/evidence hooks; keep the welcome line as quiet Home subtitle rather than a boot toast. Cover recovery/failure priority and deliberate entry clearing, and align both lockfile versions.
+
+## Incoming hit-stop reconciliation — 6 October 2026
+- [x] Reconcile main 0.3.11, align both lockfile version fields, and keep minute-rounded lastSeen on saved copies.
+- [x] Reproduce and correct transient hit-stop/cooldown leaking past scene, pause, visibility, motion and canonical state replacement boundaries; exercise the real update/event/reset and main step/pause owners.
+- [ ] Verify the integrated hit-stop visually and by native frame timing with representative combat, reduced motion and reset/recovery flows; the separate pinned Camp run is not acceptance of this integration.
+- [x] Reproduce ready Camp incorrectly entering the field draw path; gate the caller with its authoritative field/Camp presentation owner and verify actual predicate, update, resize and mount-readiness seams.
+- [ ] Native-check the separate Camp animation delay on the corrected render gate; no CSS duration or timeout adjustment is part of this source correction.
+
+## Main weekly and food-cue reconciliation — 6 October 2026
+- [x] Reconcile exact main 0bd42c4/0.3.13 over the lifecycle-corrected physical field source, preserving prior Home, Camp, Preferences and receipt owners.
+- [x] Reproduce the dead physical food cue and reuse the waiting defender/ring with canonical trigger and priorities.
+- [x] Reproduce fractional-week admission, unguarded Quests synchronization and first-win baseline loss after week rollover/import/reset; repair the current owners without changing 3 seals/60 gems.
+- [x] Keep import/reset initialization inside the existing guarded replacement transaction; test failed writes, once-only claims, held receipts and paused/unowned frames.
+- [ ] Exact-source native review of food cue/ring and weekly flows, including reduced motion, real week rollover and reset/import/recovery. No images or browser acceptance are included in this source-only reconciliation.
+- [ ] Replace retained dense Quests/other advanced leaves with reviewed simple models; do not count this integration as all-screen simplicity acceptance.
+- [x] Characterize the inherited weekly rollback/stale-token reward duplication on sealed v1 and the incoming-stage source; retain exact week/gems/claim sequences.
+- [x] V2 source: refuse backward sync, make rejected claims mutation-free, require a current local-week UI token, and test forward earning, repeat clicks, failed persistence, held receipts, import/reset and invalid/future/old tokens. No reward or schema change.
+
+## Grounded Camp composition — 6 October 2026
+IDEAL + 5Ws: a phone player preparing the company needs the four actual places to belong to the existing dusk courtyard, rather than float over its skyline. The previous original390px frame showed a floating gate, vector work props and an empty middle band. Selected bounded scope: lower-plane composition, matching journal work prop, shared art/button footprints and contact shadows.
+Twenty ideas: (1) lower the gate; (2) lower the storehouse; (3) group company on the same courtyard; (4) replace journal vector with painted work table; (5) restrained contact shadows; (6) keep names visible; (7) match native footprints to art containers; (8) keep Battle/Home; (9) preserve chapter art; (10) retain original asset provenance; (11) normalize every portrait; (12) add fireflies; (13) add drifting smoke; (14) add new game time; (15) replace the whole background; (16) add a compass; (17) add more root destinations; (18) add a welcome toast; (19) add background door hotspots; (20) animate upgrades. Select1–10. Defer11; reject12–20 for this bounded slice.
+- [x] Recover and preserve the approved journal original; ship a512px WebP derivative rather than the1.66MB original.
+- [x] Journal root/focus source regression RED→GREEN; preserve canonical simulation/actions.
+- [x] Move the four existing places into a responsive lower courtyard layout with contact shadows.
+- [x] Replace the mismatched Storehouse vector with a distinct painted provisioning awning; keep its original and optimized derivative provenance.
+- [ ] Review the final composed phone/landscape/desktop originals before visual acceptance.
+- [ ] Verify combined incoming-main/lifecycle source, purchases, rotation, large text and later chapters before publication.
+Advanced Camp leaves remain dense and unaccepted. This work does not claim all-screen simplicity or physical-device performance.
+
+## Focused quest records — 6 October 2026
+- [x] Replace the dense Quests leaf with one native Goal field, exact selected record and Claim/Back; keep all twelve choices and canonical rewards.
+- [x] Test real native change/click handlers for selection/focus preservation, once-only live claims, stale tokens/day rollover, session recovery, failed/temporary persistence, held receipts and Camp return.
+- [ ] Complete exact-source browser and physical-device picker, keyboard, touch/rotation/200%-text and visual review before publication; keep remaining dense leaves explicitly unaccepted.
+- [x] Refresh open quest details across midnight/Monday without sync/save/reward; retain native focus, explain future/invalid device dates, and verify existing returning-save Journey routes.

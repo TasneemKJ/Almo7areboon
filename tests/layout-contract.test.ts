@@ -1,3 +1,5 @@
+import {defaultProfile} from '../src/game/save.ts';
+import {questRecords,selectedQuestRecord,questRecordDetailHtml,questRecordLabel} from '../src/ui/quest-records.ts';
 import test from 'node:test';
 import assert from 'node:assert/strict';
 import { existsSync, readFileSync } from 'node:fs';
@@ -83,9 +85,13 @@ test('touch surfaces suppress Safari text selection and long-press callouts',()=
  assert.match(css,/svg,img\s*\{[^}]*-webkit-touch-callout:\s*none/);
 });
 
-test('quest progress uses the same thousands separators as the quest titles',()=>{
- const main=readFileSync(new URL('../src/main.ts',import.meta.url),'utf8');
- assert.match(main,/Math\.min\(count,q\.target\)\.toLocaleString\('en-US'\)\} \/ \$\{q\.target\.toLocaleString\('en-US'\)\}/);
+test('quest record progress and native option labels retain exact separated thousands and clamp over-target counts',()=>{
+ const profile=defaultProfile();profile.kills=1234;
+ let record=selectedQuestRecord(questRecords(profile,20000),'annihilator');
+ assert.equal(questRecordLabel(record),'Defeat 2,500 enemies · 1,234/2,500');
+ let html=questRecordDetailHtml(record,1);assert.match(html,/1,234 <span>\/ 2,500/);assert.match(html,/aria-valuenow="1234"/);assert.match(html,/aria-valuemax="2500"/);
+ profile.kills=9876;record=selectedQuestRecord(questRecords(profile,20000),'annihilator');html=questRecordDetailHtml(record,1);
+ assert.match(html,/2,500 <span>\/ 2,500/);assert.match(html,/aria-valuenow="2500"/);assert.doesNotMatch(html,/9,876/);
 });
 
 test('muted body copy and blue button gradients keep AA contrast on their surfaces',()=>{

@@ -16,6 +16,16 @@ export function defeatAdvice(profile: Profile): string {
   return 'Deploy earlier and mix melee with ranged troops. Winning any battle pays gems for cards.';
 }
 
+/** A new player banks food instead of spending it. True in the first three wins, mid-battle, after the first
+ *  deployment, with food for eight of the cheapest warriors unspent and fewer than three of them fighting
+ *  while an enemy is alive. */
+export function foodIsPiling(profile: Profile, state: BattleState): boolean {
+  if (profile.wins >= 3 || state.phase !== 'running' || state.paused || state.stats.deployed === 0) return false;
+  const cost = ERAS[profile.age].units[0].cost;
+  const living = (side: string) => state.units.filter(unit => unit.side === side && unit.hp > 0).length;
+  return state.food >= cost * 8 && living('enemy') > 0 && living('player') < 3;
+}
+
 /** A single contextual instruction, not an onboarding panel over the battlefield. */
 export function battleGuidance(profile: Profile, state: BattleState, preview?: WavePreview | null, melee?: Readonly<DeploymentStatus>): string {
   if (state.phase === 'ready') return profile.wins===0?'Tap Battle, then spend food on warriors. They fight automatically.':`${chapterScouting(profile.enemyAge).opening} Tap Battle to begin.`;
@@ -25,6 +35,8 @@ export function battleGuidance(profile: Profile, state: BattleState, preview?: W
   if (state.playerHp / state.playerMaxHp <= 0.3) return 'Your base is in danger. Deploy reinforcements or use a skill.';
   if (state.stats.deployed === 0 && state.food >= ERAS[profile.age].units[0].cost) return 'Deploy a melee warrior. Save some food for the next wave.';
   const captain=profile.chronicle?.enabled&&profile.chronicle.captain!=='none'?CAPTAINS.find(c=>c.id===profile.chronicle!.captain):undefined;
+  // A first-timer who banks food loses the battle with it unspent, so this outranks the skill cues below.
+  if (foodIsPiling(profile, state)) return `Food is piling up (${Math.floor(state.food)}). Tap the waiting defender again to send more warriors.`;
   // First-Freeze cue: teach the skill at the moment it pays off, while three or more enemies gather.
   if (profile.wins < 5 && state.stats.skillsCast === 0 && !state.skillsUsed.includes('freeze') && state.units.filter(unit => unit.side === 'enemy' && unit.hp > 0).length >= 3) return 'Enemies are gathering. Tap Freeze to hold them while your army strikes.';
   // First-Meteor cue: once Freeze has been tried, point at the skill that damages every living enemy at once.

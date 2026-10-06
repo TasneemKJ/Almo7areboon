@@ -87,6 +87,11 @@ function validate(value: unknown): Profile {
   if (Array.isArray(data.claimed)) clean.claimed = QUESTS.filter(quest => (data.claimed as unknown[]).includes(quest.id)).map(quest => quest.id);
   clean.dailyDay = integer(data.dailyDay, 0, 0, MAX_DAILY_DAY);
   clean.dailyStreak = clean.dailyDay ? integer(data.dailyStreak, 0, 0, 1e6) : 0;
+  // Optional weekly seal goal: a plausible week index, a base inside the possible seal count, claimed only when true.
+  const weekly = data.weekly as Record<string, unknown> | undefined;
+  if (weekly && typeof weekly === 'object' && !Array.isArray(weekly) && Number.isInteger(weekly.week) && (weekly.week as number) >= 0 && (weekly.week as number) <= 200_000 && Number.isInteger(weekly.baseSeals) && (weekly.baseSeals as number) >= 0 && (weekly.baseSeals as number) <= 18) {
+    clean.weekly = { week: weekly.week as number, baseSeals: weekly.baseSeals as number, ...(weekly.claimed === true ? { claimed: true as const } : {}) };
+  }
   // Optional: epoch ms of the last save; only a plausible past-or-near-present time survives.
   if (typeof data.lastSeen === 'number' && Number.isInteger(data.lastSeen) && data.lastSeen > 0 && data.lastSeen <= 4_102_444_800_000) clean.lastSeen = data.lastSeen;
   // Optional: the day a grace day was last used. Kept only when it is a real past-or-present claim day.

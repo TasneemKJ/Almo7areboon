@@ -1,5 +1,5 @@
 import {physicalSkillCue} from './field-skill-guidance.ts';
-import {battleGuidance} from './battle-hud.ts';
+import {battleGuidance,foodIsPiling} from './battle-hud.ts';
 import {releaseFieldContext} from './field-focus.ts';
 import type {Game} from '../game/simulation.ts';
 import type {Skill,UnitKind} from '../game/types.ts';
@@ -47,7 +47,7 @@ export function createFieldController(root:HTMLElement){
     const wait=status.reason==='food'?` · ${Math.ceil(status.waitSeconds)}s`:['blocked','capacity'].includes(status.reason)?' · wait':'';
     textIfChanged(cost,`${ERAS[p.age].units[kind].cost} food${wait}`);
     node.classList.toggle('recruit-ready',status.allowed);
-    node.classList.toggle('teach',kind===0&&p.wins===0&&running&&!s.paused&&s.stats.deployed===0&&status.allowed);
+    node.classList.toggle('teach',kind===0&&status.allowed&&((p.wins===0&&running&&!s.paused&&s.stats.deployed===0)||foodIsPiling(p,s)));
    }
    for(const node of gates){
     const hold=node.dataset.fieldGate==='hold',x=(hold?39:411)*arena.scale;

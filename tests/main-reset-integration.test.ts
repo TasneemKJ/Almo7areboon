@@ -8,6 +8,8 @@ import assert from 'node:assert/strict';
 import { readFileSync } from 'node:fs';
 import { runInNewContext } from 'node:vm';
 import ts from 'typescript';
+import {syncWeekly,weekId} from '../src/game/weekly.ts';
+import {localDay} from '../src/game/data.ts';
 import { Game } from '../src/game/simulation.ts';
 import { defaultProfile, SAVE_KEY, BACKUP_KEY } from '../src/game/save.ts';
 import { createSaveSession, type SaveSessionLocks } from '../src/game/save-session.ts';
@@ -33,6 +35,7 @@ async function harness(mode = 'active') {
   old.mastery.timeline = 4;
   old.mastery.chapters[0] = { earnedMask: 7, bestSeconds: 60, bestGateDamage: 0 };
   old.cards[3] = 4;
+  old.weekly={week:weekId(localDay()),baseSeals:3,claimed:true};
   const values = new Map([[SAVE_KEY, JSON.stringify(old)], [BACKUP_KEY, JSON.stringify(old)]]);
   let quota = false, foreignAfterCheck = false;
   const dialogs: string[] = [], messages: string[] = [];
@@ -47,7 +50,7 @@ async function harness(mode = 'active') {
     if (!nodes.has(id)) nodes.set(id, { hidden: false, querySelector: () => null });
     return nodes.get(id);
   };
-  const context: any = {chronicleScreenHtml,chronicleActionFromData,chronicleGuidance,CAPTAINS,routeDefinition,
+  const context: any = {syncWeekly,weekId,localDay,chronicleScreenHtml,chronicleActionFromData,chronicleGuidance,CAPTAINS,routeDefinition,
     Element: ElementBoundary, root: { dataset: {} }, game: new Game(old), entryWelcome:null,entryEntered:true,sessionReady: true, retriedSession: false, pagePresent: true,
     campOwner:null,settingsOrigin:null,pendingImport: null, hasPlayed: true, savedWarning: false, lastSavedAt:0, manualPaused: true, lastPhase: 'won', resultDue: 99, resultShown: 'old', modal: 'settings', atmosphereEnabled: false, audioMix: { effects: 100, atmosphere: 100 }, evolutionFromResult: false, modalPointerSequence: false,prestigeOrigin:null,prestigeDraft:null,prestigeExpectedTimeline:null,
     lifetime: { disposed: false, listen: (_root: unknown, _event: string, handler: Function) => { context.click = handler; } },
@@ -91,6 +94,8 @@ test('confirmed Start over commits fresh progress and keeps preferences and dail
     assert.notEqual(h.context.game, current); assert.equal(h.context.entryEntered,false);assert.equal(h.context.entrySaved,false);assert.equal(h.context.game.profile.played,undefined);assert.equal(h.context.modal, null); assert.equal(h.context.activeTab, 'battle');
     assert.deepEqual([fresh.timeline, fresh.age, fresh.coins, fresh.gems, fresh.kills, fresh.cards[3]], [1, 0, 0, 100, 0, 0]);
     assert.equal(fresh.mastery.timeline, 1);
+    assert.deepEqual(fresh.weekly,{week:weekId(localDay()),baseSeals:0,claimed:true});
+    assert.deepEqual(JSON.parse(h.bytes()[0]!).weekly,fresh.weekly);
     assert.ok(fresh.mastery.chapters.every((chapter: Profile['mastery']['chapters'][number]) => chapter.earnedMask === 0 && chapter.bestSeconds === null && chapter.bestGateDamage === null), 'Start over clears all paid chapter seals and records');
     assert.deepEqual([fresh.sound, fresh.speed, fresh.motion, fresh.dailyDay, fresh.dailyStreak], [false, 2, 'reduced', 20000, 5]);
     assert.equal(h.context.game.dispatch({ type: 'daily', day: 20000 }), false);

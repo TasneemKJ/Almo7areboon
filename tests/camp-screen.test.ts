@@ -91,3 +91,21 @@ test('mid and near-cap Camp prices preserve independently calculated canonical r
   }
  }
 });
+
+test('the Camp journal uses the approved painted work prop on root and focused surfaces',()=>{
+ assert.ok(camp);const game=gameAt(0);
+ for(const html of [camp.campRootHtml(game.profile),camp.campFocusHtml(game,'journal')]){
+  assert.match(html,/src="\/art\/storybook\/camp\/journal\.webp"/);
+  assert.ok(existsSync(new URL('../public/art/storybook/camp/journal.webp',import.meta.url)));
+ }
+});
+
+test('the Storehouse is a distinct painted provisioning stall, with an earned food accent',()=>{
+ assert.ok(camp);const game=gameAt(0,50),before=camp.campRootHtml(game.profile);
+ assert.match(before,/src="\/art\/storybook\/camp\/storehouse\.webp"/);
+ assert.doesNotMatch(before,/class="camp-stock-food"/);
+ assert.ok(game.dispatch({type:'upgrade',stat:'food'}));
+ assert.match(camp.campRootHtml(game.profile),/class="camp-stock-food"/);
+ assert.match(camp.campFocusHtml(game,'storehouse'),/src="\/art\/storybook\/camp\/storehouse\.webp"/);
+ assert.ok(existsSync(new URL('../public/art/storybook/camp/storehouse.webp',import.meta.url)));
+});
