@@ -8,6 +8,7 @@ import { createModalIsolation } from '../ui/accessibility.ts';
 import { createLifetime } from '../ui/lifetime.ts';
 import { createModalTapGuard } from '../ui/modal-tap-guard.ts';
 import type { Profile } from '../game/types.ts';
+import { createDomPort } from './dom-port.ts';
 
 /** Builds the shell DOM and the handles every module shares (mount, lifetime, lookup, formatting, controllers). */
 export function createRuntime(profile: Profile) {
@@ -25,7 +26,7 @@ export function createRuntime(profile: Profile) {
   const isolateModal=createModalIsolation($('modal-layer'));
   const fieldControls=createFieldController(root);
   const motionQuery=window.matchMedia('(prefers-reduced-motion: reduce)');
-  return { root, lifetime, blockModalTap, money, coin, $, updateArmy, isolateModal, fieldControls, motionQuery };
+  return { root, lifetime, blockModalTap, money, coin, $, updateArmy, isolateModal, fieldControls, motionQuery, ...createDomPort({ window, document, performance, navigator }) };
 }
 
 export type Runtime = ReturnType<typeof createRuntime>;

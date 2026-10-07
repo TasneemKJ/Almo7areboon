@@ -28,12 +28,12 @@ import type { ShellApi } from './shell.ts';
 /** What the navigation module needs: its slice of state, DOM handles and sibling operations. */
 export interface NavigationDeps {
   state: Pick<AppState, 'activeTab' | 'atmosphereEnabled' | 'audioMix' | 'campOwner' | 'campRenderKey' | 'entryEntered' | 'entrySaved' | 'entryWelcome' | 'evolutionFromResult' | 'focusBefore' | 'focusFrame' | 'game' | 'lastSavedAt' | 'manualPaused' | 'modal' | 'modalVersion' | 'pendingImport' | 'prestigeDraft' | 'prestigeExpectedTimeline' | 'prestigeOrigin' | 'resultDetailsOpen' | 'resultShown' | 'savedWarning' | 'session' | 'settingsOrigin'>;
-  dom: Pick<Runtime, '$' | 'fieldControls' | 'isolateModal' | 'lifetime' | 'root'>;
+  dom: Pick<Runtime, '$' | 'fieldControls' | 'isolateModal' | 'lifetime' | 'root' | 'activeElement' | 'body' | 'cancelFrame' | 'requestFrame' | 'rootElement'>;
   ports: Pick<ShellApi, 'action' | 'guardAction' | 'persist' | 'playable' | 'syncPause' | 'update'>;
 }
 
 export function createNavigation(deps: NavigationDeps) {
-  const { state, ports } = deps;
+  const { state, ports, dom } = deps;
   const { $, fieldControls, isolateModal, lifetime, root } = deps.dom;
   function entryReady(){return ports.playable()&&$('battlefield').dataset.renderer==='ready'&&!$('battlefield').querySelector('.world-loader');}
   function syncEntry(){
@@ -95,16 +95,16 @@ export function createNavigation(deps: NavigationDeps) {
     // A canonical ready transition may open a retained task after mounting Camp.
     // Its modal, not the underlying root, owns all of those deliberate controls.
     if(state.campOwner?.kind==='root'&&canOwnCamp(state.game.profile,state.game.state)&&id!=='camp-focus'&&id!=='session')state.campOwner={kind:'advanced',returnTarget:'journal'};
-    const replacing=state.modal!==null,sameModal=state.modal===id,active=document.activeElement as HTMLElement|null,command=active?.dataset.command;
+    const replacing=state.modal!==null,sameModal=state.modal===id,active=dom.activeElement() as HTMLElement|null,command=active?.dataset.command;
     const storyAction=active?chronicleActionFromData(active.dataset):null,storyPage=active?.dataset.storyPage;
     const layer=$('modal-layer'),previousScroll=sameModal?layer.querySelector<HTMLElement>('.dialog')?.scrollTop:null;
-    if(!replacing)state.focusBefore=document.activeElement as HTMLElement;
+    if(!replacing)state.focusBefore=dom.activeElement() as HTMLElement;
     state.modal=id;state.modalVersion++;const version=state.modalVersion;
     const dismissButton=`<button class="close-button" data-command="close" aria-label="Close">${icon('close')}</button>`;
     const dismissMarkup=['quests','camp-focus','field-pause','settings','save-recovery','reset','import','leave-battle','result','result-expedition','session'].includes(id)?'':id==='chronicle'?dismissButton:`<div class="dialog-dismiss">${dismissButton}</div>`;
     layer.hidden=false;layer.innerHTML=`<section class="dialog ${(id==='result'||id==='result-expedition')?'result-dialog':id==='session'?'session-dialog':id==='camp-focus'?'camp-dialog':id==='settings'?'preferences-dialog':id==='quests'?'quest-record-dialog':id==='prestige'?'prestige-dialog':id==='chronicle'?'chronicle-dialog':''}" role="dialog" tabindex="-1" aria-modal="true" aria-labelledby="dialog-title">${dismissMarkup}${html}</section>`;
-    isolateModal(true);ports.syncPause();window.cancelAnimationFrame(state.focusFrame);
-    state.focusFrame=requestAnimationFrame(()=>{
+    isolateModal(true);ports.syncPause();dom.cancelFrame(state.focusFrame);
+    state.focusFrame=dom.requestFrame(()=>{
       if(lifetime.disposed||layer.hidden||version!==state.modalVersion)return;
       const previous=sameModal&&command?Array.from(layer.querySelectorAll<HTMLElement>('[data-command]')).find(element=>element.dataset.command===command):null;
       const requested=focusCommand?Array.from(layer.querySelectorAll<HTMLElement>('[data-command]')).find(element=>element.dataset.command===focusCommand):null;
@@ -119,14 +119,14 @@ export function createNavigation(deps: NavigationDeps) {
     // Loading a saved game also ends with a close; with no dialog open there is no focus to give back, and moving it to the
     // Battle tab button would make Space press that button instead of starting the battle.
     const restoreFocus=state.modal!==null;
-    state.modal=null;state.modalVersion++;state.pendingImport=null;window.cancelAnimationFrame(state.focusFrame);
+    state.modal=null;state.modalVersion++;state.pendingImport=null;dom.cancelFrame(state.focusFrame);
     $('modal-layer').hidden=true;$('modal-layer').innerHTML='';isolateModal(false);ports.syncPause();
     if(restoreFocus){
       const target=state.focusBefore;
       if(state.focusBefore?.isConnected&&!state.focusBefore.closest('[hidden],[inert]')&&!state.focusBefore.matches(':disabled')&&state.focusBefore.getClientRects().length)state.focusBefore.focus();
       // A restored result often has BODY as its origin. A connected element can also
       // be non-focusable; verify that focus actually moved before accepting it.
-      if(!target||document.activeElement!==target||target===document.body||target===document.documentElement)
+      if(!target||dom.activeElement()!==target||target===dom.body()||target===dom.rootElement())
         (state.entryEntered?root!.querySelector<HTMLElement>(state.campOwner?state.campOwner.kind==='advanced'&&state.activeTab!=='battle'?'[data-command="camp-return"]':'[data-command="camp-battle"]':root!.dataset.fieldMode==='field'?'[data-command="field-pause"]':`.bottom-nav [data-tab="${state.activeTab}"]`):$('entry-play'))?.focus({preventScroll:true});
     }
     if(refresh)ports.update(true);
@@ -138,7 +138,7 @@ export function createNavigation(deps: NavigationDeps) {
     // A failed ownership check/save may synchronously replace this modal with recovery.
     const fresh=state.modal!=='result';
     if(ports.playable()&&state.modal!=='session'){state.resultDetailsOpen=false;showModal('result',compactResultsHtml(state.game.profile,state.game.state),focusCommand);}
-    if(fresh&&state.modal==='result')startCountUp($('modal-layer'),compactNumber,document.documentElement.dataset.motion==='reduced');
+    if(fresh&&state.modal==='result')startCountUp($('modal-layer'),compactNumber,dom.rootElement().dataset.motion==='reduced');
   }
   function showResultDetails(){
     if(!ports.guardAction()||state.modal!=='result')return;

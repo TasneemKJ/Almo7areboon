@@ -55,7 +55,7 @@ const listener=(click.expression as ts.CallExpression).arguments[2];
 const change=flatStatements(ast).find(node=>ts.isExpressionStatement(node)&&ts.isCallExpression(node.expression)&&node.expression.expression.getText(ast)==='lifetime.listen'&&node.expression.arguments[0]?.getText(ast)==='root'&&node.expression.arguments[1]?.getText(ast)==="'change'") as ts.ExpressionStatement;
 assert.ok(change,'the real native radio listener must remain reachable');
 const changeListener=(change.expression as ts.CallExpression).arguments[2];
-const keydown=flatStatements(ast).find(node=>ts.isExpressionStatement(node)&&ts.isCallExpression(node.expression)&&node.expression.expression.getText(ast)==='lifetime.listen'&&node.expression.arguments[0]?.getText(ast)==='document'&&node.expression.arguments[1]?.getText(ast)==="'keydown'") as ts.ExpressionStatement;
+const keydown=flatStatements(ast).find(node=>ts.isExpressionStatement(node)&&ts.isCallExpression(node.expression)&&node.expression.expression.getText(ast)==='lifetime.listen'&&node.expression.arguments[0]?.getText(ast)==='dom.pageEvents()'&&node.expression.arguments[1]?.getText(ast)==="'keydown'") as ts.ExpressionStatement;
 assert.ok(keydown);const keyListener=(keydown.expression as ts.CallExpression).arguments[2];
 const handlerTable = flatStatements(ast).find(node => ts.isVariableStatement(node) && node.declarationList.declarations.some(d => d.name.getText(ast) === 'commandHandlers'))!;
 assert.ok(handlerTable, 'the command handler table must remain reachable');

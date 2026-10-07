@@ -29,12 +29,12 @@ import type { ShellApi } from './shell.ts';
 /** What the listeners module needs: its slice of state, DOM handles and sibling operations. */
 export interface ListenersDeps {
   state: Pick<AppState, 'activeTab' | 'atmosphereEnabled' | 'audioMix' | 'battlefieldPointer' | 'campOwner' | 'entryEntered' | 'evolutionFromResult' | 'game' | 'hasPlayed' | 'importRequest' | 'manualPaused' | 'modal' | 'modalPointerSequence' | 'modalVersion' | 'pagePresent' | 'pendingImport' | 'prestigeDraft' | 'prestigeExpectedTimeline' | 'prestigeOrigin' | 'questSelection' | 'resumeOwnership' | 'retriedSession' | 'savedWarning' | 'session' | 'sessionReady'>;
-  dom: Pick<Runtime, '$' | 'blockModalTap' | 'fieldControls' | 'lifetime' | 'money' | 'motionQuery' | 'root'>;
+  dom: Pick<Runtime, '$' | 'blockModalTap' | 'fieldControls' | 'lifetime' | 'money' | 'motionQuery' | 'root' | 'activeElement' | 'hidden' | 'now' | 'pageEvents' | 'reload' | 'viewEvents'>;
   ports: Pick<ShellApi, 'acquireSession' | 'action' | 'adoptRestoredGame' | 'claimQuestRecord' | 'clearPrestigeContext' | 'closeModal' | 'continueWithProvision' | 'dismissModal' | 'enterCamp' | 'enterWorld' | 'exportSave' | 'guardAction' | 'handleCampInput' | 'leaveBattle' | 'openPrestige' | 'persist' | 'playable' | 'preferenceNotice' | 'rebuildArmy' | 'refreshPrestige' | 'refreshQuestRecord' | 'renderScreen' | 'returnToCamp' | 'returnToChapters' | 'showFieldPause' | 'showHome' | 'showLeaveBattle' | 'showModal' | 'showQuests' | 'showResult' | 'showResultDetails' | 'showSaveRecovery' | 'showSettings' | 'showStoryFollowUp' | 'suspendSession' | 'switchTab' | 'syncMarks' | 'syncMotion' | 'syncPause' | 'syncWeek' | 'toast' | 'update'>;
 }
 
 export function installListeners(deps: ListenersDeps): void {
-  const { state, ports } = deps;
+  const { state, ports, dom } = deps;
   const { $, blockModalTap, fieldControls, lifetime, money, motionQuery, root } = deps.dom;
   const commandHandlers:Record<string,(button:HTMLButtonElement)=>void>={
     'start':()=>{state.manualPaused=false;if(ports.action({type:'start'})){root!.dataset.fieldMode='field';ports.update(true);}},
@@ -132,14 +132,14 @@ export function installListeners(deps: ListenersDeps): void {
      const order=battlefieldOrderFromGesture({startX:start.x,startY:start.y,endX:e.clientX,endY:e.clientY},{left:rect.left,top:rect.top,width:rect.width,height:rect.height});
      if(order)ports.action({type:'order',order});
     });
-    lifetime.listen(window,'blur',()=>{state.battlefieldPointer=null;});
-    lifetime.listen<PointerEvent>(root,'pointerup',e=>blockModalTap.recordPointer(e,performance.now()));
+    lifetime.listen(dom.viewEvents(),'blur',()=>{state.battlefieldPointer=null;});
+    lifetime.listen<PointerEvent>(root,'pointerup',e=>blockModalTap.recordPointer(e,dom.now()));
   }
   function listenClick():void {
     lifetime.listen<MouseEvent>(root,'click',e=>{
       const button=e.target instanceof Element?e.target.closest<HTMLButtonElement>('button'):null;
       if(!button||button.disabled)return;
-      if(blockModalTap.blocks(e,state.modal,performance.now())){e.preventDefault();return;}
+      if(blockModalTap.blocks(e,state.modal,dom.now())){e.preventDefault();return;}
       if(e.detail===1)state.modalPointerSequence=state.modal!==null;
       else if(e.detail>1&&state.modalPointerSequence){
         e.preventDefault();
@@ -160,7 +160,7 @@ export function installListeners(deps: ListenersDeps): void {
       if(!state.entryEntered&&!state.modal&&command!=='enter-world'&&command!=='reload-world'&&command!=='settings'&&command!=='home-camp'&&command!=='leave-battle')return;
       if(ports.handleCampInput(button))return;
       unlockAudio(state.game.profile.sound);
-      if(command==='reload-world'){if(!state.entryEntered&&!state.modal&&$('battlefield').dataset.renderer==='failed')window.location.reload();return;}
+      if(command==='reload-world'){if(!state.entryEntered&&!state.modal&&$('battlefield').dataset.renderer==='failed')dom.reload();return;}
       if(command==='enter-world'){ports.enterWorld();return;}
       if(command==='home'){ports.showHome();return;}
       if(command==='home-camp'){ports.enterCamp();return;}
@@ -264,16 +264,16 @@ export function installListeners(deps: ListenersDeps): void {
     });
   }
   function listenKeys():void {
-    lifetime.listen<KeyboardEvent>(document,'keydown',e=>{
+    lifetime.listen<KeyboardEvent>(dom.pageEvents(),'keydown',e=>{
       if(state.modal){
         if(e.key==='Escape'){ports.dismissModal();e.preventDefault();}
         if(e.key==='Tab'){
-          const elements=modalFocusables($('modal-layer')),index=nextFocusIndex(elements.indexOf(document.activeElement as HTMLElement),elements.length,e.shiftKey);
+          const elements=modalFocusables($('modal-layer')),index=nextFocusIndex(elements.indexOf(dom.activeElement() as HTMLElement),elements.length,e.shiftKey);
           e.preventDefault();(index===null?$('modal-layer').querySelector<HTMLElement>('.dialog'):elements[index])?.focus();
         }return;
       }
       if(e.key==='Escape'&&state.entryEntered){if(state.campOwner?.kind==='advanced')ports.returnToCamp();else fieldControls.clear();e.preventDefault();return;}
-      if(!state.entryEntered||!ports.guardAction()||state.campOwner||state.activeTab!=='battle'||e.repeat||e.ctrlKey||e.altKey||e.metaKey||e.isComposing||document.hidden||isEditingTarget(e.target instanceof HTMLElement?e.target:null))return;
+      if(!state.entryEntered||!ports.guardAction()||state.campOwner||state.activeTab!=='battle'||e.repeat||e.ctrlKey||e.altKey||e.metaKey||e.isComposing||dom.hidden()||isEditingTarget(e.target instanceof HTMLElement?e.target:null))return;
       if(['1','2','3'].includes(e.key)){e.preventDefault();ports.action({type:'spawn',kind:(Number(e.key)-1) as UnitKind});}
       const skillIndex=['q','w','e'].indexOf(e.key.toLowerCase());
       if(skillIndex>=0){e.preventDefault();ports.action({type:'skill',skill:(['freeze','meteor','food'] as Skill[])[skillIndex]});}
@@ -284,16 +284,16 @@ export function installListeners(deps: ListenersDeps): void {
   }
   function listenPage():void {
     lifetime.listen(root,'visual-fallback',()=>ports.toast('Some artwork could not load. The simplified battlefield is active.'));
-    lifetime.listen<StorageEvent>(window,'storage',event=>{
+    lifetime.listen<StorageEvent>(dom.viewEvents(),'storage',event=>{
       if(event.key===SAVE_KEY||event.key===BACKUP_KEY||event.key===null)state.session.check();
     });
-    lifetime.listen(window,'focus',()=>{if(state.pagePresent)state.session.check();ports.syncPause();});
-    lifetime.listen(document,'visibilitychange',()=>{
-      if(document.hidden){ports.persist();ports.syncPause();suspendAudio();}
+    lifetime.listen(dom.viewEvents(),'focus',()=>{if(state.pagePresent)state.session.check();ports.syncPause();});
+    lifetime.listen(dom.pageEvents(),'visibilitychange',()=>{
+      if(dom.hidden()){ports.persist();ports.syncPause();suspendAudio();}
       else{state.session.check();ports.syncPause();}
     });
-    lifetime.listen(window,'pagehide',ports.suspendSession);
-    lifetime.listen(window,'pageshow',()=>{
+    lifetime.listen(dom.viewEvents(),'pagehide',ports.suspendSession);
+    lifetime.listen(dom.viewEvents(),'pageshow',()=>{
       state.pagePresent=true;
       if(state.session.status==='temporary'){state.sessionReady=true;ports.syncPause();}
       else if(state.resumeOwnership){state.resumeOwnership=false;void ports.acquireSession();}

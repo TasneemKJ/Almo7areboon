@@ -10,18 +10,18 @@ import type { ShellApi } from './shell.ts';
 /** What the quests module needs: its slice of state, DOM handles and sibling operations. */
 export interface QuestsDeps {
   state: Pick<AppState, 'game' | 'modal' | 'modalVersion' | 'questCalendarDay' | 'questSelection' | 'savedWarning' | 'session'>;
-  dom: Pick<Runtime, '$'>;
+  dom: Pick<Runtime, '$' | 'activeElement'>;
   ports: Pick<ShellApi, 'action' | 'guardAction' | 'playable' | 'showModal'>;
 }
 
 export function createQuests(deps: QuestsDeps) {
-  const { state, ports } = deps;
+  const { state, ports, dom } = deps;
   const { $ } = deps.dom;
   function questSaveNotice(){return state.session.status==='temporary'?temporarySessionNotice:state.savedWarning?'Saving is unavailable. Return Home, then open Settings to export a backup before closing.':'';}
   function refreshQuestRecord(focus=false){
     if(state.modal!=='quests'||!ports.guardAction()||state.modal!=='quests')return;
     const day=localDay(),records=questRecords(state.game.profile,day),selected=selectedQuestRecord(records,state.questSelection);
-    const active=document.activeElement as HTMLElement|null,focusedClaim=active?.dataset.command==='quest-claim'&&$('modal-layer').contains(active);
+    const active=dom.activeElement() as HTMLElement|null,focusedClaim=active?.dataset.command==='quest-claim'&&$('modal-layer').contains(active);
     state.questSelection=selected.key;state.questCalendarDay=day;
     const select=$('quest-goal') as HTMLSelectElement;
     // The platform owns the open native picker. Keep its node, focus and option nodes.

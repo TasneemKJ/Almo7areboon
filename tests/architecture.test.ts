@@ -118,3 +118,11 @@ test('app modules receive their dependencies instead of importing each other', (
     }
   }
 });
+
+test('only the runtime and its page port touch browser globals in the shell', () => {
+  const allowed = new Set(['app/runtime.ts', 'app/dom-port.ts']);
+  for (const { rel, text } of sources.filter(s => (s.rel.startsWith('app/') || s.rel === 'main.ts') && !allowed.has(s.rel))) {
+    const code = text.replace(/\/\*[\s\S]*?\*\/|\/\/.*$/gm, '').replace(/(['"`])(?:\\.|(?!\1).)*\1/g, '""');
+    assert.doesNotMatch(code, /\b(document|window|navigator|performance|localStorage|requestAnimationFrame|cancelAnimationFrame|location)\b/, `${rel} reaches a browser global; use the dom port`);
+  }
+});

@@ -20,5 +20,5 @@ test('the result keeps the true total in an aria-label and skips the animation u
   const results = readFileSync(new URL('../src/ui/results-screen.ts', import.meta.url), 'utf8');
   assert.match(results, /<strong aria-label="\$\{amount\(state\.earned\)\} coins">/);
   const main = mainSource();
-  assert.match(main, /startCountUp\(\$\('modal-layer'\),compactNumber,document\.documentElement\.dataset\.motion==='reduced'\)/);
+  assert.match(main, /startCountUp\(\$\('modal-layer'\),compactNumber,dom\.rootElement\(\)\.dataset\.motion==='reduced'\)/);
 });

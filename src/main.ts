@@ -38,8 +38,8 @@ installListeners(wiring);
 updateAudioMix(state.audioMix);
 state.session=createSaveSession({
   // Access storage inside the guarded read/write, since the browser getter itself can throw.
-  storage:{getItem:key=>window.localStorage.getItem(key),setItem:(key,value)=>window.localStorage.setItem(key,value)},
-  locks:navigator.locks??null,
+  storage:dom.storage(),
+  locks:dom.locks(),
   onStatus:ports.sessionPresentation,
 });
 state.port=createBattlefieldPort(()=>state.game,ports.action,dt=>{
@@ -58,14 +58,14 @@ ports.update(true);
 $('battlefield').dataset.renderer='loading';
 void import('./view/battlefield.ts').then(({mountBattlefield})=>{
   if(state.rendererClosed)return;
-  state.renderer=mountBattlefield($('battlefield'),state.port,force=>ports.update(force),ports.events,{isVisible:()=>state.entryEntered&&root!.dataset.fieldMode==='field'&&state.activeTab==='battle'&&!document.hidden,villageMood:()=>state.villagePresentation!.mood,onPresentation:ports.syncVillagePresentation});
+  state.renderer=mountBattlefield($('battlefield'),state.port,force=>ports.update(force),ports.events,{isVisible:()=>state.entryEntered&&root!.dataset.fieldMode==='field'&&state.activeTab==='battle'&&!dom.hidden(),villageMood:()=>state.villagePresentation!.mood,onPresentation:ports.syncVillagePresentation});
   $('battlefield').dataset.renderer='ready';
 }).catch(()=>{$('battlefield').dataset.renderer='failed';ports.syncEntry();ports.toast('The battlefield could not load. Check your connection and reload.');});
 lifetime.add(()=>{state.rendererClosed=true;state.renderer?.destroy();});
 lifetime.add(disposeAudio);
-lifetime.add(()=>{window.clearTimeout(state.toastTimer);window.cancelAnimationFrame(state.focusFrame);isolateModal(false);});
+lifetime.add(()=>{dom.clearTimer(state.toastTimer);dom.cancelFrame(state.focusFrame);isolateModal(false);});
 lifetime.add(()=>{state.acquisitionVersion++;state.sessionReady=false;state.session.dispose();});
 if(import.meta.hot)import.meta.hot.dispose(()=>{ports.suspendSession();lifetime.dispose();});
-if(import.meta.env.PROD&&'serviceWorker' in navigator)window.addEventListener('load',()=>{navigator.serviceWorker.register('./sw.js').catch(()=>{/* Offline play is optional. */});},{once:true});
+if(import.meta.env.PROD)dom.registerWorker('./sw.js');
 ports.sessionPresentation('starting');
 void ports.acquireSession();

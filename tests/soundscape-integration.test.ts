@@ -62,7 +62,7 @@ test('settings and existing pause lifecycle are wired to the ambience gate (sour
  const preferences=readFileSync(new URL('../src/ui/preferences-screen.ts',import.meta.url),'utf8');
  assert.match(preferences,/check\('atmosphere','Atmosphere'/);assert.match(source,/preference==='atmosphere'/);
  assert.match(source,/updateSoundscape\(state\.game\.profile\.age,ambienceAllowed\(/);
- assert.match(source,/atmosphere:state\.atmosphereEnabled/);assert.match(source,/state\.modal,hidden:document.hidden/);
+ assert.match(source,/atmosphere:state\.atmosphereEnabled/);assert.match(source,/state\.modal,hidden:dom\.hidden\(\)/);
  assert.match(source,/saveAtmosphere\(state\.atmosphereEnabled\)/);
 });
 test('a gesture attempts to resume an interrupted context instead of silently abandoning it',()=>{

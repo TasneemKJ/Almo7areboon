@@ -52,8 +52,8 @@ test('offline support: a same-origin GET-only worker is registered in production
  assert.match(worker,/request\.method !== 'GET'/);
  assert.match(worker,/origin !== self\.location\.origin/);
  assert.match(worker,/request\.mode === 'navigate'/);
- assert.match(main,/import\.meta\.env\.PROD&&'serviceWorker' in navigator/);
- assert.match(main,/register\('\.\/sw\.js'\)\.catch/);
+ assert.match(main,/import\.meta\.env\.PROD\)dom\.registerWorker\('\.\/sw\.js'\)/);
+ assert.match(main,/register\(script\)\.catch/);
 });
 
 test('the worker precaches the page bundles and trims old ones',()=>{
