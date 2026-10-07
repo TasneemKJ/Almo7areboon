@@ -10,6 +10,7 @@ import {troopControlLabel} from './army-screen.ts';
 import {orderStatus} from './battle-orders.ts';
 import {skillCue} from './skill-cues.ts';
 import {textIfChanged} from './dom-state.ts';
+import {gateChoiceLabel} from './field-gate-label.ts';
 
 const placeBox=(node:HTMLElement,rect:CampTarget|{x:number;y:number;width:number;height:number})=>{
   const value=`left:${rect.x}px;top:${rect.y}px;width:${rect.width}px;height:${rect.height}px`;
@@ -43,6 +44,8 @@ function syncGates(gates:readonly HTMLButtonElement[],arena:ReturnType<typeof ar
   node.hidden=!running;node.setAttribute('aria-disabled',String(!orders.canCast));node.setAttribute('aria-pressed',String(orders.active===node.dataset.fieldGate));
   node.setAttribute('aria-label',`${hold?'Hold: protect troops and your gate':'Advance: stronger strikes and faster movement'}. Costs 60 momentum, lasts 10 seconds. ${orders.label}`);
   node.classList.toggle('order-ready',orders.canCast);
+  const label=node.querySelector<HTMLElement>('.world-target-name');
+  if(label)textIfChanged(label,gateChoiceLabel(hold?'hold':'advance',orders.canCast,orders.active===node.dataset.fieldGate));
  }
 }
 
