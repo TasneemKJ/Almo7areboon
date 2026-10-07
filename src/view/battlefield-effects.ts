@@ -190,7 +190,8 @@ export function createBattlefieldEffects(host:EffectsHost,layers:{fx:Phaser.Game
   baseHit:(side:Side)=>baseHit[side],
   pushImpactCue(cue:ImpactCue):void {impactCues.push(cue);if(impactCues.length>54)impactCues.shift();},
   pushAttackCue(cue:AttackCue):void {attackCues.push(cue);if(attackCues.length>42)attackCues.shift();},
-  pushBolt(bolt:Bolt):void {bolts.push(bolt);if(bolts.length>70)bolts.shift();},
+  /** Projectiles are capped at 70 in flight; meteors (at most six per cast) are not. */
+  pushBolt(bolt:Bolt,capped=true):void {bolts.push(bolt);if(capped&&bolts.length>70)bolts.shift();},
   /** Hit-stop: a heavy blow freezes the scene for about 50 ms, at most twice a second. */
   hitStop:{
    get count():number {return stops;},

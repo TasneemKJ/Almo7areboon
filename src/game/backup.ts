@@ -34,7 +34,7 @@ export function importBackup(text: string): BackupImport {
   } catch { return { ok: false, error: 'Invalid JSON backup. Your current game was not changed.' }; }
 }
 
-export function restoreBackup(current: Game, candidate: Profile, storage?: Parameters<typeof saveProfile>[1]): { ok: boolean; game: Game } {
+export function restoreBackup(current: Game, candidate: Profile, storage: Parameters<typeof saveProfile>[1]): { ok: boolean; game: Game } {
   return restoreBackupWithSave(current, candidate, profile => saveProfile(profile, storage));
 }
 

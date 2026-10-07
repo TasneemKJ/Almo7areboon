@@ -119,9 +119,9 @@ export function decodeSave(raw: string): { profile: Profile | null; problem: 'co
   } catch { return { profile: null, problem: 'corrupt' }; }
 }
 
-export function loadProfileWithStatus(storage?: Pick<Storage, 'getItem'>): { profile: Profile; status: LoadStatus } {
+export function loadProfileWithStatus(storage: Pick<Storage, 'getItem'>): { profile: Profile; status: LoadStatus } {
   try {
-    const source = storage ?? globalThis.localStorage;
+    const source = storage;
     if (!source) return { profile: defaultProfile(), status: 'unavailable' };
     const raw = source.getItem(SAVE_KEY);
     const primary = raw ? decodeSave(raw) : null;
@@ -135,13 +135,13 @@ export function loadProfileWithStatus(storage?: Pick<Storage, 'getItem'>): { pro
   } catch { return { profile: defaultProfile(), status: 'unavailable' }; }
 }
 
-export function loadProfile(storage?: Pick<Storage, 'getItem'>): Profile {
+export function loadProfile(storage: Pick<Storage, 'getItem'>): Profile {
   return loadProfileWithStatus(storage).profile;
 }
 
-export function saveProfile(profile: Profile, storage?: Pick<Storage, 'setItem'> & Partial<Pick<Storage, 'getItem'>>): boolean {
+export function saveProfile(profile: Profile, storage: Pick<Storage, 'setItem'> & Partial<Pick<Storage, 'getItem'>>): boolean {
   try {
-    const destination = storage ?? globalThis.localStorage;
+    const destination = storage;
     if (!destination) return false;
     const validated = decodeSave(JSON.stringify(profile)).profile;
     if (!validated) return false;

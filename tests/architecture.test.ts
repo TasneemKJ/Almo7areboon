@@ -30,13 +30,12 @@ test('lower layers never import higher layers', () => {
 });
 
 test('src/game has no DOM, Phaser or view/ui dependency', () => {
-  // save.ts takes an injectable Storage and only falls back to the global one.
-  const storageFallback = new Set(['game/save.ts', 'game/backup.ts']);
+  // Storage is always injected; game code never reaches for the global.
   for (const { rel, text } of sources.filter(s => s.rel.startsWith('game/'))) {
     assert.ok(!specifiers(text).some(s => /^phaser$|^three/.test(s)), `${rel} imports a rendering library`);
     const code = text.replace(/\/\*[\s\S]*?\*\/|\/\/.*$/gm, '');
     assert.doesNotMatch(code, /\b(document|window)\./, `${rel} touches the DOM`);
-    if (!storageFallback.has(rel)) assert.doesNotMatch(code, /\blocalStorage\b/, `${rel} reaches for localStorage`);
+    assert.doesNotMatch(code, /\b(localStorage|sessionStorage|indexedDB)\b/, `${rel} reaches for browser storage`);
   }
 });
 
