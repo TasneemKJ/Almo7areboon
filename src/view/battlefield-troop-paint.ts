@@ -4,12 +4,15 @@ import {drawTroop} from './art';
 import {teamHalo} from './cinematic-grade.ts';
 import {unitFocusMarks} from './silhouette-focus.ts';
 import {TROOP_FRAME} from './unit-illustrations.ts';
-import type {troopPose} from './visual-theme.ts';
-import type {characterGesture} from './character-gesture.ts';
-import type {battleAftermathPose} from './battle-aftermath.ts';
-import type {lanePresentation} from './lane-perspective.ts';
-import type {BattleState,Profile,Unit} from '../game/types';
-import type {ImageOrFallback} from './battlefield-types.ts';
+import {troopPose} from './visual-theme.ts';
+import {characterGesture} from './character-gesture.ts';
+import {hitReaction} from './combat-choreography.ts';
+import {battleAftermathPose} from './battle-aftermath.ts';
+import {lanePresentation,rankStagger,troopScale} from './lane-perspective.ts';
+import type {ArmyHost,ArmyLayers} from './battlefield-army.ts';
+import type {createBattlefieldEffects} from './battlefield-effects.ts';
+import type {BattleState,Profile,Side,Unit} from '../game/types';
+import {stillReaction,xAt,type ImageOrFallback,type TroopView} from './battlefield-types.ts';
 
 type G=Phaser.GameObjects.Graphics;
 
@@ -63,4 +66,45 @@ for(let i=0;i<idle.length;i++){
  if(actor instanceof Phaser.GameObjects.Image){actor.setScale(.47*TROOP_FRAME.height/actor.height).setFlipX(i===1);if(i===1&&storybookArt(profile.enemyAge))actor.setTint(0xffd9b5);}
  else {actor.setScale(i===0?1:-1,1);drawTroop(actor,i===0?profile.age:profile.enemyAge,0,side,0,false);}
 }
+}
+
+/** What one frame of troop updating needs from the army renderer. */
+export interface TroopViewContext {
+ host:ArmyHost;layers:ArmyLayers;effects:ReturnType<typeof createBattlefieldEffects>;units:Map<number,TroopView>;
+ sprite:(age:number,kind:Unit['kind'],side:Side)=>ImageOrFallback;g:G;h:G;
+ aftermath:{phase:'won'|'lost';at:number}|null;aftermathElapsed:number;
+ aftermathCounts:{triumph:number;withdraw:number;roles:number[];maxForward:number;maxLift:number;maxAngle:number};
+}
+
+/** Creates, poses and retires one view per unit, accumulating aftermath evidence on the way. */
+export function updateTroopViews(c:TroopViewContext):void {
+ const {host,layers,effects,units,sprite,g,h,aftermath,aftermathElapsed,aftermathCounts}=c;
+ const ids=new Set<number>();
+ for(const unit of host.game.state.units){
+  ids.add(unit.id);let view=units.get(unit.id);
+  const x=xAt(unit.x),y=host.yAt(unit.lane)+rankStagger(unit.id),frozen=unit.side==='enemy'&&host.game.state.freezeUntil>host.game.state.time;
+  if(!view){const body=sprite(unit.age,unit.kind,unit.side);layers.armyLayer.add(body);view={body,x,y,lane:unit.lane,side:unit.side,dustAt:0};units.set(unit.id,view);}
+  const moving=Math.abs(view.x-x)>.001,perspective=lanePresentation(unit.lane,unit.kind),scale=troopScale(unit.kind,unit.lane)*(unit.storyBoss?1.35:1);
+  const direction=unit.side==='player'?1:-1;
+  const pose=troopPose(host.game.state.time+unit.id*.17,moving,unit.attacking,host.reduce()||frozen);
+  const gesture=characterGesture(unit.kind,host.game.state.time+unit.id*.17,moving,unit.attacking,host.reduce()||frozen);
+  const verdict=aftermath?.phase===host.game.state.phase?battleAftermathPose({phase:aftermath.phase,side:unit.side,kind:unit.kind,elapsed:aftermathElapsed,reduced:host.reduce()}):null;
+  const facingDirection=verdict?.facing==='home'?-direction:direction;
+  if(verdict){aftermathCounts[verdict.mode]++;aftermathCounts.roles[unit.kind]++;aftermathCounts.maxForward=Math.max(aftermathCounts.maxForward,verdict.forward);aftermathCounts.maxLift=Math.max(aftermathCounts.maxLift,verdict.lift);aftermathCounts.maxAngle=Math.max(aftermathCounts.maxAngle,Math.abs(verdict.angle));}
+  const recoil=verdict?stillReaction:hitReaction(unit.hitFlash,unit.side,unit.kind,host.reduce()||frozen);
+  const frame:TroopFrame={unit,state:host.game.state,reduce:host.reduce(),x,y,frozen,scale,direction,facingDirection,pose,gesture,verdict,recoil,perspective};
+  paintTroopGround(g,h,frame);
+  poseTroop(view.body,frame);
+  // Troops win a same-baseline tie against the building and its damage marks.
+  view.body.setDepth(y+.5);
+  if(moving&&!host.game.state.paused&&!frozen&&host.clock()-view.dustAt>.28){effects.emit(x,y+2,1,0xdfd4b1,true,.45,unit.lane);view.dustAt=host.clock();}
+  view.x=x;view.y=y;view.lane=unit.lane;
+ }
+ if(aftermath?.phase===host.game.state.phase)host.canvas().dataset.battleAftermath=JSON.stringify({phase:aftermath.phase,elapsed:aftermathElapsed,triumph:aftermathCounts.triumph,withdraw:aftermathCounts.withdraw,roles:aftermathCounts.roles,maxForward:aftermathCounts.maxForward,maxLift:aftermathCounts.maxLift,maxAngle:aftermathCounts.maxAngle,reduced:host.reduce()});
+ else delete host.canvas().dataset.battleAftermath;
+ for(const [id,view]of units)if(!ids.has(id)){
+  if(host.reduce())view.body.destroy();
+  else {if(view.body instanceof Phaser.GameObjects.Image)view.body.clearTint();effects.fallen.add(view.body,view.side);}
+  units.delete(id);
+ }
 }

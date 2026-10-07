@@ -1,13 +1,14 @@
 import { createBattleOrders, earnMomentum, issueBattleOrder, activeBattleOrder, ORDER_EFFECTS } from './battle-orders.ts';
 import { normalizeChronicle, chronicleEncounter, recordChronicleWin, type ChronicleAction } from './chronicle.ts';
 import { planChronicleAction } from './chronicle-actions.ts';
-import { createChronicleBattle, chronicleStartingFood, chronicleGateFactor, chronicleSpawn, toggleRally, chronicleMovementLimit, chronicleDamage, chronicleBaseDamage, chronicleAfterHit, chronicleSkill, captainSkill, chronicleTick, chronicleOutcome, type ChronicleHost } from './chronicle-combat.ts';
+import { createChronicleBattle, chronicleStartingFood, chronicleGateFactor, chronicleSpawn, toggleRally, chronicleDamage, chronicleBaseDamage, chronicleAfterHit, chronicleSkill, captainSkill, chronicleTick, chronicleOutcome, type ChronicleHost } from './chronicle-combat.ts';
 import { isLegacyChoice, legacyEffects, prestigePreview } from './prestige.ts';
 import { advanceStatus, canRetry, createMastery, masteryAward } from './mastery.ts';
 import { encounterForAge, scheduledSpawns } from './encounters.ts';
 import type { Encounter, ScheduledSpawn, WaveStatus } from './encounters.ts';
 import { resolveRoleHit, sweepTarget } from './role-traits.ts';
 import { battleStats } from './statistics.ts';
+import { advanceUnit } from './unit-movement.ts';
 import { applyPendingVictory, victoryStory } from './victory-restore.ts';
 import { ERAS, eraEconomyScale, cardBonus, foodRate } from './data.ts';
 import { defaultProfile, loadProfile } from './save.ts';
@@ -326,69 +327,69 @@ export class Game implements GamePort {
     const deferChronicleWin=this.state.chronicle?.enabled===true&&chronicleOutcome(this.profile,this.state)==='won';
     if (this.checkEnd(deferChronicleWin)) return;
     while (this.state.wave < this.encounter.waves.length && this.state.time + 1e-9 >= this.encounter.waves[this.state.wave].time) this.state.wave++;
-    while (this.nextSpawn < this.schedule.length && this.state.time + 1e-9 >= this.schedule[this.nextSpawn].time) {
-      this.spawn('enemy', this.schedule[this.nextSpawn].kind);
-      // Rejected arrivals are finite attempts, never deferred until capacity frees.
-      this.nextSpawn++;
-    }
+    this.releaseScheduledSpawns();
 
     // Front bodies move first so the spacing check sees their new positions.
     const actors = [...this.state.units].sort((a, b) => a.side === b.side ? ((a.side === 'player' ? b.x - a.x : a.x - b.x) || a.id - b.id) : (a.side === 'player' ? -1 : 1));
     for (const unit of actors) {
       if (unit.hp <= 0) continue;
-      unit.hitFlash = Math.max(0, unit.hitFlash - dt);
-      unit.attacking = false;
-      if (unit.side === 'enemy' && this.state.time < this.state.freezeUntil) continue;
-      unit.attackTimer = Math.max(0, unit.attackTimer - dt);
-      const def = ERAS[unit.age].units[unit.kind];
-      const direction = unit.side === 'player' ? 1 : -1;
-      const targets = this.state.units.filter(other => other.side !== unit.side && other.hp > 0);
-      const distance = (other: Unit) => Math.hypot(other.x - unit.x, (other.lane - unit.lane) * 10);
-      const target = targets.sort((a, b) => (distance(a) - distance(b)) || a.id - b.id)[0];
-      const baseX = unit.side === 'player' ? 910 : 90;
-      const targetInRange = target && distance(target) <= def.range;
-      const baseInRange = Math.abs(baseX - unit.x) <= def.range;
-      if (targetInRange || baseInRange) {
-        unit.attacking = true;
-        if (unit.attackTimer <= 0) {
-          unit.attackTimer = def.interval;
-          const power = unit.side === 'player' ? this.bonuses().damage : this.timelinePower() * 0.94;
-          const damage = def.damage * power * (unit.side === 'player' && activeBattleOrder(this.state,this.state.time) === 'advance' ? ORDER_EFFECTS.advance.damage : 1);
-          const source = { id: unit.id, x: unit.x, lane: unit.lane, side: unit.side, age: unit.age, kind: unit.kind };
-          const hit = (targetUnit: Unit, secondary = false) => {
-            const resolved = resolveRoleHit(unit.kind, targetUnit.kind, damage, secondary);
-            const actual = this.hurt(targetUnit, chronicleDamage(this.profile,this.state,unit,targetUnit,resolved.damage,secondary));
-            this.credit(unit,actual);
-            chronicleAfterHit(this.profile,this.state,unit,targetUnit,resolved.damage,secondary,this.chronicleHost());
-            this.events.push({ type: 'hit', x: targetUnit.x, lane: targetUnit.lane, side: unit.side, amount: actual, source, target: 'unit', ...(resolved.trait ? { trait: resolved.trait } : {}) });
-          };
-          if (targetInRange) {
-            hit(target);
-            if (unit.kind === 2) {
-              const secondary = sweepTarget(unit, target, this.state.units);
-              if (secondary) hit(secondary, true);
-            }
-          } else {
-            const actual = this.hurtBase(unit.side, damage);
-            this.credit(unit,actual);
-            this.events.push({ type: 'hit', x: baseX, lane: unit.lane, side: unit.side, amount: actual, source, target: 'base' });
-          }
-        }
-      } else {
-        let nextX = unit.x + def.speed * direction * dt * (unit.side === 'player' && activeBattleOrder(this.state,this.state.time) === 'advance' ? ORDER_EFFECTS.advance.movement : 1);
-        const rallyLimit=chronicleMovementLimit(this.state,unit);
-        if(rallyLimit!==null)nextX=Math.min(nextX,rallyLimit);
-        for (const friend of this.state.units) {
-          if (friend.id === unit.id || friend.side !== unit.side || friend.lane !== unit.lane || friend.hp <= 0) continue;
-          if ((friend.x - unit.x) * direction > 0) nextX = direction === 1 ? Math.min(nextX, friend.x - 22) : Math.max(nextX, friend.x + 22);
-        }
-        // Never retreat because two bodies were added at an identical position.
-        unit.x = direction === 1 ? Math.max(unit.x, Math.min(910, nextX)) : Math.min(unit.x, Math.max(90, nextX));
-      }
-      if (this.checkEnd(deferChronicleWin)) break;
+      if (this.actUnit(unit, dt) && this.checkEnd(deferChronicleWin)) break;
     }
     this.state.units = this.state.units.filter(u => u.hp > 0);
     if(this.state.phase==='running')this.checkEnd();
+  }
+
+  private releaseScheduledSpawns(): void {
+    while (this.nextSpawn < this.schedule.length && this.state.time + 1e-9 >= this.schedule[this.nextSpawn].time) {
+      this.spawn('enemy', this.schedule[this.nextSpawn].kind);
+      // Rejected arrivals are finite attempts, never deferred until capacity frees.
+      this.nextSpawn++;
+    }  }
+
+  /** One unit's turn: attack what is in range, else walk. Returns false when a freeze skipped the turn. */
+  private actUnit(unit: Unit, dt: number): boolean {
+    unit.hitFlash = Math.max(0, unit.hitFlash - dt);
+    unit.attacking = false;
+    if (unit.side === 'enemy' && this.state.time < this.state.freezeUntil) return false;
+    unit.attackTimer = Math.max(0, unit.attackTimer - dt);
+    const def = ERAS[unit.age].units[unit.kind];
+    const targets = this.state.units.filter(other => other.side !== unit.side && other.hp > 0);
+    const distance = (other: Unit) => Math.hypot(other.x - unit.x, (other.lane - unit.lane) * 10);
+    const target = targets.sort((a, b) => (distance(a) - distance(b)) || a.id - b.id)[0];
+    const baseX = unit.side === 'player' ? 910 : 90;
+    const targetInRange = target && distance(target) <= def.range;
+    const baseInRange = Math.abs(baseX - unit.x) <= def.range;
+    if (targetInRange || baseInRange) {
+      unit.attacking = true;
+      if (unit.attackTimer <= 0) this.strike(unit, def, targetInRange ? target : null, baseX);
+    } else advanceUnit(this.state, unit, def.speed, dt);
+    return true;
+  }
+
+  /** A completed attack: damage the target (and a sweep partner) or the enemy base, crediting the attacker. */
+  private strike(unit: Unit, def: { interval: number; damage: number }, target: Unit | null, baseX: number): void {
+    unit.attackTimer = def.interval;
+    const power = unit.side === 'player' ? this.bonuses().damage : this.timelinePower() * 0.94;
+    const damage = def.damage * power * (unit.side === 'player' && activeBattleOrder(this.state,this.state.time) === 'advance' ? ORDER_EFFECTS.advance.damage : 1);
+    const source = { id: unit.id, x: unit.x, lane: unit.lane, side: unit.side, age: unit.age, kind: unit.kind };
+    const hit = (targetUnit: Unit, secondary = false) => {
+      const resolved = resolveRoleHit(unit.kind, targetUnit.kind, damage, secondary);
+      const actual = this.hurt(targetUnit, chronicleDamage(this.profile,this.state,unit,targetUnit,resolved.damage,secondary));
+      this.credit(unit,actual);
+      chronicleAfterHit(this.profile,this.state,unit,targetUnit,resolved.damage,secondary,this.chronicleHost());
+      this.events.push({ type: 'hit', x: targetUnit.x, lane: targetUnit.lane, side: unit.side, amount: actual, source, target: 'unit', ...(resolved.trait ? { trait: resolved.trait } : {}) });
+    };
+    if (target) {
+      hit(target);
+      if (unit.kind === 2) {
+        const secondary = sweepTarget(unit, target, this.state.units);
+        if (secondary) hit(secondary, true);
+      }
+    } else {
+      const actual = this.hurtBase(unit.side, damage);
+      this.credit(unit,actual);
+      this.events.push({ type: 'hit', x: baseX, lane: unit.lane, side: unit.side, amount: actual, source, target: 'base' });
+    }
   }
 
   private hurt(unit: Unit, damage: number): number {

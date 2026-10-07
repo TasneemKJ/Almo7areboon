@@ -2,6 +2,7 @@ import test from 'node:test';
 import assert from 'node:assert/strict';
 import { readdirSync, readFileSync } from 'node:fs';
 import { join, relative } from 'node:path';
+import ts from 'typescript';
 
 // Imports point down: game <- view <- ui <- app (shell modules) <- main.ts (see ARCHITECTURE.md).
 const SRC = new URL('../src/', import.meta.url).pathname;
@@ -60,4 +61,38 @@ test('modules stay under the size cap unless listed', () => {
   for (const rel of Object.keys(SIZE_EXCEPTIONS)) {
     assert.ok(sources.some(s => s.rel === rel), `stale size exception ${rel}`);
   }
+});
+
+// Functions (declarations, methods, arrows) longer than the cap, as `path:name` -> allowed lines. Shrink-only.
+const FUNCTION_CAP = 80;
+const FUNCTION_EXCEPTIONS: Record<string, number> = {};
+
+function functionLengths(rel: string, text: string): { name: string; lines: number }[] {
+  const file = ts.createSourceFile(rel, text, ts.ScriptTarget.Latest, true);
+  const found: { name: string; lines: number }[] = [];
+  const visit = (node: ts.Node) => {
+    if (ts.isFunctionDeclaration(node) || ts.isMethodDeclaration(node) || ts.isArrowFunction(node) || ts.isFunctionExpression(node)) {
+      const start = file.getLineAndCharacterOfPosition(node.getStart()).line;
+      const end = file.getLineAndCharacterOfPosition(node.end).line;
+      const own = (node as { name?: ts.Node }).name?.getText(file);
+      const owner = ts.isVariableDeclaration(node.parent) ? node.parent.name.getText(file) : ts.isPropertyAssignment(node.parent) ? node.parent.name.getText(file) : undefined;
+      found.push({ name: own ?? owner ?? `<anonymous@${start + 1}>`, lines: end - start + 1 });
+    }
+    ts.forEachChild(node, visit);
+  };
+  visit(file);
+  return found;
+}
+
+test('functions stay under the length cap unless listed', () => {
+  const seen = new Set<string>();
+  for (const { rel, text } of sources) {
+    for (const { name, lines } of functionLengths(rel, text)) {
+      const key = `${rel}:${name}`;
+      seen.add(key);
+      const limit = FUNCTION_EXCEPTIONS[key] ?? FUNCTION_CAP;
+      assert.ok(lines <= limit, `${key} has ${lines} lines (limit ${limit})`);
+    }
+  }
+  for (const key of Object.keys(FUNCTION_EXCEPTIONS)) assert.ok(seen.has(key), `stale function exception ${key}`);
 });

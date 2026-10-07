@@ -11,6 +11,41 @@ import {orderStatus} from './battle-orders.ts';
 import {skillCue} from './skill-cues.ts';
 import {textIfChanged} from './dom-state.ts';
 
+const placeBox=(node:HTMLElement,rect:CampTarget|{x:number;y:number;width:number;height:number})=>{
+  const value=`left:${rect.x}px;top:${rect.y}px;width:${rect.width}px;height:${rect.height}px`;
+  if(node.getAttribute('style')!==value)node.setAttribute('style',value);
+};
+
+/** Physical recruit buttons: position, explanation of availability, cost and teaching ring. */
+function syncRecruits(recruits:readonly HTMLButtonElement[],plan:ReturnType<typeof campLayout>,available:readonly number[],game:Game,running:boolean):void {
+ const place=placeBox,p=game.profile,s=game.state;
+ for(const node of recruits){
+  const kind=Number(node.dataset.fieldRecruit) as UnitKind,status=game.deploymentStatus(kind);
+  node.hidden=!running||!available.includes(kind);place(node,plan.recruits[kind]);
+  // An unavailable physical recruit remains focusable so waiting/capacity has an explanation.
+  node.disabled=false;node.setAttribute('aria-disabled',String(!status.allowed));
+  node.setAttribute('aria-label',troopControlLabel(p,kind,status));node.title=troopControlLabel(p,kind,status);
+  const cost=node.querySelector<HTMLElement>('.recruit-cost')!;
+  const wait=status.reason==='food'?` · ${Math.ceil(status.waitSeconds)}s`:['blocked','capacity'].includes(status.reason)?' · wait':'';
+  textIfChanged(cost,`${ERAS[p.age].units[kind].cost} food${wait}`);
+  node.classList.toggle('recruit-ready',status.allowed);
+  node.classList.toggle('teach',kind===0&&status.allowed&&((p.wins===0&&running&&!s.paused&&s.stats.deployed===0)||foodIsPiling(p,s)));
+ }
+}
+
+/** The Hold and Advance gate buttons at their bases. */
+function syncGates(gates:readonly HTMLButtonElement[],arena:ReturnType<typeof arenaLayout>,w:number,orders:ReturnType<typeof orderStatus>,running:boolean):void {
+ const place=placeBox;
+ for(const node of gates){
+  const hold=node.dataset.fieldGate==='hold',x=(hold?39:411)*arena.scale;
+  const size=Math.max(44,Math.min(88,72*arena.scale));
+  place(node,{x:Math.max(0,Math.min(w-size,x-size/2)),y:Math.max(0,arena.groundY*arena.scale-48*arena.scale),width:size,height:Math.max(44,Math.min(90,65*arena.scale))});
+  node.hidden=!running;node.setAttribute('aria-disabled',String(!orders.canCast));node.setAttribute('aria-pressed',String(orders.active===node.dataset.fieldGate));
+  node.setAttribute('aria-label',`${hold?'Hold: protect troops and your gate':'Advance: stronger strikes and faster movement'}. Costs 60 momentum, lasts 10 seconds. ${orders.label}`);
+  node.classList.toggle('order-ready',orders.canCast);
+ }
+}
+
 /** Presentation ownership only. Every mutation still goes through main's guarded dispatch. */
 export function createFieldController(root:HTMLElement){
  const find=(id:string)=>root.querySelector<HTMLElement>(`#${id}`)!;
@@ -20,10 +55,7 @@ export function createFieldController(root:HTMLElement){
  const standard=find('field-standard') as HTMLButtonElement,supplies=find('field-supplies') as HTMLButtonElement,enemy=find('field-enemy') as HTMLButtonElement;
  let selected:number|'supplies'|null=null,contextKey='',origin:HTMLElement|null=null;
  const pause=root.querySelector<HTMLElement>('[data-command="field-pause"]')!;
- const place=(node:HTMLElement,rect:CampTarget|{x:number;y:number;width:number;height:number})=>{
-  const value=`left:${rect.x}px;top:${rect.y}px;width:${rect.width}px;height:${rect.height}px`;
-  if(node.getAttribute('style')!==value)node.setAttribute('style',value);
- };
+ const place=placeBox;
  const clear=()=>{selected=null;releaseFieldContext(context,origin,pause);enemy.classList.remove('selected');};
  return {
   clear,
@@ -37,26 +69,8 @@ export function createFieldController(root:HTMLElement){
    const p=game.profile,s=game.state,w=world.clientWidth,h=world.clientHeight;
    if(!w||!h)return;
    const plan=campLayout(w,h),arena=arenaLayout(w,h),available=campRecruits(p),orders=orderStatus(s),running=s.phase==='running';
-   for(const node of recruits){
-    const kind=Number(node.dataset.fieldRecruit) as UnitKind,status=game.deploymentStatus(kind);
-    node.hidden=!running||!available.includes(kind);place(node,plan.recruits[kind]);
-    // An unavailable physical recruit remains focusable so waiting/capacity has an explanation.
-    node.disabled=false;node.setAttribute('aria-disabled',String(!status.allowed));
-    node.setAttribute('aria-label',troopControlLabel(p,kind,status));node.title=troopControlLabel(p,kind,status);
-    const cost=node.querySelector<HTMLElement>('.recruit-cost')!;
-    const wait=status.reason==='food'?` · ${Math.ceil(status.waitSeconds)}s`:['blocked','capacity'].includes(status.reason)?' · wait':'';
-    textIfChanged(cost,`${ERAS[p.age].units[kind].cost} food${wait}`);
-    node.classList.toggle('recruit-ready',status.allowed);
-    node.classList.toggle('teach',kind===0&&status.allowed&&((p.wins===0&&running&&!s.paused&&s.stats.deployed===0)||foodIsPiling(p,s)));
-   }
-   for(const node of gates){
-    const hold=node.dataset.fieldGate==='hold',x=(hold?39:411)*arena.scale;
-    const size=Math.max(44,Math.min(88,72*arena.scale));
-    place(node,{x:Math.max(0,Math.min(w-size,x-size/2)),y:Math.max(0,arena.groundY*arena.scale-48*arena.scale),width:size,height:Math.max(44,Math.min(90,65*arena.scale))});
-    node.hidden=!running;node.setAttribute('aria-disabled',String(!orders.canCast));node.setAttribute('aria-pressed',String(orders.active===node.dataset.fieldGate));
-    node.setAttribute('aria-label',`${hold?'Hold: protect troops and your gate':'Advance: stronger strikes and faster movement'}. Costs 60 momentum, lasts 10 seconds. ${orders.label}`);
-    node.classList.toggle('order-ready',orders.canCast);
-   }
+   syncRecruits(recruits,plan,available,game,running);
+   syncGates(gates,arena,w,orders,running);
    place(standard,plan.standard);place(supplies,plan.supplies);
    standard.hidden=!running||!s.chronicle?.enabled||s.stats.deployed===0;
    standard.setAttribute('aria-disabled',String(s.paused));standard.setAttribute('aria-pressed',String(s.chronicle?.rally??false));
