@@ -310,7 +310,7 @@ function watchMarks(c:FrameContext,lamps:readonly VillageHalo[],watchIndexes:rea
 function orderMarks(c:FrameContext):VillageStroke[]{
  const {input,plate,orderKind,orderProgress,placement,clearOfHud,project}=c;
  const orderStrokes:VillageStroke[]=[];
- if(orderKind)for(const [index,[x,y,rx,ry]] of plate.lamps.entries()){
+ if(orderKind)for(const [,[x,y,rx,ry]] of plate.lamps.entries()){
   if(!clearOfHud([x-rx-4,y-ry-8,x+rx+4,y+ry+2]))continue;
   const color=orderKind==='advance'?0xf2cf79:0xa9dfdc,width=Math.max(.8,1.1*placement.scale),alpha=.58+(input.reduced?0:.12*Math.sin(orderProgress*Math.PI));
   if(orderKind==='advance')for(const side of [-1,1] as const)orderStrokes.push({from:project({x:x+side*2,y:y-ry*.15}),to:project({x:x+side*(6+2*orderProgress),y:y-ry*(.8+.2*orderProgress)}),width,color,alpha});

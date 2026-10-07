@@ -1,7 +1,6 @@
 import test from 'node:test';
 import { battlefieldSource } from './helpers/battlefield-source.ts';
 import assert from 'node:assert/strict';
-import {readFileSync} from 'node:fs';
 import {duskLightAnchors} from '../src/view/dusk-atmosphere.ts';
 import {landscapePlacement} from '../src/view/visual-theme.ts';
 

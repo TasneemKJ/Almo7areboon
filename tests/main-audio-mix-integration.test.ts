@@ -1,7 +1,6 @@
 import test from 'node:test';
 import { mainSource } from './helpers/main-source.ts';
 import assert from 'node:assert/strict';
-import {readFileSync} from 'node:fs';
 import { runInApp } from './helpers/run-app.ts';
 import ts from 'typescript';
 import {Game} from '../src/game/simulation.ts';

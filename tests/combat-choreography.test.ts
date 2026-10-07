@@ -65,7 +65,6 @@ test('attack cue fades over its short lifetime and reduced motion removes trails
 });
 
 test('battlefield applies hit recoil and attack choreography only in presentation',async()=>{
-  const {readFileSync}=await import('node:fs');
   const source=battlefieldSource();
   assert.match(source,/from '.\/combat-choreography\.ts'/);
   assert.match(source,/attackCues:/);

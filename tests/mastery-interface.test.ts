@@ -1,7 +1,6 @@
 import test from 'node:test';
 import { mainSource } from './helpers/main-source.ts';
 import assert from 'node:assert/strict';
-import { readFileSync } from 'node:fs';
 import { Game } from '../src/game/simulation.ts';
 import { defaultProfile, decodeSave } from '../src/game/save.ts';
 import { ERAS, unlockCost } from '../src/game/data.ts';

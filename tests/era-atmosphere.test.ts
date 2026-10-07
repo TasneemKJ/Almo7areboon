@@ -52,7 +52,6 @@ test('invalid ages and viewport values fail soft into the Stone Age composition'
 });
 
 test('battlefield renders ambience behind actors from the presentation-only model',async()=>{
-  const {readFileSync}=await import('node:fs');
   const source=battlefieldSource();
   assert.match(source,/from '.\/era-atmosphere\.ts'/);
   assert.match(source,/private ambience!:/);

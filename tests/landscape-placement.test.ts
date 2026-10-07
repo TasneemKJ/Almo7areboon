@@ -37,7 +37,6 @@ test('landscape placement remains finite for malformed viewport inputs',()=>{
 });
 
 test('battlefield renderer uses uniform placement and no longer calls setDisplaySize on the landscape',async()=>{
-  const {readFileSync}=await import('node:fs');
   const source=battlefieldSource();
   assert.match(source,/landscapePlacement/);
   assert.match(source,/private placeLandscape\(\):void/);

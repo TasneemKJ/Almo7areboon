@@ -68,7 +68,6 @@ test('player and enemy damage compositions mirror structural marks rather than r
 });
 
 test('battlefield sorts base damage with buildings and troops and routes base hits through delayed projectile impact',async()=>{
-  const {readFileSync}=await import('node:fs');
   const source=battlefieldSource();
   assert.match(source,/from '.\/base-damage\.ts'/);
   assert.match(source,/private baseDamage!:/);

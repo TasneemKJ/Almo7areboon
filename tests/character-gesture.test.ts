@@ -1,7 +1,6 @@
 import test from 'node:test';
 import { battlefieldSource } from './helpers/battlefield-source.ts';
 import assert from 'node:assert/strict';
-import {readFileSync} from 'node:fs';
 async function gesture(){const path='../src/view/character-gesture.ts';const m=await import(path).catch(e=>{if((e as NodeJS.ErrnoException).code==='ERR_MODULE_NOT_FOUND')return null;throw e;});assert.ok(m,'character gesture model must exist');return m;}
 
 test('reduced motion makes every role a neutral transform',async()=>{

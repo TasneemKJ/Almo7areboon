@@ -7,7 +7,6 @@ import { ERAS } from '../src/game/data.ts';
 import { unitPresentationName } from '../src/ui/chapter-presentation.ts';
 import { TROOP_SPECIALTIES, troopUnlockMessage } from '../src/ui/army-screen.ts';
 import type { DeploymentStatus, UnitKind } from '../src/game/types.ts';
-import { readFileSync } from 'node:fs';
 import { runInApp } from './helpers/run-app.ts';
 import ts from 'typescript';
 

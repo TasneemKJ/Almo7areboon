@@ -6,7 +6,6 @@ import {chronicleGuidance} from '../src/game/chronicle-combat.ts';
 import {CAPTAINS,routeDefinition,createChronicle} from '../src/game/chronicle.ts';
 import test from 'node:test';
 import assert from 'node:assert/strict';
-import { readFileSync } from 'node:fs';
 import { runInApp } from './helpers/run-app.ts';
 import ts from 'typescript';
 import {syncWeekly,weekId} from '../src/game/weekly.ts';

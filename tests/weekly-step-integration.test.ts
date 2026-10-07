@@ -1,4 +1,4 @@
-import test from 'node:test';import assert from 'node:assert/strict';import {readFileSync} from 'node:fs';import { runInApp } from './helpers/run-app.ts';
+import test from 'node:test';import assert from 'node:assert/strict';import { runInApp } from './helpers/run-app.ts';
 import ts from 'typescript';
 import { mainSource } from './helpers/main-source.ts';
 import {Game} from '../src/game/simulation.ts';import {weekId,weeklyStatus} from '../src/game/weekly.ts';import {localDay} from '../src/game/data.ts';

@@ -1,7 +1,6 @@
 import test from 'node:test';
 import { mainSource } from './helpers/main-source.ts';
 import assert from 'node:assert/strict';
-import { readFileSync } from 'node:fs';
 import { welcomeBackLine, awayPhrase, AWAY_THRESHOLD_MS } from '../src/ui/welcome-back.ts';
 import { decodeSave, defaultProfile } from '../src/game/save.ts';
 

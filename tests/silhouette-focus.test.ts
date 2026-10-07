@@ -1,7 +1,6 @@
 import test from 'node:test';
 import { battlefieldSource } from './helpers/battlefield-source.ts';
 import assert from 'node:assert/strict';
-import {readFileSync} from 'node:fs';
 async function focus(){const path='../src/view/silhouette-focus.ts';const m=await import(path).catch(e=>{if((e as NodeJS.ErrnoException).code==='ERR_MODULE_NOT_FOUND')return null;throw e;});assert.ok(m,'silhouette focus model must exist');return m;}
 
 test('local focus stays subtle and bounded for every faction, role and lane',async()=>{

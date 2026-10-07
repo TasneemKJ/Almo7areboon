@@ -4,7 +4,7 @@
 
 ## Run and verify
 
-`npm ci`, then `npm run dev` (Vite, set a port you own). `npm run build` type-checks and builds `dist/`. `npm run test:fast` is the quick unit set used by the PR gate; `npm test` runs everything and should pass before a push. Browser checks live under `scripts/` (`npm run review:*`). Node 22.18+.
+`npm ci`, then `npm run dev` (Vite, set a port you own). `npm run build` type-checks (unused locals included, also `npm run lint`) and builds `dist/`. `npm run test:fast` is the quick unit set used by the PR gate; `npm test` runs everything and should pass before a push. Browser checks live under `scripts/` (`npm run review:*`). Node 22.18+.
 
 ## Code organization
 

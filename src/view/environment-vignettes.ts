@@ -5,9 +5,7 @@ const ink='#304c52';
 const wood='#735f4d';
 const brass='#b39a68';
 const clay='#9e7658';
-const linen='#c7b996';
 const leaf='#6f8a72';
-const water='#77a3a0';
 
 const vignette=(name:string,y:number,body:string)=>`<g data-vignette="${name}" data-y="${y}">${body}</g>`;
 const pot=(x:number,y:number,s=1)=>`<g transform="translate(${x} ${y}) scale(${s})">${p('M-8-7Q0-11 8-7L6 8Q0 13-6 8Z',clay,ink,1)}${e(0,-7,8,2.4,'#c39b73',ink,.7)}${l('M-5 1Q0 3 5 1','#d9b68a',1)}</g>`;

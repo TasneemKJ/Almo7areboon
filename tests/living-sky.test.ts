@@ -1,7 +1,6 @@
 import test from 'node:test';
 import { battlefieldSource } from './helpers/battlefield-source.ts';
 import assert from 'node:assert/strict';
-import {readFileSync} from 'node:fs';
 import {SKY_CEILING,cloudFrame,shootingStar,skyProfile,starFrame} from '../src/view/living-sky.ts';
 
 test('cloud banks stay above the tallest authored skyline in every chapter and time',()=>{

@@ -2,7 +2,6 @@ import test from 'node:test';
 import { mainSource } from './helpers/main-source.ts';
 import { battlefieldSource } from './helpers/battlefield-source.ts';
 import assert from 'node:assert/strict';
-import { readFileSync } from 'node:fs';
 import { Game } from '../src/game/simulation.ts';
 import { defaultProfile, SAVE_KEY, BACKUP_KEY } from '../src/game/save.ts';
 import { exportBackup, importBackup, restoreBackup, restoreBackupWithSave } from '../src/game/backup.ts';

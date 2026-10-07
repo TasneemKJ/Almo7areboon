@@ -1,4 +1,4 @@
-import {ROUTES,CAPTAINS,TALES,DISCOVERIES,createChronicle,routeAvailable,routeBit,routeDefinition,captainAvailable,taleAvailable,preparationAvailable,timelineVariant,commanderFor,veteranName,type ChronicleAction,type RouteId,type CaptainId,type TaleId,type Preparation,type DiscoveryId} from '../game/chronicle.ts';
+import { ROUTES, CAPTAINS, TALES, DISCOVERIES, createChronicle, routeAvailable, routeBit, routeDefinition, captainAvailable, taleAvailable, timelineVariant, commanderFor, veteranName, type ChronicleAction, type RouteId, type CaptainId, type TaleId, type Preparation, type DiscoveryId } from '../game/chronicle.ts';
 import type {Profile,BattleState} from '../game/types.ts';
 const chapters=['The first hearth','Olive terraces','The harbour','Lantern street','The hillside','Quiet courtyards'];
 const landscapes=['/art/storybook/village.webp',...['olive','harbor','lantern','hillside','courtyards'].map(folder=>`/art/storybook/${folder}/village.webp`)];

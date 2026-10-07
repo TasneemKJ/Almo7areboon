@@ -39,7 +39,6 @@ test('lane presentation fails soft for malformed values and never changes simula
 });
 
 test('battlefield renderer consumes lane perspective for actors, shadows and health-bar height',async()=>{
-  const {readFileSync}=await import('node:fs');
   const source=battlefieldSource();
   assert.match(source,/lanePresentation/);
   assert.match(source,/troopScale/);

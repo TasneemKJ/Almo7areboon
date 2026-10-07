@@ -73,7 +73,7 @@ test('a gesture attempts to resume an interrupted context instead of silently ab
 });
 
 test('actual main loads the separate stored mix before any gesture and applies it to the first native-boundary buses',async()=>{
- const {runInNewContext}=await import('node:vm'),{default:ts}=await import('typescript');
+ const {default:ts}=await import('typescript');
  const {loadAudioMix,DEFAULT_AUDIO_MIX,AUDIO_MIX_KEY}=await import('../src/ui/audio-preferences.ts');
  const {recordedContext,installContext}=await import('./helpers/audio-context.ts');
  const source=mainSource(),ast=ts.createSourceFile('main.ts',source,ts.ScriptTarget.Latest,true,ts.ScriptKind.TS);

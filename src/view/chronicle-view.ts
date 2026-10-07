@@ -77,7 +77,7 @@ export class ChronicleView {
   private cat:Phaser.GameObjects.Graphics;
   private marks:Phaser.GameObjects.Graphics;
   private label:Phaser.GameObjects.Text;
-  constructor(private scene:Phaser.Scene,private layer:Phaser.GameObjects.Container){
+  constructor(private scene:Phaser.Scene,layer:Phaser.GameObjects.Container){
     for(const kind of ['cart','lantern','cage','cage-open','bell','supply'] as const)paintedProp(scene,kind);
     this.landmark=scene.add.image(0,0,'chronicle-supply-ink-v1').setOrigin(.5,.91);
     this.traveller=scene.add.image(0,0,'chronicle-cart-ink-v1').setOrigin(.5,.91);

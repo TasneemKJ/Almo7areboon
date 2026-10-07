@@ -1,5 +1,5 @@
 import type {Side,UnitKind} from '../game/types.ts';
-import {path as p,ellipse as e,rect as r,line as l,INK} from './illustration-kit.ts';
+import { path as p, ellipse as e, rect as r, line as l } from './illustration-kit.ts';
 
 const validAge=(age:number)=>Number.isInteger(age)&&age>=0&&age<6?age:0;
 const validKind=(kind:number):UnitKind=>(Number.isInteger(kind)&&kind>=0&&kind<3?kind:0) as UnitKind;

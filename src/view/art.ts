@@ -43,7 +43,7 @@ function drawPrehistoricMount(g:G,p:TroopPose):void {
 
 /** A Spartan rider on a horse, with no chariot or wheels. */
 function drawSpartanHorse(g:G,p:TroopPose):void {
-  const {accent,gait,rider}=p;
+  const {accent,gait}=p;
     // A Spartan rider on a horse, with no chariot or wheels.
     ellipse(g,0,-10,34,18,0xaf9372);g.lineStyle(1.7,ink,1);g.strokeEllipse(0,-10,34,18);
     poly(g,[9,-12,13,-29,23,-29,28,-22,21,-17,17,-9],0xaf9372);

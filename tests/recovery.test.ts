@@ -2,7 +2,7 @@ import test from 'node:test';
 import assert from 'node:assert/strict';
 import { Game } from '../src/game/simulation.ts';
 import * as saves from '../src/game/save.ts';
-import { CARD_DEFS, cardBonus, foodRate } from '../src/game/data.ts';
+import { CARD_DEFS, foodRate } from '../src/game/data.ts';
 import { cardPackCost } from '../src/game/cards.ts';
 const { defaultProfile, loadProfile, saveProfile, SAVE_KEY } = saves;
 function storage() { const values = new Map<string,string>(); return { values, getItem: (k:string)=>values.get(k)??null, setItem: (k:string,v:string)=>{values.set(k,v);} }; }
