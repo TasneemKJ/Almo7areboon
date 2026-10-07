@@ -44,7 +44,7 @@ import { createModalTapGuard } from '../src/ui/modal-tap-guard.ts';
 // Execute the app's actual functions with a clock and minimal DOM boundary; no browser/debug hooks.
 const source = readFileSync(new URL('../src/main.ts', import.meta.url), 'utf8');
 const ast = ts.createSourceFile('main.ts', source, ts.ScriptTarget.Latest, true, ts.ScriptKind.TS);
-const names = new Set(['switchTab','showModal','syncCamp','showCampFocus','returnToCamp','handleCampInput','playable', 'guardAction', 'action', 'persist', 'update', 'renderScreen', 'sessionPresentation', 'showResult', 'acquireSession', 'dismissModal', 'returnToChapters', 'clearPrestigeContext', 'openPrestige', 'refreshPrestige', 'returnFromPrestige', 'questSaveNotice', 'refreshQuestRecord', 'claimQuestRecord', 'showQuests', 'showSettings', 'showSaveRecovery', 'preferenceNotice', 'showFieldPause', 'showLeaveBattle', 'leaveBattle', 'enterCamp', 'entryReady', 'syncEntry', 'enterWorld', 'showResultDetails', 'showHome', 'continueWithProvision']);
+const names = new Set(['switchTab','showModal','syncCamp','showCampFocus','returnToCamp','handleCampInput','playable', 'guardAction', 'action', 'persist', 'update', 'renderScreen', 'sessionPresentation', 'showResult', 'acquireSession', 'dismissModal', 'returnToChapters', 'clearPrestigeContext', 'openPrestige', 'refreshPrestige', 'returnFromPrestige', 'questSaveNotice', 'refreshQuestRecord', 'claimQuestRecord', 'showQuests', 'showSettings', 'showSaveRecovery', 'preferenceNotice', 'showFieldPause', 'showLeaveBattle', 'leaveBattle', 'enterCamp', 'entryReady', 'syncEntry', 'enterWorld', 'showResultDetails', 'showHome', 'continueWithProvision', 'adoptRestoredGame']);
 const functions = ast.statements.filter(node => ts.isFunctionDeclaration(node) && node.name && names.has(node.name.text));
 assert.equal(functions.length, names.size);
 const click=ast.statements.find(node=>ts.isExpressionStatement(node)&&ts.isCallExpression(node.expression)&&node.expression.expression.getText(ast)==='lifetime.listen'&&node.expression.arguments[0]?.getText(ast)==='root'&&node.expression.arguments[1]?.getText(ast)==="'click'") as ts.ExpressionStatement;
@@ -55,7 +55,9 @@ assert.ok(change,'the real native radio listener must remain reachable');
 const changeListener=(change.expression as ts.CallExpression).arguments[2];
 const keydown=ast.statements.find(node=>ts.isExpressionStatement(node)&&ts.isCallExpression(node.expression)&&node.expression.expression.getText(ast)==='lifetime.listen'&&node.expression.arguments[0]?.getText(ast)==='document'&&node.expression.arguments[1]?.getText(ast)==="'keydown'") as ts.ExpressionStatement;
 assert.ok(keydown);const keyListener=(keydown.expression as ts.CallExpression).arguments[2];
-const code = ts.transpile(functions.map(node => node.getText(ast)).join('\n')+`\nthis.handleClick=${listener.getText(ast)};this.handleChange=${changeListener.getText(ast)};this.handleKey=${keyListener.getText(ast)};`, { target: ts.ScriptTarget.ES2022 });
+const handlerTable = ast.statements.find(node => ts.isVariableStatement(node) && node.declarationList.declarations.some(d => d.name.getText(ast) === 'commandHandlers'))!;
+assert.ok(handlerTable, 'the command handler table must remain reachable');
+const code = ts.transpile(functions.map(node => node.getText(ast)).join('\n')+'\n'+handlerTable.getText(ast)+`\nthis.handleClick=${listener.getText(ast)};this.handleChange=${changeListener.getText(ast)};this.handleKey=${keyListener.getText(ast)};`, { target: ts.ScriptTarget.ES2022 });
 function harness(motion = 'full') {
   let now = 100, foreign = false;
   const dialogs: string[] = [];

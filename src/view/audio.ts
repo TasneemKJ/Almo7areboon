@@ -1,6 +1,6 @@
 import {SoundscapePlayer,type SoundscapeMood} from './soundscape-player.ts';
 import {createSoundscapeSynthesis} from './soundscape-worker-client.ts';
-import {normalizeAudioMix,DEFAULT_AUDIO_MIX,type AudioMix} from '../ui/audio-preferences.ts';
+import {normalizeAudioMix,DEFAULT_AUDIO_MIX,type AudioMix} from '../game/audio-mix.ts';
 let context:AudioContext|undefined;
 interface Bus {node:GainNode;from:number;to:number;at:number;end:number}
 let mix:AudioMix={...DEFAULT_AUDIO_MIX},buses:{effects:Bus;atmosphere:Bus}|undefined;

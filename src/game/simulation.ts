@@ -16,6 +16,8 @@ import type { Action, BattleState, DeploymentStatus, GameEvent, GamePort, Profil
 
 const FIXED_STEP = 1 / 60;
 
+type ActionOf<T extends Action['type']> = Action & { type: T };
+
 export class Game implements GamePort {
   profile: Profile;
   state: BattleState;
@@ -103,169 +105,225 @@ export class Game implements GamePort {
       return true;
     }
     if(this.profile.chronicle?.expedition&&['next','prestige','select-battle','evolve'].includes(action.type))return false;
-    switch (action.type) {
-      case 'order':
-        if (!issueBattleOrder(this.state, action.order)) return false;
-        this.events.push({type:'order',order:action.order,x:235});
-        return true;
-      case 'start':
-        if (this.state.phase !== 'ready') return false;
-        this.state.phase = 'running';
-        this.profile.played = true;
-        return true;
-      case 'retreat':
-        // Some fights stall (long-range defenders against a weak army), and only a reload could end them. Retreating is an ordinary
-        // loss: coins already earned are kept, no seals or rewards are added, and nothing is written to the pending-victory receipt.
-        if (this.state.phase !== 'running') return false;
-        this.state.phase = 'lost';
-        this.state.paused = false;
-        this.events.push({ type: 'lose' });
-        return true;
-      case 'pause':
-        if (this.state.phase !== 'running') return false;
-        this.state.paused = !this.state.paused;
-        return true;
-      case 'spawn':
-        if (!this.deploymentStatus(action.kind).allowed) return false;
-        if (!this.spawn('player', action.kind)) return false;
-        this.state.food -= ERAS[this.profile.age].units[action.kind].cost;
-        chronicleSpawn(this.profile,this.state,this.state.units[this.state.units.length-1]);
-        earnMomentum(this.state,12);
-        this.profile.deployed++;
-        this.state.stats.deployed++;
-        this.state.stats.deployedByKind[action.kind]++;
-        this.state.stats.foodSpent += ERAS[this.profile.age].units[action.kind].cost;
-        this.state.stats.peakArmy = Math.max(this.state.stats.peakArmy, this.state.units.filter(unit => unit.side === 'player' && unit.hp > 0).length);
-        return true;
-      case 'skill': return this.skill(action.skill);
-      case 'retry':
-        if (!canRetry(this.profile,this.state)) return false;
-        this.profile.pendingVictory = null;
-        this.state = this.newBattle();
-        return true;
-      case 'next': {
-        const advancement = advanceStatus(this.profile,this.state);
-        if (!advancement.allowed || advancement.target !== 'battle') return false;
-        this.profile.pendingVictory = null;
-        this.profile.enemyAge++;
-        this.profile.furthestBattle = Math.max(this.profile.furthestBattle,this.profile.enemyAge);
-        this.state = this.newBattle();
-        return true;
-      }
-      case 'prestige': {
-        if (!Number.isInteger(action.expectedTimeline) || action.expectedTimeline !== this.profile.timeline) return false;
-        const preview = prestigePreview(this.profile,this.state,action.legacy);
-        if (!preview) return false;
-        Object.assign(this.profile, {
-          legacy: {rank:preview.rankAfter,selected:preview.choice},
-          timeline:preview.nextTimeline,gems:preview.gemsAfter,
-          mastery:createMastery(preview.nextTimeline),pendingVictory:null,
-          enemyAge:0,furthestBattle:0,coins:0,age:0,foodLevel:0,baseLevel:0,
-          unlocked:[true,false,false],
-        });
-        this.state = this.newBattle();
-        return true;
-      }
-      case 'select-legacy':
-        if (this.state.phase !== 'ready' || this.profile.legacy.rank === 0 || !isLegacyChoice(action.legacy)) return false;
-        this.profile.legacy = {...this.profile.legacy,selected:action.legacy};
-        this.state = this.newBattle();
-        return true;
-      case 'select-battle':
-        if (this.state.phase !== 'ready' || !Number.isInteger(action.battle) || action.battle < 0 || action.battle > this.profile.furthestBattle) return false;
-        this.profile.enemyAge = action.battle;
-        this.state = this.newBattle();
-        return true;
-      case 'unlock':
-        if (![1, 2].includes(action.kind) || this.profile.unlocked[action.kind] || !this.spend(unlockCost(action.kind, this.profile))) return false;
-        this.profile.unlocked[action.kind] = true;
-        this.events.push({ type: 'upgrade' });
-        return true;
-      case 'upgrade': {
-        if (!this.upgradeStatus(action.stat).allowed) return false;
-        if (action.stat === 'food') {
-          if (this.profile.foodLevel >= 100 || !this.spend(foodUpgradeCost(this.profile))) return false;
-          this.profile.foodLevel++;
-        } else if (action.stat === 'base') {
-          if (this.profile.baseLevel >= 100 || !this.spend(baseUpgradeCost(this.profile))) return false;
-          this.profile.baseLevel++;
-          this.refreshBaseHealth();
-        } else return false;
-        this.events.push({ type: 'upgrade' });
-        return true;
-      }
-      case 'evolve':
-        if (this.state.phase === 'running' || this.profile.age >= 5 || this.profile.age > this.profile.enemyAge || !this.spend(ERAS[this.profile.age].evolveCost)) return false;
-        this.profile.age++;
-        this.profile.coins = 0;
-        this.profile.foodLevel = 0;
-        this.profile.baseLevel = 0;
-        this.profile.unlocked = [true, false, false];
-        this.state = this.newBattle();
-        this.restorePendingVictory();
-        this.events.push({ type: 'evolve' });
-        return true;
-      case 'summon': {
-        const count = action.count ?? 1;
-        if (!this.canPrepare() || ![1, 10, 50].includes(count)) return false;
-        const cost = cardPackCost(count);
-        if (this.profile.gems < cost) return false;
-        // Stage the entire pack before touching the wallet or saved random stream.
-        const cards = [...this.profile.cards];
-        const indices: number[] = [];
-        let seed = this.profile.summonSeed;
-        let draws = this.profile.summonCount;
-        for (let i = 0; i < count; i++) {
-          const rarity = nextCardRandom(seed);
-          const choice = nextCardRandom(rarity.seed);
-          const index = drawCard(draws, rarity.value, choice.value, cards);
-          if (index < 0 || cards[index] >= 1000) return false;
-          cards[index]++;
-          indices.push(index);
-          seed = choice.seed;
-          draws = Math.min(1e9, draws + 1);
-        }
-        this.profile.gems -= cost;
-        this.profile.cards = cards;
-        this.refreshBaseHealth();
-        this.profile.summonSeed = seed;
-        this.profile.summonCount = draws;
-        this.events.push({ type: 'upgrade', amount: indices[0], cardIndices: indices });
-        return true;
-      }
-      case 'daily': {
-        const reward = dailyReward(this.profile, action.day);
-        if (!reward.available) return false;
-        this.profile.dailyDay = action.day;
-        this.profile.dailyStreak = Math.min(1e6, reward.streak);
-        if (reward.graced) this.profile.graceDay = action.day;
-        this.profile.gems = Math.min(1e7, this.profile.gems + reward.gems);
-        this.events.push({ type: 'upgrade' });
-        return true;
-      }
-      case 'weekly-sync':
-        return syncWeekly(this.profile, action.week, action.earned);
-      case 'weekly': {
-        // Claim admission is read-only: only an explicitly synchronized week can pay.
-        if (!Number.isInteger(action.week) || action.week < 0 || action.week > MAX_WEEK || this.profile.weekly?.week !== action.week) return false;
-        const status = weeklyStatus(this.profile, action.week);
-        if (!status.ready) return false;
-        this.profile.weekly = { ...this.profile.weekly!, claimed: true };
-        this.profile.gems = Math.min(1e7, this.profile.gems + status.gems);
-        this.events.push({ type: 'upgrade' });
-        return true;
-      }
-      case 'claim': {
-        const quest = QUESTS.find(q => q.id === action.id);
-        if (!quest || this.profile.claimed.includes(quest.id) || this.profile[quest.stat] < quest.target) return false;
-        this.profile.claimed.push(quest.id);
-        this.profile.gems = Math.min(1e7, this.profile.gems + quest.reward);
-        this.events.push({ type: 'upgrade' });
-        return true;
-      }
-      default: return false;
-    }
+    if (!Object.hasOwn(Game.ACTION_HANDLERS, action.type)) return false;
+    // Each handler narrows its own action type; the table key guarantees the match.
+    return Game.ACTION_HANDLERS[action.type]!(this, action as never);
   }
+
+  /** One handler per action type; each returns whether it changed anything. */
+  private static readonly ACTION_HANDLERS: Partial<Record<Action['type'], (game: Game, action: never) => boolean>> = {
+    'order': (game, action: ActionOf<'order'>) => game.doOrder(action),
+    'start': (game, action: ActionOf<'start'>) => game.doStart(action),
+    'retreat': (game, action: ActionOf<'retreat'>) => game.doRetreat(action),
+    'pause': (game, action: ActionOf<'pause'>) => game.doPause(action),
+    'spawn': (game, action: ActionOf<'spawn'>) => game.doSpawn(action),
+    'skill': (game, action: ActionOf<'skill'>) => game.doSkill(action),
+    'retry': (game, action: ActionOf<'retry'>) => game.doRetry(action),
+    'next': (game, action: ActionOf<'next'>) => game.doNext(action),
+    'prestige': (game, action: ActionOf<'prestige'>) => game.doPrestige(action),
+    'select-legacy': (game, action: ActionOf<'select-legacy'>) => game.doSelectLegacy(action),
+    'select-battle': (game, action: ActionOf<'select-battle'>) => game.doSelectBattle(action),
+    'unlock': (game, action: ActionOf<'unlock'>) => game.doUnlock(action),
+    'upgrade': (game, action: ActionOf<'upgrade'>) => game.doUpgrade(action),
+    'evolve': (game, action: ActionOf<'evolve'>) => game.doEvolve(action),
+    'summon': (game, action: ActionOf<'summon'>) => game.doSummon(action),
+    'daily': (game, action: ActionOf<'daily'>) => game.doDaily(action),
+    'weekly-sync': (game, action: ActionOf<'weekly-sync'>) => game.doWeeklySync(action),
+    'weekly': (game, action: ActionOf<'weekly'>) => game.doWeekly(action),
+    'claim': (game, action: ActionOf<'claim'>) => game.doClaim(action),
+  };
+
+  private doOrder(action: ActionOf<'order'>): boolean {
+    if (!issueBattleOrder(this.state, action.order)) return false;
+    this.events.push({type:'order',order:action.order,x:235});
+    return true;
+  }
+
+  private doStart(action: ActionOf<'start'>): boolean {
+    if (this.state.phase !== 'ready') return false;
+    this.state.phase = 'running';
+    this.profile.played = true;
+    return true;
+  }
+
+  private doRetreat(action: ActionOf<'retreat'>): boolean {
+    // Some fights stall (long-range defenders against a weak army), and only a reload could end them. Retreating is an ordinary
+    // loss: coins already earned are kept, no seals or rewards are added, and nothing is written to the pending-victory receipt.
+    if (this.state.phase !== 'running') return false;
+    this.state.phase = 'lost';
+    this.state.paused = false;
+    this.events.push({ type: 'lose' });
+    return true;
+  }
+
+  private doPause(action: ActionOf<'pause'>): boolean {
+    if (this.state.phase !== 'running') return false;
+    this.state.paused = !this.state.paused;
+    return true;
+  }
+
+  private doSpawn(action: ActionOf<'spawn'>): boolean {
+    if (!this.deploymentStatus(action.kind).allowed) return false;
+    if (!this.spawn('player', action.kind)) return false;
+    this.state.food -= ERAS[this.profile.age].units[action.kind].cost;
+    chronicleSpawn(this.profile,this.state,this.state.units[this.state.units.length-1]);
+    earnMomentum(this.state,12);
+    this.profile.deployed++;
+    this.state.stats.deployed++;
+    this.state.stats.deployedByKind[action.kind]++;
+    this.state.stats.foodSpent += ERAS[this.profile.age].units[action.kind].cost;
+    this.state.stats.peakArmy = Math.max(this.state.stats.peakArmy, this.state.units.filter(unit => unit.side === 'player' && unit.hp > 0).length);
+    return true;
+  }
+
+  private doSkill(action: ActionOf<'skill'>): boolean {
+    return this.skill(action.skill);
+  }
+
+  private doRetry(action: ActionOf<'retry'>): boolean {
+    if (!canRetry(this.profile,this.state)) return false;
+    this.profile.pendingVictory = null;
+    this.state = this.newBattle();
+    return true;
+  }
+
+  private doNext(action: ActionOf<'next'>): boolean {
+    const advancement = advanceStatus(this.profile,this.state);
+    if (!advancement.allowed || advancement.target !== 'battle') return false;
+    this.profile.pendingVictory = null;
+    this.profile.enemyAge++;
+    this.profile.furthestBattle = Math.max(this.profile.furthestBattle,this.profile.enemyAge);
+    this.state = this.newBattle();
+    return true;
+  }
+
+  private doPrestige(action: ActionOf<'prestige'>): boolean {
+    if (!Number.isInteger(action.expectedTimeline) || action.expectedTimeline !== this.profile.timeline) return false;
+    const preview = prestigePreview(this.profile,this.state,action.legacy);
+    if (!preview) return false;
+    Object.assign(this.profile, {
+      legacy: {rank:preview.rankAfter,selected:preview.choice},
+      timeline:preview.nextTimeline,gems:preview.gemsAfter,
+      mastery:createMastery(preview.nextTimeline),pendingVictory:null,
+      enemyAge:0,furthestBattle:0,coins:0,age:0,foodLevel:0,baseLevel:0,
+      unlocked:[true,false,false],
+    });
+    this.state = this.newBattle();
+    return true;
+  }
+
+  private doSelectLegacy(action: ActionOf<'select-legacy'>): boolean {
+    if (this.state.phase !== 'ready' || this.profile.legacy.rank === 0 || !isLegacyChoice(action.legacy)) return false;
+    this.profile.legacy = {...this.profile.legacy,selected:action.legacy};
+    this.state = this.newBattle();
+    return true;
+  }
+
+  private doSelectBattle(action: ActionOf<'select-battle'>): boolean {
+    if (this.state.phase !== 'ready' || !Number.isInteger(action.battle) || action.battle < 0 || action.battle > this.profile.furthestBattle) return false;
+    this.profile.enemyAge = action.battle;
+    this.state = this.newBattle();
+    return true;
+  }
+
+  private doUnlock(action: ActionOf<'unlock'>): boolean {
+    if (![1, 2].includes(action.kind) || this.profile.unlocked[action.kind] || !this.spend(unlockCost(action.kind, this.profile))) return false;
+    this.profile.unlocked[action.kind] = true;
+    this.events.push({ type: 'upgrade' });
+    return true;
+  }
+
+  private doUpgrade(action: ActionOf<'upgrade'>): boolean {
+    if (!this.upgradeStatus(action.stat).allowed) return false;
+    if (action.stat === 'food') {
+      if (this.profile.foodLevel >= 100 || !this.spend(foodUpgradeCost(this.profile))) return false;
+      this.profile.foodLevel++;
+    } else if (action.stat === 'base') {
+      if (this.profile.baseLevel >= 100 || !this.spend(baseUpgradeCost(this.profile))) return false;
+      this.profile.baseLevel++;
+      this.refreshBaseHealth();
+    } else return false;
+    this.events.push({ type: 'upgrade' });
+    return true;
+  }
+
+  private doEvolve(action: ActionOf<'evolve'>): boolean {
+    if (this.state.phase === 'running' || this.profile.age >= 5 || this.profile.age > this.profile.enemyAge || !this.spend(ERAS[this.profile.age].evolveCost)) return false;
+    this.profile.age++;
+    this.profile.coins = 0;
+    this.profile.foodLevel = 0;
+    this.profile.baseLevel = 0;
+    this.profile.unlocked = [true, false, false];
+    this.state = this.newBattle();
+    this.restorePendingVictory();
+    this.events.push({ type: 'evolve' });
+    return true;
+  }
+
+  private doSummon(action: ActionOf<'summon'>): boolean {
+    const count = action.count ?? 1;
+    if (!this.canPrepare() || ![1, 10, 50].includes(count)) return false;
+    const cost = cardPackCost(count);
+    if (this.profile.gems < cost) return false;
+    // Stage the entire pack before touching the wallet or saved random stream.
+    const cards = [...this.profile.cards];
+    const indices: number[] = [];
+    let seed = this.profile.summonSeed;
+    let draws = this.profile.summonCount;
+    for (let i = 0; i < count; i++) {
+      const rarity = nextCardRandom(seed);
+      const choice = nextCardRandom(rarity.seed);
+      const index = drawCard(draws, rarity.value, choice.value, cards);
+      if (index < 0 || cards[index] >= 1000) return false;
+      cards[index]++;
+      indices.push(index);
+      seed = choice.seed;
+      draws = Math.min(1e9, draws + 1);
+    }
+    this.profile.gems -= cost;
+    this.profile.cards = cards;
+    this.refreshBaseHealth();
+    this.profile.summonSeed = seed;
+    this.profile.summonCount = draws;
+    this.events.push({ type: 'upgrade', amount: indices[0], cardIndices: indices });
+    return true;
+  }
+
+  private doDaily(action: ActionOf<'daily'>): boolean {
+    const reward = dailyReward(this.profile, action.day);
+    if (!reward.available) return false;
+    this.profile.dailyDay = action.day;
+    this.profile.dailyStreak = Math.min(1e6, reward.streak);
+    if (reward.graced) this.profile.graceDay = action.day;
+    this.profile.gems = Math.min(1e7, this.profile.gems + reward.gems);
+    this.events.push({ type: 'upgrade' });
+    return true;
+  }
+
+  private doWeeklySync(action: ActionOf<'weekly-sync'>): boolean {
+    return syncWeekly(this.profile, action.week, action.earned);
+  }
+
+  private doWeekly(action: ActionOf<'weekly'>): boolean {
+    // Claim admission is read-only: only an explicitly synchronized week can pay.
+    if (!Number.isInteger(action.week) || action.week < 0 || action.week > MAX_WEEK || this.profile.weekly?.week !== action.week) return false;
+    const status = weeklyStatus(this.profile, action.week);
+    if (!status.ready) return false;
+    this.profile.weekly = { ...this.profile.weekly!, claimed: true };
+    this.profile.gems = Math.min(1e7, this.profile.gems + status.gems);
+    this.events.push({ type: 'upgrade' });
+    return true;
+  }
+
+  private doClaim(action: ActionOf<'claim'>): boolean {
+    const quest = QUESTS.find(q => q.id === action.id);
+    if (!quest || this.profile.claimed.includes(quest.id) || this.profile[quest.stat] < quest.target) return false;
+    this.profile.claimed.push(quest.id);
+    this.profile.gems = Math.min(1e7, this.profile.gems + quest.reward);
+    this.events.push({ type: 'upgrade' });
+    return true;
+  }
+
 
   private spend(cost: number): boolean {
     if (!Number.isFinite(cost) || cost < 0 || this.profile.coins < cost) return false;

@@ -32,7 +32,7 @@ import {villageVerdictFrame} from './village-verdict.ts';
 import {BATTLEFIELD_MEMORY_CAP,battlefieldMemoryAfterReset,battlefieldMemoryFrame,battlefieldMemoryIntentForHit,battlefieldMemoryNeedsHudMeasurement,battlefieldMemoryRegionClearOf,rememberBattlefieldMark,stepBattlefieldMemory,type BattlefieldMemoryInput,type BattlefieldMemoryMark,type BattlefieldMemoryRegion} from './battlefield-memory.ts';
 import {SPOILS_HOMECOMING_CAP,rememberSpoilsHomecoming,spoilsHomecomingFrame,spoilsHomecomingIntentForEvent,spoilsRewardEvidence,stepSpoilsHomecoming,type SpoilsHomecomingMark} from './spoils-homecoming.ts';
 import {TROOP_FRAME} from './unit-illustrations.ts';
-import {compactNumber} from '../ui/battle-hud.ts';
+import {compactNumber} from '../game/format.ts';
 import {battleResolution} from './render-resolution.ts';
 import {battlefieldRendererMode} from './renderer-policy.ts';
 import {drawTroop,drawBase} from './art';

@@ -22,11 +22,13 @@ import { createModalTapGuard } from '../src/ui/modal-tap-guard.ts';
 // Run the actual UI handler and ownership presentation with the real guarded writer.
 const source = readFileSync(new URL('../src/main.ts', import.meta.url), 'utf8');
 const ast = ts.createSourceFile('main.ts', source, ts.ScriptTarget.Latest, true, ts.ScriptKind.TS);
-const names = new Set(['handleCampInput','playable', 'guardAction', 'sessionPresentation', 'showSettings', 'showSaveRecovery', 'preferenceNotice', 'clearPrestigeContext']);
+const names = new Set(['handleCampInput','playable', 'guardAction', 'sessionPresentation', 'showSettings', 'showSaveRecovery', 'preferenceNotice', 'clearPrestigeContext', 'adoptRestoredGame']);
 const functions = ast.statements.filter(node => ts.isFunctionDeclaration(node) && node.name && names.has(node.name.text));
 const listener = ast.statements.find(node => ts.isExpressionStatement(node) && ts.isCallExpression(node.expression) && node.expression.expression.getText(ast) === 'lifetime.listen' && node.expression.arguments[0]?.getText(ast) === 'root' && node.expression.arguments[1]?.getText(ast) === "'click'");
 assert.equal(functions.length, names.size); assert.ok(listener);
-const code = ts.transpile([...functions, listener].map(node => node.getText(ast)).join('\n'), { target: ts.ScriptTarget.ES2022 });
+const handlerTable = ast.statements.find(node => ts.isVariableStatement(node) && node.declarationList.declarations.some(d => d.name.getText(ast) === 'commandHandlers'));
+assert.ok(handlerTable);
+const code = ts.transpile([...functions, handlerTable, listener].map(node => node.getText(ast)).join('\n'), { target: ts.ScriptTarget.ES2022 });
 const locks: SaveSessionLocks = { request: (name, _options, callback) => Promise.resolve(callback({ name })) };
 async function harness(mode = 'active') {
   const old = defaultProfile();

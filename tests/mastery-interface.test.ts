@@ -88,9 +88,9 @@ test('objective guidance retains urgent threat and paused priority in the existi
 test('explicit result return routes and terminal exit remain guarded while recovery owns priority',()=>{
  const main=readFileSync(new URL('../src/main.ts',import.meta.url),'utf8');
  assert.match(main,/function dismissModal\(/);assert.match(main,/evolutionFromResult/);
- assert.match(main,/case 'return-chapters':returnToChapters\(\)/);
+ assert.match(main,/'return-chapters':\(\)=>\{returnToChapters\(\)/);
  assert.match(main,/function showResult\(focusCommand\?:string\)\{[\s\S]*?if\(!guardAction\(\)\|\|modal==='session'\)return;/);
- assert.match(main,/case 'confirm-evolve':[\s\S]*?showResult\(\)/);
+ assert.match(main,/'confirm-evolve':[\s\S]*?showResult\(\)/);
  assert.match(main,/e\.key==='Escape'[\s\S]*?dismissModal\(\)/);
 });
 
