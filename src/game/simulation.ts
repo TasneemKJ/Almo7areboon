@@ -4,14 +4,15 @@ import { planChronicleAction } from './chronicle-actions.ts';
 import { createChronicleBattle, chronicleStartingFood, chronicleGateFactor, chronicleSpawn, toggleRally, chronicleMovementLimit, chronicleDamage, chronicleBaseDamage, chronicleAfterHit, chronicleSkill, captainSkill, chronicleTick, chronicleOutcome, type ChronicleHost } from './chronicle-combat.ts';
 import { isLegacyChoice, legacyEffects, prestigePreview } from './prestige.ts';
 import { advanceStatus, canRetry, createMastery, masteryAward } from './mastery.ts';
-import { encounterForAge, scheduledSpawns, wavePreview } from './encounters.ts';
+import { encounterForAge, scheduledSpawns } from './encounters.ts';
 import type { Encounter, ScheduledSpawn, WaveStatus } from './encounters.ts';
 import { resolveRoleHit, sweepTarget } from './role-traits.ts';
 import { battleStats } from './statistics.ts';
-import { cardPackCost, drawCard, nextCardRandom } from './cards.ts';
-import { ERAS, QUESTS, dailyReward, eraEconomyScale, baseUpgradeCost, cardBonus, foodRate, foodUpgradeCost, unlockCost } from './data.ts';
+import { applyPendingVictory, victoryStory } from './victory-restore.ts';
+import { ERAS, eraEconomyScale, cardBonus, foodRate } from './data.ts';
 import { defaultProfile, loadProfile } from './save.ts';
-import { MAX_WEEK, syncWeekly, weeklyStatus } from './weekly.ts';
+import { upgradeStatusFor, waveStatusFor, type UpgradeStatus } from './status-queries.ts';
+import { claimDaily, claimQuest, claimWeekly, evolve, summonCards, syncWeek, unlockTroop, upgradeBase, type EconomyPort } from './economy-actions.ts';
 import type { Action, BattleState, DeploymentStatus, GameEvent, GamePort, Profile, Side, Skill, Unit, UnitKind } from './types.ts';
 
 const FIXED_STEP = 1 / 60;
@@ -34,7 +35,22 @@ export class Game implements GamePort {
   private tickBonuses: ReturnType<typeof cardBonus> | null = null;
   private bonuses() { return this.tickBonuses ?? cardBonus(this.profile); }
 
+  /** The narrow view of this game that the economy actions (unlock, upgrade, evolve, cards, rewards) work through. */
+  private readonly economy: EconomyPort;
+
   constructor(profile: Profile = defaultProfile()) {
+    const self = this;
+    this.economy = {
+    get profile() { return self.profile; },
+    get phase() { return self.state.phase; },
+    canPrepare: () => self.canPrepare(),
+    spend: cost => self.spend(cost),
+    upgradeAllowed: stat => self.upgradeStatus(stat).allowed,
+    refreshBaseHealth: () => self.refreshBaseHealth(),
+    restartBattle: () => { self.state = self.newBattle(); },
+    restorePendingVictory: () => self.restorePendingVictory(),
+    emit: event => { self.events.push(event); },
+  };
     this.profile = loadProfile({ getItem: () => JSON.stringify(profile) });
     this.state = this.newBattle();
     this.restorePendingVictory();
@@ -42,25 +58,9 @@ export class Game implements GamePort {
 
   private restorePendingVictory(): void {
     const victory = this.profile.pendingVictory;
-    if (victory) {
-      this.state.phase = 'won';
-      this.state.stats = battleStats(victory.stats);
-      this.state.enemyHp = Math.min(this.state.enemyMaxHp,victory.story?.enemyHp??0);
-      this.state.playerHp = Math.min(this.state.playerMaxHp, victory.playerHp);
-      this.state.earned = victory.earned;
-      this.state.time = victory.seconds;
-      this.state.wave = this.state.totalWaves;
-      if(this.state.chronicle){
-        const c=this.state.chronicle,story=victory.story;c.settled=true;
-        if(story){
-          c.cart={x:story.cartX,hp:Math.min(story.cartHp,story.cartMaxHp),maxHp:story.cartMaxHp};
-          c.rescued=story.rescued;c.rescueProgress=story.rescueProgress;c.lightSeconds=story.lightSeconds;
-          c.boss.spawned=story.bossDefeated;c.boss.interrupts=story.interrupts;
-          c.coveredHits=story.coveredHits;c.shatters=story.shatters;
-        }
-      }
-      this.nextSpawn = this.schedule.length;
-    }
+    if (!victory) return;
+    applyPendingVictory(this.state, victory);
+    this.nextSpawn = this.schedule.length;
   }
 
   private newBattle(): BattleState {
@@ -123,14 +123,14 @@ export class Game implements GamePort {
     'prestige': (game, action: ActionOf<'prestige'>) => game.doPrestige(action),
     'select-legacy': (game, action: ActionOf<'select-legacy'>) => game.doSelectLegacy(action),
     'select-battle': (game, action: ActionOf<'select-battle'>) => game.doSelectBattle(action),
-    'unlock': (game, action: ActionOf<'unlock'>) => game.doUnlock(action),
-    'upgrade': (game, action: ActionOf<'upgrade'>) => game.doUpgrade(action),
-    'evolve': (game, action: ActionOf<'evolve'>) => game.doEvolve(action),
-    'summon': (game, action: ActionOf<'summon'>) => game.doSummon(action),
-    'daily': (game, action: ActionOf<'daily'>) => game.doDaily(action),
-    'weekly-sync': (game, action: ActionOf<'weekly-sync'>) => game.doWeeklySync(action),
-    'weekly': (game, action: ActionOf<'weekly'>) => game.doWeekly(action),
-    'claim': (game, action: ActionOf<'claim'>) => game.doClaim(action),
+    'unlock': (game, action: ActionOf<'unlock'>) => unlockTroop(game.economy, action),
+    'upgrade': (game, action: ActionOf<'upgrade'>) => upgradeBase(game.economy, action),
+    'evolve': (game) => evolve(game.economy),
+    'summon': (game, action: ActionOf<'summon'>) => summonCards(game.economy, action),
+    'daily': (game, action: ActionOf<'daily'>) => claimDaily(game.economy, action),
+    'weekly-sync': (game, action: ActionOf<'weekly-sync'>) => syncWeek(game.economy, action),
+    'weekly': (game, action: ActionOf<'weekly'>) => claimWeekly(game.economy, action),
+    'claim': (game, action: ActionOf<'claim'>) => claimQuest(game.economy, action),
   };
 
   private doOrder(action: ActionOf<'order'>): boolean {
@@ -226,126 +226,15 @@ export class Game implements GamePort {
     return true;
   }
 
-  private doUnlock(action: ActionOf<'unlock'>): boolean {
-    if (![1, 2].includes(action.kind) || this.profile.unlocked[action.kind] || !this.spend(unlockCost(action.kind, this.profile))) return false;
-    this.profile.unlocked[action.kind] = true;
-    this.events.push({ type: 'upgrade' });
-    return true;
-  }
-
-  private doUpgrade(action: ActionOf<'upgrade'>): boolean {
-    if (!this.upgradeStatus(action.stat).allowed) return false;
-    if (action.stat === 'food') {
-      if (this.profile.foodLevel >= 100 || !this.spend(foodUpgradeCost(this.profile))) return false;
-      this.profile.foodLevel++;
-    } else if (action.stat === 'base') {
-      if (this.profile.baseLevel >= 100 || !this.spend(baseUpgradeCost(this.profile))) return false;
-      this.profile.baseLevel++;
-      this.refreshBaseHealth();
-    } else return false;
-    this.events.push({ type: 'upgrade' });
-    return true;
-  }
-
-  private doEvolve(action: ActionOf<'evolve'>): boolean {
-    if (this.state.phase === 'running' || this.profile.age >= 5 || this.profile.age > this.profile.enemyAge || !this.spend(ERAS[this.profile.age].evolveCost)) return false;
-    this.profile.age++;
-    this.profile.coins = 0;
-    this.profile.foodLevel = 0;
-    this.profile.baseLevel = 0;
-    this.profile.unlocked = [true, false, false];
-    this.state = this.newBattle();
-    this.restorePendingVictory();
-    this.events.push({ type: 'evolve' });
-    return true;
-  }
-
-  private doSummon(action: ActionOf<'summon'>): boolean {
-    const count = action.count ?? 1;
-    if (!this.canPrepare() || ![1, 10, 50].includes(count)) return false;
-    const cost = cardPackCost(count);
-    if (this.profile.gems < cost) return false;
-    // Stage the entire pack before touching the wallet or saved random stream.
-    const cards = [...this.profile.cards];
-    const indices: number[] = [];
-    let seed = this.profile.summonSeed;
-    let draws = this.profile.summonCount;
-    for (let i = 0; i < count; i++) {
-      const rarity = nextCardRandom(seed);
-      const choice = nextCardRandom(rarity.seed);
-      const index = drawCard(draws, rarity.value, choice.value, cards);
-      if (index < 0 || cards[index] >= 1000) return false;
-      cards[index]++;
-      indices.push(index);
-      seed = choice.seed;
-      draws = Math.min(1e9, draws + 1);
-    }
-    this.profile.gems -= cost;
-    this.profile.cards = cards;
-    this.refreshBaseHealth();
-    this.profile.summonSeed = seed;
-    this.profile.summonCount = draws;
-    this.events.push({ type: 'upgrade', amount: indices[0], cardIndices: indices });
-    return true;
-  }
-
-  private doDaily(action: ActionOf<'daily'>): boolean {
-    const reward = dailyReward(this.profile, action.day);
-    if (!reward.available) return false;
-    this.profile.dailyDay = action.day;
-    this.profile.dailyStreak = Math.min(1e6, reward.streak);
-    if (reward.graced) this.profile.graceDay = action.day;
-    this.profile.gems = Math.min(1e7, this.profile.gems + reward.gems);
-    this.events.push({ type: 'upgrade' });
-    return true;
-  }
-
-  private doWeeklySync(action: ActionOf<'weekly-sync'>): boolean {
-    return syncWeekly(this.profile, action.week, action.earned);
-  }
-
-  private doWeekly(action: ActionOf<'weekly'>): boolean {
-    // Claim admission is read-only: only an explicitly synchronized week can pay.
-    if (!Number.isInteger(action.week) || action.week < 0 || action.week > MAX_WEEK || this.profile.weekly?.week !== action.week) return false;
-    const status = weeklyStatus(this.profile, action.week);
-    if (!status.ready) return false;
-    this.profile.weekly = { ...this.profile.weekly!, claimed: true };
-    this.profile.gems = Math.min(1e7, this.profile.gems + status.gems);
-    this.events.push({ type: 'upgrade' });
-    return true;
-  }
-
-  private doClaim(action: ActionOf<'claim'>): boolean {
-    const quest = QUESTS.find(q => q.id === action.id);
-    if (!quest || this.profile.claimed.includes(quest.id) || this.profile[quest.stat] < quest.target) return false;
-    this.profile.claimed.push(quest.id);
-    this.profile.gems = Math.min(1e7, this.profile.gems + quest.reward);
-    this.events.push({ type: 'upgrade' });
-    return true;
-  }
-
-
   private spend(cost: number): boolean {
     if (!Number.isFinite(cost) || cost < 0 || this.profile.coins < cost) return false;
     this.profile.coins -= cost;
     return true;
   }
 
-  upgradeStatus(stat: 'food' | 'base'): { allowed: boolean; reason: 'available' | 'coins' | 'max' | 'invalid'; cost: number | null; nextValue: number | null } {
-    if (stat !== 'food' && stat !== 'base') return { allowed: false, reason: 'invalid', cost: null, nextValue: null };
-    const level = stat === 'food' ? this.profile.foodLevel : this.profile.baseLevel;
-    if (level >= 100) return { allowed: false, reason: 'max', cost: null, nextValue: null };
-    const cost = stat === 'food' ? foodUpgradeCost(this.profile) : baseUpgradeCost(this.profile);
-    const nextValue = stat === 'food' ? (0.8 + (level + 1) * 0.14) * this.bonuses().food : Math.round(180 * 1.65 ** this.profile.age * (1 + (level + 1) * 0.4) * this.bonuses().base * legacyEffects(this.profile.legacy).gateFactor * chronicleGateFactor(this.profile));
-    return { allowed: this.profile.coins >= cost, reason: this.profile.coins >= cost ? 'available' : 'coins', cost, nextValue };
-  }
+  upgradeStatus(stat: 'food' | 'base'): UpgradeStatus { return upgradeStatusFor(this.profile, this.bonuses(), stat); }
 
-  waveStatus(): WaveStatus {
-    const preview = wavePreview(this.encounter, this.state.time, this.state.wave);
-    const enemiesRemaining = this.state.units.filter(unit => unit.side === 'enemy' && unit.hp > 0).length;
-    const pendingEnemies = this.state.phase === 'won' || this.state.phase === 'lost' ? 0 : this.schedule.slice(this.nextSpawn).filter(spawn => spawn.waveIndex < this.state.wave).length;
-    return { spawned: this.state.wave, total: this.encounter.waves.length, nextIn: preview?.nextIn ?? null, enemiesRemaining, pendingEnemies, cleared: !preview && this.nextSpawn === this.schedule.length && enemiesRemaining === 0, preview };
-  }
+  waveStatus(): WaveStatus { return waveStatusFor(this.encounter, this.schedule, this.nextSpawn, this.state); }
 
   deploymentStatus(kind: UnitKind): DeploymentStatus {
     const status = (reason: DeploymentStatus['reason'], missingFood = 0, waitSeconds = 0): DeploymentStatus => ({ allowed: reason === 'available', reason, missingFood, waitSeconds });
@@ -593,13 +482,7 @@ export class Game implements GamePort {
         pendingVictory: { settlement: 'mastery-v1', stats: battleStats(this.state.stats), timeline: this.profile.timeline, battle: this.profile.enemyAge, earned: this.state.earned, seconds: this.state.time, playerHp: this.state.playerHp, eligibleMask: award.eligibleMask, newMask: award.newMask, masteryCoins: award.coins, masteryGems: award.gems },
       });
       if (award.coins) this.events.push({type:'coin',x:910,amount:award.coins});
-      const c=this.state.chronicle;
-      if(c&&this.profile.pendingVictory)this.profile.pendingVictory.story={
-        route:c.route,enemyHp:this.state.enemyHp,cartX:c.cart.x,cartHp:c.cart.hp,cartMaxHp:c.cart.maxHp,
-        rescued:c.rescued,rescueProgress:c.rescueProgress,lightSeconds:c.lightSeconds,
-        bossDefeated:c.boss.spawned&&!this.state.units.some(unit=>unit.id===c.boss.id&&unit.hp>0),
-        interrupts:c.boss.interrupts,coveredHits:c.coveredHits,shatters:c.shatters,
-      };
+      if(this.state.chronicle&&this.profile.pendingVictory)this.profile.pendingVictory.story=victoryStory(this.state,this.state.chronicle);
       this.events.push({ type: 'win' });
       return true;
     }

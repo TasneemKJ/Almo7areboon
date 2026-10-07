@@ -160,3 +160,25 @@ export function nextCardRandom(seed: number): { seed: number; value: number } {
   next >>>= 0;
   return { seed: next, value: next / 0x100000000 };
 }
+
+/**
+ * Draws a whole pack without touching the wallet or the saved random stream. Returns the new
+ * card counts, the drawn indices and the advanced stream, or null if any draw is impossible.
+ */
+export function stageCardPack(state: { cards: readonly number[]; summonSeed: number; summonCount: number }, count: number): { cards: number[]; indices: number[]; seed: number; draws: number } | null {
+  const cards = [...state.cards];
+  const indices: number[] = [];
+  let seed = state.summonSeed;
+  let draws = state.summonCount;
+  for (let i = 0; i < count; i++) {
+    const rarity = nextCardRandom(seed);
+    const choice = nextCardRandom(rarity.seed);
+    const index = drawCard(draws, rarity.value, choice.value, cards);
+    if (index < 0 || cards[index] >= 1000) return null;
+    cards[index]++;
+    indices.push(index);
+    seed = choice.seed;
+    draws = Math.min(1e9, draws + 1);
+  }
+  return { cards, indices, seed, draws };
+}
