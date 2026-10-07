@@ -36,7 +36,7 @@ Optional profile fields, each validated in `validate` (`game/save.ts`) and omitt
 
 ## Build, test, browser checks
 
-`npm run build` (tsc + vite), `npm run test:fast` (PR gate), `npm test` (all, node:test with `--experimental-strip-types`), browser scripts under `scripts/` (`review:monkey`, `review:save-sessions`, `review:contrast`, `review:clip`, `review:overlap`, `review:layering`, the multi-engine suites in the manual workflows). See README "Running the full suite".
+`npm run build` (tsc + vite), `npm run test:fast` (PR gate), `npm test` (all, node:test with `--experimental-strip-types`), browser scripts under `scripts/` (`review:monkey`, `review:save-sessions`, `review:contrast`, `review:clip`, `review:overlap`, `review:layering`, the multi-engine suites in the manual workflows). See README "Running the full suite". The review journeys share `scripts/lib/browser.mjs`: one Chromium launcher (`CHROMIUM_PATH` reuses an installed browser), a free preview port in 4700-4799 (`REVIEW_PORT` pins it), and the player's real routes through the world-first shell (entry Play, Camp stations, Journal, field pause, Settings). `tests/review-scripts.test.ts` keeps them off the retired battle HUD.
 
 ## Module size
 

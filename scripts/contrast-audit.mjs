@@ -6,13 +6,13 @@
  * Run against a running preview:  node scripts/contrast-audit.mjs [url=http://127.0.0.1:4173/]
  * Set CHROMIUM_PATH to reuse an installed Chromium. Always exits 0; read the list.
  */
-import {chromium} from 'playwright';
+import {launchChromium,enterCamp,openCampStation,openEvolution,openJourney,openQuests,pauseField,waitForEntry} from './lib/browser.mjs';
 const url=process.argv[2]??'http://127.0.0.1:4173/';
-const b=await chromium.launch(process.env.CHROMIUM_PATH?{executablePath:process.env.CHROMIUM_PATH}:{});
-const p=await b.newPage({viewport:{width:390,height:844}});
-const prof={version:2,timeline:1,age:0,enemyAge:1,furthestBattle:1,coins:3000,gems:2000,foodLevel:2,baseLevel:1,unlocked:[true,true,false],cards:Array(30).fill(0).map((_,i)=>i%4),summonCount:10,summonSeed:4242,pendingVictory:null,kills:12,wins:2,deployed:30,claimed:[],dailyDay:0,dailyStreak:0,sound:true,speed:1,motion:'system'};
+const b=await launchChromium();
+const p=await b.newPage({viewport:{width:390,height:844}});p.setDefaultTimeout(90000);
+const prof={version:2,timeline:1,age:0,enemyAge:1,furthestBattle:1,coins:3000,gems:2000,foodLevel:2,baseLevel:1,unlocked:[true,true,false],cards:Array(30).fill(0).map((_,i)=>i%4),summonCount:10,summonSeed:4242,pendingVictory:null,kills:12,wins:2,deployed:30,claimed:[],dailyDay:0,dailyStreak:0,sound:true,speed:1,motion:'system',played:true};
 await p.addInitScript(s=>{if(!localStorage.getItem('almo7areboon.save.v1'))localStorage.setItem('almo7areboon.save.v1',s)},JSON.stringify(prof));
-await p.goto(url);await p.waitForTimeout(1600);
+await p.goto(url);
 async function audit(label){
   const items=await p.evaluate(()=>{document.querySelectorAll('[data-audit-id]').forEach(e=>e.removeAttribute('data-audit-id'));const out=[];let n=0;document.querySelectorAll('body *').forEach(e=>{
     if(e.closest('[inert]')&&!e.closest('#modal-layer'))return;if(e.closest('[hidden]'))return;if(e.tagName==='CANVAS'||e.closest('svg'))return;
@@ -21,8 +21,8 @@ async function audit(label){
     const closed=e.closest('details:not([open])');if(closed&&!e.closest('summary'))return;
     const t=[...e.childNodes].filter(x=>x.nodeType===3&&x.textContent.trim()).map(x=>x.textContent.trim()).join(' ');if(!t)return;
     const r=e.getBoundingClientRect();if(r.width<4||r.height<4||r.bottom<0||r.top>innerHeight||r.right<0||r.left>innerWidth)return;
-    // Anything reaching under the bottom bar is only partly visible, so its sample would include the bar.
-    const nav=document.querySelector('.bottom-nav');if(nav&&!e.closest('.bottom-nav')&&!e.closest('#modal-layer')&&r.bottom>nav.getBoundingClientRect().top+1)return;
+    // Anything reaching under a visible bottom bar (Camp's footer) is only partly visible, so its sample would include the bar.
+    const nav=[...document.querySelectorAll('.bottom-nav,.camp-footer')].find(n=>n.getClientRects().length&&n.getBoundingClientRect().height>0);if(nav&&!e.closest('.bottom-nav,.camp-footer')&&!e.closest('#modal-layer')&&r.bottom>nav.getBoundingClientRect().top+1)return;
     // Dialogs scroll: text cut by the dialog's own edge is only partly visible too.
     const dlg=e.closest('.dialog');if(dlg){const dr=dlg.getBoundingClientRect();if(r.bottom>dr.bottom-4||r.top<dr.top+4)return;}
     const cs=getComputedStyle(e);if(cs.visibility==='hidden'||+cs.opacity===0)return;
@@ -45,13 +45,16 @@ async function audit(label){
   }
   console.log(label.padEnd(12),items.length,'elements;',bad.length?'LOW: '+bad.join(' ; '):'all pass');
 }
-await audit('ready');
-await p.click('[data-command=battles]');await p.waitForTimeout(600);await audit('battles');await p.keyboard.press('Escape');await p.waitForTimeout(300);
-await p.click('[data-command=start]');await p.waitForTimeout(1500);await audit('running');
-await p.click('[data-command=pause]');
-for(const t of ['evolution','cards','skills']){await p.click(`[data-tab=${t}]`);await p.waitForTimeout(400);await audit(t);}
-await p.click('[data-tab=battle]');
-for(const c of ['settings','quests']){await p.click(`[data-command=${c}]`);await p.waitForTimeout(700);await audit(c);await p.keyboard.press('Escape');await p.waitForTimeout(250);}
-await p.click('[data-command=settings]');await p.waitForTimeout(400);await p.click('[data-command=reset]');await p.waitForTimeout(700);await audit('reset');await p.keyboard.press('Escape');
-await p.click('[data-tab=cards]');await p.waitForTimeout(300);await p.click('[data-pack="1"]');await p.waitForTimeout(700);await audit('summon');
+await waitForEntry(p);await audit('entry');
+await enterCamp(p);await p.waitForTimeout(500);await audit('camp');
+for(const station of ['storehouse','gate','company','journal']){await openCampStation(p,station);await p.waitForTimeout(400);await audit(station);await p.keyboard.press('Escape');await p.waitForTimeout(250);}
+await openCampStation(p,'journal');await p.click('[data-command=camp-chapters]');await p.waitForTimeout(600);await audit('battles');await p.keyboard.press('Escape');await p.waitForTimeout(300);
+await openEvolution(p);await p.waitForTimeout(400);await audit('evolution');await p.click('[data-command=camp-return]');await p.waitForTimeout(300);
+await openJourney(p);await p.waitForTimeout(400);await audit('journal');await p.click('[data-journey-tab=cards]');await p.waitForTimeout(400);await audit('cards');
+await p.click('[data-pack="1"]');await p.waitForTimeout(700);await audit('summon');await p.keyboard.press('Escape');await p.waitForTimeout(300);await p.click('[data-command=camp-return]');await p.waitForTimeout(300);
+await openQuests(p);await p.waitForTimeout(500);await audit('quests');await p.keyboard.press('Escape');await p.waitForTimeout(300);
+await p.click('[data-command=camp-battle]');await p.waitForTimeout(1500);await audit('running');
+await pauseField(p);await audit('pause');
+await p.click('#modal-layer [data-command=settings]');await p.waitForTimeout(600);await audit('settings');
+await p.click('#modal-layer [data-command=reset]');await p.waitForTimeout(600);await audit('reset');
 await b.close();

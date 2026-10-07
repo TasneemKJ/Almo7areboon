@@ -11,7 +11,7 @@ async function settleScoutingBaseline(source,keys) {
 }
 
 /** Reuse real mastery seeds and native production startup/session authority. */
-export async function reviewScouting({scenario,seeds,setup,open,active,ready,result,saved,bytes,command,inspect}) {
+export async function reviewScouting({scenario,seeds,setup,open,active,ready,result,saved,bytes,command,inspect,openPicker,startBattle}) {
  async function tabTo(page,selector) {
   for(let count=0;count<24;count++){
    if(await page.locator(selector).evaluate(node=>node===document.activeElement))return;
@@ -45,8 +45,7 @@ export async function reviewScouting({scenario,seeds,setup,open,active,ready,res
    assert.match(await page.locator('.village-voice').innerText(),/press-house/);
    await inspect(page,`scouting-victory-${viewport.width}`);
    await command(page,'retry').click();await ready(page);
-   assert.match(await page.locator('#deploy-hint').innerText(),/1 melee in 4s/);
-   await page.locator('[data-command="battles"]').click();
+   await openPicker(page);
    await settleScoutingBaseline(source,{primary:SAVE_KEY,backup:BACKUP_KEY});
    const before=await bytes(source);
    const scout='.chapter-scouting:not(.battle-teaching)';
@@ -58,20 +57,17 @@ export async function reviewScouting({scenario,seeds,setup,open,active,ready,res
    assert.match(await page.locator('.battle-teaching').innerText(),/Food grows during battle/);
    assert.deepEqual(await bytes(source),before,'native details keys cannot spend, start or write progress');
    await page.keyboard.press('Escape');await ready(page);
-   await page.locator('[data-command="battles"]').click();
+   await openPicker(page);
    assert.equal(await page.locator(scout).getAttribute('open'),null,'reopened disclosure starts collapsed');
    await page.locator('[data-battle="2"]').click();await ready(page);
    assert.equal((await saved(source)).age,5);assert.equal((await saved(source)).enemyAge,2);
-   assert.match(await page.locator('#deploy-hint').innerText(),/1 melee in 3s/);
-   await page.locator('[data-command="battles"]').click();
+   await openPicker(page);
    assert.match(await page.locator(`${scout} summary`).innerText(),/Harbor Watch/);
    await disclosure(page,scout,`scouting-switched-${viewport.width}`);
    assert.match(await page.locator(scout).innerText(),/Heavy pressure at 26s/);
    await page.keyboard.press('Escape');await ready(page);
-   await page.locator('[data-command="start"]').click();
-   await page.waitForFunction(()=>document.querySelector('#world')?.dataset.phase==='running');
-   await page.locator('[data-command="pause"]').click();
-   assert.doesNotMatch(await page.locator('#deploy-hint').innerText(),/First wave:/);
+   await startBattle(page);
+   await page.locator('[data-command="field-pause"]').click();
    assert.equal(await page.locator('.chapter-scouting').count(),0,'no live battlefield overlay');
    return {opponent:2,armyAge:5,nativeDisclosure:true,unchangedDisclosureBytes:true};
   });

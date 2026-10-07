@@ -1,11 +1,12 @@
 /**
  * Robustness probe for a built or running game: starts it against damaged saves, then feeds it random taps, keys and
- * button presses, plus one end-to-end evolution. It fails on any uncaught page error, when the game does not start, or when
- * evolving does not reset local army progress while retaining the selected opponent.
+ * button presses, plus one end-to-end evolution through Camp, keyboard-only play and a backup round trip. It fails on any
+ * uncaught page error, when the game does not start, or when evolving does not reset local army progress while retaining
+ * the selected opponent.
  * Run: npm run build && npm run preview, then  node scripts/monkey-test.mjs [url=http://127.0.0.1:4173/] [seconds=30]
  * Set CHROMIUM_PATH to use an existing Chromium instead of the one Playwright downloads.
  */
-import {chromium} from 'playwright';
+import {launchChromium, enterWorld, openEvolution, openSettings, phase, waitForEntry} from './lib/browser.mjs';
 
 const url = process.argv[2] ?? 'http://127.0.0.1:4173/', seconds = Number(process.argv[3] ?? 30);
 const SAVE = 'almo7areboon.save.v1';
@@ -16,7 +17,9 @@ const saves = {
   'wrong types': JSON.stringify({version: 2, timeline: 1, age: 0, enemyAge: 0, coins: 0, cards: 'abc', unlocked: 'yes', claimed: {}, pendingVictory: []}),
 };
 const failures = [];
-const browser = await chromium.launch(process.env.CHROMIUM_PATH ? {executablePath: process.env.CHROMIUM_PATH} : {});
+const browser = await launchChromium();
+
+const stored = (page, key = SAVE) => page.evaluate(key => { try { return JSON.parse(localStorage.getItem(key)); } catch { return null; } }, key);
 
 for (const [name, raw] of Object.entries(saves)) {
   const page = await browser.newPage({viewport: {width: 390, height: 844}});
@@ -27,73 +30,70 @@ for (const [name, raw] of Object.entries(saves)) {
     if (value === null) localStorage.removeItem(key); else localStorage.setItem(key, value);
   }, [SAVE, raw]);
   await page.goto(url);
-  const title = await page.waitForSelector('#age-title', {timeout: 10000}).then(el => el.textContent()).catch(() => null);
   // A save from a newer game version is protected: the game shows a recovery dialog instead of starting, and must
   // leave the stored value untouched even after the player chooses temporary play.
-  const protectedDialog = await page.locator('button', {hasText: 'PLAY WITHOUT SAVING'}).first().isVisible().catch(() => false);
-  if (protectedDialog) await page.locator('button', {hasText: 'PLAY WITHOUT SAVING'}).first().click();
-  await page.click('[data-command=start]').catch(() => {});
+  const protect = page.locator('button', {hasText: 'PLAY WITHOUT SAVING'}).first();
+  await Promise.race([protect.waitFor({timeout: 15000}), waitForEntry(page, 15000)]).catch(() => {});
+  const protectedDialog = await protect.isVisible().catch(() => false);
+  if (protectedDialog) await protect.click();
+  const title = await waitForEntry(page, 15000).then(() => page.locator('#entry-chapter').textContent(), () => null);
+  await enterWorld(page).catch(() => {});
   await page.waitForTimeout(500);
-  const phase = await page.getAttribute('#world', 'data-phase').catch(() => null);
+  const now = await phase(page);
   const untouched = !protectedDialog || (await page.evaluate(key => localStorage.getItem(key), SAVE)) === raw;
-  const ok = Boolean(title) && phase === 'running' && errors.length === 0 && untouched && protectedDialog === (name === 'future version');
-  console.log(`${ok ? 'ok  ' : 'FAIL'} ${name.padEnd(15)} title=${title} phase=${phase}${protectedDialog ? ' (protected save, stored value ' + (untouched ? 'untouched' : 'CHANGED') + ')' : ''}${errors.length ? ` errors=${errors.join(' | ')}` : ''}`);
+  const ok = Boolean(title) && now === 'running' && errors.length === 0 && untouched && protectedDialog === (name === 'future version');
+  console.log(`${ok ? 'ok  ' : 'FAIL'} ${name.padEnd(15)} chapter=${title} phase=${now}${protectedDialog ? ' (protected save, stored value ' + (untouched ? 'untouched' : 'CHANGED') + ')' : ''}${errors.length ? ` errors=${errors.join(' | ')}` : ''}`);
   if (!ok) failures.push(name);
   await page.close();
 }
 
-// Evolution flow: confirmed evolution changes army age and resets coins, upgrades and troop unlocks.
-// The selected opponent, unlocked chapter frontier and earned seals stay. This seed selects opponent 5.
+// Evolution flow through Camp (Your company, then Evolution): confirmed evolution changes army age and resets coins,
+// upgrades and troop unlocks. The selected opponent, unlocked chapter frontier and earned seals stay.
 {
   const flow = await browser.newPage({viewport: {width: 390, height: 844}});
   const flowErrors = [];
   flow.on('pageerror', error => flowErrors.push(error.message));
-  await flow.addInitScript(([key, value]) => localStorage.setItem(key, value), [SAVE, JSON.stringify({version: 2, timeline: 1, age: 4, enemyAge: 4, furthestBattle: 4, coins: 14000000, gems: 100, foodLevel: 5, baseLevel: 3, unlocked: [true, true, true], cards: Array(30).fill(0), summonCount: 0, summonSeed: 99, pendingVictory: null, kills: 0, wins: 0, deployed: 0, claimed: [], dailyDay: 0, dailyStreak: 0, sound: false, speed: 1, motion: 'system'})]);
+  await flow.addInitScript(([key, value]) => { if (!localStorage.getItem(key)) localStorage.setItem(key, value); }, [SAVE, JSON.stringify({version: 2, timeline: 1, age: 4, enemyAge: 4, furthestBattle: 4, coins: 14000000, gems: 100, foodLevel: 5, baseLevel: 3, unlocked: [true, true, true], cards: Array(30).fill(0), summonCount: 0, summonSeed: 99, pendingVictory: null, kills: 0, wins: 0, deployed: 0, claimed: [], dailyDay: 0, dailyStreak: 0, sound: false, speed: 1, motion: 'system', played: true})]);
   await flow.goto(url);
-  await flow.waitForSelector('#age-title', {timeout: 10000});
-  await flow.click('[data-tab=evolution]');
+  await openEvolution(flow);
   await flow.click('[data-command=evolve]');
   await flow.click('[data-command=confirm-evolve]');
-  await flow.waitForTimeout(600);
-  const after = await flow.evaluate(() => ({
-    title: document.getElementById('age-title').textContent,
-    timeline: document.getElementById('timeline').textContent,
-    coins: document.getElementById('coins').textContent,
-    locked: [...document.querySelectorAll('.unit-card')].map(card => card.classList.contains('locked') ? 'L' : 'U').join(''),
-  }));
-  const good = after.title === 'Courtyards Beyond' && after.timeline.includes('BATTLE 5') && after.coins === '0' && after.locked === 'ULL' && flowErrors.length === 0;
+  await flow.waitForFunction(key => JSON.parse(localStorage.getItem(key)).age === 5, SAVE);
+  const saved = await stored(flow);
+  const after = {age: saved.age, enemyAge: saved.enemyAge, coins: saved.coins, foodLevel: saved.foodLevel, unlocked: saved.unlocked.map(u => u ? 'U' : 'L').join('')};
+  const good = after.age === 5 && after.enemyAge === 4 && after.coins === 0 && after.foodLevel === 0 && after.unlocked === 'ULL' && flowErrors.length === 0;
   console.log(`${good ? 'ok  ' : 'FAIL'} evolution flow: ${JSON.stringify(after)}${flowErrors.length ? ` errors=${flowErrors.join(' | ')}` : ''}`);
   if (!good) failures.push('evolution flow');
   await flow.close();
 }
 
-// Keyboard-only start: nothing may hold focus after loading, so Space starts the battle and a second Space pauses it.
+// Keyboard-only play: Tab reaches Play and Enter starts the battle; Space then pauses and resumes it, and the skill keys
+// Q (Freeze) and E (Food Drop) are accepted once each.
 {
   const keys = await browser.newPage({viewport: {width: 390, height: 844}});
   const keyErrors = [];
   keys.on('pageerror', error => keyErrors.push(error.message));
-  await keys.addInitScript(([key]) => localStorage.removeItem(key), [SAVE]);
+  await keys.addInitScript(([key]) => { if (!sessionStorage.getItem('fresh')) { sessionStorage.setItem('fresh', '1'); localStorage.removeItem(key); } }, [SAVE]);
   await keys.goto(url);
-  await keys.waitForSelector('#age-title', {timeout: 10000});
-  await keys.waitForTimeout(1200);
-  const focusOnButton = await keys.evaluate(() => document.activeElement instanceof HTMLButtonElement);
-  await keys.keyboard.press('Space');
-  await keys.waitForTimeout(500);
-  const started = (await keys.getAttribute('#world', 'data-phase')) === 'running';
-  await keys.keyboard.press('Space');
-  await keys.waitForTimeout(300);
-  const paused = (await keys.getAttribute('#pause', 'aria-pressed')) === 'true';
+  await waitForEntry(keys);
+  for (let i = 0; i < 10 && !(await keys.evaluate(() => document.activeElement?.id === 'entry-play')); i++) await keys.keyboard.press('Tab');
+  await keys.keyboard.press('Enter');
+  await keys.waitForTimeout(600);
+  const started = (await phase(keys)) === 'running';
   await keys.keyboard.press('Space');
   await keys.waitForTimeout(300);
-  // Skill keys: Q casts Freeze and E casts Food Drop, each once per battle.
+  const paused = await keys.locator('#pause-banner').isVisible();
+  await keys.keyboard.press('Space');
+  await keys.waitForTimeout(300);
+  const resumed = !(await keys.locator('#pause-banner').isVisible());
   await keys.keyboard.press('q');
   await keys.keyboard.press('e');
   await keys.waitForTimeout(300);
-  const usedSkills = await keys.evaluate(() => [...document.querySelectorAll('.skill-circle')].filter(button => button.classList.contains('used')).map(button => button.dataset.skill).sort().join(','));
-  const skillKeys = usedSkills === 'food,freeze';
-  const good = !focusOnButton && started && paused && skillKeys && keyErrors.length === 0;
-  console.log(`${good ? 'ok  ' : 'FAIL'} keyboard start: focusOnButton=${focusOnButton} started=${started} pausedBySecondSpace=${paused} skillKeysUsed=${usedSkills || 'none'}${keyErrors.length ? ` errors=${keyErrors.join(' | ')}` : ''}`);
-  if (!good) failures.push('keyboard start');
+  // The skill readout keeps each skill's used state for the field's enemy and supplies menus.
+  const usedSkills = await keys.evaluate(() => [...document.querySelectorAll('#battle-skills [data-skill]')].filter(button => button.classList.contains('used')).map(button => button.dataset.skill).sort().join(','));
+  const good = started && paused && resumed && usedSkills === 'food,freeze' && keyErrors.length === 0;
+  console.log(`${good ? 'ok  ' : 'FAIL'} keyboard play: started=${started} pausedBySpace=${paused} resumedBySpace=${resumed} skillKeysUsed=${usedSkills || 'none'}${keyErrors.length ? ` errors=${keyErrors.join(' | ')}` : ''}`);
+  if (!good) failures.push('keyboard play');
   await keys.close();
 }
 
@@ -107,18 +107,19 @@ for (const [name, raw] of Object.entries(saves)) {
   origin.on('pageerror', error => roundTripErrors.push(error.message));
   await origin.addInitScript(([key, value]) => { if (!localStorage.getItem(key)) localStorage.setItem(key, value); }, [SAVE, JSON.stringify(seed)]);
   await origin.goto(url);
-  await origin.waitForSelector('#age-title', {timeout: 10000});
+  await waitForEntry(origin);
   await origin.evaluate(key => {
     const original = Storage.prototype.setItem;
     Storage.prototype.setItem = function (name, value) { if (name.startsWith(key)) throw new DOMException('full', 'QuotaExceededError'); return original.call(this, name, value); };
   }, SAVE);
-  await origin.click('[data-command=start]');
+  await enterWorld(origin);
   await origin.waitForTimeout(6500);
   const warned = await origin.evaluate(() => document.getElementById('toast').textContent.includes('could not be saved'));
-  const stillRunning = (await origin.getAttribute('#world', 'data-phase')) === 'running';
-  await origin.click('[data-command=settings]');
+  const stillRunning = (await phase(origin)) === 'running';
+  await openSettings(origin);
+  await origin.click('#modal-layer [data-command=save-recovery]');
   const download = origin.waitForEvent('download', {timeout: 5000}).catch(() => null);
-  await origin.click('[data-command=export]');
+  await origin.click('#modal-layer [data-command=export]');
   const file = await download;
   let restored = null;
   if (file) {
@@ -127,15 +128,16 @@ for (const [name, raw] of Object.entries(saves)) {
     const fresh = await target.newPage();
     fresh.on('pageerror', error => roundTripErrors.push(error.message));
     await fresh.goto(url);
-    await fresh.waitForSelector('#age-title', {timeout: 10000});
-    await fresh.click('[data-command=settings]');
+    await openSettings(fresh);
+    await fresh.click('#modal-layer [data-command=save-recovery]');
     await fresh.setInputFiles('#import-save', path);
     await fresh.click('[data-command=confirm-import]', {timeout: 5000}).catch(() => {});
-    await fresh.waitForTimeout(700);
-    restored = await fresh.evaluate(() => ({timeline: document.getElementById('timeline').textContent, coins: document.getElementById('coins').textContent, gems: document.getElementById('gems').textContent}));
+    await fresh.waitForFunction(key => JSON.parse(localStorage.getItem(key) ?? 'null')?.coins === 4321, SAVE, {timeout: 5000}).catch(() => {});
+    const profile = await stored(fresh);
+    restored = profile && {timeline: profile.timeline, coins: profile.coins, gems: profile.gems};
     await target.close();
   }
-  const good = warned && stillRunning && restored?.coins === '4,321' && restored?.gems === '555' && restored?.timeline.includes('TIMELINE 2') && roundTripErrors.length === 0;
+  const good = warned && stillRunning && restored?.coins === 4321 && restored?.gems === 555 && restored?.timeline === 2 && roundTripErrors.length === 0;
   console.log(`${good ? 'ok  ' : 'FAIL'} unwritable save + backup round trip: warned=${warned} running=${stillRunning} restored=${JSON.stringify(restored)}${roundTripErrors.length ? ` errors=${roundTripErrors.join(' | ')}` : ''}`);
   if (!good) failures.push('backup round trip');
   await source.close();
@@ -145,7 +147,7 @@ const page = await browser.newPage({viewport: {width: 390, height: 844}});
 const errors = [];
 page.on('pageerror', error => errors.push(error.message));
 await page.goto(url);
-await page.waitForSelector('#age-title', {timeout: 10000});
+await waitForEntry(page);
 let seed = 7;
 const random = () => { seed = (seed * 1103515245 + 12345) & 0x7fffffff; return seed / 0x7fffffff; };
 const keys = ['1', '2', '3', 'q', 'w', 'e', 'Space', 'Escape', 'Tab', 'Enter', 'ArrowDown', 'p'];

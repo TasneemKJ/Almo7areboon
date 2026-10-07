@@ -2,12 +2,12 @@
 import assert from 'node:assert/strict';
 import { mkdirSync, writeFileSync } from 'node:fs';
 import { spawn } from 'node:child_process';
-import { chromium } from 'playwright';
+import {freePort, launchChromium} from './lib/browser.mjs';
 
 const output = 'artifacts/browser-review/layering';
 mkdirSync(output, { recursive: true });
-const origin = 'http://127.0.0.1:4174';
-const server = spawn(process.execPath, ['node_modules/vite/bin/vite.js', '--host', '127.0.0.1', '--port', '4174', '--strictPort'], { stdio: 'pipe' });
+const port = await freePort(), origin = `http://127.0.0.1:${port}`;
+const server = spawn(process.execPath, ['node_modules/vite/bin/vite.js', '--host', '127.0.0.1', '--port', String(port), '--strictPort'], { stdio: 'pipe' });
 let serverLog = '';
 server.stdout.on('data', chunk => { serverLog += chunk; });
 server.stderr.on('data', chunk => { serverLog += chunk; });
@@ -86,7 +86,7 @@ try {
     await new Promise(resolve => setTimeout(resolve, 250));
   }
   assert.ok(ready, `Fixture server did not start: ${serverLog}`);
-  browser = await chromium.launch({ headless: true });
+  browser = await launchChromium({ headless: true });
   const context = await browser.newContext({ viewport: { width: 490, height: 550 }, deviceScaleFactor: 2, reducedMotion: 'no-preference' });
   const cases = [];
   for (const age of [0, 1, 3, 4, 5]) for (const health of [70, 25]) for (const lane of [0, 1, 2]) {

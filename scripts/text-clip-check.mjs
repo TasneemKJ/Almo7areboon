@@ -5,11 +5,11 @@
  * Run against a running preview:  node scripts/text-clip-check.mjs [url=http://127.0.0.1:4173/]
  * Set CHROMIUM_PATH to reuse an installed Chromium. Exits 1 when any text is cut off.
  */
-import {chromium} from 'playwright';
+import {launchChromium, press, enterCamp, enterWorld, openCampStation, openEvolution, openJourney, openQuests, pauseField, phase, waitForEntry} from './lib/browser.mjs';
 
 const url = process.argv[2] ?? 'http://127.0.0.1:4173/';
-const browser = await chromium.launch(process.env.CHROMIUM_PATH ? {executablePath: process.env.CHROMIUM_PATH} : {});
-const save = {version: 2, timeline: 1, age: 0, enemyAge: 1, furthestBattle: 1, coins: 123456, gems: 100000, foodLevel: 2, baseLevel: 1, unlocked: [true, true, false], cards: Array.from({length: 30}, (_, i) => (i % 4) * 30), summonCount: 10, summonSeed: 4242, pendingVictory: null, kills: 12, wins: 2, deployed: 30, claimed: [], dailyDay: 0, dailyStreak: 0, sound: true, speed: 1, motion: 'system'};
+const browser = await launchChromium();
+const save = {version: 2, timeline: 1, age: 0, enemyAge: 1, furthestBattle: 1, coins: 123456, gems: 100000, foodLevel: 2, baseLevel: 1, unlocked: [true, true, false], cards: Array.from({length: 30}, (_, i) => (i % 4) * 30), summonCount: 10, summonSeed: 4242, pendingVictory: null, kills: 12, wins: 2, deployed: 30, claimed: [], dailyDay: 0, dailyStreak: 0, sound: true, speed: 1, motion: 'system', played: true};
 let failed = false;
 
 async function scan(page, label, width) {
@@ -49,46 +49,53 @@ async function scan(page, label, width) {
   console.log(`${clipped.length ? 'FAIL' : 'ok  '} ${width}px ${label}${clipped.length ? `: ${clipped.join('; ')}` : ''}`);
 }
 
+const touch = width => ({viewport: {width, height: width === 320 ? 568 : 844}, hasTouch: true, isMobile: true, deviceScaleFactor: 2});
 for (const width of [320, 390]) {
-  const page = await browser.newPage({viewport: {width, height: width === 320 ? 568 : 844}});
+  const context = await browser.newContext(touch(width)); context.setDefaultTimeout(90000);
+  const page = await context.newPage();
   await page.addInitScript(value => { if (!localStorage.getItem('almo7areboon.save.v1')) localStorage.setItem('almo7areboon.save.v1', value); }, JSON.stringify(save));
   await page.goto(url);
-  await page.waitForSelector('#age-title');
-  await page.waitForTimeout(900);
-  await scan(page, 'battle (ready)', width);
-  await page.click('[data-command=battles]'); await page.waitForTimeout(500); await scan(page, 'battle picker', width); await page.keyboard.press('Escape'); await page.waitForTimeout(250);
-  await page.click('[data-command=start]'); await page.waitForTimeout(1200); await scan(page, 'battle (running)', width);
-  await page.click('[data-command=pause]');
-  for (const tab of ['evolution', 'cards', 'skills']) { await page.click(`[data-tab=${tab}]`); await page.waitForTimeout(450); await scan(page, tab, width); }
-  await page.click('[data-tab=battle]');
-  for (const command of ['settings', 'quests']) { await page.click(`[data-command=${command}]`); await page.waitForTimeout(600); await scan(page, `${command} dialog`, width); await page.keyboard.press('Escape'); await page.waitForTimeout(250); }
-  await page.click('[data-command=settings]'); await page.waitForTimeout(400); await page.click('[data-command=reset]'); await page.waitForTimeout(600); await scan(page, 'start over dialog', width);
-  await page.close();
+  await waitForEntry(page); await page.waitForTimeout(400); await scan(page, 'entry', width);
+  await enterCamp(page); await page.waitForTimeout(400); await scan(page, 'camp', width);
+  for (const station of ['storehouse', 'gate', 'company', 'journal']) { await openCampStation(page, station); await page.waitForTimeout(300); await scan(page, `camp ${station}`, width); await page.keyboard.press('Escape'); await page.waitForTimeout(250); }
+  await openCampStation(page, 'journal'); await press(page, '[data-command=camp-chapters]'); await page.waitForTimeout(500); await scan(page, 'battle picker', width); await page.keyboard.press('Escape'); await page.waitForTimeout(250);
+  await openEvolution(page); await page.waitForTimeout(400); await scan(page, 'evolution', width); await press(page, '[data-command=camp-return]'); await page.waitForTimeout(300);
+  await openJourney(page); await page.waitForTimeout(400); await scan(page, 'journal', width);
+  await press(page, '[data-journey-tab=cards]'); await page.waitForTimeout(400); await scan(page, 'cards', width); await press(page, '[data-command=camp-return]'); await page.waitForTimeout(300);
+  await openQuests(page); await page.waitForTimeout(400); await scan(page, 'quests dialog', width); await page.keyboard.press('Escape'); await page.waitForTimeout(300);
+  await press(page, '[data-command=camp-battle]'); await page.waitForTimeout(1200); await scan(page, 'battle (running)', width);
+  await pauseField(page); await scan(page, 'field pause', width);
+  await press(page, '#modal-layer [data-command=settings]'); await page.waitForTimeout(500); await scan(page, 'settings dialog', width);
+  await press(page, '#modal-layer [data-command=save-recovery]'); await page.waitForTimeout(400); await scan(page, 'save & recovery dialog', width);
+  await page.keyboard.press('Escape'); await page.waitForTimeout(300);
+  await press(page, '#modal-layer [data-command=reset]'); await page.waitForTimeout(500); await scan(page, 'start over dialog', width);
+  await context.close();
 
   // Save protection: a save from a newer game version opens a recovery dialog.
-  const guarded = await browser.newPage({viewport: {width, height: width === 320 ? 568 : 844}});
+  const guardedContext = await browser.newContext(touch(width)); guardedContext.setDefaultTimeout(90000); const guarded = await guardedContext.newPage(); guardedContext.setDefaultTimeout(90000);
   await guarded.addInitScript(() => localStorage.setItem('almo7areboon.save.v1', JSON.stringify({version: 9})));
   await guarded.goto(url);
   await guarded.waitForSelector('.dialog');
   await guarded.waitForTimeout(600);
   await scan(guarded, 'save protection dialog', width);
-  await guarded.close();
+  await guardedContext.close();
 
-  // Victory: the result dialog with its mastery seals. A strong save wins the first battle quickly at double speed.
-  const winner = await browser.newPage({viewport: {width, height: width === 320 ? 568 : 844}});
-  await winner.addInitScript(value => { if (!localStorage.getItem('almo7areboon.save.v1')) localStorage.setItem('almo7areboon.save.v1', value); }, JSON.stringify({...save, age: 0, enemyAge: 0, furthestBattle: 0, foodLevel: 25, baseLevel: 12, unlocked: [true, true, true], speed: 2, claimed: [], coins: 0}));
+  // Victory: the short result and its Details. A strong save wins the first battle quickly at double speed by touch.
+  const winnerContext = await browser.newContext(touch(width)); winnerContext.setDefaultTimeout(90000); const winner = await winnerContext.newPage(); winnerContext.setDefaultTimeout(90000);
+  await winner.addInitScript(value => { if (!localStorage.getItem('almo7areboon.save.v1')) localStorage.setItem('almo7areboon.save.v1', value); }, JSON.stringify({...save, age: 5, enemyAge: 0, furthestBattle: 0, foodLevel: 25, baseLevel: 12, unlocked: [true, true, true], speed: 2, claimed: [], coins: 0}));
   await winner.goto(url);
-  await winner.waitForSelector('#age-title');
-  await winner.click('[data-command=start]');
+  await enterWorld(winner);
   const deadline = Date.now() + 120000;
-  while (await winner.getAttribute('#world', 'data-phase') === 'running' && Date.now() < deadline) {
-    for (const key of ['1', '2', '3']) await winner.keyboard.press(key);
-    await winner.waitForTimeout(120);
+  while (await phase(winner) === 'running' && Date.now() < deadline) {
+    for (const kind of ['0', '1', '2']) await winner.tap(`[data-field-recruit="${kind}"]`, {timeout: 500}).catch(() => {});
+    await winner.waitForTimeout(150);
   }
   await winner.waitForSelector('.result-dialog', {timeout: 15000}).catch(() => {});
   await winner.waitForTimeout(600);
   await scan(winner, 'result dialog', width);
-  await winner.close();
+  await winner.tap('[data-command=result-details]').catch(() => {}); await winner.waitForTimeout(500);
+  await scan(winner, 'result details', width);
+  await winnerContext.close();
 }
 await browser.close();
 process.exit(failed ? 1 : 0);
