@@ -1,9 +1,10 @@
 import test from 'node:test';
+import { mainSource } from './helpers/main-source.ts';
 import { battlefieldSource } from './helpers/battlefield-source.ts';
 import assert from 'node:assert/strict';
 import { readFileSync } from 'node:fs';
 
-const main = readFileSync(new URL('../src/main.ts', import.meta.url), 'utf8');
+const main = mainSource();
 const css = readFileSync(new URL('../src/ui/skill-cues.css', import.meta.url), 'utf8');
 const audio = readFileSync(new URL('../src/view/audio.ts', import.meta.url), 'utf8');
 

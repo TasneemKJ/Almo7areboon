@@ -50,7 +50,7 @@ test('Phaser is only imported by the view layer and main', () => {
 // Modules above the cap. Shrink these over time; do not add to the list.
 const SIZE_CAP = 500;
 const SIZE_EXCEPTIONS: Record<string, number> = {
-  'main.ts': 950,
+  'main.ts': 850,
   'game/simulation.ts': 650,
 };
 

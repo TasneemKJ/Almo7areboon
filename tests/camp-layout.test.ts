@@ -1,7 +1,8 @@
 import test from 'node:test';
+import { mainSource } from './helpers/main-source.ts';
 import assert from 'node:assert/strict';
 import {readFileSync,existsSync} from 'node:fs';
-const main=readFileSync(new URL('../src/main.ts',import.meta.url),'utf8');
+const main=mainSource();
 const path=new URL('../src/ui/camp.css',import.meta.url),css=existsSync(path)?readFileSync(path,'utf8'):'';
 test('physical Camp mounts a separate scene and intrinsic notice/footer rather than the old deck',()=>{
  assert.match(main,/id="camp-view"/);assert.match(css,/grid-template-rows:minmax\(0,1fr\) auto/);

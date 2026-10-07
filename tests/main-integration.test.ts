@@ -1,4 +1,4 @@
-import {questRecords,selectedQuestRecord,questRecordAction,questRecordLabel,questRecordsHtml,questRecordDetailHtml} from '../src/ui/quest-records.ts';
+import {questClaimCheck,questRecords,selectedQuestRecord,questRecordAction,questRecordLabel,questRecordsHtml,questRecordDetailHtml} from '../src/ui/quest-records.ts';
 import {cardsScreenHtml,summonedCardsHtml} from '../src/ui/cards-screen.ts';
 import {isEditingTarget} from '../src/ui/accessibility.ts';
 import {campRootHtml,campFocusHtml} from '../src/ui/camp-screen.ts';
@@ -29,7 +29,9 @@ import { compactResultsHtml, expeditionChoiceHtml, resultsHtml } from '../src/ui
 import { startCountUp } from '../src/ui/count-up.ts';
 import { restoreBackupWithSave } from '../src/game/backup.ts';
 import { startOverProfile } from '../src/game/reset.ts';
-import { syncWeekly, weekId, weeklyStatus } from '../src/game/weekly.ts';
+import { claimableWeek, syncWeekly, weekId, weeklyStatus } from '../src/game/weekly.ts';
+import { syncBattleHud } from '../src/ui/hud-sync.ts';
+import { storyFollowUp } from '../src/ui/story-flow.ts';
 import { welcomeBackLine } from '../src/ui/welcome-back.ts';
 import { earlierChapter } from '../src/ui/regroup-learning.ts';
 import { isLegacyChoice, legacyEffects, prestigePreview } from '../src/game/prestige.ts';
@@ -44,7 +46,7 @@ import { createModalTapGuard } from '../src/ui/modal-tap-guard.ts';
 // Execute the app's actual functions with a clock and minimal DOM boundary; no browser/debug hooks.
 const source = readFileSync(new URL('../src/main.ts', import.meta.url), 'utf8');
 const ast = ts.createSourceFile('main.ts', source, ts.ScriptTarget.Latest, true, ts.ScriptKind.TS);
-const names = new Set(['switchTab','showModal','syncCamp','showCampFocus','returnToCamp','handleCampInput','playable', 'guardAction', 'action', 'persist', 'update', 'renderScreen', 'sessionPresentation', 'showResult', 'acquireSession', 'dismissModal', 'returnToChapters', 'clearPrestigeContext', 'openPrestige', 'refreshPrestige', 'returnFromPrestige', 'questSaveNotice', 'refreshQuestRecord', 'claimQuestRecord', 'showQuests', 'showSettings', 'showSaveRecovery', 'preferenceNotice', 'showFieldPause', 'showLeaveBattle', 'leaveBattle', 'enterCamp', 'entryReady', 'syncEntry', 'enterWorld', 'showResultDetails', 'showHome', 'continueWithProvision', 'adoptRestoredGame']);
+const names = new Set(['switchTab','showModal','syncCamp','showCampFocus','returnToCamp','handleCampInput','playable', 'guardAction', 'action', 'persist', 'update', 'renderScreen', 'sessionPresentation', 'showResult', 'acquireSession', 'dismissModal', 'returnToChapters', 'clearPrestigeContext', 'openPrestige', 'refreshPrestige', 'returnFromPrestige', 'questSaveNotice', 'refreshQuestRecord', 'claimQuestRecord', 'showQuests', 'showSettings', 'showSaveRecovery', 'preferenceNotice', 'showFieldPause', 'showLeaveBattle', 'leaveBattle', 'enterCamp', 'entryReady', 'syncEntry', 'enterWorld', 'showResultDetails', 'showHome', 'continueWithProvision', 'adoptRestoredGame', 'syncWeek', 'showStoryFollowUp', 'claimQuestRecord']);
 const functions = ast.statements.filter(node => ts.isFunctionDeclaration(node) && node.name && names.has(node.name.text));
 assert.equal(functions.length, names.size);
 const click=ast.statements.find(node=>ts.isExpressionStatement(node)&&ts.isCallExpression(node.expression)&&node.expression.expression.getText(ast)==='lifetime.listen'&&node.expression.arguments[0]?.getText(ast)==='root'&&node.expression.arguments[1]?.getText(ast)==="'click'") as ts.ExpressionStatement;
@@ -76,7 +78,7 @@ function harness(motion = 'full') {
   const root = node(), elements = new Map<string, any>();
   const context: any = {
     HTMLElement:BoundaryButton,HTMLButtonElement:BoundaryButton,Element:BoundaryButton,HTMLInputElement:BoundaryInput,HTMLSelectElement:BoundarySelect, Game, game: new Game(defaultProfile()), sessionReady: true, retriedSession: false, pagePresent: true, lifetime: { disposed: false },
-    questSelection:null,questCalendarDay:null,questRecords,selectedQuestRecord,questRecordAction,questRecordLabel,questRecordsHtml,questRecordDetailHtml,lastSavedAt:0,campOwner:null,campRenderKey:'',focusFrame:0,modalVersion:0,focusBefore:null,settingsOrigin:null,acquiring: null, acquisitionVersion: 0, hasPlayed: true, entryWelcome:null,entryEntered: true, entrySaved: true, resultDetailsOpen:false, atmosphereEnabled:true,audioMix:{effects:100,atmosphere:100}, manualPaused: false, savedWarning: false, pendingImport: null, modal: null, evolutionFromResult: false, modalPointerSequence: false,prestigeOrigin:null,prestigeDraft:null,prestigeExpectedTimeline:null,
+    questSelection:null,questCalendarDay:null,questClaimCheck,claimableWeek,syncBattleHud,storyFollowUp,questRecords,selectedQuestRecord,questRecordAction,questRecordLabel,questRecordsHtml,questRecordDetailHtml,lastSavedAt:0,campOwner:null,campRenderKey:'',focusFrame:0,modalVersion:0,focusBefore:null,settingsOrigin:null,acquiring: null, acquisitionVersion: 0, hasPlayed: true, entryWelcome:null,entryEntered: true, entrySaved: true, resultDetailsOpen:false, atmosphereEnabled:true,audioMix:{effects:100,atmosphere:100}, manualPaused: false, savedWarning: false, pendingImport: null, modal: null, evolutionFromResult: false, modalPointerSequence: false,prestigeOrigin:null,prestigeDraft:null,prestigeExpectedTimeline:null,
     lastUpdate: 0, lastSave: 100, lastPhase: 'ready', resultDue: 0, resultShown: '', activeTab: 'battle', root,
     window:{cancelAnimationFrame(){}},requestAnimationFrame(){return 0;},performance: { now: () => now }, document: { documentElement: { dataset: { motion } } },
     cardsScreenHtml,summonedCardsHtml,isEditingTarget,campRootHtml,campFocusHtml,canOwnCamp,isCampStation,campActionFromData,fieldControls:{update(){},clear(){},select(){}},blockModalTap:createModalTapGuard(),startCountUp,welcomeBackLine,restoreBackupWithSave,startOverProfile,syncWeekly,weekId,weeklyStatus,foodIsPiling,Date:class extends Date{static now(){return 1_800_000_000_000;}},journeyScreenHtml,updateOrderBanner,entryCopy,hasPriorPlay,entrySecondary,preferencesHtml,saveRecoveryHtml,chapterLandscape,

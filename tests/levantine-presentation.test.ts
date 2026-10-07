@@ -1,4 +1,5 @@
 import test from 'node:test';
+import { mainSource } from './helpers/main-source.ts';
 import assert from 'node:assert/strict';
 import {readFileSync} from 'node:fs';
 import {Game} from '../src/game/simulation.ts';
@@ -95,7 +96,7 @@ test('results show the next opponent chapter, not the player army or a fictional
 });
 
 test('HUD, unlock notifications and import previews share the presentation boundary (source contract)',()=>{
- const main=readFileSync(new URL('../src/main.ts',import.meta.url),'utf8');
+ const main=mainSource();
  assert.match(main,/chapterPresentation\(p.age\)\.title/);
  assert.match(main,/chapterPresentation\(pendingImport.age\)\.title/);
  assert.match(main,/troopUnlockMessage\(game.profile,game.state.phase,kind,game.deploymentStatus\(kind\)\)/);

@@ -35,3 +35,9 @@ export function syncWeekly(profile: Profile, week: number, justEarned = 0): bool
   if (seals < w.baseSeals) { w.baseSeals = seals; return true; }
   return false;
 }
+
+/** The week a rendered claim button may settle: only the current local week. Stale or malformed buttons return null. */
+export function claimableWeek(raw: string | undefined, current: number): number | null {
+  const week = Number(raw);
+  return Number.isInteger(week) && week === current ? week : null;
+}

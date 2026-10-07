@@ -1,4 +1,5 @@
 import {defaultProfile} from '../src/game/save.ts';
+import { mainSource } from './helpers/main-source.ts';
 import {questRecords,selectedQuestRecord,questRecordDetailHtml,questRecordLabel} from '../src/ui/quest-records.ts';
 import test from 'node:test';
 import assert from 'node:assert/strict';
@@ -7,7 +8,7 @@ import { existsSync, readFileSync } from 'node:fs';
 test('P36: compact touch controls and safe areas have explicit layout rules',()=>{
  const path=new URL('../src/ui/continuation.css',import.meta.url);assert.equal(existsSync(path),true);
  const css=readFileSync(path,'utf8');assert.match(css,/min-height:\s*44px/);assert.match(css,/safe-area-inset-top/);assert.match(css,/max-height:\s*700px/);assert.match(css,/minmax\(0,\s*1fr\)/);
- const main=readFileSync(new URL('../src/main.ts',import.meta.url),'utf8');assert.match(main,/continuation\.css/);
+ const main=mainSource();assert.match(main,/continuation\.css/);
 });
 test('P37: short landscape viewports can scroll instead of clipping the game',()=>{
  const path=new URL('../src/ui/continuation.css',import.meta.url);assert.equal(existsSync(path),true);
@@ -15,7 +16,7 @@ test('P37: short landscape viewports can scroll instead of clipping the game',()
 });
 
 test('informational text keeps an 11px floor and the readability sheet loads last',()=>{
- const css=readFileSync(new URL('../src/ui/readability.css',import.meta.url),'utf8'),main=readFileSync(new URL('../src/main.ts',import.meta.url),'utf8');
+ const css=readFileSync(new URL('../src/ui/readability.css',import.meta.url),'utf8'),main=mainSource();
  for(const selector of ['.deploy-hint','.card-copies','.quest-row small','.skill-rule'])assert.ok(css.includes(selector),`${selector} needs a size floor`);
  for(const size of css.match(/font-size:\s*(\d+)px/g)??[])assert.ok(Number(size.match(/\d+/)![0])>=10,size);
  assert.ok(main.indexOf('./ui/readability.css')>main.indexOf('./ui/era-glow.css'),'the floor must win the cascade');
@@ -32,7 +33,7 @@ test('rarity captions use dark ink so rare and epic headers stay legible',()=>{
 });
 
 test('the resource header precedes the battle view so keyboard focus follows the visual order',()=>{
- const main=readFileSync(new URL('../src/main.ts',import.meta.url),'utf8');
+ const main=mainSource();
  assert.ok(main.indexOf('<header class="resources">')<main.indexOf('id="battle-view"'));
 });
 
@@ -47,7 +48,7 @@ test('troop role captions are at least 10px',()=>{
 });
 
 test('offline support: a same-origin GET-only worker is registered in production builds only',()=>{
- const worker=readFileSync(new URL('../public/sw.js',import.meta.url),'utf8'),main=readFileSync(new URL('../src/main.ts',import.meta.url),'utf8');
+ const worker=readFileSync(new URL('../public/sw.js',import.meta.url),'utf8'),main=mainSource();
  assert.match(worker,/request\.method !== 'GET'/);
  assert.match(worker,/origin !== self\.location\.origin/);
  assert.match(worker,/request\.mode === 'navigate'/);
@@ -114,7 +115,7 @@ test('legacy and timeline-reset controls keep the mobile 44px touch floor',()=>{
 
 test('ordinary scrolling dialogs reserve a sticky dismiss header instead of floating Close over content',()=>{
  const css=readFileSync(new URL('../src/ui/continuation.css',import.meta.url),'utf8');
- const main=readFileSync(new URL('../src/main.ts',import.meta.url),'utf8');
+ const main=mainSource();
  assert.match(css,/\.dialog-dismiss\s*\{[^}]*position:\s*sticky[^}]*height:\s*44px/s);
  assert.match(css,/\.dialog-dismiss>\.close-button\s*\{[^}]*position:\s*static/s);
  assert.ok(main.includes('class="dialog-dismiss"'));

@@ -1,4 +1,5 @@
 import test from 'node:test';
+import { mainSource } from './helpers/main-source.ts';
 import { battlefieldSource } from './helpers/battlefield-source.ts';
 import assert from 'node:assert/strict';
 import { readFileSync } from 'node:fs';
@@ -15,7 +16,7 @@ import { resultsHtml } from '../src/ui/results-screen.ts';
 import { battleSelectionHtml, evolutionDialogHtml } from '../src/ui/progression-screen.ts';
 import { createLifetime } from '../src/ui/lifetime.ts';
 const {baseHealthDisplay,battleGuidance,compactNumber,defeatAdvice}=hud;
-const main=()=>readFileSync(new URL('../src/main.ts',import.meta.url),'utf8');
+const main=()=>mainSource();
 
 test('P17: closing one pause owner cannot clear another owner',()=>{
  const context={phase:'running' as const,manual:true,tab:'cards',modal:'settings',hidden:true};

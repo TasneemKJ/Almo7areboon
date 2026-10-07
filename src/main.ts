@@ -1,19 +1,18 @@
-import {questRecords,selectedQuestRecord,questRecordAction,questRecordLabel,questRecordsHtml,questRecordDetailHtml} from './ui/quest-records.ts';
+import {questClaimCheck,questRecords,selectedQuestRecord,questRecordAction,questRecordLabel,questRecordsHtml,questRecordDetailHtml} from './ui/quest-records.ts';
 import './ui/quest-records.css';
 import {campRootHtml,campFocusHtml} from './ui/camp-screen.ts';
 import {canOwnCamp,isCampStation,campActionFromData,type CampOwner,type CampFocus} from './ui/camp-owner.ts';
 import './ui/camp.css';
-import {fieldControlsHtml} from './ui/field-controls.ts';
 import {createFieldController} from './ui/field-controller.ts';
 import './ui/world-play.css';
-import { updateOrderBanner } from './ui/battle-orders.ts';
+import { storyFollowUp, type StoryFollowUp } from './ui/story-flow.ts';
+import { appShellHtml } from './ui/app-shell.ts';
+import { syncBattleHud } from './ui/hud-sync.ts';
 import { battlefieldOrderFromGesture } from './ui/battlefield-orders.ts';
 import { journeyScreenHtml } from './ui/journey-screen.ts';
 import './ui/chronicle.css';
 import { chronicleScreenHtml, chronicleActionFromData } from './ui/chronicle-screen.ts';
-import { chronicleGuidance } from './game/chronicle-combat.ts';
-import { CAPTAINS, routeDefinition } from './game/chronicle.ts';
-import {storybookArt} from './view/storybook-art.ts';
+import { CAPTAINS } from './game/chronicle.ts';
 import './style.css';
 import './ui/continuation.css';
 import './ui/material-language.css';
@@ -30,7 +29,7 @@ import { Game } from './game/simulation.ts';
 import { createBattlefieldPort } from './game/battlefield-port.ts';
 import { advanceStatus } from './game/mastery.ts';
 import { isLegacyChoice, legacyEffects, prestigePreview } from './game/prestige.ts';
-import { ERAS, foodRate, unlockCost, QUESTS, dailyReward, localDay } from './game/data.ts';
+import { localDay } from './game/data.ts';
 import { defaultProfile, MAX_SAVE_CHARS, SAVE_KEY, BACKUP_KEY } from './game/save.ts';
 import { createSaveSession } from './game/save-session.ts';
 import type { SaveSessionStatus } from './game/save-session.ts';
@@ -41,20 +40,20 @@ import type { Action, GameEvent, LegacyChoice, Profile, Skill, UnitKind } from '
 import {advanceVillagePresentation,type VillagePresentation} from './view/village-mood.ts';
 import { unitPortrait } from './view/unit-illustrations.ts';
 import { chapterLandscape, chapterPresentation } from './ui/chapter-presentation.ts';
-import { entryCopy, entryScreenHtml, hasPriorPlay, entrySecondary } from './ui/entry-screen.ts';
+import { entryCopy, hasPriorPlay, entrySecondary } from './ui/entry-screen.ts';
 import { preferencesHtml, saveRecoveryHtml } from './ui/preferences-screen.ts';
 import { evolutionScreenHtml } from './ui/evolution-screen.ts';
 import { icon } from './view/icons.ts';
 import { playCombatEvents, playSummonAudio, stopCombatAudio, unlockAudio, suspendAudio, disposeAudio, updateSoundscape, updateAudioMix } from './view/audio.ts';
-import { createArmyUpdater, troopControlLabel, troopUnlockMessage } from './ui/army-screen.ts';
+import { createArmyUpdater, troopUnlockMessage } from './ui/army-screen.ts';
 import { cardsScreenHtml, summonedCardsHtml } from './ui/cards-screen.ts';
 import { compactResultsHtml, expeditionChoiceHtml, resultsHtml } from './ui/results-screen.ts';
 import { startCountUp } from './ui/count-up.ts';
-import { syncWeekly, weekId, weeklyStatus } from './game/weekly.ts';
+import { claimableWeek, syncWeekly, weekId } from './game/weekly.ts';
 import { welcomeBackLine } from './ui/welcome-back.ts';
 import { earlierChapter } from './ui/regroup-learning.ts';
 import { legacyCurrentHtml, prestigeDetailsHtml, prestigeDialogHtml } from './ui/prestige-presentation.ts';
-import { battleGuidance, foodIsPiling, baseHealthDisplay, compactNumber, waveLabel, waveAccessibleLabel } from './ui/battle-hud.ts';
+import { compactNumber } from './ui/battle-hud.ts';
 import { waveInspectionHtml } from './ui/wave-inspection.ts';
 import { battleSelectionHtml, evolutionDialogHtml } from './ui/progression-screen.ts';
 import { createModalIsolation, modalFocusables, nextFocusIndex, isEditingTarget } from './ui/accessibility.ts';
@@ -63,8 +62,6 @@ import { loadAtmosphere, saveAtmosphere, ambienceAllowed, loadAudioMix, normaliz
 import { createLifetime } from './ui/lifetime.ts';
 import { createModalTapGuard } from './ui/modal-tap-guard.ts';
 import { textIfChanged, htmlIfChanged } from './ui/dom-state.ts';
-import { nextGoalLabel } from './ui/next-goal.ts';
-import { skillCue } from './ui/skill-cues.ts';
 
 // The initial render is a non-playable default. Only ownership makes a loaded Game authoritative.
 let game=new Game(defaultProfile());
@@ -98,36 +95,7 @@ let questSelection:string|null=null,questCalendarDay:number|null=null;
 let acquiring:Promise<void>|null=null;
 const money=(value:number)=>value>=10000?compactNumber(value):Math.floor(value).toLocaleString('en-US');
 const coin=(value:number)=>`${icon('coin')}<span>${money(value)}</span>`;
-root.innerHTML = `
-<main class="game-shell" aria-label="Almo7areboon">
-  ${entryScreenHtml(game.profile)}
-  <header class="resources"><div class="currency">${icon('coin')}<span id="coins">0</span></div><button class="currency gems" data-command="quests" aria-label="Gems and quests">${icon('gem')}<span id="gems">100</span></button><div class="game-wordmark">ALMO7AREBOON</div></header>
-  <div id="battle-view" class="battle-view">
-    <section id="world" class="world" tabindex="-1" aria-label="Battlefield">
-      <div id="battlefield"></div>
-      ${fieldControlsHtml()}
-      <div class="stage"><div id="timeline" class="eyebrow"></div><h1 id="age-title"></h1><p id="scene-name" class="scene-name"></p><button id="battle-select" class="battle-select" data-command="battles" aria-label="Choose a battle"><span class="stage-progress" id="stage-progress"></span></button></div>
-      <div class="world-tools"><button id="quests" class="square-button" data-command="quests" aria-label="Quests">${icon('quest')}<i class="notification"></i></button><button class="square-button" data-command="settings" aria-label="Settings">${icon('gear')}</button></div>
-      <div class="battle-meta"><button id="wave-label" class="wave-inspect" data-command="wave-help"></button><div class="battle-toggles"><button id="speed" data-command="speed" aria-label="Change battle speed">1×</button><button id="pause" data-command="pause" aria-label="Pause battle">Ⅱ</button></div></div>
-      <div id="ready" class="ready"><div class="ready-title">YOUR ARMY. YOUR ERA.</div><button class="big-button green" data-command="start">BATTLE ${icon('battle')}</button><p id="story-ready-rule">Destroy the enemy base!</p><div class="ready-paths"><button class="story-open" data-command="chronicle">Open the storybook</button><button class="journey-open" id="journey-open" data-command="journey">Your journey</button></div></div>
-      <p id="base-status" class="sr-only"></p><p id="game-status" class="sr-only" role="status" aria-live="polite"></p><div id="pause-banner" class="pause-banner" hidden>PAUSED</div>
-      <div class="battle-skills" id="battle-skills"></div>
-    </section>
-    <section class="deployment" aria-label="Deploy your army">
-      <div class="order-banner" id="order-banner"><div class="order-charge"><span class="order-status">Deploy troops to build momentum</span><div class="order-meter" aria-hidden="true"><i></i></div></div><button data-order="advance" aria-label="Advance" disabled><span aria-hidden="true">+20% strike</span> Advance</button><button data-order="hold" aria-label="Hold" disabled><span aria-hidden="true">−25% damage</span> Hold</button></div><div class="food-line"><div class="food-total">${icon('food')}<strong id="food-count">6</strong><div class="food-meter"><i id="food-fill"></i></div></div><span id="production"></span></div>
-      <div class="unit-cards" id="unit-cards"></div>
-      <div class="chronicle-command-row"><div class="deploy-hint" id="deploy-hint">Tap a troop to send it into battle</div><button id="story-rally" class="story-rally" data-command="story-rally" aria-pressed="false" aria-label="Gather newly deployed troops, then release them together">Gather</button></div>
-    </section>
-    <section class="upgrades" aria-label="Army upgrades"><div class="upgrade-row"><div class="upgrade-label">${icon('food')}<div>Food Production<small id="food-level"></small></div></div><button id="food-upgrade" class="buy-button" data-command="upgrade-food"></button></div><div class="upgrade-row"><div class="upgrade-label">${icon('heart')}<div>Base Health<small id="base-level"></small></div></div><button id="base-upgrade" class="buy-button" data-command="upgrade-base"></button></div></section>
-  </div>
-  <section id="camp-view" aria-label="Company Camp" hidden></section>
-  <button id="field-return" data-command="home">Home</button>
-  <section id="secondary-screen" class="secondary-screen" aria-labelledby="secondary-title" hidden></section>
-  <p id="session-notice" class="session-notice" role="status" aria-live="polite" hidden></p>
-  <nav class="bottom-nav" aria-label="Game screens">${[['battle','Battle'],['evolution','Evolution'],['cards','Cards'],['skills','Skills']].map(([id,label])=>`<button data-tab="${id}" class="nav-item ${id==='battle'?'active':''}" aria-label="${label}" aria-current="${id==='battle'?'page':'false'}">${icon(id)}<span>${label}</span></button>`).join('')}</nav>
-  <div id="toast" class="toast" role="status" aria-live="polite"></div>
-  <div id="modal-layer" class="modal-layer" hidden></div>
-</main>`;
+root.innerHTML = appShellHtml(game.profile);
 const $=<T extends HTMLElement=HTMLElement>(id:string)=>document.getElementById(id) as T;
 
 const updateArmy=createArmyUpdater({units:$('unit-cards'),skills:$('battle-skills'),stages:$('stage-progress')},unitPortrait,money);
@@ -170,7 +138,7 @@ async function acquireSession(){
       game=new Game(loaded.profile);lastPhase=game.state.phase;resultDue=0;hasPlayed=true;sessionReady=true;entrySaved=hasPriorPlay(game.profile);
       manualPaused=false;resultShown='';savedWarning=false;pendingImport=null;evolutionFromResult=false;clearPrestigeContext();
       entryWelcome=loaded.loadStatus==='recovered'||loaded.loadStatus==='corrupt'?null:welcomeBackLine(loaded.profile.lastSeen,Date.now(),loaded.profile.wins);
-      if(guardAction())game.dispatch({type:'weekly-sync',week:weekId(localDay())});
+      if(guardAction())syncWeek();
       closeModal(false);rebuildArmy();syncMotion();switchTab('battle');
       if(loaded.loadStatus==='recovered')toast('Recovered your progress from the backup save.');
       else if(loaded.loadStatus==='corrupt')toast('The stored save could not be recovered. A new game has started.');
@@ -251,74 +219,12 @@ function action(a:Action):boolean{
 }
 function update(force=false){
   const now=performance.now();if(!force&&now-lastUpdate<80)return;lastUpdate=now;
- const p=game.profile,s=game.state;
+ const s=game.state;
  syncEntry();syncCamp();
  if(modal==='quests'&&playable()&&!Object.is(questCalendarDay,localDay()))refreshQuestRecord();
  if(modal==='quests'&&playable()){const notice=$('quest-save-status'),message=questSaveNotice();notice.hidden=!message;textIfChanged(notice,message);}
  if(!entryEntered)return;
- $('world').dataset.phase=s.phase;
- updateOrderBanner($('order-banner'),s);
- const artStyle=storybookArt(p.age)?'storybook':'legacy';
- if(root!.dataset.artStyle!==artStyle)root!.dataset.artStyle=artStyle;
-  textIfChanged($('coins'),money(p.coins));textIfChanged($('gems'),money(p.gems));
-  textIfChanged($('timeline'),`TIMELINE ${p.timeline} · BATTLE ${p.enemyAge+1}`);textIfChanged($('age-title'),chapterPresentation(p.age).title);
-  textIfChanged($('scene-name'),chapterPresentation(p.age).subtitle);
-  textIfChanged($('food-count'),Math.floor(s.food).toString());$('food-fill').style.width=`${s.food>=99?100:(s.food%1)*100}%`;
-  textIfChanged($('production'),`${foodRate(p).toFixed(2)}/sec`);
-  const food=game.upgradeStatus('food'),base=game.upgradeStatus('base');
-  textIfChanged($('food-level'),`${foodRate(p).toFixed(2)} food/sec${food.nextValue===null?' · MAX':` → ${food.nextValue.toFixed(2)}`}`);
-  textIfChanged($('base-level'),`${compactNumber(s.playerMaxHp)} health${base.nextValue===null?' · MAX':` → ${compactNumber(base.nextValue)}`}`);
-  htmlIfChanged($('food-upgrade'),food.cost===null?'MAX':coin(food.cost));htmlIfChanged($('base-upgrade'),base.cost===null?'MAX':coin(base.cost));
-  $('food-upgrade').setAttribute('aria-label',food.cost===null?'Food production fully upgraded':`Upgrade food production for ${food.cost} coins`);
-  $('base-upgrade').setAttribute('aria-label',base.cost===null?'Base health fully upgraded':`Upgrade base health for ${base.cost} coins`);
-  $('food-upgrade').toggleAttribute('disabled',!food.allowed);$('base-upgrade').toggleAttribute('disabled',!base.allowed);
-  $('ready').hidden=s.phase!=='ready';$('pause-banner').hidden=!(manualPaused&&s.phase==='running');
-  textIfChanged($('pause'),manualPaused?'▶':'Ⅱ');$('pause').setAttribute('aria-label',manualPaused?'Resume battle':'Pause battle');
-  $('pause').setAttribute('aria-pressed',String(manualPaused));$('pause').toggleAttribute('disabled',s.phase!=='running');
-  textIfChanged($('speed'),`${p.speed}×`);$('speed').setAttribute('aria-label',`Battle speed ${p.speed} times. Change speed.`);
-  $('battle-select').toggleAttribute('disabled',s.phase!=='ready');
-  const wave=game.waveStatus();
-  textIfChanged($('wave-label'),s.phase==='running'?waveLabel(wave,s.chronicle?.enabled?s.chronicle.objective:undefined):s.phase==='ready'?'CHOOSE YOUR ARMY':'BATTLE COMPLETE');
-  $('wave-label').setAttribute('aria-label',s.phase==='running'?`Inspect wave. ${waveAccessibleLabel(wave,s.chronicle?.enabled?s.chronicle.objective:undefined)}`:$('wave-label').textContent??'');
-  $('wave-label').toggleAttribute('disabled',s.phase!=='running');
-  textIfChanged($('deploy-hint'),battleGuidance(p,s,wave.preview,game.deploymentStatus(0)));
-  const health=baseHealthDisplay(s.playerHp,s.playerMaxHp);
-  $('world').classList.toggle('base-danger',s.phase==='running'&&health.danger);
-  textIfChanged($('base-status'),`Your base: ${health.label}. Enemy base: ${baseHealthDisplay(s.enemyHp,s.enemyMaxHp).label}.`);
-  textIfChanged($('game-status'),s.phase==='running'?(s.paused?'Battle paused.':health.danger?'Your base is in danger.':'Battle running.'):s.phase==='ready'?'Ready. Start a battle.':s.phase==='won'?'Victory.':'Defeat. Your coins are safe.');
-  root!.querySelectorAll<HTMLButtonElement>('[data-unit]').forEach(button=>{
-    const kind=Number(button.dataset.unit) as UnitKind,locked=!p.unlocked[kind],status=game.deploymentStatus(kind);
-    button.disabled=locked?p.coins<unlockCost(kind,p):!status.allowed;
-    button.classList.toggle('affordable',!button.disabled);
-    button.classList.toggle('teach',kind===0&&!button.disabled&&((p.wins===0&&s.phase==='running'&&!s.paused&&s.stats.deployed===0)||foodIsPiling(p,s)));
-    const label=troopControlLabel(p,kind,status);
-    button.title=label;if(button.getAttribute('aria-label')!==label)button.setAttribute('aria-label',label);
-    const fill=button.querySelector<HTMLElement>('.unit-fill');if(fill)fill.style.transform=`scaleX(${Math.max(0,Math.min(1,s.food/ERAS[p.age].units[kind].cost))})`;
-  });
-  root!.querySelectorAll<HTMLButtonElement>('[data-skill]').forEach(button=>{
-    const skill=button.dataset.skill as Skill,used=s.skillsUsed.includes(skill);
-    button.disabled=!game.canUseSkill(skill);button.classList.toggle('used',used);
-    const cue=skillCue(p,s,skill,!button.disabled);
-    button.classList.toggle('skill-opportunity',cue.opportunity);
-    button.classList.toggle('freeze-active',cue.activeEffect);
-    button.title=cue.label;button.setAttribute('aria-label',cue.label);
-    button.classList.toggle('badge-targets',/^\d+$/.test(cue.badge));
-    const badge=button.querySelector('small');if(badge){badge.setAttribute('aria-hidden','true');textIfChanged(badge,cue.badge);}
-  });
-  const notification=$('quests').querySelector<HTMLElement>('.notification');
-  if(notification)notification.hidden=!(dailyReward(p,localDay()).available||QUESTS.some(q=>p[q.stat]>=q.target&&!p.claimed.includes(q.id)));
-  {const goal=nextGoalLabel(p,localDay()),journeyOpen=$('journey-open');textIfChanged(journeyOpen,goal.text);journeyOpen.setAttribute('aria-label',goal.label);}
-  const story=s.chronicle;
-  $('story-rally').hidden=!story?.enabled;
-  $('story-rally').toggleAttribute('disabled',s.phase!=='running'||s.paused);
-  $('story-rally').setAttribute('aria-pressed',String(story?.rally??false));
-  textIfChanged($('story-rally'),story?.rally?`Release ${story.gathered.length}/6`:'Gather');
-  if(story?.enabled){
-    const instruction=chronicleGuidance(p,s);
-    if(s.phase==='running'&&!s.paused&&(!health.danger)&&(story.route!=='road'||story.rally||p.unlocked[1]))textIfChanged($('deploy-hint'),instruction);
-    textIfChanged($('story-ready-rule'),p.wins===0&&story.route==='road'?'Rima waits at the gate. Tap Battle, then send a defender. The company fights together.':routeDefinition(story.route).rule);
-
-  }
+ syncBattleHud({root:root!,$,game,money,coin,manualPaused});
   fieldControls.update(game);
   // Let the finishing blow and base collapse play before the result dialog covers them.
   if(s.phase!==lastPhase){if(lastPhase==='running'&&(s.phase==='won'||s.phase==='lost'))resultDue=now+(document.documentElement.dataset.motion==='reduced'?350:1300);lastPhase=s.phase;}
@@ -587,11 +493,27 @@ function refreshQuestRecord(focus=false){
   const notice=$('quest-save-status'),message=questSaveNotice();notice.hidden=!message;textIfChanged(notice,message);
   if(focus||focusedClaim)select.focus();
 }
+/** Shows the screen that follows an accepted Chronicle action (the decision lives in ui/story-flow). */
+function showStoryFollowUp(kind:StoryFollowUp){
+  const chronicle=()=>showModal('chronicle',chronicleScreenHtml(game.profile,game.state));
+  const openDetails=(selector:string)=>$('modal-layer').querySelector<HTMLDetailsElement>(selector)?.setAttribute('open','');
+  const toBattle=()=>{closeModal(false);manualPaused=false;switchTab('battle');};
+  const screens:Record<StoryFollowUp,()=>void>={
+    stay:()=>{},
+    discoveries:()=>{showResult();openDetails('.story-discoveries');},
+    chronicle,
+    battle:toBattle,
+    'battle-chronicle':()=>{toBattle();chronicle();},
+    company:()=>{chronicle();openDetails('.story-company');},
+  };
+  screens[kind]();
+}
+function syncWeek(){game.dispatch({type:'weekly-sync',week:weekId(localDay())});}
 function claimQuestRecord(button:HTMLButtonElement){
   if(modal!=='quests'||!$('modal-layer').contains(button)||!guardAction()||modal!=='quests')return;
-  const day=localDay();
-  if(button.dataset.questKey!==questSelection||Number(button.dataset.questVersion)!==modalVersion)return;
-  if(!Number.isInteger(Number(button.dataset.questDay))||Number(button.dataset.questDay)!==day){refreshQuestRecord();return;}
+  const day=localDay(),check=questClaimCheck(button.dataset,{key:questSelection,version:modalVersion,day});
+  if(check==='ignore')return;
+  if(check==='refresh'){refreshQuestRecord();return;}
   const selected=questRecords(game.profile,day).find(r=>r.key===questSelection);
   const claim=selected?questRecordAction(selected,day):null;
   if(!claim){refreshQuestRecord();return;}
@@ -601,7 +523,7 @@ function claimQuestRecord(button:HTMLButtonElement){
 }
 function showQuests(){
   if(!guardAction())return;
-  game.dispatch({type:'weekly-sync',week:weekId(localDay())});
+  syncWeek();
   const records=questRecords(game.profile,localDay()),selected=selectedQuestRecord(records,modal==='quests'?questSelection:null);
   questSelection=selected.key;questCalendarDay=selected.day;
   showModal('quests',questRecordsHtml(records,selected,modalVersion+1,questSaveNotice()));
@@ -713,7 +635,7 @@ lifetime.listen<MouseEvent>(root,'click',e=>{
   if(command==='session-continue'){retriedSession=true;void acquireSession();return;}
   if(command==='session-temporary'){
     if(pagePresent&&session.playTemporarily()){
-      sessionReady=true;hasPlayed=true;clearPrestigeContext();game.dispatch({type:'weekly-sync',week:weekId(localDay())});closeModal(false);rebuildArmy();syncMotion();switchTab('battle');
+      sessionReady=true;hasPlayed=true;clearPrestigeContext();syncWeek();closeModal(false);rebuildArmy();syncMotion();switchTab('battle');
     }return;
   }
   // Also protects direct preference mutations and synthetic clicks on isolated controls.
@@ -747,16 +669,7 @@ lifetime.listen<MouseEvent>(root,'click',e=>{
   }
   const storyAction=chronicleActionFromData(button.dataset);
   if(storyAction){
-    if(action(storyAction)&&playable()&&modal!=='session'){
-      if(storyAction.type==='rally')return;
-      if(storyAction.type==='chronicle-discover'||storyAction.type==='chronicle-provision'){
-        if(game.state.phase==='won'||game.state.phase==='lost'){showResult();$('modal-layer').querySelector<HTMLDetailsElement>('.story-discoveries')?.setAttribute('open','');}
-        else showModal('chronicle',chronicleScreenHtml(game.profile,game.state));
-      }else if(['chronicle-route','chronicle-expedition','chronicle-continue','chronicle-abandon'].includes(storyAction.type)){
-        closeModal(false);manualPaused=false;switchTab('battle');
-        if(storyAction.type==='chronicle-abandon')showModal('chronicle',chronicleScreenHtml(game.profile,game.state));
-      }else {showModal('chronicle',chronicleScreenHtml(game.profile,game.state));$('modal-layer').querySelector<HTMLDetailsElement>('.story-company')?.setAttribute('open','');}
-    }
+    if(action(storyAction)&&playable()&&modal!=='session')showStoryFollowUp(storyFollowUp(storyAction.type,game.state.phase));
     return;
   }
   if(button.dataset.tab){switchTab(button.dataset.tab);return;}
@@ -764,9 +677,9 @@ lifetime.listen<MouseEvent>(root,'click',e=>{
   if(button.dataset.skill){if(action({type:'skill',skill:button.dataset.skill as Skill}))fieldControls.clear();return;}
   if(command==='quest-claim'){claimQuestRecord(button);return;}
   if(button.dataset.weekly){
-    const week=Number(button.dataset.weekly);
     // A previously rendered claim cannot settle an expired or future local week. Rejection never syncs.
-    if(!Number.isInteger(week)||week!==weekId(localDay()))return;
+    const week=claimableWeek(button.dataset.weekly,weekId(localDay()));
+    if(week===null)return;
     if(action({type:'weekly',week}))showQuests();return;
   }
   if(button.dataset.daily){if(action({type:'daily',day:Number(button.dataset.daily)}))showQuests();return;}
