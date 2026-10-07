@@ -14,7 +14,7 @@ test('Camp root has exactly Battle/Home chrome and four illustrated named physic
  assert.ok(camp,'physical root must replace the old dashboard');
  for(let age=0;age<6;age++){
   const game=gameAt(age),before=JSON.stringify([game.profile,game.state]);game.profile.enemyAge=5;
-  const html=camp.campRootHtml(game.profile),all=buttons(html),physical=all.filter(b=>b.includes('data-camp-station'));
+  const html:string=camp.campRootHtml(game.profile),all=buttons(html),physical=all.filter(b=>b.includes('data-camp-station'));
   assert.equal(all.length,6);assert.equal(physical.length,4);
   for(const place of ['storehouse','gate','company','journal'])assert.match(html,new RegExp(`data-camp-station="${place}"`));
   assert.match(html,/data-command="camp-battle"/);assert.match(html,/data-command="camp-home"/);
