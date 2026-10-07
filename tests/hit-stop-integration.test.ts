@@ -1,8 +1,9 @@
 import test from 'node:test';
+import { mainSource } from './helpers/main-source.ts';
 import { battlefieldSource } from './helpers/battlefield-source.ts';
 import assert from 'node:assert/strict';
 import {readFileSync} from 'node:fs';
-import {runInNewContext} from 'node:vm';
+import { runInApp } from './helpers/run-app.ts';
 import ts from 'typescript';
 import {weekId} from '../src/game/weekly.ts';
 import {localDay} from '../src/game/data.ts';
@@ -39,7 +40,7 @@ function visit(node:ts.Node){
 }
 visit(ast);assert.equal(members.length,3);
 const fieldCode=ts.transpileModule(`class Subject {${members.map(node=>node.getText(ast)).join('\n')}}; globalThis.Subject=Subject;`,{compilerOptions:{target:ts.ScriptTarget.ES2022}}).outputText;
-const main=readFileSync(new URL('../src/main.ts',import.meta.url),'utf8');
+const main=mainSource();
 const mainAst=ts.createSourceFile('main.ts',main,ts.ScriptTarget.Latest,true,ts.ScriptKind.TS);
 const mainFunctions=mainAst.statements.filter(node=>ts.isFunctionDeclaration(node)&&node.name&&['playable','syncPause'].includes(node.name.text));
 let step:ts.Node|undefined,mountCall:ts.CallExpression|undefined;
@@ -54,15 +55,15 @@ function harness(motion:Profile['motion']='system',webdriver=true){
  const motionQuery={matches:false},noOp=()=>{};
  const calls={step:0,frame:0,presentation:0,events:[] as GameEvent[],draw:0,effects:[] as number[]};
  const app:any={weekId,localDay,guardAction:()=>true,root:{dataset:{fieldMode:'field'}},game:new Game({...defaultProfile(),motion}),entryEntered:true,sessionReady:true,pagePresent:true,lifetime:{disposed:false},session:{status:'active'},manualPaused:false,activeTab:'battle',modal:null,document:{hidden:false},pauseReason,stopCombatAudio(){},syncVillagePresentation(){}};
- runInNewContext(mainCode,app);app.game.dispatch({type:'start'});
+ runInApp(mainCode,app);app.game.dispatch({type:'start'});
  const port=createBattlefieldPort(()=>app.game,action=>app.game.dispatch(action),dt=>{calls.step++;app.stepPort(dt);});
  const context:any={game:port,host:{isDisposed:()=>false,motionQuery},motionQuery,paintBaseDamage:noOp,paintOrders:noOp,paintHealthBars:noOp,compactNumber,navigator:{webdriver},options:{isVisible:()=>app.isVisible(),onPresentation(){calls.presentation++;}},onFrame(){calls.frame++;},onEvents(events:GameEvent[]){calls.events.push(...events);},element:{closest(){return{dataset:{phase:app.game.state.phase}};}},reducedMotion,projectileForHit,traitCueForHit,createVillageMuster,rememberVillageMuster,villageMusterFrame,battlefieldMemoryAfterReset,battlefieldMemoryIntentForHit,orderPresentationFrame,waveArrivalForPort,villageOrderHudChanged,lanePresentation,projectileLift,arenaLayout,xAt:(x:number)=>x*.45};
- runInNewContext(fieldCode,context);const scene=new context.Subject();
+ runInApp(fieldCode,context);const scene=new context.Subject();
  const graphics:any=new Proxy(function(){},{get:(_t,key)=>key===Symbol.toPrimitive?()=>0:key==='then'?undefined:graphics,apply:()=>graphics});
  const canvas=()=>scene.game.canvas,paused=()=>app.game.state.paused;
  const marks=createBattlefieldMarks({ambience:()=>graphics,fx:()=>graphics,canvas,layout:()=>scene.layout,yAt:(lane:number)=>320+lane*24,reduce:()=>scene.reduce,paused,measureHud:()=>[]});
  const effects=createBattlefieldEffects({scene:{add:{text:()=>graphics},cameras:{main:{shake:noOp,flash:noOp}}} as any,game:port,world:()=>graphics,canvas,layout:()=>scene.layout,reduce:()=>scene.reduce,clock:()=>scene.clock,webdriver:()=>webdriver},{fx:graphics,glow:graphics,groundFx:[graphics,graphics,graphics]},marks);
- Object.assign(scene,{world:{setScale:noOp},scale:{width:450,height:430},placeLandscape:noOp,placeForeground:noOp,game:{canvas:{dataset:{}}},lastState:null,aftermath:null,clock:0,reduce:false,layout:{groundY:320,laneGap:24,height:430},villageMuster:createVillageMuster(),villageHudPhase:null,villageHudPaused:null,marks,effects,army:{units:new Map(),draw:noOp,clearUnits:noOp,forget:noOp},atmosphere:{draw(){calls.draw++;}},yAt:(lane:number)=>320+lane*24,syncEra:noOp,cacheVillageViewport:noOp,baseText:[],cameras:{main:{shake:noOp,flash:noOp}}});
+ Object.assign(scene,{ctx:{game:port,element:context.element,options:context.options,onFrame:context.onFrame,onEvents:context.onEvents,isDisposed:()=>false,motionQuery},world:{setScale:noOp},scale:{width:450,height:430},placeLandscape:noOp,placeForeground:noOp,game:{canvas:{dataset:{}}},lastState:null,aftermath:null,clock:0,reduce:false,layout:{groundY:320,laneGap:24,height:430},villageMuster:createVillageMuster(),villageHudPhase:null,villageHudPaused:null,marks,effects,army:{units:new Map(),draw:noOp,clearUnits:noOp,forget:noOp},atmosphere:{draw(){calls.draw++;}},yAt:(lane:number)=>320+lane*24,syncEra:noOp,cacheVillageViewport:noOp,baseText:[],cameras:{main:{shake:noOp,flash:noOp}}});
  const frame=(delta=1000/60)=>scene.update(0,delta);
  frame(0);
  const hit=(event:GameEvent=heavy)=>{(app.game as any).events.push(event);frame(0);};
@@ -165,7 +166,7 @@ test('renderer mounting and readiness do not depend on Home or Camp visibility',
  for(const owner of ['home','camp']){
   const node={dataset:{renderer:'loading'}},record:{options?:{isVisible:()=>boolean};mounts:number}={mounts:0};
   const context:any={rendererClosed:false,renderer:null,$:()=>node,port:{},update(){},events(){},syncVillagePresentation(){},entryEntered:owner!=='home',root:{dataset:{fieldMode:owner==='camp'?'camp':'field'}},activeTab:'battle',document:{hidden:false},villagePresentation:{mood:{}}};
-  runInNewContext(mountCode,context);
+  runInApp(mountCode,context);
   context.mountReady({mountBattlefield(_element:unknown,_port:unknown,_frame:unknown,_events:unknown,options:{isVisible:()=>boolean}){record.mounts++;record.options=options;return{destroy(){}};}});
   assert.equal(record.mounts,1);assert.equal(node.dataset.renderer,'ready');assert.equal(record.options?.isVisible(),false);
   context.entryEntered=true;context.root.dataset.fieldMode='field';assert.equal(record.options?.isVisible(),true);assert.equal(record.mounts,1,'returning to the field reuses the renderer');

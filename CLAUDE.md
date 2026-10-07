@@ -11,7 +11,7 @@
 - `src/game/`: typed deterministic simulation, economy, cards, saves. No DOM beyond the injectable storage in `save.ts`.
 - `src/view/`: Phaser rendering, vector art, combat feedback, synthesized audio.
 - `src/ui/`: DOM templates, dialogs, pause and focus helpers, per-screen presentation (small pure functions plus CSS).
-- `src/main.ts`: input, navigation, lifecycle, the render loop. `index.html`, `src/style.css` and the `src/ui/*.css` files carry the styles.
+- `src/app/`: shared `app` state, input routing, navigation, lifecycle and the update loop. `src/main.ts`: composition only. `index.html`, `src/style.css` and the `src/ui/*.css` files carry the styles.
 
 ## Conventions
 

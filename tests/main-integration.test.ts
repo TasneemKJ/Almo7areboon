@@ -1,4 +1,5 @@
 import {questClaimCheck,questRecords,selectedQuestRecord,questRecordAction,questRecordLabel,questRecordsHtml,questRecordDetailHtml} from '../src/ui/quest-records.ts';
+import { mainSource } from './helpers/main-source.ts';
 import {cardsScreenHtml,summonedCardsHtml} from '../src/ui/cards-screen.ts';
 import {isEditingTarget} from '../src/ui/accessibility.ts';
 import {campRootHtml,campFocusHtml} from '../src/ui/camp-screen.ts';
@@ -14,7 +15,7 @@ import {CAPTAINS,routeDefinition,createChronicle} from '../src/game/chronicle.ts
 import test from 'node:test';
 import assert from 'node:assert/strict';
 import { readFileSync } from 'node:fs';
-import { runInNewContext } from 'node:vm';
+import { runInApp } from './helpers/run-app.ts';
 import ts from 'typescript';
 import { Game } from '../src/game/simulation.ts';
 import { defaultProfile, decodeSave, SAVE_KEY, BACKUP_KEY } from '../src/game/save.ts';
@@ -44,7 +45,7 @@ import { nextGoalLabel } from '../src/ui/next-goal.ts';
 import { createModalTapGuard } from '../src/ui/modal-tap-guard.ts';
 
 // Execute the app's actual functions with a clock and minimal DOM boundary; no browser/debug hooks.
-const source = readFileSync(new URL('../src/main.ts', import.meta.url), 'utf8');
+const source = mainSource();
 const ast = ts.createSourceFile('main.ts', source, ts.ScriptTarget.Latest, true, ts.ScriptKind.TS);
 const names = new Set(['switchTab','showModal','syncCamp','showCampFocus','returnToCamp','handleCampInput','playable', 'guardAction', 'action', 'persist', 'update', 'renderScreen', 'sessionPresentation', 'showResult', 'acquireSession', 'dismissModal', 'returnToChapters', 'clearPrestigeContext', 'openPrestige', 'refreshPrestige', 'returnFromPrestige', 'questSaveNotice', 'refreshQuestRecord', 'claimQuestRecord', 'showQuests', 'showSettings', 'showSaveRecovery', 'preferenceNotice', 'showFieldPause', 'showLeaveBattle', 'leaveBattle', 'enterCamp', 'entryReady', 'syncEntry', 'enterWorld', 'showResultDetails', 'showHome', 'continueWithProvision', 'adoptRestoredGame', 'syncWeek', 'showStoryFollowUp', 'claimQuestRecord']);
 const functions = ast.statements.filter(node => ts.isFunctionDeclaration(node) && node.name && names.has(node.name.text));
@@ -94,7 +95,7 @@ function harness(motion = 'full') {
   };
 
   context.game.dispatch({type:'weekly-sync',week:weekId(localDay())});
-  runInNewContext(`${code}\nthis.api = { update, action, acquireSession, dismissModal, returnToChapters, showResult, renderScreen }; this.update = update;`, context);
+  runInApp(`${code}\nthis.api = { update, action, acquireSession, dismissModal, returnToChapters, showResult, renderScreen }; this.update = update;`, context);
   const actualShowModal=context.showModal;context.showModal=(id:string,html:string,focusCommand?:string)=>{context.dialogHtml=html;context.focusCommand=focusCommand;dialogs.push(id);actualShowModal(id,html,focusCommand);};
   function cQuestSelect(){const input=context.$('quest-goal');input.dataset.questSelect='';input.options=questRecords(context.game.profile,context.localDay()).map(r=>({value:r.key,textContent:questRecordLabel(r)}));return input;}
   return { context, dialogs, questSelect:(value:string)=>{const input=cQuestSelect();input.value=value;context.document.activeElement=input;context.handleChange({target:input});return input;}, click:(command:string,detail=0)=>context.handleClick({target:new BoundaryButton({command}),detail,preventDefault(){}}), clickData:(dataset:Record<string,string>,detail=0,extra={})=>context.handleClick({target:new BoundaryButton(dataset),detail,preventDefault(){},...extra}), change:(name:string,value:string)=>context.handleChange({target:new BoundaryInput(name,value)}),preference:(name:string,value:string|boolean)=>{const input=['speed','motion'].includes(name)?new BoundarySelect('',String(value)):new BoundaryInput('',String(value));input.dataset.preference=name;input.type=typeof value==='boolean'?'checkbox':'select-one';input.checked=value===true;context.document.activeElement=input;context.handleChange({target:input});return input;},clock: (value: number) => { now = value; }, foreign: () => { foreign = true; } };
@@ -397,7 +398,7 @@ test('actual order controls respect charge and guarded session ownership',()=>{
 });
 test('actual Journey open and card navigation preserve pending result rewards',()=>{
  const h=harness(),c=h.context;
- const tabFunction=ast.statements.find(n=>ts.isFunctionDeclaration(n)&&n.name?.text==='switchTab')!;runInNewContext(ts.transpile(tabFunction.getText(ast)),c);c.renderScreen=()=>{};c.$('secondary-title').focus=()=>{};
+ const tabFunction=ast.statements.find(n=>ts.isFunctionDeclaration(n)&&n.name?.text==='switchTab')!;runInApp(ts.transpile(tabFunction.getText(ast)),c);c.renderScreen=()=>{};c.$('secondary-title').focus=()=>{};
  c.game.state.phase='won';c.game.profile.pendingVictory={settlement:'legacy',timeline:1,battle:0,earned:42,seconds:12,playerHp:100};const receipt=JSON.stringify(c.game.profile.pendingVictory);c.modal='result';c.resultShown='won';
  h.click('journey');assert.equal(c.modal,'journey');h.clickData({journeyTab:'cards'});assert.equal(c.modal,null);assert.equal(c.activeTab,'cards');assert.equal(JSON.stringify(c.game.profile.pendingVictory),receipt);h.clickData({tab:'battle'});assert.equal(c.modal,'result');assert.equal(JSON.stringify(c.game.profile.pendingVictory),receipt);
 });

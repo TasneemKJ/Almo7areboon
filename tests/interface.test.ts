@@ -43,12 +43,12 @@ test('P23: battle selection exposes only unlocked ready-state battles',()=>{
  const p=defaultProfile();p.enemyAge=1;p.furthestBattle=2;const g=new Game(p);let html=battleSelectionHtml(g.profile,g.state);
  assert.equal((html.match(/class="battle-option"/g)??[]).length,6);assert.equal((html.match(/ disabled/g)??[]).length,3);
  g.dispatch({type:'start'});html=battleSelectionHtml(g.profile,g.state);assert.equal((html.match(/ disabled/g)??[]).length,6);
- assert.match(main(),/battleSelectionHtml\(game.profile,\s*game.state\)/);
+ assert.match(main(),/battleSelectionHtml\(app\.game\.profile,\s*app\.game\.state\)/);
 });
 test('P24: evolution has an explicit reset warning and confirmation action',()=>{
  const g=new Game();const html=evolutionDialogHtml(g.profile,g.state)!;assert.match(html,/All coins/);assert.match(html,/cards and gems/);assert.match(html,/confirm-evolve/);
  g.dispatch({type:'start'});assert.equal(evolutionDialogHtml(g.profile,g.state),null);
- assert.match(main(),/'confirm-evolve':/);assert.match(main(),/evolutionDialogHtml\(game.profile,\s*game.state\)/);
+ assert.match(main(),/'confirm-evolve':/);assert.match(main(),/evolutionDialogHtml\(app\.game\.profile,\s*app\.game\.state\)/);
 });
 test('P25: modal focus traversal wraps, recovers outside focus and handles no controls',()=>{
  assert.equal(nextFocusIndex(0,3,true),2);assert.equal(nextFocusIndex(2,3,false),0);assert.equal(nextFocusIndex(-1,3,false),0);assert.equal(nextFocusIndex(-1,3,true),2);assert.equal(nextFocusIndex(0,0,false),null);

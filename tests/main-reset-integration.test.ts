@@ -1,4 +1,5 @@
 import {preferencesHtml,saveRecoveryHtml} from '../src/ui/preferences-screen.ts';
+import { mainSource } from './helpers/main-source.ts';
 import {hasPriorPlay} from '../src/ui/entry-screen.ts';
 import {chronicleScreenHtml,chronicleActionFromData} from '../src/ui/chronicle-screen.ts';
 import {chronicleGuidance} from '../src/game/chronicle-combat.ts';
@@ -6,7 +7,7 @@ import {CAPTAINS,routeDefinition,createChronicle} from '../src/game/chronicle.ts
 import test from 'node:test';
 import assert from 'node:assert/strict';
 import { readFileSync } from 'node:fs';
-import { runInNewContext } from 'node:vm';
+import { runInApp } from './helpers/run-app.ts';
 import ts from 'typescript';
 import {syncWeekly,weekId} from '../src/game/weekly.ts';
 import {localDay} from '../src/game/data.ts';
@@ -20,7 +21,7 @@ import { saveSessionDialogHtml, temporarySessionNotice } from '../src/ui/save-se
 import { createModalTapGuard } from '../src/ui/modal-tap-guard.ts';
 
 // Run the actual UI handler and ownership presentation with the real guarded writer.
-const source = readFileSync(new URL('../src/main.ts', import.meta.url), 'utf8');
+const source = mainSource();
 const ast = ts.createSourceFile('main.ts', source, ts.ScriptTarget.Latest, true, ts.ScriptKind.TS);
 const names = new Set(['handleCampInput','playable', 'guardAction', 'sessionPresentation', 'showSettings', 'showSaveRecovery', 'preferenceNotice', 'clearPrestigeContext', 'adoptRestoredGame']);
 const functions = ast.statements.filter(node => ts.isFunctionDeclaration(node) && node.name && names.has(node.name.text));
@@ -62,7 +63,7 @@ async function harness(mode = 'active') {
     toast: (message: string) => messages.push(message), showModal: (id: string, html: string) => { context.modal = id; context.html = html; dialogs.push(id); },
     closeModal: () => { context.modal = null; }, rebuildArmy() {}, syncMotion() {}, switchTab: (tab: string) => { context.activeTab = tab; },
   };
-  runInNewContext(code, context);
+  runInApp(code, context);
   const storage = {
     getItem(key: string) {
       const value = values.get(key) ?? null;

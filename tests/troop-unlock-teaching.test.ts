@@ -1,4 +1,5 @@
 import test from 'node:test';
+import { mainSource } from './helpers/main-source.ts';
 import assert from 'node:assert/strict';
 import { Game } from '../src/game/simulation.ts';
 import { defaultProfile } from '../src/game/save.ts';
@@ -7,7 +8,7 @@ import { unitPresentationName } from '../src/ui/chapter-presentation.ts';
 import { TROOP_SPECIALTIES, troopUnlockMessage } from '../src/ui/army-screen.ts';
 import type { DeploymentStatus, UnitKind } from '../src/game/types.ts';
 import { readFileSync } from 'node:fs';
-import { runInNewContext } from 'node:vm';
+import { runInApp } from './helpers/run-app.ts';
 import ts from 'typescript';
 
 test('all six armies teach their actual troop name, specialty and food cost without mutation',()=>{
@@ -31,12 +32,12 @@ test('crowding and army capacity never promise immediate deployment',()=>{
  for(const reason of ['blocked','capacity'] as const){const status:DeploymentStatus={allowed:false,reason,missingFood:0,waitSeconds:0};const message=troopUnlockMessage(p,'running',1,status);assert.match(message,reason==='blocked'?/area full; wait for space/:/Army full; wait for a place/);assert.match(message,/Costs 5 food/);assert.doesNotMatch(message,/Tap it again/);}
 });
 test('actual toast keeps its normal timeout and allows the longer teaching timeout',()=>{
- const source=readFileSync(new URL('../src/main.ts',import.meta.url),'utf8'),ast=ts.createSourceFile('main.ts',source,ts.ScriptTarget.Latest,true,ts.ScriptKind.TS);
+ const source=mainSource(),ast=ts.createSourceFile('main.ts',source,ts.ScriptTarget.Latest,true,ts.ScriptKind.TS);
  const fn=ast.statements.find(node=>ts.isFunctionDeclaration(node)&&node.name?.text==='toast');assert.ok(fn);
  let visible=false;const delays:number[]=[],cleared:number[]=[],callbacks:Function[]=[];
  const node={textContent:'',classList:{add:()=>visible=true,remove:()=>visible=false}};
  const c:any={toastTimer:42,$:()=>node,textIfChanged:(target:any,value:string)=>target.textContent=value,window:{clearTimeout:(id:number)=>cleared.push(id),setTimeout:(fn:Function,delay:number)=>{callbacks.push(fn);delays.push(delay);return delays.length;}}};
- runInNewContext(ts.transpileModule(fn.getText(ast),{compilerOptions:{target:ts.ScriptTarget.ES2022}}).outputText,c);
+ runInApp(ts.transpileModule(fn.getText(ast),{compilerOptions:{target:ts.ScriptTarget.ES2022}}).outputText,c);
  c.toast('ordinary');assert.equal(node.textContent,'ordinary');assert.equal(visible,true);assert.deepEqual(delays,[4200]);
  c.toast('teaching',7000);assert.equal(node.textContent,'teaching');assert.deepEqual(delays,[4200,7000]);assert.deepEqual(cleared,[42,1]);callbacks[1]();assert.equal(visible,false);
 });

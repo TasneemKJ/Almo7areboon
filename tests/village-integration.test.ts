@@ -1,4 +1,5 @@
 import test from 'node:test';
+import { mainSource } from './helpers/main-source.ts';
 import { battlefieldSource } from './helpers/battlefield-source.ts';
 import assert from 'node:assert/strict';
 import {readFileSync} from 'node:fs';
@@ -56,7 +57,7 @@ test('one authoritative wave frame drives both the road omen and pooled village 
 });
 test('watchfire reuses village ambience and light pools with bounded webdriver evidence and cleanup',()=>{
  const source=battlefieldSource();
- const main=readFileSync(new URL('../src/main.ts',import.meta.url),'utf8');
+ const main=mainSource();
  assert.match(source,/private villageHudPhase:Phase\|null=null;/,'the HUD exclusion map needs an explicit phase owner');
  assert.match(source,/private villageHudPaused:boolean\|null=null;/,'pause visibility needs an explicit HUD measurement owner');
  assert.match(source,/private cacheVillageViewport\(\):void \{[\s\S]*?this\.villageHudPaused=game\.state\.paused;[\s\S]*?this\.marks\.setHudBounds\(this\.hud\.regions\(\)\);\s*\}/,'every phase, era, resize, and order measurement must record whether it included paused HUD');
@@ -64,7 +65,7 @@ test('watchfire reuses village ambience and light pools with bounded webdriver e
  assert.match(source,/orderHudChanged=villageOrderHudChanged\(this\.villageHudPaused,game\.state\.paused,!!this\.orderFrame\?\.answer,!!this\.waveArrival,!!this\.musterFrame\)/,'the tested HUD owner must decide pause-side measurement and resume-side cleanup for order and muster answers');
  assert.match(source,/if\(phaseHudChanged\|\|orderHudChanged\)\{const world=element\.closest<HTMLElement>\('\.world'\);if\(world\?\.dataset\.phase!==game\.state\.phase\|\|orderHudChanged\)onFrame\(true\);this\.villageHudPhase=game\.state\.phase;this\.cacheVillageViewport\(\);\}/,'phase and relevant order-pause reflow must reach the DOM before HUD exclusions are measured and the village is painted');
  assert.match(source,/\.battle-skills button,\.pause-banner/,'transient controls and the centered pause card must reserve their painted regions');
- assert.match(main,/mountBattlefield\(\$\('battlefield'\),port,force=>update\(force\),events/,'the host must honor a forced layout sync from the renderer');
+ assert.match(main,/mountBattlefield\(\$\('battlefield'\),app\.port,force=>update\(force\),events/,'the host must honor a forced layout sync from the renderer');
  assert.match(source,/for\(const line of \[[^\]]*frame\.watchStrokes[^\]]*\]\)\{g\.lineStyle\(line\.width,line\.color,line\.alpha\);g\.lineBetween\(line\.from\.x,line\.from\.y,line\.to\.x,line\.to\.y\);\}/);
  assert.match(source,/const watchfireRegions=/);
  assert.match(source,/frame\.watchStrokes\.map/);assert.match(source,/frame\.watchLights\.map/);

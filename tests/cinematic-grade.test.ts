@@ -1,4 +1,5 @@
 import test from 'node:test';
+import { mainSource } from './helpers/main-source.ts';
 import { battlefieldSource } from './helpers/battlefield-source.ts';
 import assert from 'node:assert/strict';
 import {readFileSync} from 'node:fs';
@@ -133,7 +134,7 @@ test('combat text and skill feedback stay legible against bright skies',()=>{
  assert.match(source,/fontSize:large\?'22px':heavy\?'15px':'13px'/);
  assert.match(source,/if\(!this\.reduce\)this\.cameras\.main\.flash\(220,170,240,255\)/,'freeze flash respects reduced motion');
  assert.doesNotMatch(source,/lineBetween\(95,this\.layout\.groundY\+34,355/,'the hairline frozen marker was replaced');
- const css=readFileSync(new URL('../src/ui/era-glow.css',import.meta.url),'utf8'),main=readFileSync(new URL('../src/main.ts',import.meta.url),'utf8');
+ const css=readFileSync(new URL('../src/ui/era-glow.css',import.meta.url),'utf8'),main=mainSource();
  assert.ok(main.indexOf("./ui/era-glow.css")>main.indexOf("./ui/combat-focus.css"),'era glow must load last to win the cascade');
  assert.match(css,/background:radial-gradient\(ellipse at 50% 78%,#7bada8[^;]+;\n background:radial-gradient\([^;]*color-mix/,'plain gradient must precede the color-mix one as a fallback');
  assert.match(css,/\.unit-card\.affordable img \{ animation:card-ready [.\d]+s ease-out 1; \}/,'ready cue is a one-shot pop, not an infinite loop');

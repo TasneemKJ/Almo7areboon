@@ -3,9 +3,9 @@ import assert from 'node:assert/strict';
 import { readdirSync, readFileSync } from 'node:fs';
 import { join, relative } from 'node:path';
 
-// Imports point down: game <- view <- ui <- main.ts (see ARCHITECTURE.md).
+// Imports point down: game <- view <- ui <- app (shell modules) <- main.ts (see ARCHITECTURE.md).
 const SRC = new URL('../src/', import.meta.url).pathname;
-const RANK: Record<string, number> = { game: 0, view: 1, ui: 2, main: 3 };
+const RANK: Record<string, number> = { game: 0, view: 1, ui: 2, app: 3, main: 4 };
 
 const files = (dir: string): string[] => readdirSync(dir, { withFileTypes: true }).flatMap(entry =>
   entry.isDirectory() ? files(join(dir, entry.name)) : entry.name.endsWith('.ts') ? [join(dir, entry.name)] : []);
@@ -46,10 +46,9 @@ test('Phaser is only imported by the view layer and main', () => {
   }
 });
 
-// Modules above the cap. Shrink these over time; do not add to the list.
+// Modules allowed above the cap. Empty today: add an entry only with a recorded reason.
 const SIZE_CAP = 500;
 const SIZE_EXCEPTIONS: Record<string, number> = {
-  'main.ts': 850,
 };
 
 test('modules stay under the size cap unless listed', () => {

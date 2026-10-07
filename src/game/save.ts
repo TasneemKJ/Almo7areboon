@@ -18,11 +18,10 @@ function integer(value: unknown, fallback: number, min: number, max: number): nu
   return typeof value === 'number' && Number.isFinite(value) ? Math.min(max, Math.max(min, Math.floor(value))) : fallback;
 }
 
-function validate(value: unknown): Profile {
-  const clean = defaultProfile();
-  if (!value || typeof value !== 'object' || Array.isArray(value)) return clean;
-  const data = value as Record<string, unknown>;
-  if (data.version !== 1 && data.version !== 2 && data.version !== 3 && data.version !== 4 && data.version !== 5) return clean;
+type Raw = Record<string, unknown>;
+
+/** Era, timeline, wallet and counters, clamped to their ranges. */
+function readProgress(data: Raw, clean: Profile): void {
   clean.timeline = integer(data.timeline, 1, 1, 1000);
   clean.legacy = normalizeLegacy(data.legacy,clean.timeline,data.version as number);
   clean.mastery = (data.version === 3 || data.version === 4 || data.version === 5) ? normalizeMastery(data.mastery, clean.timeline) : createMastery(clean.timeline);
@@ -38,6 +37,10 @@ function validate(value: unknown): Profile {
   clean.kills = integer(data.kills, 0, 0, 1e9);
   clean.wins = integer(data.wins, 0, 0, 1e9);
   clean.deployed = integer(data.deployed, 0, 0, 1e9);
+}
+
+/** Unlocks and card copies, including the widening of prototype six-card saves. */
+function readCollection(data: Raw, clean: Profile): void {
   if (data.played === true) clean.played = true;
   if (Array.isArray(data.unlocked)) clean.unlocked = [true, data.unlocked[1] === true, data.unlocked[2] === true];
   if (Array.isArray(data.cards)) {
@@ -53,6 +56,10 @@ function validate(value: unknown): Profile {
   }
   clean.summonCount = integer(data.summonCount, clean.cards.reduce((sum, copies) => sum + copies, 0), 0, 1e9);
   clean.summonSeed = integer(data.summonSeed, 0x6d2b79f5, 1, 0xffffffff);
+}
+
+/** A held victory receipt, kept only when it belongs to the current battle and its mastery claim is consistent. */
+function readPendingVictory(data: Raw, clean: Profile): void {
   if (data.pendingVictory && typeof data.pendingVictory === 'object' && !Array.isArray(data.pendingVictory)) {
     const victory = data.pendingVictory as Record<string, unknown>;
     const finiteFields = ['earned', 'seconds', 'playerHp'].every(key => typeof victory[key] === 'number' && Number.isFinite(victory[key]) && (victory[key] as number) >= 0);
@@ -84,6 +91,10 @@ function validate(value: unknown): Profile {
     const story=normalizeChronicleReceipt(victory.story,clean.chronicle.route);
     if(story)clean.pendingVictory.story=story;
   }
+}
+
+/** Quests, daily and weekly goals, last-seen time and preferences. */
+function readGoalsAndPreferences(data: Raw, clean: Profile): void {
   if (Array.isArray(data.claimed)) clean.claimed = QUESTS.filter(quest => (data.claimed as unknown[]).includes(quest.id)).map(quest => quest.id);
   clean.dailyDay = integer(data.dailyDay, 0, 0, MAX_DAILY_DAY);
   clean.dailyStreak = clean.dailyDay ? integer(data.dailyStreak, 0, 0, 1e6) : 0;
@@ -101,6 +112,17 @@ function validate(value: unknown): Profile {
   clean.motion = data.motion === 'reduced' ? 'reduced' : 'system';
   // Optional preference: stored only when on, so existing saves keep their exact shape.
   if (data.marks === true) clean.marks = true;
+}
+
+function validate(value: unknown): Profile {
+  const clean = defaultProfile();
+  if (!value || typeof value !== 'object' || Array.isArray(value)) return clean;
+  const data = value as Record<string, unknown>;
+  if (data.version !== 1 && data.version !== 2 && data.version !== 3 && data.version !== 4 && data.version !== 5) return clean;
+  readProgress(data, clean);
+  readCollection(data, clean);
+  readPendingVictory(data, clean);
+  readGoalsAndPreferences(data, clean);
   return clean;
 }
 

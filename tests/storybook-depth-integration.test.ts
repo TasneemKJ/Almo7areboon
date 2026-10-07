@@ -27,7 +27,7 @@ async function execute(age=0,reduced=false,time=0){
  const triangles:any[]=[],polygons:any[]=[];let color=0,alpha=0;
  const graphics:any={clear(){triangles.length=0;polygons.length=0;return this;},fillStyle(c:number,a:number){color=c;alpha=a;return this;},fillTriangle(...coords:number[]){triangles.push({color,alpha,coords});return this;},fillPoints(points:any){polygons.push({color,alpha,points});return this;},lineStyle(){return this;},lineBetween(){return this;}};
  const game={profile:{age},state:{phase:'running',paused:false}},before=structuredClone(game);
- const context:any={storybookArt,villageFrame,villageVerdictFrame,paintStorybookDepth:depth.paintStorybookDepth,atmosphereFrame:()=>[],paintDuskAtmosphere:()=>0,paintLightingHierarchy:()=>0,duskAtmosphereFrame:()=>0,lightingHierarchyFrame:()=>0,landscapePlacement:()=>0,navigator:{webdriver:false},Phaser:{BlendModes:{ADD:1,NORMAL:0}}};
+ const context:any={storybookArt,villageFrame,villageVerdictFrame,paintStorybookDepth:depth.paintStorybookDepth,atmosphereFrame:()=>[],paintAmbientMarks:()=>0,paintDuskAtmosphere:()=>0,paintLightingHierarchy:()=>0,duskAtmosphereFrame:()=>0,lightingHierarchyFrame:()=>0,landscapePlacement:()=>0,navigator:{webdriver:false},Phaser:{BlendModes:{ADD:1,NORMAL:0}}};
  runInNewContext(js,context);
  const storybookDepth=depth.cacheStorybookDepth(age,viewport),mesh=storybookDepth;
  const host:any={game,canvas:()=>({dataset:{}}),layout:()=>({groundY:320,height:430}),clock:()=>time,reduce:()=>reduced,aftermath:()=>null,waveArrival:()=>null,orderFrame:()=>null,musterFrame:()=>null,villageViewport:()=>viewport,storybookDepth:()=>storybookDepth,villageMood:undefined,scene:{}};

@@ -1,7 +1,8 @@
 import test from 'node:test';
+import { mainSource } from './helpers/main-source.ts';
 import assert from 'node:assert/strict';
 import { readFileSync } from 'node:fs';
-import { runInNewContext } from 'node:vm';
+import { runInApp } from './helpers/run-app.ts';
 import ts from 'typescript';
 import { weekId } from '../src/game/weekly.ts';
 import { localDay } from '../src/game/data.ts';
@@ -10,7 +11,7 @@ import { pauseReason } from '../src/ui/pause.ts';
 import { ambienceAllowed } from '../src/ui/audio-preferences.ts';
 import { advanceVillagePresentation } from '../src/view/village-mood.ts';
 
-const source=readFileSync(new URL('../src/main.ts',import.meta.url),'utf8');
+const source=mainSource();
 const ast=ts.createSourceFile('main.ts',source,ts.ScriptTarget.Latest,true,ts.ScriptKind.TS);
 const names=new Set(['playable','syncPause','syncVillagePresentation','events','guardAction','action']);
 const functions=ast.statements.filter(node=>ts.isFunctionDeclaration(node)&&node.name&&names.has(node.name.text));
@@ -22,7 +23,7 @@ test('actual village owner freezes and silences ambience without save ownership'
   const context:any={weekId,localDay,game,entryEntered:true,sessionReady:true,pagePresent:true,lifetime:{disposed:false},session:{status:'active',check:()=>true},
     manualPaused:false,activeTab:'battle',modal:null,document:{hidden:false},atmosphereEnabled:true,villagePresentation:null,
     stopCombatAudio(){},pauseReason,ambienceAllowed,advanceVillagePresentation,updateSoundscape:(_age:number,allowed:boolean)=>audible.push(allowed)};
-  runInNewContext(`${code}\nthis.api={syncPause,syncVillagePresentation};`,context);
+  runInApp(`${code}\nthis.api={syncPause,syncVillagePresentation};`,context);
   context.api.syncPause();context.api.syncVillagePresentation(.05);
   assert.equal(audible.at(-1),true);
   const time=context.villagePresentation.mood.time;
@@ -50,7 +51,7 @@ function combatHarness(){
   pauseReason,ambienceAllowed,advanceVillagePresentation,updateSoundscape:audio.updateSoundscape,
   unlockAudio:audio.unlockAudio,playSummonAudio:audio.playSummonAudio,rebuildArmy(){},update(){},renderScreen(){},
   playCombatEvents:audio.playCombatEvents,stopCombatAudio:audio.stopCombatAudio,persist:()=>persisted.push(c.oscillators.length)};
- runInNewContext(`${code}\nthis.api={syncPause,events,action};`,context);
+ runInApp(`${code}\nthis.api={syncPause,events,action};`,context);
  return {...c,context,persisted,close(){audio.disposeAudio();restore();}};
 }
 test('actual main preserves metadata and silences menu, modal, manual pause, hidden and unowned batches',()=>{
@@ -98,7 +99,7 @@ test('Home freezes the actual village owner and keeps ambience silent until entr
  const context:any={weekId,localDay,game,entryEntered:false,sessionReady:true,pagePresent:true,lifetime:{disposed:false},session:{status:'active',check:()=>true},
   manualPaused:false,activeTab:'battle',modal:null,document:{hidden:false},atmosphereEnabled:true,villagePresentation:null,
   stopCombatAudio(){},pauseReason,ambienceAllowed,advanceVillagePresentation,updateSoundscape:(_age:number,allowed:boolean)=>audible.push(allowed)};
- runInNewContext(`${code}\nthis.api={syncPause,syncVillagePresentation};`,context);
+ runInApp(`${code}\nthis.api={syncPause,syncVillagePresentation};`,context);
  context.api.syncPause();context.api.syncVillagePresentation(1);
  assert.equal(game.state.paused,true);assert.equal(audible.at(-1),false);
  const before=context.villagePresentation.mood.time;context.api.syncVillagePresentation(1);assert.equal(context.villagePresentation.mood.time,before);

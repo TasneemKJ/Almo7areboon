@@ -1,4 +1,5 @@
 import test from 'node:test';
+import { mainSource } from './helpers/main-source.ts';
 import assert from 'node:assert/strict';
 import { readFileSync } from 'node:fs';
 import { welcomeBackLine, awayPhrase, AWAY_THRESHOLD_MS } from '../src/ui/welcome-back.ts';
@@ -25,7 +26,7 @@ test('lastSeen is optional, normalized on load and written on a copy at save tim
   assert.equal('lastSeen' in defaultProfile(), false);
   assert.equal(decodeSave(JSON.stringify({ ...defaultProfile(), lastSeen: NOW })).profile?.lastSeen, NOW);
   for (const bad of [0, -1, 1.5, 'x', null, {}, 5e15]) assert.equal('lastSeen' in (decodeSave(JSON.stringify({ ...defaultProfile(), lastSeen: bad })).profile ?? {}), false, String(bad));
-  const main = readFileSync(new URL('../src/main.ts', import.meta.url), 'utf8');
-  assert.match(main, /session\.save\(\{\.\.\.game\.profile,lastSeen:Math\.floor\(Date\.now\(\)\/60000\)\*60000\}\)/);
+  const main = mainSource();
+  assert.match(main, /app\.session\.save\(\{\.\.\.app\.game\.profile,lastSeen:Math\.floor\(Date\.now\(\)\/60000\)\*60000\}\)/);
   assert.match(main, /welcomeBackLine\(loaded\.profile\.lastSeen,Date\.now\(\),loaded\.profile\.wins\)/);
 });

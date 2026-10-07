@@ -1,4 +1,5 @@
 import test from 'node:test';
+import { mainSource } from './helpers/main-source.ts';
 import { battlefieldSource } from './helpers/battlefield-source.ts';
 import assert from 'node:assert/strict';
 import {readFileSync} from 'node:fs';
@@ -23,11 +24,11 @@ test('renderer observes terminal events and transforms its existing actor pool',
  assert.match(source,/if\(e\.type==='win'\|\|e\.type==='lose'\)this\.aftermath=\{phase:e\.type==='win'\?'won':'lost',at:this\.clock\};/);
  assert.match(source,/battleAftermathPose\(\{phase:aftermath\.phase,side:unit\.side,kind:unit\.kind,elapsed:aftermathElapsed,reduced:host\.reduce\(\)\}\)/);
  const actorBlock=source.slice(source.indexOf('for(const unit of host.game.state.units)'),source.indexOf('for(const [id,view]of units)'));
- assert.match(actorBlock,/view\.body\.setPosition/);assert.match(actorBlock,/view\.body\.setScale/);
+ assert.match(actorBlock,/poseTroop\(view\.body,frame\)/);assert.match(source,/body\.setPosition/);assert.match(source,/body\.setScale/);
  assert.doesNotMatch(actorBlock,/this\.add\.(image|graphics|sprite|text)/,'aftermath must reuse current actors instead of allocating per unit');
- assert.match(actorBlock,/else\{\s*view\.body\.setPosition[\s\S]*setScale\(facingDirection\*perspective\.scale/,'vector fallback must receive the same facing and bounded transform');
+ assert.match(source,/else\{\s*body\.setPosition[\s\S]*setScale\(facingDirection\*perspective\.scale/,'vector fallback must receive the same facing and bounded transform');
  assert.match(actorBlock,/const recoil=verdict\?stillReaction:hitReaction/,'terminal verdict bounds must not compose with a stale hit recoil');
- assert.match(actorBlock,/drawTroop\([\s\S]*verdict\?verdict\.mode==='triumph':unit\.attacking/,'a withdrawing vector survivor must not retain its terminal attack posture');
+ assert.match(source,/drawTroop\([\s\S]*verdict\?verdict\.mode==='triumph':unit\.attacking/,'a withdrawing vector survivor must not retain its terminal attack posture');
 });
 
 test('diagnostics are bounded and every reset or shutdown clears stale aftermath state',()=>{
@@ -47,10 +48,10 @@ test('pause, hidden ownership and reduced motion cannot advance an independent a
 });
 
 test('result timing and model ownership remain unchanged',()=>{
- const main=readFileSync(new URL('../src/main.ts',import.meta.url),'utf8'),source=battlefield();
+ const main=mainSource(),source=battlefield();
  assert.match(main,/resultDue=now\+\(document\.documentElement\.dataset\.motion==='reduced'\?350:1300\)/);
  assert.match(main,/const reviewHoldingResult=globalThis\.navigator\?\.webdriver&&document\.querySelector\('canvas'\)\?\.dataset\.battlefieldReviewFrameReady===s\.phase;/,'only phase-matched native browser evidence may hold a due result sheet, while non-browser model tests remain inert');
- assert.match(main,/resultShown!==s\.phase&&now>=resultDue&&!reviewHoldingResult/,'the evidence latch must not alter the production deadline or terminal ownership');
+ assert.match(main,/app\.resultShown!==s\.phase&&now>=app\.resultDue&&!reviewHoldingResult/,'the evidence latch must not alter the production deadline or terminal ownership');
  assert.doesNotMatch(source,/\.dispatch\(/);assert.doesNotMatch(source,/profile\.[A-Za-z_$][\w$]*\s*=/);
 });
 

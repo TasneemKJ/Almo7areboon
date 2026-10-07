@@ -1,4 +1,5 @@
 import test from 'node:test';
+import { mainSource } from './helpers/main-source.ts';
 import assert from 'node:assert/strict';
 import { countUpValue, COUNT_UP_MS } from '../src/ui/count-up.ts';
 import { readFileSync } from 'node:fs';
@@ -18,6 +19,6 @@ test('count-up is safe for zero, negative and non-finite values', () => {
 test('the result keeps the true total in an aria-label and skips the animation under reduced motion', () => {
   const results = readFileSync(new URL('../src/ui/results-screen.ts', import.meta.url), 'utf8');
   assert.match(results, /<strong aria-label="\$\{amount\(state\.earned\)\} coins">/);
-  const main = readFileSync(new URL('../src/main.ts', import.meta.url), 'utf8');
+  const main = mainSource();
   assert.match(main, /startCountUp\(\$\('modal-layer'\),compactNumber,document\.documentElement\.dataset\.motion==='reduced'\)/);
 });

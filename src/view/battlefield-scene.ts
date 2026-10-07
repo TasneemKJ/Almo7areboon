@@ -36,9 +36,8 @@ export interface SceneHost {
 }
 
 /** The Phaser scene: lays out the layers, then each frame steps the game and hands the frame to the collaborators. */
-export function createBattlefieldScene(host:SceneHost):Phaser.Scene {
- const {element,game,onFrame,onEvents,options}=host;
- class Battlefield extends Phaser.Scene {
+class Battlefield extends Phaser.Scene {
+  private readonly ctx:SceneHost;
   private world!:Phaser.GameObjects.Container;
   private chronicleView!:ChronicleView;
   private sky!:Phaser.GameObjects.Image;
@@ -57,8 +56,8 @@ export function createBattlefieldScene(host:SceneHost):Phaser.Scene {
   private villageHudPhase:Phase|null=null;
   private villageHudPaused:boolean|null=null;
   private villageMuster=createVillageMuster();
-  private readonly hud=createHudMeasure(element,()=>this.game.canvas,()=>this.layout);
-  private readonly marks=createBattlefieldMarks({ambience:()=>this.ambience,fx:()=>this.fx,canvas:()=>this.game.canvas,layout:()=>this.layout,yAt:lane=>this.yAt(lane),reduce:()=>this.reduce,paused:()=>game.state.paused,measureHud:()=>this.hud.regions()});
+  private readonly hud:ReturnType<typeof createHudMeasure>;
+  private readonly marks:ReturnType<typeof createBattlefieldMarks>;
   private effects!:ReturnType<typeof createBattlefieldEffects>;
   private army!:ReturnType<typeof createBattlefieldArmy>;
   private atmosphere!:ReturnType<typeof createBattlefieldAtmosphere>;
@@ -81,7 +80,13 @@ export function createBattlefieldScene(host:SceneHost):Phaser.Scene {
   private orderFrame:ReturnType<typeof orderPresentationFrame>=null;
   private musterFrame:ReturnType<typeof villageMusterFrame>=null;
   private waveArrival:WaveArrivalFrame|null=null;
-  constructor(){super('battlefield');}
+  constructor(ctx:SceneHost){
+   super('battlefield');
+   this.ctx=ctx;
+   const {element,game}=ctx;
+   this.hud=createHudMeasure(element,()=>this.game.canvas,()=>this.layout);
+   this.marks=createBattlefieldMarks({ambience:()=>this.ambience,fx:()=>this.fx,canvas:()=>this.game.canvas,layout:()=>this.layout,yAt:lane=>this.yAt(lane),reduce:()=>this.reduce,paused:()=>game.state.paused,measureHud:()=>this.hud.regions()});
+  }
   preload():void {
    for(const asset of visualAssets()){
     if(asset.format==='image')this.load.image(asset.key,asset.url);
@@ -90,6 +95,7 @@ export function createBattlefieldScene(host:SceneHost):Phaser.Scene {
    this.load.on('loaderror',()=>{this.failed=true;});
   }
   create():void {
+   const host=this.ctx,{game,element,options}=host;
    if(host.isDisposed())return;
    this.layout=arenaLayout(this.scale.width,this.scale.height);
    for(const asset of visualAssets())if(asset.frames&&this.textures.exists(asset.key)){
@@ -144,6 +150,7 @@ export function createBattlefieldScene(host:SceneHost):Phaser.Scene {
    this.effects.reset();
   }
   private cacheVillageViewport():void {
+   const host=this.ctx,{game}=host;
    const viewport=this.hud.viewport(game.profile.age);
    this.villageViewport=viewport;
    this.storybookDepth=cacheStorybookDepth(game.profile.age,viewport);
@@ -172,6 +179,7 @@ export function createBattlefieldScene(host:SceneHost):Phaser.Scene {
   }
   private yAt(lane:number):number{return this.layout.groundY+lane*this.layout.laneGap;}
   private syncEra():void {
+   const host=this.ctx,{game,element}=host;
    const p=game.profile,key=`${p.age}:${p.enemyAge}`;
    if(this.ages===key)return;this.ages=key;
    bakeGrade(this,this.graded,this.layout,p.age);bakeGrade(this,this.graded,this.layout,p.enemyAge);
@@ -186,6 +194,7 @@ export function createBattlefieldScene(host:SceneHost):Phaser.Scene {
    if(shell){shell.dataset.era=String(p.age);shell.style.setProperty('--era-accent',visualEra(p.age).accent);}
   }
   private event(e:GameEvent):void {
+   const host=this.ctx,{game}=host;
    this.villageMuster=rememberVillageMuster(this.villageMuster,e,game.state.time);
    const x=xAt(e.x??500),y=this.yAt(e.lane??1);
    if(e.type==='order'){this.effects.floatText(106,this.layout.groundY-58,e.order==='advance'?'ADVANCE':'HOLD THE LINE',e.order==='advance'?'#f0ce87':'#a9dfdc',false);return;}
@@ -242,6 +251,7 @@ export function createBattlefieldScene(host:SceneHost):Phaser.Scene {
    }
   }
   update(_time:number,delta:number):void {
+   const host=this.ctx,{game,options,onEvents,onFrame,element}=host;
    if(host.isDisposed()||!this.world)return;
    const dt=Math.min(.05,Math.max(0,delta/1000));
    const reduced=reducedMotion(game.profile.motion,host.motionQuery.matches);
@@ -263,6 +273,9 @@ export function createBattlefieldScene(host:SceneHost):Phaser.Scene {
    if(phaseHudChanged||orderHudChanged){const world=element.closest<HTMLElement>('.world');if(world?.dataset.phase!==game.state.phase||orderHudChanged)onFrame(true);this.villageHudPhase=game.state.phase;this.cacheVillageViewport();}
    this.atmosphere.draw();paintBaseDamage(this.baseDamage,game,this.layout,this.clock,this.reduce,side=>this.effects.baseHit(side));this.army.draw();paintOrders(this.shadows,this.orderFrame,()=>this.game.canvas,this.reduce);paintHealthBars(this.bars,this.baseText,game,this.layout,lane=>this.yAt(lane));this.effects.step(game.state.paused?0:dt);onFrame();
   }
- }
- return new Battlefield();
+}
+
+/** Creates the battlefield scene for the given host. */
+export function createBattlefieldScene(host:SceneHost):Phaser.Scene {
+ return new Battlefield(host);
 }

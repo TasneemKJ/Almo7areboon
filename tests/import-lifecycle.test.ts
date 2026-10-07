@@ -1,13 +1,14 @@
 import test from 'node:test';
+import { mainSource } from './helpers/main-source.ts';
 import assert from 'node:assert/strict';
 import {readFileSync} from 'node:fs';
-import {runInNewContext} from 'node:vm';
+import { runInApp } from './helpers/run-app.ts';
 import ts from 'typescript';
 import {importBackup} from '../src/game/backup.ts';
 import {defaultProfile,MAX_SAVE_CHARS} from '../src/game/save.ts';
 import {chapterPresentation} from '../src/ui/chapter-presentation.ts';
 
-const source=readFileSync(new URL('../src/main.ts',import.meta.url),'utf8');
+const source=mainSource();
 const ast=ts.createSourceFile('main.ts',source,ts.ScriptTarget.Latest,true,ts.ScriptKind.TS);
 const listener=ast.statements.find(n=>ts.isExpressionStatement(n)&&ts.isCallExpression(n.expression)&&n.expression.expression.getText(ast)==='lifetime.listen'&&n.expression.arguments[1]?.getText(ast)==="'change'");
 assert.ok(listener,'test the actual production import handler');
@@ -35,7 +36,7 @@ function setup(){
   showModal:(name:string,html:string,focusCommand?:string)=>{context.focusCommand=focusCommand;context.modal=name;context.modalVersion++;dialogs.push(html);},
   isLegacyChoice:()=>false,
  };
- runInNewContext(code,context);
+ runInApp(code,context);
  function select(size=20){
   const read=deferred();input.files=[{size,text:()=>read.promise}];input.value='selected-save.json';
   const completion=handler({target:input});return {...read,completion};

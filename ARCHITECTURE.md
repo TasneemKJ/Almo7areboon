@@ -5,7 +5,7 @@
 A Vite + TypeScript app with Phaser 3 for the battlefield and native DOM for everything else. Imports point down:
 
 ```
-game  ←  view  ←  ui  ←  main.ts
+game  ←  view  ←  ui  ←  app  ←  main.ts
 sim,     Phaser   DOM     input, navigation,
 saves    art,     screens lifecycle, render loop
          audio    dialogs
@@ -16,7 +16,8 @@ saves    art,     screens lifecycle, render loop
 | `src/game/` | Deterministic combat (`simulation.ts`), economy and quests (`data.ts`), cards (`cards.ts`), mastery seals, prestige/legacy, the Folktale tactics Chronicle (`chronicle*.ts`), battle orders, statistics, save decoding (`save.ts`), session ownership (`save-session.ts`) and backup (`backup.ts`) |
 | `src/view/` | The Phaser battlefield, original vector art and storybook plates, atmosphere and grading, combat feedback, the synthesized soundscape (cancellable worker) |
 | `src/ui/` | Screen templates, results, Journey, Chronicle, dialogs, modal tap guard, pause ownership, accessibility helpers, HUD text, `next-goal.ts` |
-| `src/main.ts` | Wiring: event dispatch, tabs, modals, the frame loop, persistence calls |
+| `src/app/` | The shell: one shared `app` state object (`state.ts`), the DOM `runtime.ts`, and the flow modules `lifecycle.ts` (session, persistence, update loop), `navigation.ts` (tabs, modals, camp, prestige), `quests.ts` and `listeners.ts` (input routing, command table) |
+| `src/main.ts` | Composition only: creates the save session and battlefield port, mounts the renderer, starts the session |
 | `public/` | Static files: icons, manifest, `sw.js` (offline cache; its install list is filled at build by the Vite plugin), storybook art |
 | `art-source/storybook/` | Source art for the packing scripts (`scripts/prepare-storybook-art.cjs`, `prepare-storybook-icons.cjs`, which need `sharp`); shipped plates live in `public/art/` |
 
