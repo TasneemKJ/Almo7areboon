@@ -1,4 +1,5 @@
 import test from 'node:test';
+import { mainSource } from './helpers/main-source.ts';
 import assert from 'node:assert/strict';
 import {readFileSync} from 'node:fs';
 import {baseSvg} from '../src/view/world-illustrations.ts';
@@ -66,7 +67,7 @@ test('portrait slot source contract: labels and pricing reserve separate space f
 
 
 test('the four-pass layout polish layer is loaded after readability',()=>{
- const main=readFileSync(new URL('../src/main.ts',import.meta.url),'utf8');
+ const main=mainSource();
  assert.match(main,/import '\.\/ui\/layout-polish\.css';/);
  assert.ok(main.indexOf('layout-polish.css')>main.indexOf('readability.css'));
 });

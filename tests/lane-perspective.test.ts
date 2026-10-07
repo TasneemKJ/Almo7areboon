@@ -1,4 +1,5 @@
 import test from 'node:test';
+import { battlefieldSource } from './helpers/battlefield-source.ts';
 import assert from 'node:assert/strict';
 
 async function presentation() {
@@ -38,8 +39,7 @@ test('lane presentation fails soft for malformed values and never changes simula
 });
 
 test('battlefield renderer consumes lane perspective for actors, shadows and health-bar height',async()=>{
-  const {readFileSync}=await import('node:fs');
-  const source=readFileSync(new URL('../src/view/battlefield.ts',import.meta.url),'utf8');
+  const source=battlefieldSource();
   assert.match(source,/lanePresentation/);
   assert.match(source,/troopScale/);
   assert.match(source,/shadowWidth/);

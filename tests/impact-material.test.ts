@@ -1,6 +1,6 @@
 import test from 'node:test';
+import { battlefieldSource } from './helpers/battlefield-source.ts';
 import assert from 'node:assert/strict';
-import {readFileSync} from 'node:fs';
 
 async function impact(){
  const path='../src/view/impact-material.ts';
@@ -73,9 +73,9 @@ test('invalid impact inputs fall back to finite first-chapter melee geometry',as
 });
 
 test('battlefield queues material impact at direct and projectile contact without touching simulation state',()=>{
- const source=readFileSync(new URL('../src/view/battlefield.ts',import.meta.url),'utf8');
- assert.match(source,/impactMaterialFrame\(cue\.age,cue\.kind,cue\.side,progress,this\.reduce\)/);
- assert.match(source,/impactCues\.push\(\{x,y,age,kind,side/);
- assert.match(source,/this\.impact\(bolt\.to\.x,bolt\.to\.y,bolt\.damage,bolt\.age,bolt\.kind,bolt\.side/);
+ const source=battlefieldSource();
+ assert.match(source,/impactMaterialFrame\(cue\.age,cue\.kind,cue\.side,progress,host\.reduce\(\)\)/);
+ assert.match(source,/pushImpactCue\(\{x,y,age,kind,side/);
+ assert.match(source,/impact\(bolt\.to\.x,bolt\.to\.y,bolt\.damage,bolt\.age,bolt\.kind,bolt\.side/);
  assert.doesNotMatch(source,/game\.state\.[A-Za-z0-9_]+\s*=[^=]/);
 });

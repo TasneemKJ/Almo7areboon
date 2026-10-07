@@ -24,82 +24,88 @@ function rect(g:G,x:number,y:number,w:number,h:number,color:number,r=0,stroke=in
   g.fillStyle(color,1);g.lineStyle(lw,stroke,1);if(r){g.fillRoundedRect(x,y,w,h,r);if(lw)g.strokeRoundedRect(x,y,w,h,r);}else{g.fillRect(x,y,w,h);if(lw)g.strokeRect(x,y,w,h);}
 }
 
-/** A small, original, outlined warrior. The rig is redrawn from one pose clock. */
-export function drawTroop(g:G,age:number,kind:UnitKind,side:Side,clock:number,attacking:boolean,flash=false):void {
-  g.clear();
-  const accent=side==='player'?0x358bea:0xe85849;
-  const uniform=[0xb78451,0xd8c9a0,0xe1b778,0x637bb2,0x6b8a55,0xd3e0e4][age%6];
-  const gait=attacking?0:Math.sin(clock*Math.PI*2)*3.4;
-  const swing=attacking?Math.sin(clock*17)*5:Math.sin(clock*6)*1.1;
-  const heavy=kind===2;
-  const rider=heavy&&(age===0||age===2);
-  const offset=rider?-12:0;
+interface TroopPose {accent:number;uniform:number;gait:number;swing:number;heavy:boolean;rider:boolean;offset:number;age:number;kind:UnitKind;clock:number;attacking:boolean;flash:boolean;y:number;body:number}
 
-  if(heavy){
-    if(age===0){
-      // Plump prehistoric mount, with a chunky tail and pale jaw.
-      poly(g,[-17,-11,-31,-17,-28,-9,-13,-3],0x759941);
-      ellipse(g,-2,-11,39,23,0x97b957);g.lineStyle(1.7,ink,1);g.strokeEllipse(-2,-11,39,23);
-      poly(g,[8,-14,15,-28,25,-25,30,-15,26,-8,10,-6],0x97b957);
-      ellipse(g,23,-12,14,8,0xd1d48b);circle(g,24,-22,1.6,ink,ink,0);
-      line(g,[19,-7,28,-7],ink,1.4);
-      for(let i=0;i<3;i++)poly(g,[-20+i*8,-20-i%2*3,-15+i*8,-26-i%2*3,-11+i*8,-20-i%2*3],0x668638,ink,1);
-      line(g,[-11,-5,-13+gait,4,-8+gait,4],ink,5);line(g,[10,-5,11-gait,4,17-gait,4],ink,5);
-      line(g,[-11,-6,-13+gait,2],0x89a74b,3);line(g,[10,-6,11-gait,2],0x89a74b,3);
-    }else if(age===1){
-      // The Scythe is a large foot soldier; it has no mount.
-    }else if(age===2){
-      // A Spartan rider on a horse, with no chariot or wheels.
-      ellipse(g,0,-10,34,18,0xaf9372);g.lineStyle(1.7,ink,1);g.strokeEllipse(0,-10,34,18);
-      poly(g,[9,-12,13,-29,23,-29,28,-22,21,-17,17,-9],0xaf9372);
-      poly(g,[13,-28,12,-33,16,-31,18,-34,20,-29],0x625248);
-      line(g,[-14,-10,-23,-7,-23,-15],0x625248,3);circle(g,23,-26,1.4,ink,ink,0);
-      line(g,[-11,-5,-14+gait,5],ink,3);line(g,[11,-5,13-gait,5],ink,3);
-      rect(g,-9,-19,19,11,accent,1);line(g,[18,-20,2,-19],0x49382c,1);
-    }else if(age===3){
-      // A wheeled field cannon and its little artilleryman.
-      line(g,[-23,-8,6,-15,18,-6],0x77573a,4);
-      poly(g,[-12,-26,31,-29,34,-20,-10,-16],0x58625b);
-      ellipse(g,33,-24,5,10,0x333c38);line(g,[-8,-23,29,-26],0x879088,2);
-      for(const x of [-9,14]){circle(g,x,-5,9,0x957348);circle(g,x,-5,3,0x4f4b3d);for(let i=0;i<4;i++){const a=(attacking?0:clock*.7)+i*Math.PI/2;line(g,[x-Math.cos(a)*7,-5-Math.sin(a)*7,x+Math.cos(a)*7,-5+Math.sin(a)*7],0x534b39,1.2);}}
-      rect(g,-31,-25,12,16,accent,2);circle(g,-25,-35,9,skin);poly(g,[-35,-40,-32,-48,-24,-44,-17,-48,-14,-40],0x41484c);
-      line(g,[-23,-36,-23,-32],ink,1.5);line(g,[-19,-36,-19,-32],ink,1.5);
-      line(g,[-30,-10,-31,2,-26,2],ink,2.6);line(g,[-22,-10,-20,2,-16,2],ink,2.6);
-      line(g,[-21,-23,-13,-17],skin,3);return;
-    }else if(age===4){
-      rect(g,-25,-14,51,17,0x495c38,7);rect(g,-21,-12,43,13,0x29392b,5);
-      for(let x=-16;x<=17;x+=11)circle(g,x,-5,4,0x92916c,ink,1.2);
-      poly(g,[-26,-16,-15,-28,13,-28,25,-15],0x849458);rect(g,-12,-35,25,12,0x96a56a,4);
-      rect(g,9,-31,30,5,0x647749,0);rect(g,-22,-21,45,6,0xa5b67c,2,ink,0);
-      rect(g,-9,-24,11,4,accent,1,ink,0);circle(g,-1,-34,4,0x697b4b,ink,1.3);
-      return;
-    }else{
-      const hover=-14+Math.sin(clock*3)*2;
-      ellipse(g,0,hover+7,37,9,0x97e7ef,.32);
-      ellipse(g,0,hover+5,24,6,0xc4ffff,.75);
-      ellipse(g,0,hover-8,27,26,0xaad7e3);g.lineStyle(1.5,ink,1);g.strokeEllipse(0,hover-8,27,26);
-      ellipse(g,-4,hover-13,12,10,0xe5faff,.8);
-      ellipse(g,0,hover,60,18,flash?0xffffff:0xabbac5);g.lineStyle(1.5,ink,1);g.strokeEllipse(0,hover,60,18);
-      ellipse(g,0,hover-3,56,9,0xd9e4e7);line(g,[-25,hover+1,25,hover+1],0x6b8190,1.4);
-      for(const x of [-18,-6,6,18])circle(g,x,hover+2,2,accent,ink,.8);
-      rect(g,22,hover-2,12,4,0x6d8b9a,1);circle(g,33,hover,2,0xc5fdff,ink,.7);
-      return;
-    }
-  }
+/** Plump prehistoric mount, drawn behind the rider. */
+function drawPrehistoricMount(g:G,p:TroopPose):void {
+  const {gait}=p;
+    // Plump prehistoric mount, with a chunky tail and pale jaw.
+    poly(g,[-17,-11,-31,-17,-28,-9,-13,-3],0x759941);
+    ellipse(g,-2,-11,39,23,0x97b957);g.lineStyle(1.7,ink,1);g.strokeEllipse(-2,-11,39,23);
+    poly(g,[8,-14,15,-28,25,-25,30,-15,26,-8,10,-6],0x97b957);
+    ellipse(g,23,-12,14,8,0xd1d48b);circle(g,24,-22,1.6,ink,ink,0);
+    line(g,[19,-7,28,-7],ink,1.4);
+    for(let i=0;i<3;i++)poly(g,[-20+i*8,-20-i%2*3,-15+i*8,-26-i%2*3,-11+i*8,-20-i%2*3],0x668638,ink,1);
+    line(g,[-11,-5,-13+gait,4,-8+gait,4],ink,5);line(g,[10,-5,11-gait,4,17-gait,4],ink,5);
+    line(g,[-11,-6,-13+gait,2],0x89a74b,3);line(g,[10,-6,11-gait,2],0x89a74b,3);
 
-  const y=offset;
-  const body=flash?0xffffff:uniform;
-  // Legs, torso and broad friendly round head.
-  if(!rider){line(g,[-4,y-10,-5-gait,y-1,-1-gait,y],ink,3);line(g,[4,y-10,5+gait,y-1,9+gait,y],ink,3);}
-  else{line(g,[-3,y-10,-7,y-1,-2,y],ink,3);line(g,[4,y-10,7,y-2,11,y-2],ink,2.5);}
-  poly(g,[-7,y-24,6,y-24,9,y-10,-7,y-10],body,ink,1.4);
-  if(age===0){poly(g,[-7,y-23,0,y-22,5,y-10,0,y-10,-4,y-16],0xc69761,ink,0);poly(g,[-7,y-10,-3,y-13,0,y-10,4,y-13,9,y-10],body,ink,1);circle(g,-2,y-18,1,0x694728,ink,0);circle(g,4,y-14,1.3,0x694728,ink,0);}
-  else{rect(g,-6,y-15,13,3,age===2?0x9c6040:0x65503e,0,ink,0);}
-  line(g,[-5,y-22,-11,y-16+gait*.5,-8,y-11+gait*.5],skin,4);line(g,[-5,y-22,-11,y-16+gait*.5],ink,1.2);
-  circle(g,0,y-33,10.7,flash?0xffffff:skin,ink,1.4);
-  ellipse(g,-3,y-37,11,7,0xffe9c3,.66);
-  // Both tiny vertical eyes remain readable at phone size.
-  line(g,[3,y-35,3,y-31],ink,1.7);line(g,[7,y-35,7,y-31],ink,1.7);
+}
+
+/** A Spartan rider on a horse, with no chariot or wheels. */
+function drawSpartanHorse(g:G,p:TroopPose):void {
+  const {accent,gait}=p;
+    // A Spartan rider on a horse, with no chariot or wheels.
+    ellipse(g,0,-10,34,18,0xaf9372);g.lineStyle(1.7,ink,1);g.strokeEllipse(0,-10,34,18);
+    poly(g,[9,-12,13,-29,23,-29,28,-22,21,-17,17,-9],0xaf9372);
+    poly(g,[13,-28,12,-33,16,-31,18,-34,20,-29],0x625248);
+    line(g,[-14,-10,-23,-7,-23,-15],0x625248,3);circle(g,23,-26,1.4,ink,ink,0);
+    line(g,[-11,-5,-14+gait,5],ink,3);line(g,[11,-5,13-gait,5],ink,3);
+    rect(g,-9,-19,19,11,accent,1);line(g,[18,-20,2,-19],0x49382c,1);
+
+}
+
+/** A wheeled field cannon and its little artilleryman. */
+function drawFieldCannon(g:G,p:TroopPose):void {
+  const {accent,clock,attacking}=p;
+    // A wheeled field cannon and its little artilleryman.
+    line(g,[-23,-8,6,-15,18,-6],0x77573a,4);
+    poly(g,[-12,-26,31,-29,34,-20,-10,-16],0x58625b);
+    ellipse(g,33,-24,5,10,0x333c38);line(g,[-8,-23,29,-26],0x879088,2);
+    for(const x of [-9,14]){circle(g,x,-5,9,0x957348);circle(g,x,-5,3,0x4f4b3d);for(let i=0;i<4;i++){const a=(attacking?0:clock*.7)+i*Math.PI/2;line(g,[x-Math.cos(a)*7,-5-Math.sin(a)*7,x+Math.cos(a)*7,-5+Math.sin(a)*7],0x534b39,1.2);}}
+    rect(g,-31,-25,12,16,accent,2);circle(g,-25,-35,9,skin);poly(g,[-35,-40,-32,-48,-24,-44,-17,-48,-14,-40],0x41484c);
+    line(g,[-23,-36,-23,-32],ink,1.5);line(g,[-19,-36,-19,-32],ink,1.5);
+    line(g,[-30,-10,-31,2,-26,2],ink,2.6);line(g,[-22,-10,-20,2,-16,2],ink,2.6);
+    line(g,[-21,-23,-13,-17],skin,3);
+}
+
+/** A small armoured vehicle. */
+function drawTank(g:G,p:TroopPose):void {
+  const {accent}=p;
+    rect(g,-25,-14,51,17,0x495c38,7);rect(g,-21,-12,43,13,0x29392b,5);
+    for(let x=-16;x<=17;x+=11)circle(g,x,-5,4,0x92916c,ink,1.2);
+    poly(g,[-26,-16,-15,-28,13,-28,25,-15],0x849458);rect(g,-12,-35,25,12,0x96a56a,4);
+    rect(g,9,-31,30,5,0x647749,0);rect(g,-22,-21,45,6,0xa5b67c,2,ink,0);
+    rect(g,-9,-24,11,4,accent,1,ink,0);circle(g,-1,-34,4,0x697b4b,ink,1.3);
+}
+
+/** The hovering craft of the last era. */
+function drawHoverCraft(g:G,p:TroopPose):void {
+  const {accent,clock,flash}=p;
+    const hover=-14+Math.sin(clock*3)*2;
+    ellipse(g,0,hover+7,37,9,0x97e7ef,.32);
+    ellipse(g,0,hover+5,24,6,0xc4ffff,.75);
+    ellipse(g,0,hover-8,27,26,0xaad7e3);g.lineStyle(1.5,ink,1);g.strokeEllipse(0,hover-8,27,26);
+    ellipse(g,-4,hover-13,12,10,0xe5faff,.8);
+    ellipse(g,0,hover,60,18,flash?0xffffff:0xabbac5);g.lineStyle(1.5,ink,1);g.strokeEllipse(0,hover,60,18);
+    ellipse(g,0,hover-3,56,9,0xd9e4e7);line(g,[-25,hover+1,25,hover+1],0x6b8190,1.4);
+    for(const x of [-18,-6,6,18])circle(g,x,hover+2,2,accent,ink,.8);
+    rect(g,22,hover-2,12,4,0x6d8b9a,1);circle(g,33,hover,2,0xc5fdff,ink,.7);
+    return;
+  
+}
+
+/** Heavy-unit art by era. A returned true means the unit is complete (no separate rider or weapon); the Scythe has no mount. */
+const HEAVY_UNITS:Record<number,{draw:(g:G,p:TroopPose)=>void;complete:boolean}>={
+  0:{draw:drawPrehistoricMount,complete:false},
+  2:{draw:drawSpartanHorse,complete:false},
+  3:{draw:drawFieldCannon,complete:true},
+  4:{draw:drawTank,complete:true},
+  5:{draw:drawHoverCraft,complete:true},
+};
+
+/** Era headgear over the round head. */
+function drawHeadgear(g:G,p:TroopPose):void {
+  const {accent,age,y}=p;
   if(age===0){poly(g,[-10,y-37,-6,y-43,0,y-42,4,y-43,7,y-40,-1,y-40,-4,y-36],0x725132,ink,1.2);line(g,[-8,y-40,8,y-40],accent,2.5);}
   if(age===1){ellipse(g,-1,y-41,28,5,0xd9b36b);poly(g,[-8,y-42,-5,y-49,5,y-49,9,y-42],0xe9c47c);line(g,[-7,y-42,7,y-42],accent,2);}
   if(age===2){poly(g,[-11,y-34,-11,y-41,-6,y-46,5,y-46,10,y-41,10,y-38,-2,y-38,-3,y-28,-8,y-30],0xe2bd66);poly(g,[-7,y-47,-6,y-51,5,y-51,10,y-45],accent);line(g,[-9,y-40,8,y-40],0xf9de8d,2);}
@@ -109,7 +115,12 @@ export function drawTroop(g:G,age:number,kind:UnitKind,side:Side,clock:number,at
     poly(g,[-12,y-30,-12,y-40,-8,y-47,4,y-48,11,y-43,12,y-37,8,y-38,6,y-42,-6,y-42,-8,y-36,-7,y-29],0xe2eced);
     line(g,[-8,y-40,7,y-40],0x8edee9,2);circle(g,-9,y-33,3,accent,ink,1);
     line(g,[-7,y-25,7,y-25],0x8ad7e5,2);rect(g,-4,y-21,8,4,accent,1,ink,.5);
-  }
+}
+}
+
+/** Hand and weapon by role and era. */
+function drawWeapon(g:G,p:TroopPose):void {
+  const {accent,swing,heavy,age,kind,attacking,y}=p;
   const handY=y-19+(attacking?-swing:0);
   line(g,[6,y-22,12,handY,16,handY],ink,4.7);line(g,[6,y-22,12,handY,16,handY],skin,2.8);
   if(kind===1){
@@ -126,11 +137,47 @@ export function drawTroop(g:G,age:number,kind:UnitKind,side:Side,clock:number,at
     line(g,[16,handY+10,20+swing,handY-25],0x85623d,2.6);
     if(heavy){poly(g,[20+swing,handY-24,13+swing,handY-32,1+swing,handY-31,-8+swing,handY-26,3+swing,handY-28,12+swing,handY-27,20+swing,handY-18],0xc7d0c4);line(g,[12,handY-3,20,handY-4],0x85623d,2.2);}
     else{line(g,[15+swing,handY-25,25+swing,handY-25],0xabb3a6,2);for(const dx of [15,20,25])line(g,[dx+swing,handY-25,dx+swing,handY-34],0xabb3a6,1.8);}
+}
+else if(age===2&&heavy){line(g,[8,handY+10,26+swing,handY-22],0x765537,2.2);poly(g,[23+swing,handY-22,31+swing,handY-30,29+swing,handY-19],0xc2cac1);circle(g,-7,y-17,7,0xd4ab62);circle(g,-7,y-17,2,0xf0d68d,ink,.7);}
+else if(age===2||age===3){line(g,[15,handY+5,17+swing,handY-17],0xd8dce0,3);poly(g,[15+swing,handY-17,19+swing,handY-22,20+swing,handY-15],0xd8dce0);line(g,[11,handY+1,21,handY+1],0xb9a161,2.5);circle(g,-7,y-17,7,age===2?0xd4ab62:accent);circle(g,-7,y-17,2,age===2?0xf0d68d:0xb9d9ed,ink,.7);}
+else if(age===4){line(g,[11,handY+1,31,handY-1],ink,4);line(g,[12,handY+1,20,handY],0x67784d,2);line(g,[30,handY-1,35,handY-1],0x626c66,2);}
+else{line(g,[16,handY+6,18+swing,handY-1],0x577285,4);line(g,[18+swing,handY-3,20+swing,handY-26],accent,6);line(g,[18+swing,handY-3,20+swing,handY-26],0xd7fdff,2.6);line(g,[12,handY+1,23,handY+1],0x7896a7,2);}
+}
+
+/** Legs, torso and the broad friendly round head. */
+function drawBodyAndHead(g:G,p:TroopPose):void {
+  const {gait,rider,age,flash,y,body}=p;
+    // Legs, torso and broad friendly round head.
+  if(!rider){line(g,[-4,y-10,-5-gait,y-1,-1-gait,y],ink,3);line(g,[4,y-10,5+gait,y-1,9+gait,y],ink,3);}
+  else{line(g,[-3,y-10,-7,y-1,-2,y],ink,3);line(g,[4,y-10,7,y-2,11,y-2],ink,2.5);}
+  poly(g,[-7,y-24,6,y-24,9,y-10,-7,y-10],body,ink,1.4);
+  if(age===0){poly(g,[-7,y-23,0,y-22,5,y-10,0,y-10,-4,y-16],0xc69761,ink,0);poly(g,[-7,y-10,-3,y-13,0,y-10,4,y-13,9,y-10],body,ink,1);circle(g,-2,y-18,1,0x694728,ink,0);circle(g,4,y-14,1.3,0x694728,ink,0);}
+  else{rect(g,-6,y-15,13,3,age===2?0x9c6040:0x65503e,0,ink,0);}
+  line(g,[-5,y-22,-11,y-16+gait*.5,-8,y-11+gait*.5],skin,4);line(g,[-5,y-22,-11,y-16+gait*.5],ink,1.2);
+  circle(g,0,y-33,10.7,flash?0xffffff:skin,ink,1.4);
+  ellipse(g,-3,y-37,11,7,0xffe9c3,.66);
+  // Both tiny vertical eyes remain readable at phone size.
+  line(g,[3,y-35,3,y-31],ink,1.7);line(g,[7,y-35,7,y-31],ink,1.7);
+}
+
+/** A small, original, outlined warrior. The rig is redrawn from one pose clock. */
+export function drawTroop(g:G,age:number,kind:UnitKind,side:Side,clock:number,attacking:boolean,flash=false):void {
+  g.clear();
+  const accent=side==='player'?0x358bea:0xe85849;
+  const uniform=[0xb78451,0xd8c9a0,0xe1b778,0x637bb2,0x6b8a55,0xd3e0e4][age%6];
+  const gait=attacking?0:Math.sin(clock*Math.PI*2)*3.4;
+  const swing=attacking?Math.sin(clock*17)*5:Math.sin(clock*6)*1.1;
+  const heavy=kind===2;
+  const rider=heavy&&(age===0||age===2);
+  const offset=rider?-12:0;
+  const y=offset,body=flash?0xffffff:uniform;
+  const pose:TroopPose={accent,uniform,gait,swing,heavy,rider,offset,age,kind,clock,attacking,flash,y,body};
+  if(heavy&&age!==1){
+    const unit=HEAVY_UNITS[age]??HEAVY_UNITS[5];
+    unit.draw(g,pose);
+    if(unit.complete)return;
   }
-  else if(age===2&&heavy){line(g,[8,handY+10,26+swing,handY-22],0x765537,2.2);poly(g,[23+swing,handY-22,31+swing,handY-30,29+swing,handY-19],0xc2cac1);circle(g,-7,y-17,7,0xd4ab62);circle(g,-7,y-17,2,0xf0d68d,ink,.7);}
-  else if(age===2||age===3){line(g,[15,handY+5,17+swing,handY-17],0xd8dce0,3);poly(g,[15+swing,handY-17,19+swing,handY-22,20+swing,handY-15],0xd8dce0);line(g,[11,handY+1,21,handY+1],0xb9a161,2.5);circle(g,-7,y-17,7,age===2?0xd4ab62:accent);circle(g,-7,y-17,2,age===2?0xf0d68d:0xb9d9ed,ink,.7);}
-  else if(age===4){line(g,[11,handY+1,31,handY-1],ink,4);line(g,[12,handY+1,20,handY],0x67784d,2);line(g,[30,handY-1,35,handY-1],0x626c66,2);}
-  else{line(g,[16,handY+6,18+swing,handY-1],0x577285,4);line(g,[18+swing,handY-3,20+swing,handY-26],accent,6);line(g,[18+swing,handY-3,20+swing,handY-26],0xd7fdff,2.6);line(g,[12,handY+1,23,handY+1],0x7896a7,2);}
+  drawBodyAndHead(g,pose);drawHeadgear(g,pose);drawWeapon(g,pose);
 }
 
 /** Data URI portraits share the battlefield's visual language without external assets. */

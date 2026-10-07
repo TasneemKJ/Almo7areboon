@@ -199,7 +199,6 @@ function unit(id: number, side: 'player' | 'enemy', x: number, hp = 26, kind: 0 
   game.profile.foodLevel = 4;
   game.profile.baseLevel = 2;
   game.profile.unlocked = [true, true, true];
-  const cost = ERAS[0].evolveCost;
   assert.equal(game.dispatch({ type: 'evolve' }), true);
   assert.equal(game.profile.age, 1);
   assert.equal(game.profile.coins, 0);

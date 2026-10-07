@@ -134,8 +134,10 @@ export function villageSkyPath(age:number,viewport:VillageViewport):Bounds|null 
  return free.filter(part=>part[2]-part[0]>=142&&part[3]-part[1]>=20).sort((a,b)=>(b[2]-b[0])-(a[2]-a[0]))[0]??null;
 }
 
-/** Bounded geometry in world coordinates, registered exclusively from measured source anchors. */
-export function villageFrame(input:VillageFrameInput):VillageFrame {
+type FrameContext=ReturnType<typeof resolveFrame>;
+
+/** Clamps and derives every scalar the frame stages share; stages never re-read the raw input for these. */
+function resolveFrame(input:VillageFrameInput){
  const age=Number.isInteger(input.age)&&input.age>=0&&input.age<6?input.age:0,plate=VILLAGE_PLATES[age];
  const restoration=Number.isInteger(input.restoration)&&input.restoration!>=0&&input.restoration!<=7?input.restoration!:0;
  const time=input.reduced?0:Number.isFinite(input.time)?Math.min(1_000_000,Math.max(0,input.time)):0;
@@ -158,6 +160,13 @@ export function villageFrame(input:VillageFrameInput):VillageFrame {
  const clearOfHud=([l,t,r,b]:Bounds)=>!hudSourceBounds.some(([hl,ht,hr,hb])=>l<hr&&r>hl&&t<hb&&b>ht);
  const project=(p:Point):Point=>({x:placement.x+p.x*placement.scale,y:placement.y+p.y*placement.scale});
  const paint=(points:readonly Point[],alpha:number):PaintedPolygon=>({points:points.map(project),color:INK,alpha});
+ const lightFactor=verdict?.mode==='celebrate'?1+.35*verdict.progress:verdict?.mode==='shelter'?1-.75*verdict.progress:1;
+ return {input,age,plate,restoration,time,sharedMix,mix,verdict,watchProgress,orderKind,orderProgress,musterProgress,placement,cssWorldScale,hudSourceBounds,clearOfHud,project,paint,lightFactor};
+}
+
+/** Window residents: shared darkening, the verdict and muster witnesses, and the quiet visit when the village is calm. */
+function paintResidents(c:FrameContext){
+ const {input,age,plate,restoration,time,sharedMix,mix,verdict,musterProgress,placement,cssWorldScale,clearOfHud,paint}=c;
  const residents:VillageFrame['residents'][number][]=[];
  const verdictResidents:VillageFrame['verdictResidents'][number][]=[];
  const musterResidents:VillageFrame['musterResidents'][number][]=[];
@@ -199,6 +208,12 @@ export function villageFrame(input:VillageFrameInput):VillageFrame {
   if(witnessPanes.length)verdictResidents.push({apertureId:room.id,panes:witnessPanes});
   if(musterPanes.length)musterResidents.push({apertureId:room.id,panes:musterPanes});
  }
+ return {residents,verdictResidents,musterResidents};
+}
+
+/** Celebration ticks or shelter crosses over each window the HUD does not cover. */
+function verdictStrokesFor(c:FrameContext):VillageStroke[]{
+ const {plate,verdict,placement,clearOfHud,project}=c;
  const verdictStrokes:VillageStroke[]=[];
  if(verdict?.mode==='celebrate')for(const room of plate.windows){
   const [l,t,r]=room.bounds,w=r-l;
@@ -213,11 +228,15 @@ export function villageFrame(input:VillageFrameInput):VillageFrame {
   verdictStrokes.push({from:project({x:l+inset,y:t+inset}),to:project({x:r-inset,y:b-inset}),width:Math.max(.9,1.4*placement.scale),color:INK,alpha:.58*verdict.progress});
   verdictStrokes.push({from:project({x:r-inset,y:t+inset}),to:project({x:l+inset,y:b-inset}),width:Math.max(.9,1.4*placement.scale),color:INK,alpha:.58*verdict.progress});
  }
- const lightFactor=verdict?.mode==='celebrate'?1+.35*verdict.progress:verdict?.mode==='shelter'?1-.75*verdict.progress:1;
+ return verdictStrokes;
+}
+
+/** Every practical lamp halo, with the lamps changed by the verdict, order and muster recorded as it goes. */
+function paintLamps(c:FrameContext){
+ const {input,age,plate,time,mix,verdict,watchProgress,orderKind,musterProgress,placement,clearOfHud,project,lightFactor}=c;
  const verdictLights:VillageHalo[]=[];
- const watchLights:VillageHalo[]=[],watchStrokes:VillageStroke[]=[];
- const orderLights:VillageHalo[]=[],orderStrokes:VillageStroke[]=[];
- const musterLights:VillageHalo[]=[],musterStrokes:VillageStroke[]=[];
+ const orderLights:VillageHalo[]=[];
+ const musterLights:VillageHalo[]=[];
  const watchCount=watchProgress===null?0:input.reduced?plate.lamps.length:Math.min(plate.lamps.length,1+Math.floor(watchProgress*plate.lamps.length+1e-9));
  const watchIndexes=[...plate.lamps.keys()].sort((a,b)=>plate.lamps[a][0]-plate.lamps[b][0]).slice(0,watchCount),watched=new Set(watchIndexes);
  const lamps=plate.lamps.map(([x,y,rx,ry],index)=>{
@@ -231,6 +250,12 @@ export function villageFrame(input:VillageFrameInput):VillageFrame {
   const mark={center:project({x,y}),rx:rx*placement.scale,ry:ry*placement.scale,color,alpha:Math.max(0,Math.min(1,(.12+index*.008+(input.reduced?0:.018*Math.sin(time*2*Math.PI/(3.7+index*.9)+age+index*2)))*(1-.55*mix)*factor*watchFactor*orderFactor*musterFactor))};
   if(factor!==1)verdictLights.push(mark);if(answers)orderLights.push({...mark,center:{...mark.center}});if(musters)musterLights.push({...mark,center:{...mark.center}});return mark;
  });
+ return {lamps,verdictLights,orderLights,musterLights,watchIndexes};
+}
+
+/** Restoration lights from the saved mask; verdict-affected ones join the verdict list. */
+function paintRestoration(c:FrameContext,verdictLights:VillageHalo[]):VillageHalo[]{
+ const {input,age,plate,restoration,time,mix,verdict,placement,clearOfHud,project,lightFactor}=c;
  const restorationLights:VillageHalo[]=[];
  const restoredLight=(index:number,color:number,alpha:number)=>{
   const [l,t,r,b]=plate.windows[index].bounds;
@@ -239,10 +264,21 @@ export function villageFrame(input:VillageFrameInput):VillageFrame {
  };
  if((restoration&1)!==0)restoredLight(0,0xffb36d,.18);
  if((restoration&4)!==0)restoredLight(1,0xf2cf79,.14+(input.reduced?0:.025*Math.sin(time*1.7+age*.8)));
+ return restorationLights;
+}
+
+function waterMarks(c:FrameContext):VillageStroke[]{
+ const {input,age,time,placement,project}=c;
  const water:VillageStroke[]=age===2?[0,1,2].map(index=>{
   const x=495+index*29,y=482+index*15+(input.reduced?0:2*Math.sin(time*.7+index*2));
   return {from:project({x,y}),to:project({x:x+14+index*3,y}),width:.9*placement.scale,color:0xffd08a,alpha:.10+index*.015};
  }):[];
+ return water;
+}
+
+/** One bird per period, crossing the free sky unless an alarm began during its flight. */
+function skyBird(c:FrameContext):VillageFrame['bird']{
+ const {input,age,time,placement,cssWorldScale,hudSourceBounds,paint}=c;
  let bird:VillageFrame['bird']=null;
  if(!input.reduced){
   const period=28+age*1.4,offset=8+age*.7,flight=7.5;
@@ -255,22 +291,58 @@ export function villageFrame(input:VillageFrameInput):VillageFrame {
    if(path){const x=path[0]+21+(path[2]-path[0]-42)*progress,y=(path[1]+path[3])/2;const pose=Math.min(2,Math.floor(progress*3));bird=BIRDS[pose].map(triangle=>paint(triangle.map(p=>({x:x+p.x,y:y+p.y})),.54));}
   }
  }
+ return bird;
+}
+
+/** Watchfire halos and tick marks on the lamps the wave omen has reached. */
+function watchMarks(c:FrameContext,lamps:readonly VillageHalo[],watchIndexes:readonly number[]){
+ const {age,plate,placement,clearOfHud,project}=c;
+ const watchLights:VillageHalo[]=[],watchStrokes:VillageStroke[]=[];
  for(const index of watchIndexes){
   const [x,y,rx,ry]=plate.lamps[index];if(!clearOfHud([x-rx-4,y-ry-8,x+rx+4,y+ry+2]))continue;
   const mark=lamps[index];watchLights.push({...mark,center:{...mark.center}});const color=age===5&&index>=2?0x8edfc9:0xf2cf79,width=Math.max(.75,1.05*placement.scale);
   for(const [dx,lean] of [[0,0],[-3,1],[3,-1]] as const)watchStrokes.push({from:project({x:x+dx,y:y-ry*.15}),to:project({x:x+dx+lean,y:y-ry*.85}),width,color,alpha:.62});
  }
- if(orderKind)for(const [index,[x,y,rx,ry]] of plate.lamps.entries()){
+ return {watchLights,watchStrokes};
+}
+
+/** Advance or hold marks above each free lamp. */
+function orderMarks(c:FrameContext):VillageStroke[]{
+ const {input,plate,orderKind,orderProgress,placement,clearOfHud,project}=c;
+ const orderStrokes:VillageStroke[]=[];
+ if(orderKind)for(const [,[x,y,rx,ry]] of plate.lamps.entries()){
   if(!clearOfHud([x-rx-4,y-ry-8,x+rx+4,y+ry+2]))continue;
   const color=orderKind==='advance'?0xf2cf79:0xa9dfdc,width=Math.max(.8,1.1*placement.scale),alpha=.58+(input.reduced?0:.12*Math.sin(orderProgress*Math.PI));
   if(orderKind==='advance')for(const side of [-1,1] as const)orderStrokes.push({from:project({x:x+side*2,y:y-ry*.15}),to:project({x:x+side*(6+2*orderProgress),y:y-ry*(.8+.2*orderProgress)}),width,color,alpha});
   else for(const side of [-1,1] as const)orderStrokes.push({from:project({x:x+side*(7+orderProgress),y:y-ry*.82}),to:project({x:x+side*2,y:y-ry*.12}),width,color,alpha});
  }
+ return orderStrokes;
+}
+
+/** The muster answer marks in each free window. */
+function musterMarks(c:FrameContext):VillageStroke[]{
+ const {plate,musterProgress,placement,clearOfHud,project}=c;
+ const musterStrokes:VillageStroke[]=[];
  if(musterProgress!==null)for(const room of plate.windows){
   const [l,t,r,b]=room.bounds,w=r-l,h=b-t;if(!clearOfHud(room.bounds))continue;
   const width=Math.max(.8,1.1*placement.scale),alpha=.48+.14*Math.sin(musterProgress*Math.PI);
   musterStrokes.push({from:project({x:r-w*.12,y:t+h*.28}),to:project({x:l+w*.16,y:t+h*.66}),width,color:0xf2cf79,alpha});
   musterStrokes.push({from:project({x:r-w*.10,y:t+h*.52}),to:project({x:l+w*.18,y:t+h*.86}),width,color:INK,alpha:alpha*.92});
  }
+ return musterStrokes;
+}
+
+/** Bounded geometry in world coordinates, registered exclusively from measured source anchors. */
+export function villageFrame(input:VillageFrameInput):VillageFrame {
+ const c=resolveFrame(input);
+ const {residents,verdictResidents,musterResidents}=paintResidents(c);
+ const verdictStrokes=verdictStrokesFor(c);
+ const {lamps,verdictLights,orderLights,musterLights,watchIndexes}=paintLamps(c);
+ const restorationLights=paintRestoration(c,verdictLights);
+ const water=waterMarks(c);
+ const bird=skyBird(c);
+ const {watchLights,watchStrokes}=watchMarks(c,lamps,watchIndexes);
+ const orderStrokes=orderMarks(c);
+ const musterStrokes=musterMarks(c);
  return {residents,verdictResidents,musterResidents,lamps,restorationLights,verdictLights,watchLights:freeze(watchLights),orderLights:freeze(orderLights),musterLights:freeze(musterLights),verdictStrokes,watchStrokes:freeze(watchStrokes),orderStrokes:freeze(orderStrokes),musterStrokes:freeze(musterStrokes),water,bird};
 }

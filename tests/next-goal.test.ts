@@ -1,4 +1,5 @@
 import test from 'node:test';
+import { mainSource } from './helpers/main-source.ts';
 import assert from 'node:assert/strict';
 import { readFileSync } from 'node:fs';
 import { nextGoalLabel } from '../src/ui/next-goal.ts';
@@ -27,7 +28,7 @@ test('nearest unfinished milestone shows exact remaining count with correct plur
 test('finished veteran falls back to the plain journey label and the chip is wired', () => {
   const p = defaultProfile(); p.dailyDay = 20000; p.wins = p.kills = p.deployed = 1e9; p.claimed = QUESTS.map(q => q.id);
   assert.equal(nextGoalLabel(p, 20000).text, 'Your journey');
-  const main = readFileSync('src/main.ts', 'utf8');
+  const main = mainSource();
   assert.match(main, /id="journey-open"/); assert.match(main, /nextGoalLabel\(p,localDay\(\)\)/);
 });
 test('programmatically focused dialog titles show no boxed outline unless keyboard-focused', () => {

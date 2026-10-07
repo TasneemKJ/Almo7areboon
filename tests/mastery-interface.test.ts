@@ -1,6 +1,6 @@
 import test from 'node:test';
+import { mainSource } from './helpers/main-source.ts';
 import assert from 'node:assert/strict';
-import { readFileSync } from 'node:fs';
 import { Game } from '../src/game/simulation.ts';
 import { defaultProfile, decodeSave } from '../src/game/save.ts';
 import { ERAS, unlockCost } from '../src/game/data.ts';
@@ -86,11 +86,11 @@ test('objective guidance retains urgent threat and paused priority in the existi
  g.state.paused=true;assert.match(battleGuidance(g.profile,g.state,preview),/paused/);
 });
 test('explicit result return routes and terminal exit remain guarded while recovery owns priority',()=>{
- const main=readFileSync(new URL('../src/main.ts',import.meta.url),'utf8');
+ const main=mainSource();
  assert.match(main,/function dismissModal\(/);assert.match(main,/evolutionFromResult/);
- assert.match(main,/case 'return-chapters':returnToChapters\(\)/);
- assert.match(main,/function showResult\(focusCommand\?:string\)\{[\s\S]*?if\(!guardAction\(\)\|\|modal==='session'\)return;/);
- assert.match(main,/case 'confirm-evolve':[\s\S]*?showResult\(\)/);
+ assert.match(main,/'return-chapters':\(\)=>\{ports\.returnToChapters\(\)/);
+ assert.match(main,/function showResult\(focusCommand\?:string\)\{[\s\S]*?if\(!ports\.guardAction\(\)\|\|(?:ports\.)?navState\.modal==='session'\)return;/);
+ assert.match(main,/'confirm-evolve':[\s\S]*?showResult\(\)/);
  assert.match(main,/e\.key==='Escape'[\s\S]*?dismissModal\(\)/);
 });
 

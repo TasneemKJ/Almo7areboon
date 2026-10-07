@@ -58,3 +58,11 @@ export function questRecordsHtml(records:QuestRecord[],selected:QuestRecord,vers
  <p id="quest-save-status" class="quest-record-save" role="status" ${notice?'':'hidden'}>${escape(notice)}</p>
  <button class="big-button secondary" data-command="close">Back</button></div>`;
 }
+
+export type QuestClaimCheck='ignore'|'refresh'|'claim';
+/** Decides whether a rendered Claim press still matches the open dialog: a stale version is ignored, a stale day refreshes. */
+export function questClaimCheck(data:{questKey?:string;questVersion?:string;questDay?:string},open:{key:string|null;version:number;day:number}):QuestClaimCheck {
+  if(data.questKey!==open.key||Number(data.questVersion)!==open.version)return 'ignore';
+  const day=Number(data.questDay);
+  return Number.isInteger(day)&&day===open.day?'claim':'refresh';
+}

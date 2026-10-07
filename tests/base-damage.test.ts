@@ -1,4 +1,5 @@
 import test from 'node:test';
+import { battlefieldSource } from './helpers/battlefield-source.ts';
 import assert from 'node:assert/strict';
 
 async function damage() {
@@ -67,18 +68,17 @@ test('player and enemy damage compositions mirror structural marks rather than r
 });
 
 test('battlefield sorts base damage with buildings and troops and routes base hits through delayed projectile impact',async()=>{
-  const {readFileSync}=await import('node:fs');
-  const source=readFileSync(new URL('../src/view/battlefield.ts',import.meta.url),'utf8');
+  const source=battlefieldSource();
   assert.match(source,/from '.\/base-damage\.ts'/);
   assert.match(source,/private baseDamage!:/);
   assert.ok(source.includes('this.armyLayer.add(this.baseDamage)'));
-  assert.ok(source.includes('this.armyLayer.add([this.playerBase,this.enemyBase])'));
-  assert.ok(source.includes('this.baseDamage.setDepth(groundY+12.1)'));
+  assert.ok(source.includes('layers.armyLayer.add([playerBase,enemyBase])'));
+  assert.ok(source.includes('layers.baseDamage.setDepth(groundY+12.1)'));
   assert.ok(source.includes('view.body.setDepth(y+.5)'));
-  assert.ok(source.includes("this.armyLayer.sort('depth')"));
+  assert.ok(source.includes("layers.armyLayer.sort('depth')"));
   assert.match(source,/baseDamageFrame\(/);
   assert.match(source,/targetBase:/);
   assert.match(source,/baseImpact\(/);
-  assert.match(source,/if\(hit>0&&!this\.reduce\)/,'reduced motion must suppress the animated base-hit ring');
+  assert.match(source,/if\(hit>0&&!reduce\)/,'reduced motion must suppress the animated base-hit ring');
   assert.doesNotMatch(source,/game\.(?:profile|state)\.[A-Za-z0-9_]+\s*=(?!=)/,'presentation must not mutate simulation state');
 });

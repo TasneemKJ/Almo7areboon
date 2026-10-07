@@ -1,6 +1,6 @@
 import test from 'node:test';
+import { battlefieldSource } from './helpers/battlefield-source.ts';
 import assert from 'node:assert/strict';
-import {readFileSync} from 'node:fs';
 import {landscapeSvg} from '../src/view/world-illustrations.ts';
 import {landscapePlacement} from '../src/view/visual-theme.ts';
 async function dusk(){
@@ -69,8 +69,8 @@ test('drawing is bounded, does not mutate source data and never reaches the batt
  }
 });
 test('runtime draws dusk within the existing atmosphere layer before bases and troops (source contract)',()=>{
- const source=readFileSync(new URL('../src/view/battlefield.ts',import.meta.url),'utf8');
- assert.match(source,/paintDuskAtmosphere\(g,duskAtmosphereFrame\(game.profile.age,this.clock,this.reduce\),landscapePlacement\(450,this.layout.height,this.layout.groundY\)\)/);
+ const source=battlefieldSource();
+ assert.match(source,/paintDuskAtmosphere\(g,duskAtmosphereFrame\(host.game.profile.age,host.clock\(\),host.reduce\(\)\),landscapePlacement\(450,host.layout\(\).height,host.layout\(\).groundY\)\)/);
  assert.ok(source.indexOf('this.world.add(this.ambience)')<source.indexOf('this.world.add(this.armyLayer)'));
  assert.match(source,/if\(!game.state.paused&&!this.reduce\)this.clock\+=dt/);
 });

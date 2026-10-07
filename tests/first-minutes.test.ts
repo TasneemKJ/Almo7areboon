@@ -1,8 +1,10 @@
 import test from 'node:test';
+import { mainSource } from './helpers/main-source.ts';
+import { battlefieldSource } from './helpers/battlefield-source.ts';
 import assert from 'node:assert/strict';
 import { readFileSync } from 'node:fs';
 
-const main = readFileSync(new URL('../src/main.ts', import.meta.url), 'utf8');
+const main = mainSource();
 const css = readFileSync(new URL('../src/ui/skill-cues.css', import.meta.url), 'utf8');
 const audio = readFileSync(new URL('../src/view/audio.ts', import.meta.url), 'utf8');
 
@@ -29,7 +31,7 @@ test('result motifs differ: victory rises, defeat falls', () => {
 
 test('Settings shows when the game last saved, from memory only (no save-format change)', () => {
   assert.match(main, /lastSavedAt=Date\.now\(\)/);
-  assert.match(main, /Last saved \$\{new Date\(lastSavedAt\)\.toLocaleTimeString/);
+  assert.match(main, /Last saved \$\{new Date\((?:ports\.)?sessionState\.lastSavedAt\)\.toLocaleTimeString/);
   assert.doesNotMatch(main, /localStorage\.setItem\([^)]*lastSavedAt/);
 });
 
@@ -45,7 +47,7 @@ test('death events carry the fallen unit role so a heavy can fall louder', async
     for (const e of g.drainEvents()) if (e.type === 'death' && e.kind !== undefined) seen.add(e.kind);
   }
   assert.ok(seen.size >= 1, "a death event carries a role");
-  const field = readFileSync(new URL('../src/view/battlefield.ts', import.meta.url), 'utf8');
+  const field = battlefieldSource();
   assert.match(field, /e\.type==='death'&&e\.kind===2/);
   assert.match(field, /if\(!this\.reduce\)this\.cameras\.main\.shake\(70,\.0016\)/);
 });

@@ -1,6 +1,6 @@
 import test from 'node:test';
+import { battlefieldSource } from './helpers/battlefield-source.ts';
 import assert from 'node:assert/strict';
-import {readFileSync} from 'node:fs';
 import {duskLightAnchors} from '../src/view/dusk-atmosphere.ts';
 import {landscapePlacement} from '../src/view/visual-theme.ts';
 
@@ -73,7 +73,7 @@ test('production painter stays bounded and does not mutate source marks',async()
 });
 
 test('battlefield paints hierarchy through existing ambience before bases and troops',()=>{
- const source=readFileSync(new URL('../src/view/battlefield.ts',import.meta.url),'utf8');
- assert.match(source,/paintLightingHierarchy\(g,lightingHierarchyFrame\(game\.profile\.age,this\.clock,this\.reduce\),landscapePlacement\(450,this\.layout\.height,this\.layout\.groundY\)\)/);
+ const source=battlefieldSource();
+ assert.match(source,/paintLightingHierarchy\(g,lightingHierarchyFrame\(host\.game\.profile\.age,host\.clock\(\),host\.reduce\(\)\),landscapePlacement\(450,host\.layout\(\)\.height,host\.layout\(\)\.groundY\)\)/);
  assert.ok(source.indexOf('this.world.add(this.ambience)')<source.indexOf('this.world.add(this.armyLayer)'));
 });

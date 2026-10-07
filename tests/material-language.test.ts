@@ -1,4 +1,5 @@
 import test from 'node:test';
+import { mainSource } from './helpers/main-source.ts';
 import assert from 'node:assert/strict';
 import {readFileSync,existsSync} from 'node:fs';
 const path=new URL('../src/ui/material-language.css',import.meta.url);
@@ -33,7 +34,7 @@ test('paper surfaces use restrained directional texture while live combat contro
 });
 
 test('material language is loaded after baseline and continuation styles',()=>{
- const source=readFileSync(new URL('../src/main.ts',import.meta.url),'utf8');
+ const source=mainSource();
  const base=source.indexOf("import './style.css'");
  const continuation=source.indexOf("import './ui/continuation.css'");
  const craft=source.indexOf("import './ui/material-language.css'");

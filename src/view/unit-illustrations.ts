@@ -8,7 +8,7 @@ export const TROOP_FRAME={width:128,height:144,count:6} as const;
 const team=(side:Side)=>side==='player'?['#8ce2f3','#309ddb','#16658e']:['#ffd0ad','#e66b50','#a93839'];
 function defs(age:number,kind:UnitKind,side:Side,id:string){const t=team(side),cloth=clothingPalette(age),skin=skinPalette(age,kind);return gradient(`${id}s`,skin[0],skin[1])+gradient(`${id}c`,cloth[0],cloth[1])+gradient(`${id}t`,t[0],t[2])+gradient(`${id}g`,'#e9d4a2','#998057')+gradient(`${id}m`,'#e8ecda','#708b90')+gradient(`${id}d`,'#a9c080','#547961')+gradient(`${id}w`,'#bc9971','#74624d');}
 function human(age:number,kind:UnitKind,side:Side,frame:number,id:string,mounted=false):string {
- const t=team(side),skin=`url(#${id}s)`,body=`url(#${id}c)`,gold=`url(#${id}g)`,metal=`url(#${id}m)`,accent=`url(#${id}t)`;
+ const t=team(side),skin=`url(#${id}s)`,gold=`url(#${id}g)`,metal=`url(#${id}m)`,accent=`url(#${id}t)`;
  const rangedVisual=kind===1||(age===4&&kind===0),longPole=age===1&&kind===0;
  const stride=frame===1?-9:frame===3?9:frame===4?(rangedVisual?-2:-5):frame===5?(rangedVisual?3:6):0;
  const attack=frame===4?(rangedVisual?-8:-28):frame===5?(rangedVisual?6:longPole?10:22):0;

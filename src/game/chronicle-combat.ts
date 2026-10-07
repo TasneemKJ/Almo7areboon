@@ -163,7 +163,7 @@ export function captainSkill(p:Profile,s:BattleState):boolean {
 }
 export function chronicleTick(p:Profile,s:BattleState,dt:number,host:ChronicleHost):void {
   if(!active(s)||!Number.isFinite(dt)||dt<=0)return;
-  dt=Math.min(dt,0.25);const c=s.chronicle!,variant=timelineVariant(p.timeline);
+  dt=Math.min(dt,0.25);const c=s.chronicle!;
   c.gathered=c.gathered.filter(id=>s.units.some(u=>u.id===id&&alive(u)));
   if(c.rally&&c.gathered.length===6&&c.gathered.every(id=>{const u=s.units.find(actor=>actor.id===id)!;return u.x>=(rallyPosition(s,u)??0)-0.5;})){release(p,s);cue(host,'rally',235);}
   const near=(x:number,side:'player'|'enemy',radius=85)=>unitsNear(s,x,side,radius);

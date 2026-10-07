@@ -4,14 +4,14 @@
 
 ## Run and verify
 
-`npm ci`, then `npm run dev` (Vite, set a port you own). `npm run build` type-checks and builds `dist/`. `npm run test:fast` is the quick unit set used by the PR gate; `npm test` runs everything and should pass before a push. Browser checks live under `scripts/` (`npm run review:*`). Node 22.18+.
+`npm ci`, then `npm run dev` (Vite, set a port you own). `npm run build` type-checks (unused locals included, also `npm run lint`) and builds `dist/`. `npm run test:fast` is the quick unit set used by the PR gate; `npm test` runs everything and should pass before a push. Browser checks live under `scripts/` (`npm run review:*`). Node 22.18+.
 
 ## Code organization
 
 - `src/game/`: typed deterministic simulation, economy, cards, saves. No DOM beyond the injectable storage in `save.ts`.
 - `src/view/`: Phaser rendering, vector art, combat feedback, synthesized audio.
 - `src/ui/`: DOM templates, dialogs, pause and focus helpers, per-screen presentation (small pure functions plus CSS).
-- `src/main.ts`: input, navigation, lifecycle, the render loop. `index.html`, `src/style.css` and the `src/ui/*.css` files carry the styles.
+- `src/app/`: the shell as factories (lifecycle, navigation, quests, listeners), each owning its state and wired through `{dom, ports}`; only `runtime.ts` and `dom-port.ts` touch browser globals. `src/main.ts`: composition only. `index.html`, `src/style.css` and the `src/ui/*.css` files carry the styles.
 
 ## Conventions
 

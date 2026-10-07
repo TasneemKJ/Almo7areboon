@@ -1,4 +1,5 @@
 import test from 'node:test';
+import { battlefieldSource } from './helpers/battlefield-source.ts';
 import assert from 'node:assert/strict';
 
 async function choreography() {
@@ -64,10 +65,9 @@ test('attack cue fades over its short lifetime and reduced motion removes trails
 });
 
 test('battlefield applies hit recoil and attack choreography only in presentation',async()=>{
-  const {readFileSync}=await import('node:fs');
-  const source=readFileSync(new URL('../src/view/battlefield.ts',import.meta.url),'utf8');
+  const source=battlefieldSource();
   assert.match(source,/from '.\/combat-choreography\.ts'/);
-  assert.match(source,/private attackCues:/);
+  assert.match(source,/attackCues:/);
   assert.match(source,/hitReaction\(unit\.hitFlash/);
   assert.match(source,/attackCueFrame\(/);
   assert.doesNotMatch(source,/game\.(?:profile|state)\.[A-Za-z0-9_]+\s*=(?!=)/,'presentation must not mutate simulation state');

@@ -1,7 +1,7 @@
 import test from 'node:test';
+import { flatStatements, mainSource } from './helpers/main-source.ts';
 import assert from 'node:assert/strict';
-import {readFileSync} from 'node:fs';
-import {runInNewContext} from 'node:vm';
+import { runInApp } from './helpers/run-app.ts';
 import ts from 'typescript';
 import {Game} from '../src/game/simulation.ts';
 import {defaultProfile,SAVE_KEY,BACKUP_KEY} from '../src/game/save.ts';
@@ -10,9 +10,9 @@ import {AUDIO_MIX_KEY,DEFAULT_AUDIO_MIX,loadAudioMix,normalizeAudioMix,saveAudio
 import {textIfChanged} from '../src/ui/dom-state.ts';
 import * as audio from '../src/view/audio.ts';
 import {recordedContext,installContext} from './helpers/audio-context.ts';
-const source=readFileSync(new URL('../src/main.ts',import.meta.url),'utf8'),ast=ts.createSourceFile('main.ts',source,ts.ScriptTarget.Latest,true,ts.ScriptKind.TS);
-const functions=ast.statements.filter(node=>ts.isFunctionDeclaration(node)&&node.name&&['playable','guardAction'].includes(node.name.text));
-const listener=ast.statements.find(node=>ts.isExpressionStatement(node)&&ts.isCallExpression(node.expression)&&node.expression.expression.getText(ast)==='lifetime.listen'&&node.expression.arguments[0]?.getText(ast)==='root'&&node.expression.arguments[1]?.getText(ast)==="'input'");
+const source=mainSource(),ast=ts.createSourceFile('main.ts',source,ts.ScriptTarget.Latest,true,ts.ScriptKind.TS);
+const functions=flatStatements(ast).filter(node=>ts.isFunctionDeclaration(node)&&node.name&&['playable','guardAction'].includes(node.name.text));
+const listener=flatStatements(ast).find(node=>ts.isExpressionStatement(node)&&ts.isCallExpression(node.expression)&&node.expression.expression.getText(ast)==='lifetime.listen'&&node.expression.arguments[0]?.getText(ast)==='root'&&node.expression.arguments[1]?.getText(ast)==="'input'");
 const locks:SaveSessionLocks={request:(name,_options,callback)=>Promise.resolve(callback({name}))};
 async function harness({temporary=false,mixQuota=false}={}){
  assert.ok(listener,'actual root input listener must exist');
@@ -32,7 +32,7 @@ async function harness({temporary=false,mixQuota=false}={}){
  audio.updateAudioMix(context.audioMix);
  const session=createSaveSession({storage,locks,onStatus(status){if(status!=='active'&&status!=='temporary'){context.sessionReady=false;context.modal='session';}}});context.session=session;
  try{await session.acquire();if(temporary)assert.equal(session.playTemporarily(),true);context.sessionReady=true;context.modal='settings';
-  runInNewContext(ts.transpile([...functions,listener].map(node=>node.getText(ast)).join('\n'),{target:ts.ScriptTarget.ES2022}),context);
+  runInApp(ts.transpile([...functions,listener].map(node=>node.getText(ast)).join('\n'),{target:ts.ScriptTarget.ES2022}),context);
  }catch(error){session.dispose();audio.disposeAudio();restore();throw error;}
  return {context,effects,atmosphere,effectsOutput,atmosphereOutput,values,writes,session,nativeBoundary,created:()=>created,
   input(node:unknown=effects,value='50'){if(node instanceof InputBoundary)node.value=value;context.input({target:node});},

@@ -1,4 +1,5 @@
 import test from 'node:test';
+import { battlefieldSource } from './helpers/battlefield-source.ts';
 import assert from 'node:assert/strict';
 import {defaultProfile} from '../src/game/save.ts';
 import {Game} from '../src/game/simulation.ts';
@@ -28,14 +29,14 @@ test('a real public battle credits coins before emitting the presentation intent
 });
 
 test('battlefield launches from the numeric cue with capped painted geometry',async()=>{
- const source=await readFile(new URL('../src/view/battlefield.ts',import.meta.url),'utf8');
- assert.match(source,/paintSpoilsToken\(this\.fx,frame\)/);
- assert.match(source,/this\.spoilsHomecoming\.slice\(0,SPOILS_HOMECOMING_CAP\)/);
+ const source=battlefieldSource();
+ assert.match(source,/paintSpoilsToken\(host\.fx\(\),frame\)/);
+ assert.match(source,/spoils\.slice\(0,SPOILS_HOMECOMING_CAP\)/);
  assert.doesNotMatch(source,/spoilsTokens/);
  assert.doesNotMatch(source,/spoils-coin|coin-token\.webp/);
- assert.match(source,/private spoilsOrder=0/);
- assert.match(source,/rememberSpoilsHomecoming\(this\.spoilsHomecoming,\{\.\.\.intent,x:this\.spoilsReward\.text\.x,y:this\.spoilsReward\.startY\},\+\+this\.spoilsOrder,this\.layout\.height\)/);
- assert.match(source,/this\.spoilsOrder=0;this\.resetEffects\(\)/);
+ assert.match(source,/let spoilsOrder=0/);
+ assert.match(source,/rememberSpoilsHomecoming\(spoils,\{\.\.\.intent,x:floater\.text\.x,y:floater\.startY\},\+\+spoilsOrder,host\.layout\(\)\.height\)/);
+ assert.match(source,/this\.marks\.restartOrder\(\);this\.effects\.reset\(\)/);
  assert.doesNotMatch(source,/resetEffects[^\n]*this\.spoilsOrder=0/);
 });
 

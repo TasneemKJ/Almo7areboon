@@ -1,6 +1,6 @@
 import test from 'node:test';
+import { battlefieldSource } from './helpers/battlefield-source.ts';
 import assert from 'node:assert/strict';
-import {readFileSync} from 'node:fs';
 import {SKY_CEILING,cloudFrame,shootingStar,skyProfile,starFrame} from '../src/view/living-sky.ts';
 
 test('cloud banks stay above the tallest authored skyline in every chapter and time',()=>{
@@ -38,10 +38,10 @@ test('shooting stars are rare, brief, high and absent under reduced motion',()=>
 });
 
 test('battlefield paints the sky behind the scenery layers with pooled quads',()=>{
- const source=readFileSync(new URL('../src/view/battlefield.ts',import.meta.url),'utf8');
+ const source=battlefieldSource();
  const at=(needle:string)=>{const i=source.indexOf(needle);assert.ok(i>=0,needle);return i;};
  assert.ok(at('this.stars=this.add.container()')<at('this.armyLayer=this.add.container()'));
- assert.match(source,/this\.paintSoft\(this\.stars,starFrame\(/,'stars must be pooled quads, not per-frame tessellated circles');
+ assert.match(source,/paintSoft\(layers\.stars,starFrame\(/,'stars must be pooled quads, not per-frame tessellated circles');
  assert.ok(at('this.clouds=this.add.container()')<at('this.armyLayer=this.add.container()'));
- assert.match(source,/this\.paintSoft\(this\.clouds,cloudFrame\(/);
+ assert.match(source,/paintSoft\(layers\.clouds,cloudFrame\(/);
 });

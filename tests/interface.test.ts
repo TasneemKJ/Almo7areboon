@@ -1,6 +1,7 @@
 import test from 'node:test';
+import { mainSource } from './helpers/main-source.ts';
+import { battlefieldSource } from './helpers/battlefield-source.ts';
 import assert from 'node:assert/strict';
-import { readFileSync } from 'node:fs';
 import { Game } from '../src/game/simulation.ts';
 import { defaultProfile, SAVE_KEY, BACKUP_KEY } from '../src/game/save.ts';
 import { exportBackup, importBackup, restoreBackup, restoreBackupWithSave } from '../src/game/backup.ts';
@@ -14,7 +15,7 @@ import { resultsHtml } from '../src/ui/results-screen.ts';
 import { battleSelectionHtml, evolutionDialogHtml } from '../src/ui/progression-screen.ts';
 import { createLifetime } from '../src/ui/lifetime.ts';
 const {baseHealthDisplay,battleGuidance,compactNumber,defeatAdvice}=hud;
-const main=()=>readFileSync(new URL('../src/main.ts',import.meta.url),'utf8');
+const main=()=>mainSource();
 
 test('P17: closing one pause owner cannot clear another owner',()=>{
  const context={phase:'running' as const,manual:true,tab:'cards',modal:'settings',hidden:true};
@@ -41,12 +42,12 @@ test('P23: battle selection exposes only unlocked ready-state battles',()=>{
  const p=defaultProfile();p.enemyAge=1;p.furthestBattle=2;const g=new Game(p);let html=battleSelectionHtml(g.profile,g.state);
  assert.equal((html.match(/class="battle-option"/g)??[]).length,6);assert.equal((html.match(/ disabled/g)??[]).length,3);
  g.dispatch({type:'start'});html=battleSelectionHtml(g.profile,g.state);assert.equal((html.match(/ disabled/g)??[]).length,6);
- assert.match(main(),/battleSelectionHtml\(game.profile,\s*game.state\)/);
+ assert.match(main(),/battleSelectionHtml\((?:ports\.)?sessionState\.game\.profile,\s*(?:ports\.)?sessionState\.game\.state\)/);
 });
 test('P24: evolution has an explicit reset warning and confirmation action',()=>{
  const g=new Game();const html=evolutionDialogHtml(g.profile,g.state)!;assert.match(html,/All coins/);assert.match(html,/cards and gems/);assert.match(html,/confirm-evolve/);
  g.dispatch({type:'start'});assert.equal(evolutionDialogHtml(g.profile,g.state),null);
- assert.match(main(),/case 'confirm-evolve'/);assert.match(main(),/evolutionDialogHtml\(game.profile,\s*game.state\)/);
+ assert.match(main(),/'confirm-evolve':/);assert.match(main(),/evolutionDialogHtml\((?:ports\.)?sessionState\.game\.profile,\s*(?:ports\.)?sessionState\.game\.state\)/);
 });
 test('P25: modal focus traversal wraps, recovers outside focus and handles no controls',()=>{
  assert.equal(nextFocusIndex(0,3,true),2);assert.equal(nextFocusIndex(2,3,false),0);assert.equal(nextFocusIndex(-1,3,false),0);assert.equal(nextFocusIndex(-1,3,true),2);assert.equal(nextFocusIndex(0,0,false),null);
@@ -81,7 +82,7 @@ test('P33: reduced-motion policy applies to renderer, not only CSS transitions',
  assert.equal(feedback.reducedMotion('system',true),true);assert.equal(feedback.reducedMotion('system',false),false);assert.equal(feedback.reducedMotion('reduced',false),true);
  const source={id:1,kind:1,age:2,side:'player',x:300,lane:0};const shot=feedback.projectileForHit({type:'hit',source,target:'unit',x:333,lane:2,amount:4});
  assert.equal(shot.targetX,333);assert.equal(shot.targetLane,2);assert.equal(feedback.projectileForHit({type:'coin'}),null);
- const renderer=readFileSync(new URL('../src/view/battlefield.ts',import.meta.url),'utf8');assert.match(renderer,/projectileForHit\(e\)/);assert.match(renderer,/reducedMotion\(game.profile.motion/);
+ const renderer=battlefieldSource();assert.match(renderer,/projectileForHit\(e\)/);assert.match(renderer,/reducedMotion\(game.profile.motion/);
 });
 test('P34: lifecycle cleanup removes input handlers once and continues after a cleanup failure',()=>{
  const life=createLifetime(),target=new EventTarget();let actions=0,cleaned=0;life.listen(target,'tap',()=>actions++);

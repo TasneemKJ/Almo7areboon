@@ -1,8 +1,9 @@
 import test from 'node:test';
+import { mainSource } from './helpers/main-source.ts';
 import assert from 'node:assert/strict';
 import { readFileSync } from 'node:fs';
 const rail = readFileSync('src/ui/landscape-rail.css', 'utf8');
-const main = readFileSync('src/main.ts', 'utf8');
+const main = mainSource();
 
 test('landscape phones get a side rail: battlefield left, whole command deck right, no page scroll', () => {
   const block = rail.slice(rail.indexOf('@media (orientation:landscape) and (max-height:540px) and (min-width:600px)'));

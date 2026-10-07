@@ -1,7 +1,7 @@
 import { pathToFileURL } from 'node:url';
 import { Game } from '../src/game/simulation.ts';
 import { defaultProfile } from '../src/game/save.ts';
-import { CARD_DEFS, ERAS, QUESTS, foodUpgradeCost, unlockCost } from '../src/game/data.ts';
+import { CARD_DEFS, QUESTS, foodUpgradeCost, unlockCost } from '../src/game/data.ts';
 import type { Action, UnitKind } from '../src/game/types.ts';
 
 export const MASTERY_POLICIES = ['immediate','reserve-and-counter','mixed'] as const;

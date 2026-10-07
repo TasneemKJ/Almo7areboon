@@ -1,12 +1,7 @@
 import type {Phase} from '../game/types.ts';
-export interface AudioMix {readonly effects:number;readonly atmosphere:number}
+import {DEFAULT_AUDIO_MIX,normalizeAudioMix,type AudioMix} from '../game/audio-mix.ts';
+export {DEFAULT_AUDIO_MIX,normalizeAudioMix,type AudioMix};
 export const AUDIO_MIX_KEY='almo7areboon.audio.mix.v1';
-export const DEFAULT_AUDIO_MIX:AudioMix={effects:100,atmosphere:100};
-export function normalizeAudioMix(value:unknown):AudioMix {
- const object=value&&typeof value==='object'?value as Record<string,unknown>:{};
- const level=(field:unknown)=>typeof field==='number'&&Number.isFinite(field)?Math.round(Math.max(0,Math.min(100,field))/5)*5:100;
- return {effects:level(object.effects),atmosphere:level(object.atmosphere)};
-}
 export function loadAudioMix(storage?:Pick<Storage,'getItem'>):AudioMix {
  try{const raw=(storage??globalThis.localStorage)?.getItem(AUDIO_MIX_KEY),data=raw?JSON.parse(raw):undefined;return data?.version===1?normalizeAudioMix(data):{...DEFAULT_AUDIO_MIX};}catch{return {...DEFAULT_AUDIO_MIX};}
 }

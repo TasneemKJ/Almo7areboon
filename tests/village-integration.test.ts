@@ -1,4 +1,6 @@
 import test from 'node:test';
+import { mainSource } from './helpers/main-source.ts';
+import { battlefieldSource } from './helpers/battlefield-source.ts';
 import assert from 'node:assert/strict';
 import {readFileSync} from 'node:fs';
 import {Game} from '../src/game/simulation.ts';
@@ -17,77 +19,77 @@ test('fresh player-base hits survive a hit plus result batch, enemy-base hits do
 test('one shared 64 by 64 light allocation keeps the manifest below the decoded budget',()=>{assert.ok('ensureVillageLight' in life,'production light resource seam is missing');const textures=new Map<string,any>();const creations:any[]=[];const manager={exists:(key:string)=>textures.has(key),createCanvas:(key:string,width:number,height:number)=>{creations.push({key,width,height});const context={createRadialGradient:()=>({addColorStop:()=>{}}),fillStyle:null,fillRect:()=>{}};const texture={getContext:()=>context,refresh:()=>{}};textures.set(key,texture);return texture;}};for(let i=0;i<180*60;i++)(life as any).ensureVillageLight(manager);assert.deepEqual(creations,[{key:'village-light',width:64,height:64}]);assert.equal(textures.has('soft-light'),false);const bytes=visualAssets().reduce((sum,a)=>sum+a.width*a.height*4,0)+64*64*4;assert.equal(bytes,41_989_912);assert.ok(bytes<42_000_000);});
 test('180 seconds of village rendering retains bounded marks and cached sky geometry',()=>{const advance=presentation(),g=new Game(defaultProfile());const path=life.villageSkyPath(2,viewport);let owner:any=null;for(let i=0;i<180*20;i++){owner=advance(owner,g.state,2,.05,[],false);const frame=life.villageFrame({age:2,time:owner.mood.time,reduced:false,restoration:7,mood:owner.mood,viewport:{...viewport,skyPath:path} as any});assert.ok(frame.residents.length<=2&&frame.lamps.length<=4&&frame.restorationLights.length<=2&&frame.water.length<=3);assert.ok(frame.residents.reduce((sum,r)=>sum+r.panes.length,0)<=90);assert.ok((frame.bird?.length??0)<=9);}assert.equal(g.state.time,0);});
 test('battlefield owns restored life through one saved mask and a fixed six-light pool',()=>{
- const source=readFileSync(new URL('../src/view/battlefield.ts',import.meta.url),'utf8');
+ const source=battlefieldSource();
  const layeringReview=readFileSync(new URL('../scripts/capture-layering-review.mjs',import.meta.url),'utf8');
- assert.match(source,/restoration:game\.profile\.chronicle\?\.restoration\?\?0/);
+ assert.match(source,/restoration:host\.game\.profile\.chronicle\?\.restoration\?\?0/);
  assert.match(source,/while\(this\.stageLight\.length<6\)/);
  assert.match(source,/const lights=\[\.\.\.frame\.lamps,\.\.\.frame\.restorationLights\]/);
  assert.match(source,/mark=lights\[i\]/);
  assert.match(layeringReview,/v\.pools,\{lights:6,stars:0,clouds:0,mist:0\}/);
 });
 test('battlefield derives the village verdict from authoritative aftermath without a new timing owner',()=>{
- const source=readFileSync(new URL('../src/view/battlefield.ts',import.meta.url),'utf8');
+ const source=battlefieldSource();
  assert.match(source,/import \{villageVerdictFrame\} from '\.\/village-verdict\.ts';/);
- assert.match(source,/const villageVerdict=this\.aftermath\?\.phase===game\.state\.phase\?villageVerdictFrame\(\{phase:this\.aftermath\.phase,elapsed:Math\.max\(0,this\.clock-this\.aftermath\.at\),reduced:this\.reduce\}\):null;/);
+ assert.match(source,/const villageVerdict=aftermath\?\.phase===host\.game\.state\.phase\?villageVerdictFrame\(\{phase:aftermath\.phase,elapsed:Math\.max\(0,host\.clock\(\)-aftermath\.at\),reduced:host\.reduce\(\)\}\):null;/);
  assert.match(source,/villageFrame\(\{[^}]*verdict:villageVerdict/s);
  assert.doesNotMatch(source,/setTimeout\([^)]*villageVerdict|Date\.now\(\)[^;]*villageVerdict/);
 });
 test('verdict response reuses ambience and light pools, exposes webdriver evidence, and clears with the battle',()=>{
- const source=readFileSync(new URL('../src/view/battlefield.ts',import.meta.url),'utf8');
- assert.match(source,/for\(const stroke of frame\.verdictStrokes\)\{g\.lineStyle\(stroke\.width,stroke\.color,stroke\.alpha\);g\.lineBetween\(stroke\.from\.x,stroke\.from\.y,stroke\.to\.x,stroke\.to\.y\);\}/);
+ const source=battlefieldSource();
+ assert.match(source,/for\(const line of \[[^\]]*frame\.verdictStrokes[^\]]*\]\)\{g\.lineStyle\(line\.width,line\.color,line\.alpha\);g\.lineBetween\(line\.from\.x,line\.from\.y,line\.to\.x,line\.to\.y\);\}/);
  assert.match(source,/const verdictRegions=/);
- assert.match(source,/frame\.verdictResidents\.flatMap/,'webdriver geometry must include verdict-created witnesses without claiming ordinary HUD-preserved residents');
+ assert.match(source,/paneBounds\(frame\.verdictResidents\)/,'webdriver geometry must include verdict-created witnesses without claiming ordinary HUD-preserved residents');
  assert.match(source,/frame\.verdictLights\.map/,'webdriver geometry must include every halo whose verdict brightness actually changed');
- assert.match(source,/if\(navigator\.webdriver&&villageVerdict\)this\.game\.canvas\.dataset\.villageVerdict=JSON\.stringify\(\{mode:villageVerdict\.mode,progress:villageVerdict\.progress,witnesses:frame\.verdictResidents\.length,strokes:frame\.verdictStrokes\.length,lights:lights\.length,affectedLights:frame\.verdictLights\.length,regions:verdictRegions,reduced:this\.reduce,paused:game\.state\.paused\}\)/);
+ assert.match(source,/if\(navigator\.webdriver&&villageVerdict\)host\.canvas\(\)\.dataset\.villageVerdict=JSON\.stringify\(\{mode:villageVerdict\.mode,progress:villageVerdict\.progress,witnesses:frame\.verdictResidents\.length,strokes:frame\.verdictStrokes\.length,lights:lights\.length,affectedLights:frame\.verdictLights\.length,regions:verdictRegions,reduced:host\.reduce\(\),paused:host\.game\.state\.paused\}\)/);
  assert.match(source,/delete this\.game\.canvas\.dataset\.villageVerdict/);
  assert.match(source,/while\(this\.stageLight\.length<6\)/);
  assert.doesNotMatch(source,/villageVerdict[^\n]*this\.add\.(?:graphics|image|container)/);
 });
 test('one authoritative wave frame drives both the road omen and pooled village watchfire',()=>{
- const source=readFileSync(new URL('../src/view/battlefield.ts',import.meta.url),'utf8');
+ const source=battlefieldSource();
  assert.match(source,/import \{waveArrivalForPort,type WaveArrivalFrame\} from '\.\/wave-arrival\.ts';/);
  assert.match(source,/private waveArrival:WaveArrivalFrame\|null=null;/);
  assert.equal(source.match(/waveArrivalForPort\(game,this\.reduce\)/g)?.length,1,'one read boundary must own the complete rendered frame');
- assert.match(source,/this\.waveArrival=waveArrivalForPort\(game,this\.reduce\);[\s\S]*?this\.drawAtmosphere\(\)/);
- assert.match(source,/const frame=this\.waveArrival;if\(!frame\)return;/);
- assert.match(source,/villageFrame\(\{[^}]*watch:this\.waveArrival/s);
+ assert.match(source,/this\.waveArrival=waveArrivalForPort\(game,this\.reduce\);[\s\S]*?this\.atmosphere\.draw\(\)/);
+ assert.match(source,/const frame=host\.waveArrival\(\);if\(!frame\)return;/);
+ assert.match(source,/villageFrame\(\{[^}]*watch:waveArrival/s);
  assert.doesNotMatch(source,/setTimeout\([^)]*watchfire|Date\.now\(\)[^;]*watchfire/i);
 });
 test('watchfire reuses village ambience and light pools with bounded webdriver evidence and cleanup',()=>{
- const source=readFileSync(new URL('../src/view/battlefield.ts',import.meta.url),'utf8');
- const main=readFileSync(new URL('../src/main.ts',import.meta.url),'utf8');
+ const source=battlefieldSource();
+ const main=mainSource();
  assert.match(source,/private villageHudPhase:Phase\|null=null;/,'the HUD exclusion map needs an explicit phase owner');
  assert.match(source,/private villageHudPaused:boolean\|null=null;/,'pause visibility needs an explicit HUD measurement owner');
- assert.match(source,/private cacheVillageViewport\(\):void \{[\s\S]*?this\.villageHudPaused=game\.state\.paused;[\s\S]*?this\.cacheBattlefieldHudBounds\(\);\s*\}/,'every phase, era, resize, and order measurement must record whether it included paused HUD');
+ assert.match(source,/private cacheVillageViewport\(\):void \{[\s\S]*?this\.villageHudPaused=game\.state\.paused;[\s\S]*?this\.marks\.setHudBounds\(this\.hud\.regions\(\)\);\s*\}/,'every phase, era, resize, and order measurement must record whether it included paused HUD');
  assert.match(source,/onFrame:\(force\?:boolean\)=>void/,'the renderer must be able to request an immediate host-layout sync');
  assert.match(source,/orderHudChanged=villageOrderHudChanged\(this\.villageHudPaused,game\.state\.paused,!!this\.orderFrame\?\.answer,!!this\.waveArrival,!!this\.musterFrame\)/,'the tested HUD owner must decide pause-side measurement and resume-side cleanup for order and muster answers');
  assert.match(source,/if\(phaseHudChanged\|\|orderHudChanged\)\{const world=element\.closest<HTMLElement>\('\.world'\);if\(world\?\.dataset\.phase!==game\.state\.phase\|\|orderHudChanged\)onFrame\(true\);this\.villageHudPhase=game\.state\.phase;this\.cacheVillageViewport\(\);\}/,'phase and relevant order-pause reflow must reach the DOM before HUD exclusions are measured and the village is painted');
  assert.match(source,/\.battle-skills button,\.pause-banner/,'transient controls and the centered pause card must reserve their painted regions');
- assert.match(main,/mountBattlefield\(\$\('battlefield'\),port,force=>update\(force\),events/,'the host must honor a forced layout sync from the renderer');
- assert.match(source,/for\(const stroke of frame\.watchStrokes\)\{g\.lineStyle\(stroke\.width,stroke\.color,stroke\.alpha\);g\.lineBetween\(stroke\.from\.x,stroke\.from\.y,stroke\.to\.x,stroke\.to\.y\);\}/);
+ assert.match(main,/mountBattlefield\(\$\('battlefield'\),port,force=>ports\.update\(force\),ports\.events/,'the host must honor a forced layout sync from the renderer');
+ assert.match(source,/for\(const line of \[[^\]]*frame\.watchStrokes[^\]]*\]\)\{g\.lineStyle\(line\.width,line\.color,line\.alpha\);g\.lineBetween\(line\.from\.x,line\.from\.y,line\.to\.x,line\.to\.y\);\}/);
  assert.match(source,/const watchfireRegions=/);
  assert.match(source,/frame\.watchStrokes\.map/);assert.match(source,/frame\.watchLights\.map/);
- assert.match(source,/dataset\.villageWatchfire=JSON\.stringify\(\{number:this\.waveArrival\.number,intent:this\.waveArrival\.intent,progress:this\.waveArrival\.progress,lights:frame\.watchLights\.length,strokes:frame\.watchStrokes\.length,regions:watchfireRegions,reduced:this\.reduce,paused:game\.state\.paused\}\)/);
+ assert.match(source,/dataset\.villageWatchfire=JSON\.stringify\(\{number:waveArrival\.number,intent:waveArrival\.intent,progress:waveArrival\.progress,lights:frame\.watchLights\.length,strokes:frame\.watchStrokes\.length,regions:watchfireRegions,reduced:host\.reduce\(\),paused:host\.game\.state\.paused\}\)/);
  assert.match(source,/delete this\.game\.canvas\.dataset\.villageWatchfire/);
  assert.match(source,/battlefieldReviewCanvasSnapshot/,'native watchfire evidence must use Phaser post-render pixels rather than a DOM screenshot clip');
  assert.match(source,/while\(this\.stageLight\.length<6\)/);
  assert.doesNotMatch(source,/watch(?:fire|Strokes|Lights)[^\n]*this\.add\.(?:graphics|image|container)/i);
 });
 test('one authoritative order frame drives troop marks and the bounded village answer',()=>{
- const source=readFileSync(new URL('../src/view/battlefield.ts',import.meta.url),'utf8');
+ const source=battlefieldSource();
  assert.match(source,/private orderFrame:ReturnType<typeof orderPresentationFrame>=null;/);
  assert.equal(source.match(/orderPresentationFrame\(game\.state,this\.layout\.groundY,this\.reduce,this\.layout\.laneGap\)/g)?.length,1,'one read boundary must own troop and village presentation');
  assert.match(source,/this\.orderFrame=orderPresentationFrame\(game\.state,this\.layout\.groundY,this\.reduce,this\.layout\.laneGap\);[\s\S]*?this\.waveArrival=/);
- assert.match(source,/villageFrame\(\{[^}]*order:this\.orderFrame\?\.answer/s);
- assert.match(source,/const frame=this\.orderFrame;/);
+ assert.match(source,/villageFrame\(\{[^}]*order:orderFrame\?\.answer/s);
+ assert.match(source,/const frame=orderFrame;/);
  assert.doesNotMatch(source,/setTimeout\([^)]*villageOrder|Date\.now\(\)[^;]*villageOrder/i);
 });
 test('order answer reuses village ambience and light pools with bounded webdriver evidence and cleanup',()=>{
- const source=readFileSync(new URL('../src/view/battlefield.ts',import.meta.url),'utf8');
+ const source=battlefieldSource();
  const review=readFileSync(new URL('../scripts/verify-battle-banner.mjs',import.meta.url),'utf8');
- assert.match(source,/for\(const stroke of frame\.orderStrokes\)\{g\.lineStyle\(stroke\.width,stroke\.color,stroke\.alpha\);g\.lineBetween\(stroke\.from\.x,stroke\.from\.y,stroke\.to\.x,stroke\.to\.y\);\}/);
+ assert.match(source,/for\(const line of \[[^\]]*frame\.orderStrokes[^\]]*\]\)\{g\.lineStyle\(line\.width,line\.color,line\.alpha\);g\.lineBetween\(line\.from\.x,line\.from\.y,line\.to\.x,line\.to\.y\);\}/);
  assert.match(source,/const orderRegions=/);assert.match(source,/frame\.orderStrokes\.map/);assert.match(source,/frame\.orderLights\.map/);
- assert.match(source,/dataset\.villageOrderAnswer=JSON\.stringify\(\{kind:this\.orderFrame\.answer\.kind,progress:this\.orderFrame\.answer\.progress,lights:frame\.orderLights\.length,strokes:frame\.orderStrokes\.length,regions:orderRegions,reduced:this\.reduce,paused:game\.state\.paused\}\)/);
+ assert.match(source,/dataset\.villageOrderAnswer=JSON\.stringify\(\{kind:orderFrame\.answer\.kind,progress:orderFrame\.answer\.progress,lights:frame\.orderLights\.length,strokes:frame\.orderStrokes\.length,regions:orderRegions,reduced:host\.reduce\(\),paused:host\.game\.state\.paused\}\)/);
  assert.match(source,/delete this\.game\.canvas\.dataset\.villageOrderAnswer/);
  assert.match(review,/waitForFunction\(\(\)=>JSON\.parse\(document\.querySelector\('canvas'\)\?\.dataset\.villageOrderAnswer\?\?'null'\)\?\.paused===true\)/,'native pause evidence must require a live paused village answer');
  assert.match(review,/assertOrderRegionsClearOf\(p,'\.pause-banner'\)/,'native evidence must independently reject a pause-card overlap');
@@ -95,7 +97,7 @@ test('order answer reuses village ambience and light pools with bounded webdrive
  assert.doesNotMatch(source,/order(?:Strokes|Lights)[^\n]*this\.add\.(?:graphics|image|container)/i);
 });
 test('first accepted deployment owns one simulation-time village muster answer',()=>{
- const source=readFileSync(new URL('../src/view/battlefield.ts',import.meta.url),'utf8');
+ const source=battlefieldSource();
  assert.match(source,/import \{createVillageMuster,rememberVillageMuster,villageMusterFrame/);
  assert.match(source,/private villageMuster=createVillageMuster\(\);/);
  assert.match(source,/this\.villageMuster=rememberVillageMuster\(this\.villageMuster,e,game\.state\.time\)/);
@@ -103,14 +105,14 @@ test('first accepted deployment owns one simulation-time village muster answer',
  assert.equal(source.match(/villageMusterFrame\(this\.villageMuster,game\.state\.time,this\.reduce\)/g)?.length,1,'one read boundary must own the rendered muster frame');
  assert.match(source,/private musterFrame:ReturnType<typeof villageMusterFrame>=null;/);
  assert.match(source,/this\.musterFrame=villageMusterFrame\(this\.villageMuster,game\.state\.time,this\.reduce\)/);
- assert.match(source,/villageFrame\(\{[^}]*muster:this\.musterFrame\}/);
+ assert.match(source,/villageFrame\(\{[^}]*muster:musterFrame\}/);
  assert.doesNotMatch(source,/setTimeout\([^)]*muster|Date\.now\(\)[^;]*muster/i);
 });
 test('muster response reuses village ambience and light pools with bounded webdriver evidence',()=>{
- const source=readFileSync(new URL('../src/view/battlefield.ts',import.meta.url),'utf8');
+ const source=battlefieldSource();
  const review=readFileSync(new URL('../scripts/verify-battle-banner.mjs',import.meta.url),'utf8');
- assert.match(source,/for\(const stroke of frame\.musterStrokes\)/);
- assert.match(source,/const musterRegions=/);assert.match(source,/frame\.musterResidents\.flatMap/);assert.match(source,/frame\.musterLights\.map/);
+ assert.match(source,/for\(const line of \[[^\]]*frame\.musterStrokes/);
+ assert.match(source,/const musterRegions=/);assert.match(source,/paneBounds\(frame\.musterResidents\)/);assert.match(source,/frame\.musterLights\.map/);
  assert.match(source,/dataset\.villageMusterAnswer=JSON\.stringify/);
  assert.match(source,/delete this\.game\.canvas\.dataset\.villageMusterAnswer/);
  assert.match(source,/while\(this\.stageLight\.length<6\)/);

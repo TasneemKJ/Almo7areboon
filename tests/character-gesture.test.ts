@@ -1,6 +1,6 @@
 import test from 'node:test';
+import { battlefieldSource } from './helpers/battlefield-source.ts';
 import assert from 'node:assert/strict';
-import {readFileSync} from 'node:fs';
 async function gesture(){const path='../src/view/character-gesture.ts';const m=await import(path).catch(e=>{if((e as NodeJS.ErrnoException).code==='ERR_MODULE_NOT_FOUND')return null;throw e;});assert.ok(m,'character gesture model must exist');return m;}
 
 test('reduced motion makes every role a neutral transform',async()=>{
@@ -36,8 +36,8 @@ test('invalid role/time inputs recover to finite melee presentation',async()=>{
 });
 
 test('battlefield mirrors gesture forward/lean by faction direction and keeps simulation coordinates untouched',()=>{
- const source=readFileSync(new URL('../src/view/battlefield.ts',import.meta.url),'utf8');
- assert.match(source,/characterGesture\(unit\.kind,game\.state\.time\+unit\.id\*\.17,moving,unit\.attacking,this\.reduce\|\|frozen\)/);
+ const source=battlefieldSource();
+ assert.match(source,/characterGesture\(unit\.kind,host\.game\.state\.time\+unit\.id\*\.17,moving,unit\.attacking,host\.reduce\(\)\|\|frozen\)/);
  assert.match(source,/direction=unit\.side==='player'\?1:-1/);
  assert.match(source,/x\+recoil\.x\+gesture\.forward\*direction/);
  assert.match(source,/pose\.angle\*direction\+gesture\.angle\*direction\+recoil\.angle/);
