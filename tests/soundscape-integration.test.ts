@@ -61,9 +61,9 @@ test('settings and existing pause lifecycle are wired to the ambience gate (sour
  const source=mainSource();
  const preferences=readFileSync(new URL('../src/ui/preferences-screen.ts',import.meta.url),'utf8');
  assert.match(preferences,/check\('atmosphere','Atmosphere'/);assert.match(source,/preference==='atmosphere'/);
- assert.match(source,/updateSoundscape\(state\.game\.profile\.age,ambienceAllowed\(/);
- assert.match(source,/atmosphere:state\.atmosphereEnabled/);assert.match(source,/state\.modal,hidden:dom\.hidden\(\)/);
- assert.match(source,/saveAtmosphere\(state\.atmosphereEnabled\)/);
+ assert.match(source,/updateSoundscape\((?:ports\.)?sessionState\.game\.profile\.age,ambienceAllowed\(/);
+ assert.match(source,/atmosphere:(?:ports\.)?sessionState\.atmosphereEnabled/);assert.match(source,/(?:ports\.)?navState\.modal,hidden:dom\.hidden\(\)/);
+ assert.match(source,/saveAtmosphere\((?:ports\.)?sessionState\.atmosphereEnabled\)/);
 });
 test('a gesture attempts to resume an interrupted context instead of silently abandoning it',()=>{
  audio.disposeAudio();const previous=Object.getOwnPropertyDescriptor(globalThis,'AudioContext');let resumes=0;
@@ -84,7 +84,7 @@ test('actual main loads the separate stored mix before any gesture and applies i
  const storedBefore=[...values],c=recordedContext();let created=0;const restore=installContext(c,()=>{created++;return c.ctx;});audio.disposeAudio();
  try{
   const context={loadAudioMix:()=>loadAudioMix({getItem:(key:string)=>values.get(key)??null}),updateAudioMix:audio.updateAudioMix};
-  runInApp(ts.transpile(`const state={${declaration!.getText(ast)}};${application!.getText(ast).replace('app.audioMix','state.audioMix')}`,{target:ts.ScriptTarget.ES2022}),context);
+  runInApp(ts.transpile(`const ports={sessionState:{${declaration!.getText(ast)}}};${application!.getText(ast)}`,{target:ts.ScriptTarget.ES2022}),context);
   assert.equal(created,0);assert.equal(c.gains.length,0);assert.equal(c.sources.length,0);assert.deepEqual([...values],storedBefore);
   audio.unlockAudio();assert.equal(created,1);assert.deepEqual(c.gains.map(g=>g.gain.events[0][1]),[.5,.25]);
  }finally{audio.disposeAudio();audio.updateAudioMix(DEFAULT_AUDIO_MIX);restore();}

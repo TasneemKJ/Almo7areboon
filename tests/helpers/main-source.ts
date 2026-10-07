@@ -4,7 +4,7 @@ import ts from 'typescript';
 const read = (path: string) => readFileSync(new URL(`../../src/${path}`, import.meta.url), 'utf8');
 
 /** The shell modules that make up the app: the entry file, the shared state, runtime and the flow modules, plus the presenters they use. */
-export const APP_FILES = ['main.ts', 'app/state.ts', 'app/runtime.ts', 'app/dom-port.ts', 'app/lifecycle.ts', 'app/navigation.ts', 'app/quests.ts', 'app/listeners.ts', 'ui/app-shell.ts', 'ui/hud-sync.ts'];
+export const APP_FILES = ['main.ts', 'app/runtime.ts', 'app/dom-port.ts', 'app/lifecycle.ts', 'app/navigation.ts', 'app/quests.ts', 'app/listeners.ts', 'ui/app-shell.ts', 'ui/hud-sync.ts'];
 
 /**
  * The app as one text, for source-contract tests and for harnesses that execute named functions.

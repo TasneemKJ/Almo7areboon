@@ -2,13 +2,12 @@ import { runInNewContext } from 'node:vm';
 import { createDomPort, type DomEnv } from '../../src/app/dom-port.ts';
 
 /**
- * Runs extracted shell code in a stub context. The app factories reach their state slice and sibling
- * operations through `state` and `ports`, so the harness context is its own `state` and `ports`:
- * stubbed fields and extracted functions stay plain globals.
+ * Runs extracted shell code in a stub context. Each app factory owns a state object (sessionState, navState,
+ * questState, inputState) and reaches siblings through `ports`; the harness context is all of them,
+ * so stubbed fields and extracted functions stay plain globals.
  */
 export function runInApp(code: string, context: Record<string, unknown>): unknown {
-  context.state ??= context;
-  context.ports ??= context;
+  for (const name of ['sessionState', 'navState', 'questState', 'inputState', 'ports']) context[name] ??= context;
   // The page port runs over the same stubbed window, document and performance the harness provides.
   context.dom ??= createDomPort(stubEnv(context));
   return runInNewContext(code, context);

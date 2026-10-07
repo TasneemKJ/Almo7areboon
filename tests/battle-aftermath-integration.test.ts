@@ -50,7 +50,7 @@ test('result timing and model ownership remain unchanged',()=>{
  const main=mainSource(),source=battlefield();
  assert.match(main,/resultDue=now\+\(dom\.rootElement\(\)\.dataset\.motion==='reduced'\?350:1300\)/);
  assert.match(main,/const reviewHoldingResult=dom\.automated\(\)&&dom\.query\('canvas'\)\?\.dataset\.battlefieldReviewFrameReady===s\.phase;/,'only phase-matched native browser evidence may hold a due result sheet, while non-browser model tests remain inert');
- assert.match(main,/state\.resultShown!==s\.phase&&now>=state\.resultDue&&!reviewHoldingResult/,'the evidence latch must not alter the production deadline or terminal ownership');
+ assert.match(main,/(?:ports\.)?sessionState\.resultShown!==s\.phase&&now>=(?:ports\.)?sessionState\.resultDue&&!reviewHoldingResult/,'the evidence latch must not alter the production deadline or terminal ownership');
  assert.doesNotMatch(source,/\.dispatch\(/);assert.doesNotMatch(source,/profile\.[A-Za-z_$][\w$]*\s*=/);
 });
 

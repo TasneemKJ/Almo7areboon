@@ -98,8 +98,8 @@ test('results show the next opponent chapter, not the player army or a fictional
 test('HUD, unlock notifications and import previews share the presentation boundary (source contract)',()=>{
  const main=mainSource();
  assert.match(main,/chapterPresentation\(p.age\)\.title/);
- assert.match(main,/chapterPresentation\(state\.pendingImport.age\)\.title/);
- assert.match(main,/troopUnlockMessage\(state\.game\.profile,state\.game\.state\.phase,kind,state\.game\.deploymentStatus\(kind\)\)/);
+ assert.match(main,/chapterPresentation\((?:ports\.)?navState\.pendingImport.age\)\.title/);
+ assert.match(main,/troopUnlockMessage\((?:ports\.)?sessionState\.game\.profile,(?:ports\.)?sessionState\.game\.state\.phase,kind,(?:ports\.)?sessionState\.game\.deploymentStatus\(kind\)\)/);
  const army=readFileSync(new URL('../src/ui/army-screen.ts',import.meta.url),'utf8');
  assert.match(army,/unitPresentationName\(profile.age, kind\)/);
  assert.doesNotMatch(main,/ERAS\[(?:p|game.profile|pendingImport)\.age\]\.name/);
