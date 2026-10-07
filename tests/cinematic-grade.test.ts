@@ -1,4 +1,5 @@
 import test from 'node:test';
+import { battlefieldSource } from './helpers/battlefield-source.ts';
 import assert from 'node:assert/strict';
 import {readFileSync} from 'node:fs';
 import {applyGrade,eraGrade,foregroundMist,gradeMatrix,gradePixels,vignetteAlphaAt,keyLightRays,projectileGlow,stageGlow,teamHalo,vignetteStops} from '../src/view/cinematic-grade.ts';
@@ -108,17 +109,17 @@ test('baked pixel grade matches the matrix and leaves transparency alone',()=>{
 });
 
 test('battlefield bakes the grade into static art instead of paying a per-frame post pass',()=>{
- const source=readFileSync(new URL('../src/view/battlefield.ts',import.meta.url),'utf8');
+ const source=battlefieldSource();
  assert.doesNotMatch(source,/postFX|addBloom/,'full-screen post passes cost ~20% frame rate on software GL');
  assert.match(source,/gradePixels\(pixels\.data,matrix\)/);
  assert.match(source,/catch\{\/\* keep the ungraded/,'a tainted canvas must fall back, not crash');
- assert.match(source,/this\.bakeGrade\(p\.age\);this\.bakeGrade\(p\.enemyAge\)/);
+ assert.match(source,/bakeGrade\(this,this\.graded,this\.layout,p\.age\);bakeGrade\(this,this\.graded,this\.layout,p\.enemyAge\)/);
  assert.match(source,/globalCompositeOperation='source-atop'/,'baked vignette must not paint into transparent foreground pixels');
  assert.match(source,/keyLightRays\(age,groundY,0,true\)/,'baked rays use the still, reduced-motion composition');
  assert.doesNotMatch(source,/this\.vignette|this\.rays/,'no full-screen blended layers per frame');
  for(const layer of ['halos','glow'])assert.match(source,new RegExp(`this\\.${layer}=this\\.add\\.graphics\\(\\)\\.setBlendMode\\(Phaser\\.BlendModes\\.ADD\\)`));
  assert.ok(source.indexOf('this.glow=this.add.graphics()')<source.indexOf('this.bars=this.add.graphics()'),'health bars must draw above glow');
- assert.match(source,/private flare\([^)]*\):void \{\n\s+if\(this\.reduce\)return;/,'reduced motion must not flash');
+ assert.match(source,/function flare\([^)]*\):void \{\n\s+if\(host\.reduce\(\)\)return;/,'reduced motion must not flash');
  assert.match(source,/if\(!this\.reduce\)\{this\.cameras\.main\.shake\(100,\.0015\);this\.cameras\.main\.flash/);
 });
 
@@ -127,7 +128,7 @@ test('bright chapters keep a dimmer road pool so troops stay darker than the lan
 });
 
 test('combat text and skill feedback stay legible against bright skies',()=>{
- const source=readFileSync(new URL('../src/view/battlefield.ts',import.meta.url),'utf8');
+ const source=battlefieldSource();
  assert.match(source,/\.setShadow\(0,2,'#08171d'/,'floating numbers need a drop shadow');
  assert.match(source,/fontSize:large\?'22px':heavy\?'15px':'13px'/);
  assert.match(source,/if\(!this\.reduce\)this\.cameras\.main\.flash\(220,170,240,255\)/,'freeze flash respects reduced motion');
@@ -145,8 +146,8 @@ test('combat text and skill feedback stay legible against bright skies',()=>{
 });
 
 test('skill banners are never evicted by the damage-number cap',()=>{
- const source=readFileSync(new URL('../src/view/battlefield.ts',import.meta.url),'utf8');
+ const source=battlefieldSource();
  assert.match(source,/banner:large\}/);
- assert.match(source,/const numbers=this\.floaters\.filter\(f=>!f\.banner\);\n\s+if\(numbers\.length>24\)/);
+ assert.match(source,/const numbers=floaters\.filter\(f=>!f\.banner\);\n\s+if\(numbers\.length>24\)/);
  assert.doesNotMatch(source,/if\(this\.floaters\.length>24\)this\.floaters\.shift\(\)/);
 });

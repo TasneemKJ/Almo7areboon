@@ -1,4 +1,5 @@
 import test from 'node:test';
+import { battlefieldSource } from './helpers/battlefield-source.ts';
 import assert from 'node:assert/strict';
 import {readFileSync} from 'node:fs';
 async function focus(){const path='../src/view/silhouette-focus.ts';const m=await import(path).catch(e=>{if((e as NodeJS.ErrnoException).code==='ERR_MODULE_NOT_FOUND')return null;throw e;});assert.ok(m,'silhouette focus model must exist');return m;}
@@ -37,7 +38,7 @@ test('invalid lanes and roles use safe middle/melee fallbacks',async()=>{
  for(const kind of [-3,9,NaN,Infinity])assert.deepEqual(m.unitFocusMarks('player',1,kind,0,false),m.unitFocusMarks('player',1,0,0,false));
 });
 test('battlefield paints focus into the existing shadow layer before each unit shadow',()=>{
- const source=readFileSync(new URL('../src/view/battlefield.ts',import.meta.url),'utf8');
+ const source=battlefieldSource();
  assert.match(source,/unitFocusMarks\(unit\.side,unit\.lane,unit\.kind,unit\.hitFlash,frozen\)/);
  assert.match(source,/fillEllipse\(x\+mark\.x,y\+mark\.y,mark\.width,mark\.height\)/);
  assert.ok(source.indexOf('unitFocusMarks(unit.side')<source.indexOf('g.fillStyle(0x243c42,perspective.shadowAlpha)'));

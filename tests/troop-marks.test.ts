@@ -1,4 +1,5 @@
 import test from 'node:test';
+import { battlefieldSource } from './helpers/battlefield-source.ts';
 import assert from 'node:assert/strict';
 import { readFileSync } from 'node:fs';
 import { decodeSave, defaultProfile } from '../src/game/save.ts';
@@ -23,7 +24,7 @@ test('troop shapes survive a round trip and Start over', () => {
 test('cards carry a shape per role and the battlefield draws circle, triangle and square', () => {
   const army = readFileSync(new URL('../src/ui/army-screen.ts', import.meta.url), 'utf8');
   assert.match(army, /troop-mark troop-mark-\$\{index\}/);
-  const field = readFileSync(new URL('../src/view/battlefield.ts', import.meta.url), 'utf8');
+  const field = battlefieldSource();
   assert.match(field, /if\(game\.profile\.marks\)for\(const unit of s\.units\)/);
   assert.match(field, /fillTriangle/); assert.match(field, /fillCircle/);
 });

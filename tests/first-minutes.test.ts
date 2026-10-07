@@ -1,4 +1,5 @@
 import test from 'node:test';
+import { battlefieldSource } from './helpers/battlefield-source.ts';
 import assert from 'node:assert/strict';
 import { readFileSync } from 'node:fs';
 
@@ -45,7 +46,7 @@ test('death events carry the fallen unit role so a heavy can fall louder', async
     for (const e of g.drainEvents()) if (e.type === 'death' && e.kind !== undefined) seen.add(e.kind);
   }
   assert.ok(seen.size >= 1, "a death event carries a role");
-  const field = readFileSync(new URL('../src/view/battlefield.ts', import.meta.url), 'utf8');
+  const field = battlefieldSource();
   assert.match(field, /e\.type==='death'&&e\.kind===2/);
   assert.match(field, /if\(!this\.reduce\)this\.cameras\.main\.shake\(70,\.0016\)/);
 });

@@ -1,10 +1,11 @@
 import test from 'node:test';
+import { battlefieldSource } from './helpers/battlefield-source.ts';
 import assert from 'node:assert/strict';
 import {readFileSync} from 'node:fs';
 import {Game} from '../src/game/simulation.ts';
 import {defaultProfile} from '../src/game/save.ts';
 
-const battlefield=()=>readFileSync(new URL('../src/view/battlefield.ts',import.meta.url),'utf8');
+const battlefield=()=>battlefieldSource();
 
 test('only a fresh authoritative terminal event owns an aftermath tableau',()=>{
  const won=new Game(defaultProfile());assert.equal(won.dispatch({type:'start'}),true);won.drainEvents();won.state.enemyHp=0;won.step(1/60);
@@ -20,8 +21,8 @@ test('renderer observes terminal events and transforms its existing actor pool',
  assert.match(source,/import \{battleAftermathPose\} from '\.\/battle-aftermath\.ts';/);
  assert.match(source,/private aftermath:\{phase:'won'\|'lost';at:number\}\|null=null;/);
  assert.match(source,/if\(e\.type==='win'\|\|e\.type==='lose'\)this\.aftermath=\{phase:e\.type==='win'\?'won':'lost',at:this\.clock\};/);
- assert.match(source,/battleAftermathPose\(\{phase:this\.aftermath\.phase,side:unit\.side,kind:unit\.kind,elapsed:aftermathElapsed,reduced:this\.reduce\}\)/);
- const actorBlock=source.slice(source.indexOf('for(const unit of game.state.units)'),source.indexOf('for(const [id,view]of this.units)'));
+ assert.match(source,/battleAftermathPose\(\{phase:aftermath\.phase,side:unit\.side,kind:unit\.kind,elapsed:aftermathElapsed,reduced:host\.reduce\(\)\}\)/);
+ const actorBlock=source.slice(source.indexOf('for(const unit of host.game.state.units)'),source.indexOf('for(const [id,view]of units)'));
  assert.match(actorBlock,/view\.body\.setPosition/);assert.match(actorBlock,/view\.body\.setScale/);
  assert.doesNotMatch(actorBlock,/this\.add\.(image|graphics|sprite|text)/,'aftermath must reuse current actors instead of allocating per unit');
  assert.match(actorBlock,/else\{\s*view\.body\.setPosition[\s\S]*setScale\(facingDirection\*perspective\.scale/,'vector fallback must receive the same facing and bounded transform');
@@ -31,17 +32,17 @@ test('renderer observes terminal events and transforms its existing actor pool',
 
 test('diagnostics are bounded and every reset or shutdown clears stale aftermath state',()=>{
  const source=battlefield();
- assert.match(source,/dataset\.battleAftermath=JSON\.stringify\(\{phase:this\.aftermath\.phase,elapsed:aftermathElapsed,triumph:aftermathCounts\.triumph,withdraw:aftermathCounts\.withdraw,roles:aftermathCounts\.roles,maxForward:aftermathCounts\.maxForward,maxLift:aftermathCounts\.maxLift,maxAngle:aftermathCounts\.maxAngle,reduced:this\.reduce\}\)/);
+ assert.match(source,/dataset\.battleAftermath=JSON\.stringify\(\{phase:aftermath\.phase,elapsed:aftermathElapsed,triumph:aftermathCounts\.triumph,withdraw:aftermathCounts\.withdraw,roles:aftermathCounts\.roles,maxForward:aftermathCounts\.maxForward,maxLift:aftermathCounts\.maxLift,maxAngle:aftermathCounts\.maxAngle,reduced:host\.reduce\(\)\}\)/);
  assert.match(source,/delete this\.game\.canvas\.dataset\.battleAftermath/);
  assert.match(source,/this\.aftermath=null/);
  assert.match(source,/if\(this\.lastState!==game\.state\)[\s\S]*this\.aftermath=null/,'state replacement must clear a previous battle');
- assert.match(source,/game\.state\.phase==='ready'\|\|game\.state\.phase==='running'/,'nonterminal phases must clear a prior tableau');
+ assert.match(source,/host\.game\.state\.phase==='ready'\|\|host\.game\.state\.phase==='running'/,'nonterminal phases must clear a prior tableau');
 });
 
 test('pause, hidden ownership and reduced motion cannot advance an independent aftermath clock',()=>{
  const source=battlefield(),visibility=source.indexOf("if(options.isVisible&&!options.isVisible())"),clock=source.indexOf("if(!game.state.paused&&!this.reduce)this.clock+=dt");
  assert.ok(visibility>=0&&clock>visibility,'visibility must gate the presentation clock before it advances');
- assert.match(source,/aftermathElapsed=this\.aftermath\?Math\.max\(0,this\.clock-this\.aftermath\.at\):0/);
+ assert.match(source,/aftermathElapsed=aftermath\?Math\.max\(0,host\.clock\(\)-aftermath\.at\):0/);
  assert.doesNotMatch(source,/setTimeout\([^)]*aftermath|requestAnimationFrame\([^)]*aftermath/);
 });
 

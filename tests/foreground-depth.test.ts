@@ -1,4 +1,5 @@
 import test from 'node:test';
+import { battlefieldSource } from './helpers/battlefield-source.ts';
 import assert from 'node:assert/strict';
 import {readFileSync} from 'node:fs';
 
@@ -66,7 +67,7 @@ test('foreground assets stay within the existing texture-memory guardrail',async
 });
 
 test('renderer sandwiches foreground art between actors and combat readability effects',()=>{
- const source=readFileSync(new URL('../src/view/battlefield.ts',import.meta.url),'utf8');
+ const source=battlefieldSource();
  assert.match(source,/private foreground!:/);
  assert.match(source,/foregroundTexture/);
  const army=source.indexOf('this.world.add(this.armyLayer)');

@@ -39,4 +39,4 @@ Optional profile fields, each validated in `validate` (`game/save.ts`) and omitt
 
 ## Module size
 
-Keep modules focused: new systems get their own file in the layer they belong to.
+Keep modules focused: new systems get their own file in the layer they belong to. `tests/architecture.test.ts` enforces the layer direction and a 500-line cap (listed exceptions only shrink). The battlefield is a thin `battlefield.ts` mount plus `battlefield-scene.ts` and its collaborators (`-army`, `-atmosphere`, `-effects`, `-marks`, `-overlays`, `-hud`, `-grade`, `-review`), each a small factory or pure painter; contract tests read them together through `tests/helpers/battlefield-source.ts`.

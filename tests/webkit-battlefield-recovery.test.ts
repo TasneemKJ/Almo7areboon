@@ -1,4 +1,5 @@
 import test from 'node:test';
+import { battlefieldSource } from './helpers/battlefield-source.ts';
 import assert from 'node:assert/strict';
 import { readFileSync } from 'node:fs';
 import { battlefieldRendererMode } from '../src/view/renderer-policy.ts';
@@ -28,7 +29,7 @@ test('Chromium, Edge, Firefox, and unknown agents retain automatic rendering', (
 });
 
 test('battlefield applies the renderer policy without lifecycle recreation hooks', () => {
-  const battlefield = readFileSync(new URL('../src/view/battlefield.ts', import.meta.url), 'utf8');
+  const battlefield = battlefieldSource();
   const main = readFileSync(new URL('../src/main.ts', import.meta.url), 'utf8');
   assert.match(battlefield, /battlefieldRendererMode\(navigator\.userAgent\)==='canvas'\?Phaser\.CANVAS:Phaser\.AUTO/);
   assert.match(battlefield, /\):\{destroy\(\):void\}/, 'the view keeps one normal lifetime owner');

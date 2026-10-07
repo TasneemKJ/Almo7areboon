@@ -1,4 +1,5 @@
 import test from 'node:test';
+import { battlefieldSource } from './helpers/battlefield-source.ts';
 import assert from 'node:assert/strict';
 import {arenaLayout,landscapePlacement} from '../src/view/visual-theme.ts';
 
@@ -37,7 +38,7 @@ test('landscape placement remains finite for malformed viewport inputs',()=>{
 
 test('battlefield renderer uses uniform placement and no longer calls setDisplaySize on the landscape',async()=>{
   const {readFileSync}=await import('node:fs');
-  const source=readFileSync(new URL('../src/view/battlefield.ts',import.meta.url),'utf8');
+  const source=battlefieldSource();
   assert.match(source,/landscapePlacement/);
   assert.match(source,/private placeLandscape\(\):void/);
   assert.doesNotMatch(source,/this\.sky\.setDisplaySize\(/);

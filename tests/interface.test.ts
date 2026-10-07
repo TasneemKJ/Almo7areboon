@@ -1,4 +1,5 @@
 import test from 'node:test';
+import { battlefieldSource } from './helpers/battlefield-source.ts';
 import assert from 'node:assert/strict';
 import { readFileSync } from 'node:fs';
 import { Game } from '../src/game/simulation.ts';
@@ -81,7 +82,7 @@ test('P33: reduced-motion policy applies to renderer, not only CSS transitions',
  assert.equal(feedback.reducedMotion('system',true),true);assert.equal(feedback.reducedMotion('system',false),false);assert.equal(feedback.reducedMotion('reduced',false),true);
  const source={id:1,kind:1,age:2,side:'player',x:300,lane:0};const shot=feedback.projectileForHit({type:'hit',source,target:'unit',x:333,lane:2,amount:4});
  assert.equal(shot.targetX,333);assert.equal(shot.targetLane,2);assert.equal(feedback.projectileForHit({type:'coin'}),null);
- const renderer=readFileSync(new URL('../src/view/battlefield.ts',import.meta.url),'utf8');assert.match(renderer,/projectileForHit\(e\)/);assert.match(renderer,/reducedMotion\(game.profile.motion/);
+ const renderer=battlefieldSource();assert.match(renderer,/projectileForHit\(e\)/);assert.match(renderer,/reducedMotion\(game.profile.motion/);
 });
 test('P34: lifecycle cleanup removes input handlers once and continues after a cleanup failure',()=>{
  const life=createLifetime(),target=new EventTarget();let actions=0,cleaned=0;life.listen(target,'tap',()=>actions++);
