@@ -105,6 +105,27 @@ const commandHandlers:Record<string,(button:HTMLButtonElement)=>void>={
   },
   'close':()=>{dismissModal();},
 };
+/** Routes presses whose meaning is carried in data attributes (troops, skills, claims, packs). Returns whether one matched. */
+function routeDataAction(button:HTMLButtonElement,command:string|undefined):boolean {
+  if(button.dataset.unit!==undefined){const kind=Number(button.dataset.unit) as UnitKind;if(!app.game.profile.unlocked[kind]){if(action({type:'unlock',kind})&&playable()&&!app.savedWarning)toast(troopUnlockMessage(app.game.profile,app.game.state.phase,kind,app.game.deploymentStatus(kind)),7000);}else action({type:'spawn',kind});return true;}
+  if(button.dataset.skill){if(action({type:'skill',skill:button.dataset.skill as Skill}))fieldControls.clear();return true;}
+  if(command==='quest-claim'){claimQuestRecord(button);return true;}
+  if(button.dataset.weekly){
+    // A previously rendered claim cannot settle an expired or future local week. Rejection never syncs.
+    const week=claimableWeek(button.dataset.weekly,weekId(localDay()));
+    if(week===null)return true;
+    if(action({type:'weekly',week}))showQuests();return true;
+  }
+  if(button.dataset.daily){if(action({type:'daily',day:Number(button.dataset.daily)}))showQuests();return true;}
+  if(button.dataset.claim){const fromJourney=app.modal==='journey';if(action({type:'claim',id:button.dataset.claim})){if(fromJourney&&playable()&&app.modal!=='session')showModal('journey',journeyScreenHtml(app.game.profile,app.game.state));else showQuests();}return true;}
+  if(button.dataset.battle!==undefined){if(action({type:'select-battle',battle:Number(button.dataset.battle)}))closeModal();return true;}
+  if(button.dataset.pack!==undefined){
+    const before=[...app.game.profile.cards],count=Number(button.dataset.pack) as 1|10|50;
+    if(action({type:'summon',count})&&playable())showModal('summon',summonedCardsHtml(before,app.game.profile));
+    else toast('This pack is unavailable. Your gems were not spent.');return true;
+  }
+  return false;
+}
 lifetime.listen<MouseEvent>(root,'click',e=>{
   const button=e.target instanceof Element?e.target.closest<HTMLButtonElement>('button'):null;
   if(!button||button.disabled)return;
@@ -158,23 +179,7 @@ lifetime.listen<MouseEvent>(root,'click',e=>{
     return;
   }
   if(button.dataset.tab){switchTab(button.dataset.tab);return;}
-  if(button.dataset.unit!==undefined){const kind=Number(button.dataset.unit) as UnitKind;if(!app.game.profile.unlocked[kind]){if(action({type:'unlock',kind})&&playable()&&!app.savedWarning)toast(troopUnlockMessage(app.game.profile,app.game.state.phase,kind,app.game.deploymentStatus(kind)),7000);}else action({type:'spawn',kind});return;}
-  if(button.dataset.skill){if(action({type:'skill',skill:button.dataset.skill as Skill}))fieldControls.clear();return;}
-  if(command==='quest-claim'){claimQuestRecord(button);return;}
-  if(button.dataset.weekly){
-    // A previously rendered claim cannot settle an expired or future local week. Rejection never syncs.
-    const week=claimableWeek(button.dataset.weekly,weekId(localDay()));
-    if(week===null)return;
-    if(action({type:'weekly',week}))showQuests();return;
-  }
-  if(button.dataset.daily){if(action({type:'daily',day:Number(button.dataset.daily)}))showQuests();return;}
-  if(button.dataset.claim){const fromJourney=app.modal==='journey';if(action({type:'claim',id:button.dataset.claim})){if(fromJourney&&playable()&&app.modal!=='session')showModal('journey',journeyScreenHtml(app.game.profile,app.game.state));else showQuests();}return;}
-  if(button.dataset.battle!==undefined){if(action({type:'select-battle',battle:Number(button.dataset.battle)}))closeModal();return;}
-  if(button.dataset.pack!==undefined){
-    const before=[...app.game.profile.cards],count=Number(button.dataset.pack) as 1|10|50;
-    if(action({type:'summon',count})&&playable())showModal('summon',summonedCardsHtml(before,app.game.profile));
-    else toast('This pack is unavailable. Your gems were not spent.');return;
-  }
+  if(routeDataAction(button,command))return;
   const handler=button.dataset.command;
   if(handler&&Object.hasOwn(commandHandlers,handler))commandHandlers[handler](button);
 });

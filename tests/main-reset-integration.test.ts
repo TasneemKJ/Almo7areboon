@@ -23,7 +23,7 @@ import { createModalTapGuard } from '../src/ui/modal-tap-guard.ts';
 // Run the actual UI handler and ownership presentation with the real guarded writer.
 const source = mainSource();
 const ast = ts.createSourceFile('main.ts', source, ts.ScriptTarget.Latest, true, ts.ScriptKind.TS);
-const names = new Set(['handleCampInput','playable', 'guardAction', 'sessionPresentation', 'showSettings', 'showSaveRecovery', 'preferenceNotice', 'clearPrestigeContext', 'adoptRestoredGame']);
+const names = new Set(['handleCampInput','playable', 'guardAction', 'sessionPresentation', 'showSettings', 'showSaveRecovery', 'preferenceNotice', 'clearPrestigeContext', 'adoptRestoredGame', 'routeDataAction']);
 const functions = ast.statements.filter(node => ts.isFunctionDeclaration(node) && node.name && names.has(node.name.text));
 const listener = ast.statements.find(node => ts.isExpressionStatement(node) && ts.isCallExpression(node.expression) && node.expression.expression.getText(ast) === 'lifetime.listen' && node.expression.arguments[0]?.getText(ast) === 'root' && node.expression.arguments[1]?.getText(ast) === "'click'");
 assert.equal(functions.length, names.size); assert.ok(listener);
