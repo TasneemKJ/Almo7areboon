@@ -185,10 +185,11 @@ export function createNavigation(deps: NavigationDeps) {
     if(ports.playable()&&navState.modal!=='session'){navState.resultDetailsOpen=false;showModal('result',compactResultsHtml(ports.sessionState.game.profile,ports.sessionState.game.state),focusCommand);}
     if(fresh&&navState.modal==='result')startCountUp($('modal-layer'),compactNumber,dom.rootElement().dataset.motion==='reduced');
   }
-  function showResultDetails(){
-    if(!ports.guardAction()||navState.modal!=='result')return;
+  /** The full receipt; a return from its own next-timeline preview lands back here on Next. */
+  function showResultDetails(focusCommand='result-back'){
+    if(!ports.guardAction()||(navState.modal!=='result'&&!(navState.modal==='prestige'&&navState.resultDetailsOpen)))return;
     navState.resultDetailsOpen=true;
-    showModal('result',`<button class="big-button secondary result-back" data-command="result-back">Back to result</button>${resultsHtml(ports.sessionState.game.profile,ports.sessionState.game.state)}`,'result-back');
+    showModal('result',`<button class="big-button secondary result-back" data-command="result-back">Back to result</button>${resultsHtml(ports.sessionState.game.profile,ports.sessionState.game.state)}`,focusCommand);
   }
   function showHome(){
     const fromCamp=navState.entryEntered&&root!.dataset.fieldMode==='camp'&&navState.modal===null;
@@ -313,7 +314,7 @@ export function createNavigation(deps: NavigationDeps) {
   function returnFromPrestige(){
     if(!ports.guardAction()||navState.modal!=='prestige')return;
     const origin=navState.prestigeOrigin;clearPrestigeContext();
-    if(origin==='result')showResult('next');
+    if(origin==='result'){if(navState.resultDetailsOpen)showResultDetails('next');else showResult('next');}
     else if(origin==='battles')showModal('battles',battleSelectionHtml(ports.sessionState.game.profile,ports.sessionState.game.state),'next');
     else closeModal();
   }

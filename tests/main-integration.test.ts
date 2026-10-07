@@ -288,6 +288,13 @@ for(const origin of ['result','battles'])for(const route of ['close','Escape'])t
  assert.equal(c.modal,origin);assert.equal(JSON.stringify(c.game.profile),before);assert.equal(c.prestigeOrigin,null);assert.equal(c.focusCommand,'next');
  h.click('next');assert.equal(c.modal,'prestige');
 });
+test('cancelling a preview opened from the result details returns to the details on Next',()=>{
+ const h=settledHarness(5),c=h.context;
+ h.click('result-details');assert.equal(c.resultDetailsOpen,true);
+ h.click('next');assert.equal(c.modal,'prestige');
+ h.click('close');
+ assert.equal(c.modal,'result');assert.equal(c.resultDetailsOpen,true,'the full receipt stays open');assert.equal(c.focusCommand,'next');
+});
 for(const reload of [false,true])test(`real cleared-final loss ${reload?'reloaded picker':'result'} opens preview and cancellation preserves the loss ledger`,()=>{
  const h=harness(),c=h.context;c.game=new Game(realVictory(5,1,false).profile);assert.equal(c.game.dispatch({type:'retry'}),true);assert.equal(c.game.dispatch({type:'start'}),true);
  for(let tick=0;tick<54000&&c.game.state.phase==='running';tick++)c.game.step(1/60);

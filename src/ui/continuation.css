@@ -147,8 +147,10 @@
 /* Overflow scrolling can paint controls inside the dialog's top padding.
    Extend the sticky paper into that band and intercept taps on covered inputs. */
 .dialog-dismiss::before {
- content:''; position:absolute; inset:-32px -24px 0; z-index:-1;
+ content:''; position:absolute; inset:-32px 0 0; z-index:-1;
  background:var(--paper);
+ /* Shadows paint the side padding bands without widening the scroll area, so a phone dialog never pans sideways. */
+ box-shadow:-24px 0 0 var(--paper),24px 0 0 var(--paper);
 }
 .reward strong { font-variant-numeric:tabular-nums; }
 .defeat-recap { margin:6px 0 10px; font-size:.8125rem; font-weight:700; color:var(--ink); text-align:center; }
