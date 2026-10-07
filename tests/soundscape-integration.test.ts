@@ -1,6 +1,6 @@
 import test from 'node:test';
 import { runInApp } from './helpers/run-app.ts';
-import { mainSource } from './helpers/main-source.ts';
+import { flatStatements, mainSource } from './helpers/main-source.ts';
 import assert from 'node:assert/strict';
 import {readFileSync} from 'node:fs';
 import * as audio from '../src/view/audio.ts';
@@ -61,9 +61,9 @@ test('settings and existing pause lifecycle are wired to the ambience gate (sour
  const source=mainSource();
  const preferences=readFileSync(new URL('../src/ui/preferences-screen.ts',import.meta.url),'utf8');
  assert.match(preferences,/check\('atmosphere','Atmosphere'/);assert.match(source,/preference==='atmosphere'/);
- assert.match(source,/updateSoundscape\(app\.game\.profile\.age,ambienceAllowed\(/);
- assert.match(source,/atmosphere:app\.atmosphereEnabled/);assert.match(source,/app\.modal,hidden:document.hidden/);
- assert.match(source,/saveAtmosphere\(app\.atmosphereEnabled\)/);
+ assert.match(source,/updateSoundscape\(state\.game\.profile\.age,ambienceAllowed\(/);
+ assert.match(source,/atmosphere:state\.atmosphereEnabled/);assert.match(source,/state\.modal,hidden:document.hidden/);
+ assert.match(source,/saveAtmosphere\(state\.atmosphereEnabled\)/);
 });
 test('a gesture attempts to resume an interrupted context instead of silently abandoning it',()=>{
  audio.disposeAudio();const previous=Object.getOwnPropertyDescriptor(globalThis,'AudioContext');let resumes=0;
@@ -78,13 +78,13 @@ test('actual main loads the separate stored mix before any gesture and applies i
  const {recordedContext,installContext}=await import('./helpers/audio-context.ts');
  const source=mainSource(),ast=ts.createSourceFile('main.ts',source,ts.ScriptTarget.Latest,true,ts.ScriptKind.TS);
  let declaration:any;ast.forEachChild(function find(node){if(ts.isPropertyAssignment(node)&&node.name.getText(ast)==='audioMix')declaration=node;ts.forEachChild(node,find);});
- const application=ast.statements.find(node=>ts.isExpressionStatement(node)&&ts.isCallExpression(node.expression)&&node.expression.expression.getText(ast)==='updateAudioMix');
+ const application=flatStatements(ast).find(node=>ts.isExpressionStatement(node)&&ts.isCallExpression(node.expression)&&node.expression.expression.getText(ast)==='updateAudioMix');
  assert.ok(declaration&&application,'main must load and apply its audio mix snapshot before gestures');
  const values=new Map([['almo7areboon.save.v1','protected save bytes'],['almo7areboon.save.v1.backup','protected backup bytes'],[AUDIO_MIX_KEY,'{"version":1,"effects":50,"atmosphere":25}']]);
  const storedBefore=[...values],c=recordedContext();let created=0;const restore=installContext(c,()=>{created++;return c.ctx;});audio.disposeAudio();
  try{
   const context={loadAudioMix:()=>loadAudioMix({getItem:(key:string)=>values.get(key)??null}),updateAudioMix:audio.updateAudioMix};
-  runInApp(ts.transpile(`const app={${declaration!.getText(ast)}};${application!.getText(ast)}`,{target:ts.ScriptTarget.ES2022}),context);
+  runInApp(ts.transpile(`const state={${declaration!.getText(ast)}};${application!.getText(ast).replace('app.audioMix','state.audioMix')}`,{target:ts.ScriptTarget.ES2022}),context);
   assert.equal(created,0);assert.equal(c.gains.length,0);assert.equal(c.sources.length,0);assert.deepEqual([...values],storedBefore);
   audio.unlockAudio();assert.equal(created,1);assert.deepEqual(c.gains.map(g=>g.gain.events[0][1]),[.5,.25]);
  }finally{audio.disposeAudio();audio.updateAudioMix(DEFAULT_AUDIO_MIX);restore();}

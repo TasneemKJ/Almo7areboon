@@ -1,5 +1,5 @@
 import test from 'node:test';
-import { mainSource } from './helpers/main-source.ts';
+import { flatStatements, mainSource } from './helpers/main-source.ts';
 import assert from 'node:assert/strict';
 import { runInApp } from './helpers/run-app.ts';
 import ts from 'typescript';
@@ -13,7 +13,7 @@ import { advanceVillagePresentation } from '../src/view/village-mood.ts';
 const source=mainSource();
 const ast=ts.createSourceFile('main.ts',source,ts.ScriptTarget.Latest,true,ts.ScriptKind.TS);
 const names=new Set(['playable','syncPause','syncVillagePresentation','events','guardAction','action']);
-const functions=ast.statements.filter(node=>ts.isFunctionDeclaration(node)&&node.name&&names.has(node.name.text));
+const functions=flatStatements(ast).filter(node=>ts.isFunctionDeclaration(node)&&node.name&&names.has(node.name.text));
 assert.equal(functions.length,names.size);
 const code=ts.transpile(functions.map(node=>node.getText(ast)).join('\n'),{target:ts.ScriptTarget.ES2022});
 

@@ -67,16 +67,29 @@ test('modules stay under the size cap unless listed', () => {
 const FUNCTION_CAP = 80;
 const FUNCTION_EXCEPTIONS: Record<string, number> = {};
 
+/**
+ * A function's own length: its lines minus the lines of function declarations nested in it, which are
+ * measured on their own. A module factory made of small inner functions therefore counts only its glue.
+ */
 function functionLengths(rel: string, text: string): { name: string; lines: number }[] {
   const file = ts.createSourceFile(rel, text, ts.ScriptTarget.Latest, true);
+  const lineOf = (pos: number) => file.getLineAndCharacterOfPosition(pos).line;
   const found: { name: string; lines: number }[] = [];
+  const nestedLines = (node: ts.Node): number => {
+    let total = 0;
+    const walk = (child: ts.Node) => {
+      if (ts.isFunctionDeclaration(child)) total += lineOf(child.end) - lineOf(child.getStart()) + 1;
+      else ts.forEachChild(child, walk);
+    };
+    ts.forEachChild(node, walk);
+    return total;
+  };
   const visit = (node: ts.Node) => {
     if (ts.isFunctionDeclaration(node) || ts.isMethodDeclaration(node) || ts.isArrowFunction(node) || ts.isFunctionExpression(node)) {
-      const start = file.getLineAndCharacterOfPosition(node.getStart()).line;
-      const end = file.getLineAndCharacterOfPosition(node.end).line;
+      const start = lineOf(node.getStart());
       const own = (node as { name?: ts.Node }).name?.getText(file);
       const owner = ts.isVariableDeclaration(node.parent) ? node.parent.name.getText(file) : ts.isPropertyAssignment(node.parent) ? node.parent.name.getText(file) : undefined;
-      found.push({ name: own ?? owner ?? `<anonymous@${start + 1}>`, lines: end - start + 1 });
+      found.push({ name: own ?? owner ?? `<anonymous@${start + 1}>`, lines: lineOf(node.end) - start + 1 - nestedLines(node) });
     }
     ts.forEachChild(node, visit);
   };
@@ -95,4 +108,13 @@ test('functions stay under the length cap unless listed', () => {
     }
   }
   for (const key of Object.keys(FUNCTION_EXCEPTIONS)) assert.ok(seen.has(key), `stale function exception ${key}`);
+});
+
+test('app modules receive their dependencies instead of importing each other', () => {
+  for (const { rel, text } of sources.filter(s => s.rel.startsWith('app/'))) {
+    for (const line of text.split('\n').filter(l => /^import\b/.test(l))) {
+      if (/from '\.\/(lifecycle|navigation|quests|listeners)\.ts'/.test(line) && rel !== 'app/shell.ts') assert.fail(`${rel} imports a sibling flow module: ${line}`);
+      if (/from '\.\/(state|runtime|shell)\.ts'/.test(line)) assert.match(line, /^import type\b/, `${rel} must take state, DOM handles and ports through deps: ${line}`);
+    }
+  }
 });

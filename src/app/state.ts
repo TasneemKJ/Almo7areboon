@@ -61,10 +61,11 @@ export interface AppState {
   rendererClosed: boolean;
 }
 
-// The initial render is a non-playable default. Only ownership makes a loaded Game authoritative.
-const game=new Game(defaultProfile());
 
-export const app:AppState={
+// The initial render is a non-playable default. Only ownership makes a loaded Game authoritative.
+export function createAppState(): AppState {
+  const game = new Game(defaultProfile());
+  return {
   game,
   activeTab: 'battle',
   modal: null,
@@ -110,3 +111,4 @@ export const app:AppState={
   renderer: null,
   rendererClosed: false,
 } as AppState;
+}

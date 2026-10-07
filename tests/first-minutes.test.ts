@@ -31,7 +31,7 @@ test('result motifs differ: victory rises, defeat falls', () => {
 
 test('Settings shows when the game last saved, from memory only (no save-format change)', () => {
   assert.match(main, /lastSavedAt=Date\.now\(\)/);
-  assert.match(main, /Last saved \$\{new Date\(app\.lastSavedAt\)\.toLocaleTimeString/);
+  assert.match(main, /Last saved \$\{new Date\(state\.lastSavedAt\)\.toLocaleTimeString/);
   assert.doesNotMatch(main, /localStorage\.setItem\([^)]*lastSavedAt/);
 });
 

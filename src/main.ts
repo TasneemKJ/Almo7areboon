@@ -1,4 +1,3 @@
-
 import './ui/quest-records.css';
 import './ui/camp.css';
 import './ui/world-play.css';
@@ -20,43 +19,53 @@ import { localDay } from './game/data.ts';
 import { createSaveSession } from './game/save-session.ts';
 import { disposeAudio, updateAudioMix } from './view/audio.ts';
 import { weekId } from './game/weekly.ts';
-import './app/listeners.ts';
-import { app } from './app/state.ts';
-import { acquireSession, action, events, guardAction, playable, rebuildArmy, sessionPresentation, suspendSession, syncMotion, syncPause, syncVillagePresentation, toast, update } from './app/lifecycle.ts';
-import { $, isolateModal, lifetime, root } from './app/runtime.ts';
-import { syncEntry } from './app/navigation.ts';
+import { createAppState } from './app/state.ts';
+import { createRuntime } from './app/runtime.ts';
+import { createLifecycle } from './app/lifecycle.ts';
+import { createNavigation } from './app/navigation.ts';
+import { createQuests } from './app/quests.ts';
+import { installListeners } from './app/listeners.ts';
+import type { ShellApi } from './app/shell.ts';
 
-updateAudioMix(app.audioMix);
-app.session=createSaveSession({
+// Composition root: state, DOM handles and the three flow modules are wired here and nowhere else.
+const state = createAppState();
+const dom = createRuntime(state.game.profile);
+const { $, root, lifetime, isolateModal } = dom;
+const ports = {} as ShellApi;
+const wiring = { state, dom, ports };
+Object.assign(ports, createLifecycle(wiring), createNavigation(wiring), createQuests(wiring));
+installListeners(wiring);
+updateAudioMix(state.audioMix);
+state.session=createSaveSession({
   // Access storage inside the guarded read/write, since the browser getter itself can throw.
   storage:{getItem:key=>window.localStorage.getItem(key),setItem:(key,value)=>window.localStorage.setItem(key,value)},
   locks:navigator.locks??null,
-  onStatus:sessionPresentation,
+  onStatus:ports.sessionPresentation,
 });
-app.port=createBattlefieldPort(()=>app.game,action,dt=>{
-  syncPause();if(!playable())return;
+state.port=createBattlefieldPort(()=>state.game,ports.action,dt=>{
+  ports.syncPause();if(!ports.playable())return;
   // Establish the calendar baseline before this frame can award seals. Home and pause remain read-only.
-  if(app.game.state.phase==='running'&&!app.game.state.paused&&(app.game.state.time===0||!app.game.profile.weekly||app.game.profile.weekly.week<weekId(localDay()))){
-    if(!guardAction())return;
-    app.game.dispatch({type:'weekly-sync',week:weekId(localDay())});
+  if(state.game.state.phase==='running'&&!state.game.state.paused&&(state.game.state.time===0||!state.game.profile.weekly||state.game.profile.weekly.week<weekId(localDay()))){
+    if(!ports.guardAction())return;
+    state.game.dispatch({type:'weekly-sync',week:weekId(localDay())});
   }
-  app.game.step(dt*app.game.profile.speed);
+  state.game.step(dt*state.game.profile.speed);
 });
-rebuildArmy();
-syncMotion();
-syncPause();
-update(true);
+ports.rebuildArmy();
+ports.syncMotion();
+ports.syncPause();
+ports.update(true);
 $('battlefield').dataset.renderer='loading';
 void import('./view/battlefield.ts').then(({mountBattlefield})=>{
-  if(app.rendererClosed)return;
-  app.renderer=mountBattlefield($('battlefield'),app.port,force=>update(force),events,{isVisible:()=>app.entryEntered&&root!.dataset.fieldMode==='field'&&app.activeTab==='battle'&&!document.hidden,villageMood:()=>app.villagePresentation!.mood,onPresentation:syncVillagePresentation});
+  if(state.rendererClosed)return;
+  state.renderer=mountBattlefield($('battlefield'),state.port,force=>ports.update(force),ports.events,{isVisible:()=>state.entryEntered&&root!.dataset.fieldMode==='field'&&state.activeTab==='battle'&&!document.hidden,villageMood:()=>state.villagePresentation!.mood,onPresentation:ports.syncVillagePresentation});
   $('battlefield').dataset.renderer='ready';
-}).catch(()=>{$('battlefield').dataset.renderer='failed';syncEntry();toast('The battlefield could not load. Check your connection and reload.');});
-lifetime.add(()=>{app.rendererClosed=true;app.renderer?.destroy();});
+}).catch(()=>{$('battlefield').dataset.renderer='failed';ports.syncEntry();ports.toast('The battlefield could not load. Check your connection and reload.');});
+lifetime.add(()=>{state.rendererClosed=true;state.renderer?.destroy();});
 lifetime.add(disposeAudio);
-lifetime.add(()=>{window.clearTimeout(app.toastTimer);window.cancelAnimationFrame(app.focusFrame);isolateModal(false);});
-lifetime.add(()=>{app.acquisitionVersion++;app.sessionReady=false;app.session.dispose();});
-if(import.meta.hot)import.meta.hot.dispose(()=>{suspendSession();lifetime.dispose();});
+lifetime.add(()=>{window.clearTimeout(state.toastTimer);window.cancelAnimationFrame(state.focusFrame);isolateModal(false);});
+lifetime.add(()=>{state.acquisitionVersion++;state.sessionReady=false;state.session.dispose();});
+if(import.meta.hot)import.meta.hot.dispose(()=>{ports.suspendSession();lifetime.dispose();});
 if(import.meta.env.PROD&&'serviceWorker' in navigator)window.addEventListener('load',()=>{navigator.serviceWorker.register('./sw.js').catch(()=>{/* Offline play is optional. */});},{once:true});
-sessionPresentation('starting');
-void acquireSession();
+ports.sessionPresentation('starting');
+void ports.acquireSession();

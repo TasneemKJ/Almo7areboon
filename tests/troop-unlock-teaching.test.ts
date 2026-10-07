@@ -1,5 +1,5 @@
 import test from 'node:test';
-import { mainSource } from './helpers/main-source.ts';
+import { flatStatements, mainSource } from './helpers/main-source.ts';
 import assert from 'node:assert/strict';
 import { Game } from '../src/game/simulation.ts';
 import { defaultProfile } from '../src/game/save.ts';
@@ -32,7 +32,7 @@ test('crowding and army capacity never promise immediate deployment',()=>{
 });
 test('actual toast keeps its normal timeout and allows the longer teaching timeout',()=>{
  const source=mainSource(),ast=ts.createSourceFile('main.ts',source,ts.ScriptTarget.Latest,true,ts.ScriptKind.TS);
- const fn=ast.statements.find(node=>ts.isFunctionDeclaration(node)&&node.name?.text==='toast');assert.ok(fn);
+ const fn=flatStatements(ast).find(node=>ts.isFunctionDeclaration(node)&&node.name?.text==='toast');assert.ok(fn);
  let visible=false;const delays:number[]=[],cleared:number[]=[],callbacks:Function[]=[];
  const node={textContent:'',classList:{add:()=>visible=true,remove:()=>visible=false}};
  const c:any={toastTimer:42,$:()=>node,textIfChanged:(target:any,value:string)=>target.textContent=value,window:{clearTimeout:(id:number)=>cleared.push(id),setTimeout:(fn:Function,delay:number)=>{callbacks.push(fn);delays.push(delay);return delays.length;}}};

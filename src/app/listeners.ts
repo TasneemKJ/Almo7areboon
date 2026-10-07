@@ -22,264 +22,283 @@ import { battleSelectionHtml, evolutionDialogHtml } from '../ui/progression-scre
 import { modalFocusables, nextFocusIndex, isEditingTarget } from '../ui/accessibility.ts';
 import { saveAtmosphere, normalizeAudioMix, saveAudioMix } from '../ui/audio-preferences.ts';
 import { textIfChanged } from '../ui/dom-state.ts';
-import { $, blockModalTap, fieldControls, lifetime, money, motionQuery, root } from './runtime.ts';
-import { app } from './state.ts';
-import { acquireSession, action, adoptRestoredGame, exportSave, guardAction, persist, playable, rebuildArmy, suspendSession, syncMarks, syncMotion, syncPause, toast, update } from './lifecycle.ts';
-import { clearPrestigeContext, closeModal, continueWithProvision, dismissModal, enterCamp, enterWorld, handleCampInput, leaveBattle, openPrestige, preferenceNotice, refreshPrestige, renderScreen, returnToCamp, returnToChapters, showFieldPause, showHome, showLeaveBattle, showModal, showResult, showResultDetails, showSaveRecovery, showSettings, showStoryFollowUp, switchTab } from './navigation.ts';
-import { claimQuestRecord, refreshQuestRecord, showQuests, syncWeek } from './quests.ts';
+import type { AppState } from './state.ts';
+import type { Runtime } from './runtime.ts';
+import type { ShellApi } from './shell.ts';
 
-lifetime.listen<PointerEvent>($('battlefield'),'pointerdown',e=>{
- if(!e.isPrimary||e.button!==0){app.battlefieldPointer=null;return;}
- app.battlefieldPointer={id:e.pointerId,x:e.clientX,y:e.clientY};
-});
-lifetime.listen<PointerEvent>($('battlefield'),'pointercancel',()=>{app.battlefieldPointer=null;});
-lifetime.listen<PointerEvent>($('battlefield'),'pointerup',e=>{
- const start=app.battlefieldPointer;app.battlefieldPointer=null;
- if(root!.dataset.fieldMode==='field'){fieldControls.clear();return;}
- if(!start||!e.isPrimary||e.pointerId!==start.id||!app.entryEntered||app.modal||app.activeTab!=='battle'||app.game.state.phase!=='running'||app.game.state.paused||!playable())return;
- const rect=$('battlefield').getBoundingClientRect();
- const order=battlefieldOrderFromGesture({startX:start.x,startY:start.y,endX:e.clientX,endY:e.clientY},{left:rect.left,top:rect.top,width:rect.width,height:rect.height});
- if(order)action({type:'order',order});
-});
-lifetime.listen(window,'blur',()=>{app.battlefieldPointer=null;});
-lifetime.listen<PointerEvent>(root,'pointerup',e=>blockModalTap.recordPointer(e,performance.now()));
-const commandHandlers:Record<string,(button:HTMLButtonElement)=>void>={
-  'start':()=>{app.manualPaused=false;if(action({type:'start'})){root!.dataset.fieldMode='field';update(true);}},
-  'upgrade-food':()=>{action({type:'upgrade',stat:'food'});},
-  'upgrade-base':()=>{action({type:'upgrade',stat:'base'});},
-  'battles':()=>{showModal('battles',battleSelectionHtml(app.game.profile,app.game.state));},
-  'wave-help':()=>{if(app.game.state.phase==='running')showModal('wave-help',waveInspectionHtml(app.game.waveStatus(),app.game.state.chronicle?.enabled?app.game.state.chronicle.objective:undefined));},
-  'evolve':()=>{const html=evolutionDialogHtml(app.game.profile,app.game.state);if(html){app.evolutionFromResult=app.modal==='result';showModal('evolve',html);};},
-  'confirm-evolve':()=>{
-    const returnToResult=app.evolutionFromResult,ok=action({type:'evolve'});
-    if(!playable()||app.modal==='session')return;
-    if(ok){
-      app.evolutionFromResult=false;
-      {const deck=$('unit-cards');deck.dataset.evolveReveal=deck.dataset.evolveReveal==='a'?'b':'a';}
-      if(returnToResult)showResult();else{closeModal(false);switchTab('battle');}
-      if(!app.savedWarning)toast(`Entering ${chapterPresentation(app.game.profile.age).title}.`);
-    }else{
-      const html=evolutionDialogHtml(app.game.profile,app.game.state);
-      if(html)showModal('evolve',html);else dismissModal();
-    }
-  },
-  'return-chapters':()=>{returnToChapters();},
-  'regroup-chapters':()=>{
-    const suggested=earlierChapter(app.game.profile);
-    if(app.modal!=='result'||app.game.state.phase!=='lost'||suggested===null)return;
-    if(!action({type:'retry'})||!playable()||(app.modal as string|null)==='session')return;
-    app.evolutionFromResult=false;app.manualPaused=false;closeModal(false);switchTab('battle');
-    showModal('battles',battleSelectionHtml(app.game.profile,app.game.state,true),`choose-battle-${suggested}`);
-  },
-  'next':()=>{
-    const advancement=advanceStatus(app.game.profile,app.game.state);
-    if(advancement.allowed&&advancement.target==='timeline'){openPrestige();return;}
-    if(action({type:'next'})&&playable()&&app.modal!=='session'){app.evolutionFromResult=false;closeModal(false);app.manualPaused=false;switchTab('battle');}
-  },
-  'retry':()=>{if(action({type:'retry'})&&playable()&&app.modal!=='session'){app.evolutionFromResult=false;closeModal(false);app.manualPaused=false;switchTab('battle');};},
-  'confirm-prestige':()=>{
-    if(app.modal!=='prestige'||!app.prestigeOrigin||app.prestigeExpectedTimeline===null||!isLegacyChoice(app.prestigeDraft))return;
-    const ok=action({type:'prestige',expectedTimeline:app.prestigeExpectedTimeline,legacy:app.prestigeDraft});
-    // The guarded writer can synchronously replace the narrowed prestige modal.
-    if(!playable()||(app.modal as string|null)==='session')return;
-    if(ok){clearPrestigeContext();app.evolutionFromResult=false;app.manualPaused=false;closeModal(false);switchTab('battle');}
-    else refreshPrestige();
-  },
-  'pause':()=>{if(app.game.state.phase==='running'){app.manualPaused=!app.manualPaused;syncPause();update(true);}},
-  'speed':()=>{app.game.profile.speed=app.game.profile.speed===1?2:1;persist();update(true);if(app.modal==='settings'&&playable())showSettings();},
-  'settings':()=>{persist();showSettings();},
-  'quests':()=>{showQuests();},
-  'save-recovery':()=>{showSaveRecovery();},
-  'import':()=>{if(app.modal==='save-recovery'&&app.session.status==='active')$('import-save')?.click();},
-  'reset':()=>{if(app.modal!=='settings'||app.session.status!=='active')return;showModal('reset',`<h2 id="dialog-title">Start over?</h2><p>This deletes your progress on this browser: your age, coins, upgrades, unlocked battles, every card and all gems, quests and records.</p><p>Your sound, speed, motion and troop-shape choices stay. Export a save first if you might want this progress back.</p><button class="big-button blue" data-command="export">EXPORT SAVE FIRST</button><button class="big-button danger" data-command="confirm-reset">DELETE PROGRESS AND START OVER</button><button class="big-button secondary" data-command="close">KEEP MY PROGRESS</button>`,'close');},
-  'confirm-reset':()=>{
-    if(app.modal!=='reset'||app.session.status!=='active')return;
-    const restored=restoreBackupWithSave(app.game,startOverProfile(app.game.profile),profile=>{syncWeekly(profile,weekId(localDay()));return app.session.save(profile).ok;});
-    if(!restored.ok){toast('The new game could not be saved. Your current progress was not deleted.');return;}
-    adoptRestoredGame(restored.game);toast('Started a new game.');
-  },
-  'confirm-import':()=>{
-    if(app.modal!=='import'||!app.pendingImport||app.session.status!=='active')return;const restored=restoreBackupWithSave(app.game,app.pendingImport,profile=>{syncWeekly(profile,weekId(localDay()));return app.session.save(profile).ok;});
-    if(!restored.ok){toast('The save could not be written. Your current game was not replaced.');return;}
-    adoptRestoredGame(restored.game);toast('Save restored.');
-  },
-  'close':()=>{dismissModal();},
-};
-/** Routes presses whose meaning is carried in data attributes (troops, skills, claims, packs). Returns whether one matched. */
-function routeDataAction(button:HTMLButtonElement,command:string|undefined):boolean {
-  if(button.dataset.unit!==undefined){const kind=Number(button.dataset.unit) as UnitKind;if(!app.game.profile.unlocked[kind]){if(action({type:'unlock',kind})&&playable()&&!app.savedWarning)toast(troopUnlockMessage(app.game.profile,app.game.state.phase,kind,app.game.deploymentStatus(kind)),7000);}else action({type:'spawn',kind});return true;}
-  if(button.dataset.skill){if(action({type:'skill',skill:button.dataset.skill as Skill}))fieldControls.clear();return true;}
-  if(command==='quest-claim'){claimQuestRecord(button);return true;}
-  if(button.dataset.weekly){
-    // A previously rendered claim cannot settle an expired or future local week. Rejection never syncs.
-    const week=claimableWeek(button.dataset.weekly,weekId(localDay()));
-    if(week===null)return true;
-    if(action({type:'weekly',week}))showQuests();return true;
-  }
-  if(button.dataset.daily){if(action({type:'daily',day:Number(button.dataset.daily)}))showQuests();return true;}
-  if(button.dataset.claim){const fromJourney=app.modal==='journey';if(action({type:'claim',id:button.dataset.claim})){if(fromJourney&&playable()&&app.modal!=='session')showModal('journey',journeyScreenHtml(app.game.profile,app.game.state));else showQuests();}return true;}
-  if(button.dataset.battle!==undefined){if(action({type:'select-battle',battle:Number(button.dataset.battle)}))closeModal();return true;}
-  if(button.dataset.pack!==undefined){
-    const before=[...app.game.profile.cards],count=Number(button.dataset.pack) as 1|10|50;
-    if(action({type:'summon',count})&&playable())showModal('summon',summonedCardsHtml(before,app.game.profile));
-    else toast('This pack is unavailable. Your gems were not spent.');return true;
-  }
-  return false;
+/** What the listeners module needs: its slice of state, DOM handles and sibling operations. */
+export interface ListenersDeps {
+  state: Pick<AppState, 'activeTab' | 'atmosphereEnabled' | 'audioMix' | 'battlefieldPointer' | 'campOwner' | 'entryEntered' | 'evolutionFromResult' | 'game' | 'hasPlayed' | 'importRequest' | 'manualPaused' | 'modal' | 'modalPointerSequence' | 'modalVersion' | 'pagePresent' | 'pendingImport' | 'prestigeDraft' | 'prestigeExpectedTimeline' | 'prestigeOrigin' | 'questSelection' | 'resumeOwnership' | 'retriedSession' | 'savedWarning' | 'session' | 'sessionReady'>;
+  dom: Pick<Runtime, '$' | 'blockModalTap' | 'fieldControls' | 'lifetime' | 'money' | 'motionQuery' | 'root'>;
+  ports: Pick<ShellApi, 'acquireSession' | 'action' | 'adoptRestoredGame' | 'claimQuestRecord' | 'clearPrestigeContext' | 'closeModal' | 'continueWithProvision' | 'dismissModal' | 'enterCamp' | 'enterWorld' | 'exportSave' | 'guardAction' | 'handleCampInput' | 'leaveBattle' | 'openPrestige' | 'persist' | 'playable' | 'preferenceNotice' | 'rebuildArmy' | 'refreshPrestige' | 'refreshQuestRecord' | 'renderScreen' | 'returnToCamp' | 'returnToChapters' | 'showFieldPause' | 'showHome' | 'showLeaveBattle' | 'showModal' | 'showQuests' | 'showResult' | 'showResultDetails' | 'showSaveRecovery' | 'showSettings' | 'showStoryFollowUp' | 'suspendSession' | 'switchTab' | 'syncMarks' | 'syncMotion' | 'syncPause' | 'syncWeek' | 'toast' | 'update'>;
 }
-lifetime.listen<MouseEvent>(root,'click',e=>{
-  const button=e.target instanceof Element?e.target.closest<HTMLButtonElement>('button'):null;
-  if(!button||button.disabled)return;
-  if(blockModalTap.blocks(e,app.modal,performance.now())){e.preventDefault();return;}
-  if(e.detail===1)app.modalPointerSequence=app.modal!==null;
-  else if(e.detail>1&&app.modalPointerSequence){
-    e.preventDefault();
-    if(!app.modal)root!.querySelector<HTMLElement>(`[data-tab="${app.activeTab}"]`)?.focus();
-    return;
-  }
-  const command=button.dataset.command;
-  if(command==='export'){exportSave();return;}
-  if(command==='session-continue'){app.retriedSession=true;void acquireSession();return;}
-  if(command==='session-temporary'){
-    if(app.pagePresent&&app.session.playTemporarily()){
-      app.sessionReady=true;app.hasPlayed=true;clearPrestigeContext();syncWeek();closeModal(false);rebuildArmy();syncMotion();switchTab('battle');
-    }return;
-  }
-  // Also protects direct preference mutations and synthetic clicks on isolated controls.
-  if(!guardAction())return;
-  if(app.modal&&!button.closest('#modal-layer'))return;
-  if(!app.entryEntered&&!app.modal&&command!=='enter-world'&&command!=='reload-world'&&command!=='settings'&&command!=='home-camp'&&command!=='leave-battle')return;
-  if(handleCampInput(button))return;
-  unlockAudio(app.game.profile.sound);
-  if(command==='reload-world'){if(!app.entryEntered&&!app.modal&&$('battlefield').dataset.renderer==='failed')window.location.reload();return;}
-  if(command==='enter-world'){enterWorld();return;}
-  if(command==='home'){showHome();return;}
-  if(command==='home-camp'){enterCamp();return;}
-  if(command==='leave-battle'){showLeaveBattle();return;}
-  if(command==='confirm-leave-battle'){leaveBattle();return;}
-  if(command==='field-pause'){showFieldPause();return;}
-  if(command==='field-resume'){if(app.modal==='field-pause'){app.manualPaused=false;closeModal();}return;}
-  if(command==='field-dismiss'){fieldControls.clear();return;}
-  if(button.dataset.fieldContext){fieldControls.select(button.dataset.fieldContext,app.game);return;}
-  if(button.closest('#field-targets'))fieldControls.clear();
-  if(command==='result-details'){showResultDetails();return;}
-  if(command==='result-back'){if(app.modal==='result'||app.modal==='result-expedition')showResult('result-details');return;}
-  if(command==='result-expedition'){if(app.modal==='result'&&app.game.state.phase==='won'&&app.game.profile.chronicle?.expedition&&app.game.profile.chronicle.expedition.stage<2)showModal('result-expedition',expeditionChoiceHtml());return;}
-  if(command==='continue-with-provision'){continueWithProvision(button.dataset.provision);return;}
-  if(command==='journey'){showModal('journey',journeyScreenHtml(app.game.profile,app.game.state));return;}
-  if(command==='journey-result'){if(app.modal==='journey'&&(app.game.state.phase==='won'||app.game.state.phase==='lost'))showResult();return;}
-  if(button.dataset.journeyTab){if(app.modal==='journey'&&['cards','battle'].includes(button.dataset.journeyTab)){closeModal(false);switchTab(button.dataset.journeyTab);}return;}
-  if(button.dataset.order){action({type:'order',order:button.dataset.order as 'advance'|'hold'});return;}
-  if(command==='chronicle'){showModal('chronicle',chronicleScreenHtml(app.game.profile,app.game.state));return;}
-  if(button.dataset.storyPage!==undefined){
-    const page=Number(button.dataset.storyPage);if(Number.isInteger(page)&&page>=0&&page<=app.game.profile.furthestBattle)showModal('chronicle',chronicleScreenHtml(app.game.profile,app.game.state,page));return;
-  }
-  const storyAction=chronicleActionFromData(button.dataset);
-  if(storyAction){
-    if(action(storyAction)&&playable()&&app.modal!=='session')showStoryFollowUp(storyFollowUp(storyAction.type,app.game.state.phase));
-    return;
-  }
-  if(button.dataset.tab){switchTab(button.dataset.tab);return;}
-  if(routeDataAction(button,command))return;
-  const handler=button.dataset.command;
-  if(handler&&Object.hasOwn(commandHandlers,handler))commandHandlers[handler](button);
-});
-lifetime.listen<Event>(root,'input',e=>{
-  const input=e.target;
-  if(!(input instanceof HTMLInputElement)||input.type!=='range'||(input.id!=='effects-volume'&&input.id!=='atmosphere-volume')||app.modal!=='settings'||!$('modal-layer').contains(input))return;
-  // A same-document foreign save has no storage notification here. Check the
-  // session before changing intent, writing preferences or retargeting buses.
-  if(!guardAction()||app.modal!=='settings'||!$('modal-layer').contains(input))return;
-  const family=input.id==='effects-volume'?'effects':'atmosphere';
-  app.audioMix=normalizeAudioMix({...app.audioMix,[family]:input.valueAsNumber});
-  saveAudioMix(app.audioMix);updateAudioMix(app.audioMix);
-  const percentage=`${app.audioMix[family]}%`;
-  input.value=String(app.audioMix[family]);input.setAttribute('aria-valuetext',percentage);
-  textIfChanged($(`${input.id}-value`),percentage);
-});
-lifetime.listen<Event>(root,'change',async e=>{
-  const input=e.target;
-  if(input instanceof HTMLSelectElement&&input.dataset.questSelect!==undefined){
-    if(app.modal!=='quests'||!$('modal-layer').contains(input)||input!==$('quest-goal')||!guardAction()||app.modal!=='quests')return;
-    if(!questRecords(app.game.profile,localDay()).some(record=>record.key===input.value))return;
-    app.questSelection=input.value;refreshQuestRecord();return;
-  }
-  if(input instanceof HTMLInputElement||input instanceof HTMLSelectElement){
-    const preference=input.dataset.preference;
-    if(preference){
-      if(app.modal!=='settings'||!input.closest('#modal-layer')||!guardAction()||app.modal!=='settings')return;
-      if(input instanceof HTMLInputElement&&input.type==='checkbox'){
-        if(preference==='sound'){app.game.profile.sound=input.checked;if(input.checked)unlockAudio(true);else suspendAudio();}
-        else if(preference==='atmosphere'){app.atmosphereEnabled=input.checked;saveAtmosphere(app.atmosphereEnabled);syncPause();return;}
-        else if(preference==='marks'){if(input.checked)app.game.profile.marks=true;else delete app.game.profile.marks;syncMarks();}
-        else return;
-      }else if(input instanceof HTMLSelectElement){
-        if(preference==='speed'&&(input.value==='1'||input.value==='2'))app.game.profile.speed=Number(input.value) as 1|2;
-        else if(preference==='motion'&&(input.value==='system'||input.value==='reduced')){app.game.profile.motion=input.value;syncMotion();}
-        else return;
-      }else return;
-      persist();syncPause();update(true);if(app.modal==='settings')textIfChanged($('preference-status'),preferenceNotice());return;
+
+export function installListeners(deps: ListenersDeps): void {
+  const { state, ports } = deps;
+  const { $, blockModalTap, fieldControls, lifetime, money, motionQuery, root } = deps.dom;
+  const commandHandlers:Record<string,(button:HTMLButtonElement)=>void>={
+    'start':()=>{state.manualPaused=false;if(ports.action({type:'start'})){root!.dataset.fieldMode='field';ports.update(true);}},
+    'upgrade-food':()=>{ports.action({type:'upgrade',stat:'food'});},
+    'upgrade-base':()=>{ports.action({type:'upgrade',stat:'base'});},
+    'battles':()=>{ports.showModal('battles',battleSelectionHtml(state.game.profile,state.game.state));},
+    'wave-help':()=>{if(state.game.state.phase==='running')ports.showModal('wave-help',waveInspectionHtml(state.game.waveStatus(),state.game.state.chronicle?.enabled?state.game.state.chronicle.objective:undefined));},
+    'evolve':()=>{const html=evolutionDialogHtml(state.game.profile,state.game.state);if(html){state.evolutionFromResult=state.modal==='result';ports.showModal('evolve',html);};},
+    'confirm-evolve':()=>{
+      const returnToResult=state.evolutionFromResult,ok=ports.action({type:'evolve'});
+      if(!ports.playable()||state.modal==='session')return;
+      if(ok){
+        state.evolutionFromResult=false;
+        {const deck=$('unit-cards');deck.dataset.evolveReveal=deck.dataset.evolveReveal==='a'?'b':'a';}
+        if(returnToResult)ports.showResult();else{ports.closeModal(false);ports.switchTab('battle');}
+        if(!state.savedWarning)ports.toast(`Entering ${chapterPresentation(state.game.profile.age).title}.`);
+      }else{
+        const html=evolutionDialogHtml(state.game.profile,state.game.state);
+        if(html)ports.showModal('evolve',html);else ports.dismissModal();
+      }
+    },
+    'return-chapters':()=>{ports.returnToChapters();},
+    'regroup-chapters':()=>{
+      const suggested=earlierChapter(state.game.profile);
+      if(state.modal!=='result'||state.game.state.phase!=='lost'||suggested===null)return;
+      if(!ports.action({type:'retry'})||!ports.playable()||(state.modal as string|null)==='session')return;
+      state.evolutionFromResult=false;state.manualPaused=false;ports.closeModal(false);ports.switchTab('battle');
+      ports.showModal('battles',battleSelectionHtml(state.game.profile,state.game.state,true),`choose-battle-${suggested}`);
+    },
+    'next':()=>{
+      const advancement=advanceStatus(state.game.profile,state.game.state);
+      if(advancement.allowed&&advancement.target==='timeline'){ports.openPrestige();return;}
+      if(ports.action({type:'next'})&&ports.playable()&&state.modal!=='session'){state.evolutionFromResult=false;ports.closeModal(false);state.manualPaused=false;ports.switchTab('battle');}
+    },
+    'retry':()=>{if(ports.action({type:'retry'})&&ports.playable()&&state.modal!=='session'){state.evolutionFromResult=false;ports.closeModal(false);state.manualPaused=false;ports.switchTab('battle');};},
+    'confirm-prestige':()=>{
+      if(state.modal!=='prestige'||!state.prestigeOrigin||state.prestigeExpectedTimeline===null||!isLegacyChoice(state.prestigeDraft))return;
+      const ok=ports.action({type:'prestige',expectedTimeline:state.prestigeExpectedTimeline,legacy:state.prestigeDraft});
+      // The guarded writer can synchronously replace the narrowed prestige modal.
+      if(!ports.playable()||(state.modal as string|null)==='session')return;
+      if(ok){ports.clearPrestigeContext();state.evolutionFromResult=false;state.manualPaused=false;ports.closeModal(false);ports.switchTab('battle');}
+      else ports.refreshPrestige();
+    },
+    'pause':()=>{if(state.game.state.phase==='running'){state.manualPaused=!state.manualPaused;ports.syncPause();ports.update(true);}},
+    'speed':()=>{state.game.profile.speed=state.game.profile.speed===1?2:1;ports.persist();ports.update(true);if(state.modal==='settings'&&ports.playable())ports.showSettings();},
+    'settings':()=>{ports.persist();ports.showSettings();},
+    'quests':()=>{ports.showQuests();},
+    'save-recovery':()=>{ports.showSaveRecovery();},
+    'import':()=>{if(state.modal==='save-recovery'&&state.session.status==='active')$('import-save')?.click();},
+    'reset':()=>{if(state.modal!=='settings'||state.session.status!=='active')return;ports.showModal('reset',`<h2 id="dialog-title">Start over?</h2><p>This deletes your progress on this browser: your age, coins, upgrades, unlocked battles, every card and all gems, quests and records.</p><p>Your sound, speed, motion and troop-shape choices stay. Export a save first if you might want this progress back.</p><button class="big-button blue" data-command="export">EXPORT SAVE FIRST</button><button class="big-button danger" data-command="confirm-reset">DELETE PROGRESS AND START OVER</button><button class="big-button secondary" data-command="close">KEEP MY PROGRESS</button>`,'close');},
+    'confirm-reset':()=>{
+      if(state.modal!=='reset'||state.session.status!=='active')return;
+      const restored=restoreBackupWithSave(state.game,startOverProfile(state.game.profile),profile=>{syncWeekly(profile,weekId(localDay()));return state.session.save(profile).ok;});
+      if(!restored.ok){ports.toast('The new game could not be saved. Your current progress was not deleted.');return;}
+      ports.adoptRestoredGame(restored.game);ports.toast('Started a new game.');
+    },
+    'confirm-import':()=>{
+      if(state.modal!=='import'||!state.pendingImport||state.session.status!=='active')return;const restored=restoreBackupWithSave(state.game,state.pendingImport,profile=>{syncWeekly(profile,weekId(localDay()));return state.session.save(profile).ok;});
+      if(!restored.ok){ports.toast('The save could not be written. Your current game was not replaced.');return;}
+      ports.adoptRestoredGame(restored.game);ports.toast('Save restored.');
+    },
+    'close':()=>{ports.dismissModal();},
+  };
+  function routeDataAction(button:HTMLButtonElement,command:string|undefined):boolean {
+    if(button.dataset.unit!==undefined){const kind=Number(button.dataset.unit) as UnitKind;if(!state.game.profile.unlocked[kind]){if(ports.action({type:'unlock',kind})&&ports.playable()&&!state.savedWarning)ports.toast(troopUnlockMessage(state.game.profile,state.game.state.phase,kind,state.game.deploymentStatus(kind)),7000);}else ports.action({type:'spawn',kind});return true;}
+    if(button.dataset.skill){if(ports.action({type:'skill',skill:button.dataset.skill as Skill}))fieldControls.clear();return true;}
+    if(command==='quest-claim'){ports.claimQuestRecord(button);return true;}
+    if(button.dataset.weekly){
+      // A previously rendered claim cannot settle an expired or future local week. Rejection never syncs.
+      const week=claimableWeek(button.dataset.weekly,weekId(localDay()));
+      if(week===null)return true;
+      if(ports.action({type:'weekly',week}))ports.showQuests();return true;
     }
-  }
-  if(!(input instanceof HTMLInputElement))return;
-  if(input.type==='radio'&&isLegacyChoice(input.value)&&input.checked){
-    if(input.name==='prestige-legacy'){
-      if(app.modal!=='prestige'||!input.closest('#modal-layer')||!guardAction())return;
-      app.prestigeDraft=input.value;refreshPrestige();return;
+    if(button.dataset.daily){if(ports.action({type:'daily',day:Number(button.dataset.daily)}))ports.showQuests();return true;}
+    if(button.dataset.claim){const fromJourney=state.modal==='journey';if(ports.action({type:'claim',id:button.dataset.claim})){if(fromJourney&&ports.playable()&&state.modal!=='session')ports.showModal('journey',journeyScreenHtml(state.game.profile,state.game.state));else ports.showQuests();}return true;}
+    if(button.dataset.battle!==undefined){if(ports.action({type:'select-battle',battle:Number(button.dataset.battle)}))ports.closeModal();return true;}
+    if(button.dataset.pack!==undefined){
+      const before=[...state.game.profile.cards],count=Number(button.dataset.pack) as 1|10|50;
+      if(ports.action({type:'summon',count})&&ports.playable())ports.showModal('summon',summonedCardsHtml(before,state.game.profile));
+      else ports.toast('This pack is unavailable. Your gems were not spent.');return true;
     }
-    if(input.name==='ready-legacy'){
-      if(app.modal||app.activeTab!=='evolution'||!input.closest('#secondary-screen')||app.game.state.phase!=='ready'||app.game.profile.legacy.rank===0||!guardAction())return;
-      action({type:'select-legacy',legacy:input.value});
-      if(playable()&&app.modal!=='session')renderScreen(true);
-      return;
-    }
+    return false;
   }
-  if(input.id!=='import-save'||app.modal!=='save-recovery')return;
-  const request=++app.importRequest;
-  if(app.session.status!=='active'||!guardAction())return;
-  const file=input.files?.[0],version=app.modalVersion;if(!file)return;
-  if(file.size>MAX_SAVE_CHARS){toast('Choose a save file smaller than 100 KB.');input.value='';return;}
-  try{
-    const decoded=importBackup(await file.text());
-    if(request!==app.importRequest||lifetime.disposed||version!==app.modalVersion||app.modal!=='save-recovery'||app.session.status!=='active'||!guardAction())return;
-    if(!decoded.ok){toast(decoded.error);input.value='';return;}
-    app.pendingImport=decoded.profile;
-    showModal('import',`<h2 id="dialog-title">Replace this save?</h2><p>Import timeline ${app.pendingImport.timeline}, ${chapterPresentation(app.pendingImport.age).title}, with ${money(app.pendingImport.coins)} coins.</p><p>Your current progress in this browser will be replaced. Export it first to keep a separate copy.</p><button class="big-button blue" data-command="confirm-import">REPLACE WITH THIS SAVE</button><button class="big-button secondary" data-command="close">CANCEL</button>`,'close');
-  }catch{
-    if(request!==app.importRequest||lifetime.disposed||version!==app.modalVersion||app.modal!=='save-recovery'||app.session.status!=='active'||!guardAction())return;
-    input.value='';
-    toast('The selected file could not be read. Your current game was not changed.');
+  function listenPointer():void {
+    lifetime.listen<PointerEvent>($('battlefield'),'pointerdown',e=>{
+     if(!e.isPrimary||e.button!==0){state.battlefieldPointer=null;return;}
+     state.battlefieldPointer={id:e.pointerId,x:e.clientX,y:e.clientY};
+    });
+    lifetime.listen<PointerEvent>($('battlefield'),'pointercancel',()=>{state.battlefieldPointer=null;});
+    lifetime.listen<PointerEvent>($('battlefield'),'pointerup',e=>{
+     const start=state.battlefieldPointer;state.battlefieldPointer=null;
+     if(root!.dataset.fieldMode==='field'){fieldControls.clear();return;}
+     if(!start||!e.isPrimary||e.pointerId!==start.id||!state.entryEntered||state.modal||state.activeTab!=='battle'||state.game.state.phase!=='running'||state.game.state.paused||!ports.playable())return;
+     const rect=$('battlefield').getBoundingClientRect();
+     const order=battlefieldOrderFromGesture({startX:start.x,startY:start.y,endX:e.clientX,endY:e.clientY},{left:rect.left,top:rect.top,width:rect.width,height:rect.height});
+     if(order)ports.action({type:'order',order});
+    });
+    lifetime.listen(window,'blur',()=>{state.battlefieldPointer=null;});
+    lifetime.listen<PointerEvent>(root,'pointerup',e=>blockModalTap.recordPointer(e,performance.now()));
   }
-});
-lifetime.listen<KeyboardEvent>(document,'keydown',e=>{
-  if(app.modal){
-    if(e.key==='Escape'){dismissModal();e.preventDefault();}
-    if(e.key==='Tab'){
-      const elements=modalFocusables($('modal-layer')),index=nextFocusIndex(elements.indexOf(document.activeElement as HTMLElement),elements.length,e.shiftKey);
-      e.preventDefault();(index===null?$('modal-layer').querySelector<HTMLElement>('.dialog'):elements[index])?.focus();
-    }return;
+  function listenClick():void {
+    lifetime.listen<MouseEvent>(root,'click',e=>{
+      const button=e.target instanceof Element?e.target.closest<HTMLButtonElement>('button'):null;
+      if(!button||button.disabled)return;
+      if(blockModalTap.blocks(e,state.modal,performance.now())){e.preventDefault();return;}
+      if(e.detail===1)state.modalPointerSequence=state.modal!==null;
+      else if(e.detail>1&&state.modalPointerSequence){
+        e.preventDefault();
+        if(!state.modal)root!.querySelector<HTMLElement>(`[data-tab="${state.activeTab}"]`)?.focus();
+        return;
+      }
+      const command=button.dataset.command;
+      if(command==='export'){ports.exportSave();return;}
+      if(command==='session-continue'){state.retriedSession=true;void ports.acquireSession();return;}
+      if(command==='session-temporary'){
+        if(state.pagePresent&&state.session.playTemporarily()){
+          state.sessionReady=true;state.hasPlayed=true;ports.clearPrestigeContext();ports.syncWeek();ports.closeModal(false);ports.rebuildArmy();ports.syncMotion();ports.switchTab('battle');
+        }return;
+      }
+      // Also protects direct preference mutations and synthetic clicks on isolated controls.
+      if(!ports.guardAction())return;
+      if(state.modal&&!button.closest('#modal-layer'))return;
+      if(!state.entryEntered&&!state.modal&&command!=='enter-world'&&command!=='reload-world'&&command!=='settings'&&command!=='home-camp'&&command!=='leave-battle')return;
+      if(ports.handleCampInput(button))return;
+      unlockAudio(state.game.profile.sound);
+      if(command==='reload-world'){if(!state.entryEntered&&!state.modal&&$('battlefield').dataset.renderer==='failed')window.location.reload();return;}
+      if(command==='enter-world'){ports.enterWorld();return;}
+      if(command==='home'){ports.showHome();return;}
+      if(command==='home-camp'){ports.enterCamp();return;}
+      if(command==='leave-battle'){ports.showLeaveBattle();return;}
+      if(command==='confirm-leave-battle'){ports.leaveBattle();return;}
+      if(command==='field-pause'){ports.showFieldPause();return;}
+      if(command==='field-resume'){if(state.modal==='field-pause'){state.manualPaused=false;ports.closeModal();}return;}
+      if(command==='field-dismiss'){fieldControls.clear();return;}
+      if(button.dataset.fieldContext){fieldControls.select(button.dataset.fieldContext,state.game);return;}
+      if(button.closest('#field-targets'))fieldControls.clear();
+      if(command==='result-details'){ports.showResultDetails();return;}
+      if(command==='result-back'){if(state.modal==='result'||state.modal==='result-expedition')ports.showResult('result-details');return;}
+      if(command==='result-expedition'){if(state.modal==='result'&&state.game.state.phase==='won'&&state.game.profile.chronicle?.expedition&&state.game.profile.chronicle.expedition.stage<2)ports.showModal('result-expedition',expeditionChoiceHtml());return;}
+      if(command==='continue-with-provision'){ports.continueWithProvision(button.dataset.provision);return;}
+      if(command==='journey'){ports.showModal('journey',journeyScreenHtml(state.game.profile,state.game.state));return;}
+      if(command==='journey-result'){if(state.modal==='journey'&&(state.game.state.phase==='won'||state.game.state.phase==='lost'))ports.showResult();return;}
+      if(button.dataset.journeyTab){if(state.modal==='journey'&&['cards','battle'].includes(button.dataset.journeyTab)){ports.closeModal(false);ports.switchTab(button.dataset.journeyTab);}return;}
+      if(button.dataset.order){ports.action({type:'order',order:button.dataset.order as 'advance'|'hold'});return;}
+      if(command==='chronicle'){ports.showModal('chronicle',chronicleScreenHtml(state.game.profile,state.game.state));return;}
+      if(button.dataset.storyPage!==undefined){
+        const page=Number(button.dataset.storyPage);if(Number.isInteger(page)&&page>=0&&page<=state.game.profile.furthestBattle)ports.showModal('chronicle',chronicleScreenHtml(state.game.profile,state.game.state,page));return;
+      }
+      const storyAction=chronicleActionFromData(button.dataset);
+      if(storyAction){
+        if(ports.action(storyAction)&&ports.playable()&&state.modal!=='session')ports.showStoryFollowUp(storyFollowUp(storyAction.type,state.game.state.phase));
+        return;
+      }
+      if(button.dataset.tab){ports.switchTab(button.dataset.tab);return;}
+      if(routeDataAction(button,command))return;
+      const handler=button.dataset.command;
+      if(handler&&Object.hasOwn(commandHandlers,handler))commandHandlers[handler](button);
+    });
   }
-  if(e.key==='Escape'&&app.entryEntered){if(app.campOwner?.kind==='advanced')returnToCamp();else fieldControls.clear();e.preventDefault();return;}
-  if(!app.entryEntered||!guardAction()||app.campOwner||app.activeTab!=='battle'||e.repeat||e.ctrlKey||e.altKey||e.metaKey||e.isComposing||document.hidden||isEditingTarget(e.target instanceof HTMLElement?e.target:null))return;
-  if(['1','2','3'].includes(e.key)){e.preventDefault();action({type:'spawn',kind:(Number(e.key)-1) as UnitKind});}
-  const skillIndex=['q','w','e'].indexOf(e.key.toLowerCase());
-  if(skillIndex>=0){e.preventDefault();action({type:'skill',skill:(['freeze','meteor','food'] as Skill[])[skillIndex]});}
-  if(e.code==='Space'&&!(e.target instanceof HTMLButtonElement)){
-    e.preventDefault();if(app.game.state.phase==='ready')action({type:'start'});else if(app.game.state.phase==='running'){app.manualPaused=!app.manualPaused;syncPause();update(true);}
+  function listenForm():void {
+    lifetime.listen<Event>(root,'input',e=>{
+      const input=e.target;
+      if(!(input instanceof HTMLInputElement)||input.type!=='range'||(input.id!=='effects-volume'&&input.id!=='atmosphere-volume')||state.modal!=='settings'||!$('modal-layer').contains(input))return;
+      // A same-document foreign save has no storage notification here. Check the
+      // session before changing intent, writing preferences or retargeting buses.
+      if(!ports.guardAction()||state.modal!=='settings'||!$('modal-layer').contains(input))return;
+      const family=input.id==='effects-volume'?'effects':'atmosphere';
+      state.audioMix=normalizeAudioMix({...state.audioMix,[family]:input.valueAsNumber});
+      saveAudioMix(state.audioMix);updateAudioMix(state.audioMix);
+      const percentage=`${state.audioMix[family]}%`;
+      input.value=String(state.audioMix[family]);input.setAttribute('aria-valuetext',percentage);
+      textIfChanged($(`${input.id}-value`),percentage);
+    });
+    lifetime.listen<Event>(root,'change',async e=>{
+      const input=e.target;
+      if(input instanceof HTMLSelectElement&&input.dataset.questSelect!==undefined){
+        if(state.modal!=='quests'||!$('modal-layer').contains(input)||input!==$('quest-goal')||!ports.guardAction()||state.modal!=='quests')return;
+        if(!questRecords(state.game.profile,localDay()).some(record=>record.key===input.value))return;
+        state.questSelection=input.value;ports.refreshQuestRecord();return;
+      }
+      if(input instanceof HTMLInputElement||input instanceof HTMLSelectElement){
+        const preference=input.dataset.preference;
+        if(preference){
+          if(state.modal!=='settings'||!input.closest('#modal-layer')||!ports.guardAction()||state.modal!=='settings')return;
+          if(input instanceof HTMLInputElement&&input.type==='checkbox'){
+            if(preference==='sound'){state.game.profile.sound=input.checked;if(input.checked)unlockAudio(true);else suspendAudio();}
+            else if(preference==='atmosphere'){state.atmosphereEnabled=input.checked;saveAtmosphere(state.atmosphereEnabled);ports.syncPause();return;}
+            else if(preference==='marks'){if(input.checked)state.game.profile.marks=true;else delete state.game.profile.marks;ports.syncMarks();}
+            else return;
+          }else if(input instanceof HTMLSelectElement){
+            if(preference==='speed'&&(input.value==='1'||input.value==='2'))state.game.profile.speed=Number(input.value) as 1|2;
+            else if(preference==='motion'&&(input.value==='system'||input.value==='reduced')){state.game.profile.motion=input.value;ports.syncMotion();}
+            else return;
+          }else return;
+          ports.persist();ports.syncPause();ports.update(true);if(state.modal==='settings')textIfChanged($('preference-status'),ports.preferenceNotice());return;
+        }
+      }
+      if(!(input instanceof HTMLInputElement))return;
+      if(input.type==='radio'&&isLegacyChoice(input.value)&&input.checked){
+        if(input.name==='prestige-legacy'){
+          if(state.modal!=='prestige'||!input.closest('#modal-layer')||!ports.guardAction())return;
+          state.prestigeDraft=input.value;ports.refreshPrestige();return;
+        }
+        if(input.name==='ready-legacy'){
+          if(state.modal||state.activeTab!=='evolution'||!input.closest('#secondary-screen')||state.game.state.phase!=='ready'||state.game.profile.legacy.rank===0||!ports.guardAction())return;
+          ports.action({type:'select-legacy',legacy:input.value});
+          if(ports.playable()&&state.modal!=='session')ports.renderScreen(true);
+          return;
+        }
+      }
+      if(input.id!=='import-save'||state.modal!=='save-recovery')return;
+      const request=++state.importRequest;
+      if(state.session.status!=='active'||!ports.guardAction())return;
+      const file=input.files?.[0],version=state.modalVersion;if(!file)return;
+      if(file.size>MAX_SAVE_CHARS){ports.toast('Choose a save file smaller than 100 KB.');input.value='';return;}
+      try{
+        const decoded=importBackup(await file.text());
+        if(request!==state.importRequest||lifetime.disposed||version!==state.modalVersion||state.modal!=='save-recovery'||state.session.status!=='active'||!ports.guardAction())return;
+        if(!decoded.ok){ports.toast(decoded.error);input.value='';return;}
+        state.pendingImport=decoded.profile;
+        ports.showModal('import',`<h2 id="dialog-title">Replace this save?</h2><p>Import timeline ${state.pendingImport.timeline}, ${chapterPresentation(state.pendingImport.age).title}, with ${money(state.pendingImport.coins)} coins.</p><p>Your current progress in this browser will be replaced. Export it first to keep a separate copy.</p><button class="big-button blue" data-command="confirm-import">REPLACE WITH THIS SAVE</button><button class="big-button secondary" data-command="close">CANCEL</button>`,'close');
+      }catch{
+        if(request!==state.importRequest||lifetime.disposed||version!==state.modalVersion||state.modal!=='save-recovery'||state.session.status!=='active'||!ports.guardAction())return;
+        input.value='';
+        ports.toast('The selected file could not be read. Your current game was not changed.');
+      }
+    });
   }
-});
-lifetime.listen(root,'visual-fallback',()=>toast('Some artwork could not load. The simplified battlefield is active.'));
-lifetime.listen<StorageEvent>(window,'storage',event=>{
-  if(event.key===SAVE_KEY||event.key===BACKUP_KEY||event.key===null)app.session.check();
-});
-lifetime.listen(window,'focus',()=>{if(app.pagePresent)app.session.check();syncPause();});
-lifetime.listen(document,'visibilitychange',()=>{
-  if(document.hidden){persist();syncPause();suspendAudio();}
-  else{app.session.check();syncPause();}
-});
-lifetime.listen(window,'pagehide',suspendSession);
-lifetime.listen(window,'pageshow',()=>{
-  app.pagePresent=true;
-  if(app.session.status==='temporary'){app.sessionReady=true;syncPause();}
-  else if(app.resumeOwnership){app.resumeOwnership=false;void acquireSession();}
-});
-lifetime.listen(motionQuery,'change',syncMotion);
+  function listenKeys():void {
+    lifetime.listen<KeyboardEvent>(document,'keydown',e=>{
+      if(state.modal){
+        if(e.key==='Escape'){ports.dismissModal();e.preventDefault();}
+        if(e.key==='Tab'){
+          const elements=modalFocusables($('modal-layer')),index=nextFocusIndex(elements.indexOf(document.activeElement as HTMLElement),elements.length,e.shiftKey);
+          e.preventDefault();(index===null?$('modal-layer').querySelector<HTMLElement>('.dialog'):elements[index])?.focus();
+        }return;
+      }
+      if(e.key==='Escape'&&state.entryEntered){if(state.campOwner?.kind==='advanced')ports.returnToCamp();else fieldControls.clear();e.preventDefault();return;}
+      if(!state.entryEntered||!ports.guardAction()||state.campOwner||state.activeTab!=='battle'||e.repeat||e.ctrlKey||e.altKey||e.metaKey||e.isComposing||document.hidden||isEditingTarget(e.target instanceof HTMLElement?e.target:null))return;
+      if(['1','2','3'].includes(e.key)){e.preventDefault();ports.action({type:'spawn',kind:(Number(e.key)-1) as UnitKind});}
+      const skillIndex=['q','w','e'].indexOf(e.key.toLowerCase());
+      if(skillIndex>=0){e.preventDefault();ports.action({type:'skill',skill:(['freeze','meteor','food'] as Skill[])[skillIndex]});}
+      if(e.code==='Space'&&!(e.target instanceof HTMLButtonElement)){
+        e.preventDefault();if(state.game.state.phase==='ready')ports.action({type:'start'});else if(state.game.state.phase==='running'){state.manualPaused=!state.manualPaused;ports.syncPause();ports.update(true);}
+      }
+    });
+  }
+  function listenPage():void {
+    lifetime.listen(root,'visual-fallback',()=>ports.toast('Some artwork could not load. The simplified battlefield is active.'));
+    lifetime.listen<StorageEvent>(window,'storage',event=>{
+      if(event.key===SAVE_KEY||event.key===BACKUP_KEY||event.key===null)state.session.check();
+    });
+    lifetime.listen(window,'focus',()=>{if(state.pagePresent)state.session.check();ports.syncPause();});
+    lifetime.listen(document,'visibilitychange',()=>{
+      if(document.hidden){ports.persist();ports.syncPause();suspendAudio();}
+      else{state.session.check();ports.syncPause();}
+    });
+    lifetime.listen(window,'pagehide',ports.suspendSession);
+    lifetime.listen(window,'pageshow',()=>{
+      state.pagePresent=true;
+      if(state.session.status==='temporary'){state.sessionReady=true;ports.syncPause();}
+      else if(state.resumeOwnership){state.resumeOwnership=false;void ports.acquireSession();}
+    });
+    lifetime.listen(motionQuery,'change',ports.syncMotion);
+  }
+  listenPointer();listenClick();listenForm();listenKeys();listenPage();
+}

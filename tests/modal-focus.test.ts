@@ -1,5 +1,5 @@
 import test from 'node:test';
-import { mainSource } from './helpers/main-source.ts';
+import { flatStatements, mainSource } from './helpers/main-source.ts';
 import assert from 'node:assert/strict';
 import { runInApp } from './helpers/run-app.ts';
 import ts from 'typescript';
@@ -7,7 +7,7 @@ import {chronicleActionFromData} from '../src/ui/chronicle-screen.ts';
 
 const source=mainSource();
 const ast=ts.createSourceFile('main.ts',source,ts.ScriptTarget.Latest,true,ts.ScriptKind.TS);
-const node=ast.statements.find(statement=>ts.isFunctionDeclaration(statement)&&statement.name?.text==='showModal');
+const node=flatStatements(ast).find(statement=>ts.isFunctionDeclaration(statement)&&statement.name?.text==='showModal');
 assert.ok(node,'actual showModal must remain reachable');
 const code=ts.transpile(node.getText(ast)+'\nthis.showModal=showModal;', {target:ts.ScriptTarget.ES2022});
 

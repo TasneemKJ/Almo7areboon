@@ -1,5 +1,3 @@
-
-
 import { syncBattleHud } from '../ui/hud-sync.ts';
 import { Game } from '../game/simulation.ts';
 import { localDay } from '../game/data.ts';
@@ -15,129 +13,140 @@ import { welcomeBackLine } from '../ui/welcome-back.ts';
 import { pauseReason } from '../ui/pause.ts';
 import { ambienceAllowed } from '../ui/audio-preferences.ts';
 import { textIfChanged } from '../ui/dom-state.ts';
-import { app } from './state.ts';
-import { $, coin, fieldControls, isolateModal, lifetime, money, motionQuery, root, updateArmy } from './runtime.ts';
-import { clearPrestigeContext, closeModal, renderScreen, showModal, showResult, switchTab, syncCamp, syncEntry } from './navigation.ts';
-import { questSaveNotice, refreshQuestRecord, syncWeek } from './quests.ts';
+import type { AppState } from './state.ts';
+import type { Runtime } from './runtime.ts';
+import type { ShellApi } from './shell.ts';
 
-export function playable(){return app.sessionReady&&app.pagePresent&&!lifetime.disposed&&(app.session.status==='active'||app.session.status==='temporary');}
-export function guardAction(){return playable()&&app.session.check();}
-export function sessionPresentation(status:SaveSessionStatus){
-  root!.dataset.saveSession=status;
-  const notice=$('session-notice');
-  notice.hidden=status!=='starting'&&status!=='temporary';
-  textIfChanged(notice,status==='temporary'?temporarySessionNotice:'Opening your saved game…');
-  if(status!=='active'&&status!=='temporary'){app.sessionReady=false;app.campOwner=null;app.entryWelcome=null;clearPrestigeContext();}
-  if(status==='active'||status==='temporary')app.retriedSession=false;
-  const html=saveSessionDialogHtml(status,app.retriedSession);
-  if(html){app.pendingImport=null;app.evolutionFromResult=false;showModal('session',html);}
-  else if(status==='starting'){
-    // An immediate acquisition has no transient modal focus loop.
-    isolateModal(true);notice.inert=false;
-    $('modal-layer').querySelector<HTMLButtonElement>('[data-command="session-continue"]')?.setAttribute('disabled','');
-  }
-  syncPause();
+/** What the lifecycle module needs: its slice of state, DOM handles and sibling operations. */
+export interface LifecycleDeps {
+  state: Pick<AppState, 'acquiring' | 'acquisitionVersion' | 'activeTab' | 'atmosphereEnabled' | 'campOwner' | 'entryEntered' | 'entrySaved' | 'entryWelcome' | 'evolutionFromResult' | 'game' | 'hasPlayed' | 'lastPhase' | 'lastSave' | 'lastSavedAt' | 'lastUpdate' | 'manualPaused' | 'modal' | 'pagePresent' | 'pendingImport' | 'questCalendarDay' | 'resultDue' | 'resultShown' | 'resumeOwnership' | 'retriedSession' | 'savedWarning' | 'session' | 'sessionReady' | 'settingsOrigin' | 'toastTimer' | 'villagePresentation'>;
+  dom: Pick<Runtime, '$' | 'coin' | 'fieldControls' | 'isolateModal' | 'lifetime' | 'money' | 'motionQuery' | 'root' | 'updateArmy'>;
+  ports: Pick<ShellApi, 'clearPrestigeContext' | 'closeModal' | 'questSaveNotice' | 'refreshQuestRecord' | 'renderScreen' | 'showModal' | 'showResult' | 'switchTab' | 'syncCamp' | 'syncEntry' | 'syncWeek'>;
 }
-export async function acquireSession(){
-  if(app.acquiring||lifetime.disposed||!app.pagePresent)return app.acquiring;
-  const version=app.acquisitionVersion;
-  app.acquiring=(async()=>{
-    const loaded=await app.session.acquire();
-    if(lifetime.disposed||version!==app.acquisitionVersion||!app.pagePresent)return;
-    if(loaded.status==='active'&&loaded.profile){
-      app.game=new Game(loaded.profile);app.lastPhase=app.game.state.phase;app.resultDue=0;app.hasPlayed=true;app.sessionReady=true;app.entrySaved=hasPriorPlay(app.game.profile);
-      app.manualPaused=false;app.resultShown='';app.savedWarning=false;app.pendingImport=null;app.evolutionFromResult=false;clearPrestigeContext();
-      app.entryWelcome=loaded.loadStatus==='recovered'||loaded.loadStatus==='corrupt'?null:welcomeBackLine(loaded.profile.lastSeen,Date.now(),loaded.profile.wins);
-      if(guardAction())syncWeek();
-      closeModal(false);rebuildArmy();syncMotion();switchTab('battle');
-      if(loaded.loadStatus==='recovered')toast('Recovered your progress from the backup save.');
-      else if(loaded.loadStatus==='corrupt')toast('The stored save could not be recovered. A new game has started.');
-    }else if(!app.hasPlayed&&loaded.profile){
-      // Safe preview for explicit temporary play only; never replace conflicted work.
-      app.entryWelcome=null;app.game=new Game(loaded.profile);app.lastPhase=app.game.state.phase;app.resultDue=0;rebuildArmy();syncMotion();update(true);
+
+export function createLifecycle(deps: LifecycleDeps) {
+  const { state, ports } = deps;
+  const { $, coin, fieldControls, isolateModal, lifetime, money, motionQuery, root, updateArmy } = deps.dom;
+  function playable(){return state.sessionReady&&state.pagePresent&&!lifetime.disposed&&(state.session.status==='active'||state.session.status==='temporary');}
+  function guardAction(){return playable()&&state.session.check();}
+  function sessionPresentation(status:SaveSessionStatus){
+    root!.dataset.saveSession=status;
+    const notice=$('session-notice');
+    notice.hidden=status!=='starting'&&status!=='temporary';
+    textIfChanged(notice,status==='temporary'?temporarySessionNotice:'Opening your saved game…');
+    if(status!=='active'&&status!=='temporary'){state.sessionReady=false;state.campOwner=null;state.entryWelcome=null;ports.clearPrestigeContext();}
+    if(status==='active'||status==='temporary')state.retriedSession=false;
+    const html=saveSessionDialogHtml(status,state.retriedSession);
+    if(html){state.pendingImport=null;state.evolutionFromResult=false;ports.showModal('session',html);}
+    else if(status==='starting'){
+      // An immediate acquisition has no transient modal focus loop.
+      isolateModal(true);notice.inert=false;
+      $('modal-layer').querySelector<HTMLButtonElement>('[data-command="session-continue"]')?.setAttribute('disabled','');
     }
-  })().finally(()=>{if(version===app.acquisitionVersion)app.acquiring=null;});
-  return app.acquiring;
-}
-export function rebuildArmy(){updateArmy(app.game.profile);}
-export function toast(message:string,duration=4200){
-  textIfChanged($('toast'),message);$('toast').classList.add('visible');
-  window.clearTimeout(app.toastTimer);app.toastTimer=window.setTimeout(()=>$('toast').classList.remove('visible'),duration);
-}
-export function persist():boolean{
-  if(!playable()||app.session.status==='temporary')return false;
-  // lastSeen rides on the saved copy only, so the live profile (and every "unchanged progress" check) is untouched.
-  const result=app.session.save({...app.game.profile,lastSeen:Math.floor(Date.now()/60000)*60000}),ok=result.ok;app.lastSave=performance.now();
-  if(result.reason==='write-failed'&&!app.savedWarning){app.savedWarning=true;toast('Progress could not be saved. Export a backup from Settings before closing this tab.');}
-  if(ok){app.savedWarning=false;app.lastSavedAt=Date.now();}
-  return ok;
-}
-export function syncPause(){
-  app.game.state.paused=!app.entryEntered||!playable()||pauseReason({phase:app.game.state.phase,manual:app.manualPaused,tab:app.activeTab,modal:app.modal,hidden:document.hidden})!==null;
-  if(!app.entryEntered||!app.game.profile.sound||!playable()||document.hidden||app.manualPaused||app.activeTab!=='battle'||(app.modal!==null&&app.modal!=='result')){
-    // Only a direct accepted card-summon's finite shimmer may finish in Cards.
-    const summonTail=app.game.profile.sound&&playable()&&!document.hidden&&!app.manualPaused&&app.activeTab==='cards'&&(app.modal===null||app.modal==='summon');
-    stopCombatAudio(summonTail);
+    syncPause();
   }
-  syncVillagePresentation();
-}
-export function syncVillagePresentation(dt=0,batch:readonly GameEvent[]=[]){
-  app.villagePresentation=advanceVillagePresentation(app.villagePresentation,app.game.state,app.game.profile.age,dt,batch,!app.entryEntered||!playable()||document.hidden||app.activeTab!=='battle'||app.modal!==null);
-  // The renderer calls this after stepping and draining events, so a delayed
-  // result dialog still gates audio with the actual terminal phase this frame.
-  updateSoundscape(app.game.profile.age,ambienceAllowed({sound:app.game.profile.sound&&app.entryEntered,atmosphere:app.atmosphereEnabled,paused:app.game.state.paused,phase:app.game.state.phase,tab:app.activeTab,modal:app.modal,hidden:document.hidden}),app.villagePresentation.mood);
-}
-export function syncMarks(){document.documentElement.dataset.marks=app.game.profile.marks?'on':'off';}
-export function syncMotion(){document.documentElement.dataset.motion=app.game.profile.motion==='reduced'||motionQuery.matches?'reduced':'full';syncMarks();}
-export function action(a:Action):boolean{
-  if(!guardAction())return false;
-  unlockAudio(app.game.profile.sound);const ok=app.game.dispatch(a);
-  if(ok){
-    if(a.type==='prestige'||app.game.profile.weekly?.week!==weekId(localDay()))app.game.dispatch({type:'weekly-sync',week:weekId(localDay())});
-    persist();syncPause();rebuildArmy();update(true);if(app.activeTab!=='battle')renderScreen(a.type==='select-legacy');
-    if(a.type==='summon')playSummonAudio(app.game.profile.sound&&playable()&&!document.hidden&&!app.manualPaused&&app.activeTab==='cards'&&app.modal===null);
+  async function acquireSession(){
+    if(state.acquiring||lifetime.disposed||!state.pagePresent)return state.acquiring;
+    const version=state.acquisitionVersion;
+    state.acquiring=(async()=>{
+      const loaded=await state.session.acquire();
+      if(lifetime.disposed||version!==state.acquisitionVersion||!state.pagePresent)return;
+      if(loaded.status==='active'&&loaded.profile){
+        state.game=new Game(loaded.profile);state.lastPhase=state.game.state.phase;state.resultDue=0;state.hasPlayed=true;state.sessionReady=true;state.entrySaved=hasPriorPlay(state.game.profile);
+        state.manualPaused=false;state.resultShown='';state.savedWarning=false;state.pendingImport=null;state.evolutionFromResult=false;ports.clearPrestigeContext();
+        state.entryWelcome=loaded.loadStatus==='recovered'||loaded.loadStatus==='corrupt'?null:welcomeBackLine(loaded.profile.lastSeen,Date.now(),loaded.profile.wins);
+        if(guardAction())ports.syncWeek();
+        ports.closeModal(false);rebuildArmy();syncMotion();ports.switchTab('battle');
+        if(loaded.loadStatus==='recovered')toast('Recovered your progress from the backup save.');
+        else if(loaded.loadStatus==='corrupt')toast('The stored save could not be recovered. A new game has started.');
+      }else if(!state.hasPlayed&&loaded.profile){
+        // Safe preview for explicit temporary play only; never replace conflicted work.
+        state.entryWelcome=null;state.game=new Game(loaded.profile);state.lastPhase=state.game.state.phase;state.resultDue=0;rebuildArmy();syncMotion();update(true);
+      }
+    })().finally(()=>{if(version===state.acquisitionVersion)state.acquiring=null;});
+    return state.acquiring;
   }
-  return ok;
-}
-export function update(force=false){
-  const now=performance.now();if(!force&&now-app.lastUpdate<80)return;app.lastUpdate=now;
- const s=app.game.state;
- syncEntry();syncCamp();
- if(app.modal==='quests'&&playable()&&!Object.is(app.questCalendarDay,localDay()))refreshQuestRecord();
- if(app.modal==='quests'&&playable()){const notice=$('quest-save-status'),message=questSaveNotice();notice.hidden=!message;textIfChanged(notice,message);}
- if(!app.entryEntered)return;
- syncBattleHud({root:root!,$,game:app.game,money,coin,manualPaused:app.manualPaused});
-  fieldControls.update(app.game);
-  // Let the finishing blow and base collapse play before the result dialog covers them.
-  if(s.phase!==app.lastPhase){if(app.lastPhase==='running'&&(s.phase==='won'||s.phase==='lost'))app.resultDue=now+(document.documentElement.dataset.motion==='reduced'?350:1300);app.lastPhase=s.phase;}
-  const reviewHoldingResult=globalThis.navigator?.webdriver&&document.querySelector('canvas')?.dataset.battlefieldReviewFrameReady===s.phase;
-  if(app.entryEntered&&playable()&&app.modal!=='session'&&(s.phase==='won'||s.phase==='lost')&&app.resultShown!==s.phase&&now>=app.resultDue&&!reviewHoldingResult){app.resultShown=s.phase;showResult();}
-  if(s.phase==='ready'||s.phase==='running')app.resultShown='';
-  if(playable()&&app.session.status==='active'&&now-app.lastSave>5000)persist();
-}
-export function exportSave(){
-  try{
-    const url=URL.createObjectURL(new Blob([exportBackup(app.game.profile)],{type:'application/json'}));
-    const link=document.createElement('a');link.href=url;link.download='almo7areboon-save.json';document.body.append(link);link.click();link.remove();
-    const timer=window.setTimeout(()=>URL.revokeObjectURL(url),1000);
-    lifetime.add(()=>{window.clearTimeout(timer);URL.revokeObjectURL(url);});
-    toast('Save backup exported.');
-  }catch{toast('The backup could not be exported. Your current progress was not changed.');}
-}
-export function adoptRestoredGame(restored:Game){
-  app.game=restored;app.entryWelcome=null;app.entryEntered=false;app.entrySaved=hasPriorPlay(app.game.profile);app.settingsOrigin=null;root!.dataset.fieldMode='field';app.lastPhase=app.game.state.phase;app.resultDue=0;app.manualPaused=false;app.resultShown='';app.savedWarning=false;clearPrestigeContext();rebuildArmy();syncMotion();closeModal(false);switchTab('battle');
-}
-export function suspendSession(){
-  // Save while still active, then deactivate synchronously before releasing the lock.
-  persist();app.resumeOwnership=app.resumeOwnership||app.session.status==='active'||app.session.status==='starting';
-  app.pagePresent=false;app.acquisitionVersion++;app.acquiring=null;app.sessionReady=false;clearPrestigeContext();
-  if(app.resumeOwnership)app.session.release();
-  syncPause();suspendAudio();
-}
-export function events(batch:GameEvent[]){
-  // Fresh terminal results are admitted before their dialog; menus and all
-  // modal owners block new batches, including accepted menu confirmations.
-  playCombatEvents(batch,app.game.profile.sound&&playable()&&!document.hidden&&!app.manualPaused&&!app.game.state.paused&&app.activeTab==='battle'&&app.modal===null);
-  if(batch.some(event=>event.type==='win')&&guardAction()){const receipt=app.game.profile.pendingVictory,mask=receipt&&receipt.settlement==='mastery-v1'?receipt.newMask:0;app.game.dispatch({type:'weekly-sync',week:weekId(localDay()),earned:(mask&1)+((mask>>1)&1)+((mask>>2)&1)});}
-  if(batch.some(event=>event.type==='win'||event.type==='lose'))persist();
+  function rebuildArmy(){updateArmy(state.game.profile);}
+  function toast(message:string,duration=4200){
+    textIfChanged($('toast'),message);$('toast').classList.add('visible');
+    window.clearTimeout(state.toastTimer);state.toastTimer=window.setTimeout(()=>$('toast').classList.remove('visible'),duration);
+  }
+  function persist():boolean{
+    if(!playable()||state.session.status==='temporary')return false;
+    // lastSeen rides on the saved copy only, so the live profile (and every "unchanged progress" check) is untouched.
+    const result=state.session.save({...state.game.profile,lastSeen:Math.floor(Date.now()/60000)*60000}),ok=result.ok;state.lastSave=performance.now();
+    if(result.reason==='write-failed'&&!state.savedWarning){state.savedWarning=true;toast('Progress could not be saved. Export a backup from Settings before closing this tab.');}
+    if(ok){state.savedWarning=false;state.lastSavedAt=Date.now();}
+    return ok;
+  }
+  function syncPause(){
+    state.game.state.paused=!state.entryEntered||!playable()||pauseReason({phase:state.game.state.phase,manual:state.manualPaused,tab:state.activeTab,modal:state.modal,hidden:document.hidden})!==null;
+    if(!state.entryEntered||!state.game.profile.sound||!playable()||document.hidden||state.manualPaused||state.activeTab!=='battle'||(state.modal!==null&&state.modal!=='result')){
+      // Only a direct accepted card-summon's finite shimmer may finish in Cards.
+      const summonTail=state.game.profile.sound&&playable()&&!document.hidden&&!state.manualPaused&&state.activeTab==='cards'&&(state.modal===null||state.modal==='summon');
+      stopCombatAudio(summonTail);
+    }
+    syncVillagePresentation();
+  }
+  function syncVillagePresentation(dt=0,batch:readonly GameEvent[]=[]){
+    state.villagePresentation=advanceVillagePresentation(state.villagePresentation,state.game.state,state.game.profile.age,dt,batch,!state.entryEntered||!playable()||document.hidden||state.activeTab!=='battle'||state.modal!==null);
+    // The renderer calls this after stepping and draining events, so a delayed
+    // result dialog still gates audio with the actual terminal phase this frame.
+    updateSoundscape(state.game.profile.age,ambienceAllowed({sound:state.game.profile.sound&&state.entryEntered,atmosphere:state.atmosphereEnabled,paused:state.game.state.paused,phase:state.game.state.phase,tab:state.activeTab,modal:state.modal,hidden:document.hidden}),state.villagePresentation.mood);
+  }
+  function syncMarks(){document.documentElement.dataset.marks=state.game.profile.marks?'on':'off';}
+  function syncMotion(){document.documentElement.dataset.motion=state.game.profile.motion==='reduced'||motionQuery.matches?'reduced':'full';syncMarks();}
+  function action(a:Action):boolean{
+    if(!guardAction())return false;
+    unlockAudio(state.game.profile.sound);const ok=state.game.dispatch(a);
+    if(ok){
+      if(a.type==='prestige'||state.game.profile.weekly?.week!==weekId(localDay()))state.game.dispatch({type:'weekly-sync',week:weekId(localDay())});
+      persist();syncPause();rebuildArmy();update(true);if(state.activeTab!=='battle')ports.renderScreen(a.type==='select-legacy');
+      if(a.type==='summon')playSummonAudio(state.game.profile.sound&&playable()&&!document.hidden&&!state.manualPaused&&state.activeTab==='cards'&&state.modal===null);
+    }
+    return ok;
+  }
+  function update(force=false){
+    const now=performance.now();if(!force&&now-state.lastUpdate<80)return;state.lastUpdate=now;
+   const s=state.game.state;
+   ports.syncEntry();ports.syncCamp();
+   if(state.modal==='quests'&&playable()&&!Object.is(state.questCalendarDay,localDay()))ports.refreshQuestRecord();
+   if(state.modal==='quests'&&playable()){const notice=$('quest-save-status'),message=ports.questSaveNotice();notice.hidden=!message;textIfChanged(notice,message);}
+   if(!state.entryEntered)return;
+   syncBattleHud({root:root!,$,game:state.game,money,coin,manualPaused:state.manualPaused});
+    fieldControls.update(state.game);
+    // Let the finishing blow and base collapse play before the result dialog covers them.
+    if(s.phase!==state.lastPhase){if(state.lastPhase==='running'&&(s.phase==='won'||s.phase==='lost'))state.resultDue=now+(document.documentElement.dataset.motion==='reduced'?350:1300);state.lastPhase=s.phase;}
+    const reviewHoldingResult=globalThis.navigator?.webdriver&&document.querySelector('canvas')?.dataset.battlefieldReviewFrameReady===s.phase;
+    if(state.entryEntered&&playable()&&state.modal!=='session'&&(s.phase==='won'||s.phase==='lost')&&state.resultShown!==s.phase&&now>=state.resultDue&&!reviewHoldingResult){state.resultShown=s.phase;ports.showResult();}
+    if(s.phase==='ready'||s.phase==='running')state.resultShown='';
+    if(playable()&&state.session.status==='active'&&now-state.lastSave>5000)persist();
+  }
+  function exportSave(){
+    try{
+      const url=URL.createObjectURL(new Blob([exportBackup(state.game.profile)],{type:'application/json'}));
+      const link=document.createElement('a');link.href=url;link.download='almo7areboon-save.json';document.body.append(link);link.click();link.remove();
+      const timer=window.setTimeout(()=>URL.revokeObjectURL(url),1000);
+      lifetime.add(()=>{window.clearTimeout(timer);URL.revokeObjectURL(url);});
+      toast('Save backup exported.');
+    }catch{toast('The backup could not be exported. Your current progress was not changed.');}
+  }
+  function adoptRestoredGame(restored:Game){
+    state.game=restored;state.entryWelcome=null;state.entryEntered=false;state.entrySaved=hasPriorPlay(state.game.profile);state.settingsOrigin=null;root!.dataset.fieldMode='field';state.lastPhase=state.game.state.phase;state.resultDue=0;state.manualPaused=false;state.resultShown='';state.savedWarning=false;ports.clearPrestigeContext();rebuildArmy();syncMotion();ports.closeModal(false);ports.switchTab('battle');
+  }
+  function suspendSession(){
+    // Save while still active, then deactivate synchronously before releasing the lock.
+    persist();state.resumeOwnership=state.resumeOwnership||state.session.status==='active'||state.session.status==='starting';
+    state.pagePresent=false;state.acquisitionVersion++;state.acquiring=null;state.sessionReady=false;ports.clearPrestigeContext();
+    if(state.resumeOwnership)state.session.release();
+    syncPause();suspendAudio();
+  }
+  function events(batch:GameEvent[]){
+    // Fresh terminal results are admitted before their dialog; menus and all
+    // modal owners block new batches, including accepted menu confirmations.
+    playCombatEvents(batch,state.game.profile.sound&&playable()&&!document.hidden&&!state.manualPaused&&!state.game.state.paused&&state.activeTab==='battle'&&state.modal===null);
+    if(batch.some(event=>event.type==='win')&&guardAction()){const receipt=state.game.profile.pendingVictory,mask=receipt&&receipt.settlement==='mastery-v1'?receipt.newMask:0;state.game.dispatch({type:'weekly-sync',week:weekId(localDay()),earned:(mask&1)+((mask>>1)&1)+((mask>>2)&1)});}
+    if(batch.some(event=>event.type==='win'||event.type==='lose'))persist();
+  }
+  return { playable, guardAction, sessionPresentation, acquireSession, rebuildArmy, toast, persist, syncPause, syncVillagePresentation, syncMarks, syncMotion, action, update, exportSave, adoptRestoredGame, suspendSession, events };
 }

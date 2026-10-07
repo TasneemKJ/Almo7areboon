@@ -1,5 +1,5 @@
 import test from 'node:test';
-import { mainSource } from './helpers/main-source.ts';
+import { flatStatements, mainSource } from './helpers/main-source.ts';
 import assert from 'node:assert/strict';
 import { runInApp } from './helpers/run-app.ts';
 import ts from 'typescript';
@@ -9,7 +9,7 @@ import {chapterPresentation} from '../src/ui/chapter-presentation.ts';
 
 const source=mainSource();
 const ast=ts.createSourceFile('main.ts',source,ts.ScriptTarget.Latest,true,ts.ScriptKind.TS);
-const listener=ast.statements.find(n=>ts.isExpressionStatement(n)&&ts.isCallExpression(n.expression)&&n.expression.expression.getText(ast)==='lifetime.listen'&&n.expression.arguments[1]?.getText(ast)==="'change'");
+const listener=flatStatements(ast).find(n=>ts.isExpressionStatement(n)&&ts.isCallExpression(n.expression)&&n.expression.expression.getText(ast)==='lifetime.listen'&&n.expression.arguments[1]?.getText(ast)==="'change'");
 assert.ok(listener,'test the actual production import handler');
 const code=ts.transpile(listener.getText(ast),{target:ts.ScriptTarget.ES2022});
 function deferred(){

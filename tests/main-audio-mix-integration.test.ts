@@ -1,5 +1,5 @@
 import test from 'node:test';
-import { mainSource } from './helpers/main-source.ts';
+import { flatStatements, mainSource } from './helpers/main-source.ts';
 import assert from 'node:assert/strict';
 import { runInApp } from './helpers/run-app.ts';
 import ts from 'typescript';
@@ -11,8 +11,8 @@ import {textIfChanged} from '../src/ui/dom-state.ts';
 import * as audio from '../src/view/audio.ts';
 import {recordedContext,installContext} from './helpers/audio-context.ts';
 const source=mainSource(),ast=ts.createSourceFile('main.ts',source,ts.ScriptTarget.Latest,true,ts.ScriptKind.TS);
-const functions=ast.statements.filter(node=>ts.isFunctionDeclaration(node)&&node.name&&['playable','guardAction'].includes(node.name.text));
-const listener=ast.statements.find(node=>ts.isExpressionStatement(node)&&ts.isCallExpression(node.expression)&&node.expression.expression.getText(ast)==='lifetime.listen'&&node.expression.arguments[0]?.getText(ast)==='root'&&node.expression.arguments[1]?.getText(ast)==="'input'");
+const functions=flatStatements(ast).filter(node=>ts.isFunctionDeclaration(node)&&node.name&&['playable','guardAction'].includes(node.name.text));
+const listener=flatStatements(ast).find(node=>ts.isExpressionStatement(node)&&ts.isCallExpression(node.expression)&&node.expression.expression.getText(ast)==='lifetime.listen'&&node.expression.arguments[0]?.getText(ast)==='root'&&node.expression.arguments[1]?.getText(ast)==="'input'");
 const locks:SaveSessionLocks={request:(name,_options,callback)=>Promise.resolve(callback({name}))};
 async function harness({temporary=false,mixQuota=false}={}){
  assert.ok(listener,'actual root input listener must exist');

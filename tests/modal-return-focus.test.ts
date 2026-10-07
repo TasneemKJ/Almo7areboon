@@ -1,12 +1,12 @@
 import test from 'node:test';
-import { mainSource } from './helpers/main-source.ts';
+import { flatStatements, mainSource } from './helpers/main-source.ts';
 import assert from 'node:assert/strict';
 import { runInApp } from './helpers/run-app.ts';
 import ts from 'typescript';
 
 const source=mainSource();
 const ast=ts.createSourceFile('main.ts',source,ts.ScriptTarget.Latest,true,ts.ScriptKind.TS);
-const node=ast.statements.find(n=>ts.isFunctionDeclaration(n)&&n.name?.text==='closeModal');
+const node=flatStatements(ast).find(n=>ts.isFunctionDeclaration(n)&&n.name?.text==='closeModal');
 assert.ok(node);
 const code=ts.transpile(node.getText(ast)+'\nthis.closeModal=closeModal;',{target:ts.ScriptTarget.ES2022});
 for(const mode of ['camp','camp-advanced','field'])for(const target of ['body','hidden','disabled','detached','unfocusable','valid'] as const){

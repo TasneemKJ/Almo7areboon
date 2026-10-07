@@ -1,10 +1,10 @@
 import test from 'node:test';import assert from 'node:assert/strict';import { runInApp } from './helpers/run-app.ts';
 import ts from 'typescript';
-import { mainSource } from './helpers/main-source.ts';
+import { flatStatements, mainSource } from './helpers/main-source.ts';
 import {Game} from '../src/game/simulation.ts';import {weekId,weeklyStatus} from '../src/game/weekly.ts';import {localDay} from '../src/game/data.ts';
 const main=mainSource(),ast=ts.createSourceFile('main.ts',main,ts.ScriptTarget.Latest,true,ts.ScriptKind.TS);
 let step:ts.Node|undefined;ast.forEachChild(function visit(node){if(ts.isCallExpression(node)&&node.expression.getText(ast)==='createBattlefieldPort')step=node.arguments[2];ts.forEachChild(node,visit);});assert.ok(step);
-const events=ast.statements.find(n=>ts.isFunctionDeclaration(n)&&n.name?.text==='events')!;
+const events=flatStatements(ast).find(n=>ts.isFunctionDeclaration(n)&&n.name?.text==='events')!;
 const code=ts.transpileModule(`this.step=${step.getText(ast)};${events.getText(ast)};this.events=events;`,{compilerOptions:{target:ts.ScriptTarget.ES2022}}).outputText;
 for(const origin of ['new-week','import-without-week','reset'])test(`actual pre-simulation owner counts the first new seals after ${origin}`,()=>{
  const game=new Game(),week=weekId(localDay());if(origin==='new-week')game.profile.weekly={week:week-1,baseSeals:0};if(origin==='reset')game.profile.weekly={week,baseSeals:8};
@@ -53,7 +53,7 @@ test('actual win owner counts settled seals if Monday begins between pre-step an
  assert.equal(weeklyStatus(game.profile,weekId(day)).progress,3);assert.equal(game.profile.weekly!.baseSeals,0);
 });
 test('accepted start opens the current baseline, rejected start does not mutate weekly state',()=>{
- const declaration=ast.statements.find(n=>ts.isFunctionDeclaration(n)&&n.name?.text==='action')!;
+ const declaration=flatStatements(ast).find(n=>ts.isFunctionDeclaration(n)&&n.name?.text==='action')!;
  const actionCode=ts.transpileModule(`${declaration.getText(ast)};this.invoke=action;`,{compilerOptions:{target:ts.ScriptTarget.ES2022}}).outputText;
  const game=new Game(),current=weekId(localDay()),context:any={game,weekId,localDay,guardAction:()=>true,unlockAudio(){},persist(){},syncPause(){},rebuildArmy(){},update(){},activeTab:'battle'};
  runInApp(actionCode,context);assert.equal(context.invoke({type:'start'}),true);assert.equal(game.profile.weekly!.week,current);

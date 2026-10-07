@@ -1,4 +1,5 @@
 import { readFileSync } from 'node:fs';
+import ts from 'typescript';
 
 const read = (path: string) => readFileSync(new URL(`../../src/${path}`, import.meta.url), 'utf8');
 
@@ -11,4 +12,20 @@ export const APP_FILES = ['main.ts', 'app/state.ts', 'app/runtime.ts', 'app/life
  */
 export function mainSource(): string {
   return APP_FILES.map(read).join('\n').replace(/^export (async function|function|const) /gm, '$1 ');
+}
+
+/**
+ * Every statement of a source file, descending into function declarations. The app modules are
+ * factories of inner functions, so extraction by name must see statements at any declaration depth.
+ */
+export function flatStatements(file: ts.SourceFile): ts.Statement[] {
+  const out: ts.Statement[] = [];
+  const walk = (statements: readonly ts.Statement[]) => {
+    for (const statement of statements) {
+      out.push(statement);
+      if (ts.isFunctionDeclaration(statement) && statement.body) walk(statement.body.statements);
+    }
+  };
+  walk(file.statements);
+  return out;
 }

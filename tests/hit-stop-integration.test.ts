@@ -1,5 +1,5 @@
 import test from 'node:test';
-import { mainSource } from './helpers/main-source.ts';
+import { flatStatements, mainSource } from './helpers/main-source.ts';
 import { battlefieldSource } from './helpers/battlefield-source.ts';
 import assert from 'node:assert/strict';
 import { runInApp } from './helpers/run-app.ts';
@@ -41,7 +41,7 @@ visit(ast);assert.equal(members.length,3);
 const fieldCode=ts.transpileModule(`class Subject {${members.map(node=>node.getText(ast)).join('\n')}}; globalThis.Subject=Subject;`,{compilerOptions:{target:ts.ScriptTarget.ES2022}}).outputText;
 const main=mainSource();
 const mainAst=ts.createSourceFile('main.ts',main,ts.ScriptTarget.Latest,true,ts.ScriptKind.TS);
-const mainFunctions=mainAst.statements.filter(node=>ts.isFunctionDeclaration(node)&&node.name&&['playable','syncPause'].includes(node.name.text));
+const mainFunctions=flatStatements(mainAst).filter(node=>ts.isFunctionDeclaration(node)&&node.name&&['playable','syncPause'].includes(node.name.text));
 let step:ts.Node|undefined,mountCall:ts.CallExpression|undefined;
 mainAst.forEachChild(function scan(node){if(ts.isCallExpression(node)&&node.expression.getText(mainAst)==='createBattlefieldPort')step=node.arguments[2];if(ts.isCallExpression(node)&&node.expression.getText(mainAst)==='mountBattlefield')mountCall=node;ts.forEachChild(node,scan);});
 assert.equal(mainFunctions.length,2);assert.ok(step);assert.ok(mountCall);
