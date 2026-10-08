@@ -174,6 +174,9 @@ Advanced Camp leaves remain dense and unaccepted. This work does not claim all-s
 - [x] Juice 6: Meteor pressure at physical arrival; mutation behavior test passes; [20-idea audit](docs/audits/2026-10-08-juice-06.md).
 - [ ] Juice 6: required mobile touch, CPU throttle, rotation and viewed before/after screenshots before shipping.
 
+- [x] Juice 7: Camera impulse priority and recovery; mutation behavior test passes; [20-idea audit](docs/audits/2026-10-08-juice-07.md).
+- [ ] Juice 7: required mobile touch, CPU throttle, rotation and viewed before/after screenshots before shipping.
+
 ## Current juice design review (2026-10-08)
 
 The earlier short idea lists were expanded during review into twenty concrete action/object alternatives per behavior, with selected, deferred and rejected reasons. This documentation refinement adds no iteration count. The full IDEAL/5Ws and all twenty ideas for each cycle are recorded here:
@@ -184,5 +187,20 @@ The earlier short idea lists were expanded during review into twenty concrete ac
 - Juice 4: Authoritative thaw fracture cue — [20 concrete alternatives and decisions](docs/audits/2026-10-08-juice-04.md).
 - Juice 5: Food Drop settles at the camp — [20 concrete alternatives and decisions](docs/audits/2026-10-08-juice-05.md).
 - Juice 6: Meteor pressure at physical arrival — [20 concrete alternatives and decisions](docs/audits/2026-10-08-juice-06.md).
+- Juice 7: Camera impulse priority and recovery — [20 concrete alternatives and decisions](docs/audits/2026-10-08-juice-07.md).
 
-Review verification: existing reset-order and faction gesture contracts are preserved. Current checks require matching image/vector faction composition and prohibit simulation coordinate writes. Accepted Meteor retains current enemy targets, cap and truthful no-target fallback while adding reduced-motion contact. Coordinator serial full verification and required browser acceptance remain pending.
+Review verification: existing reset-order and faction gesture contracts are preserved. Current checks require matching image/vector faction composition and prohibit simulation coordinate writes. Accepted Meteor retains current enemy targets, cap and truthful no-target fallback while adding reduced-motion contact. Real camera checks require bounded rank1→2→3→4 preemption, reject repeated ranks and suppress all ranks in reduced motion. Coordinator serial final source/test/build verification passed as recorded below; required browser acceptance remains pending.
+
+## Final combined-source verification (2026-10-08)
+
+The coordinator verified source/test head `5745a32b380179b6a7ba531374b7bde4f8631e00`: **1,351 tests passed, zero failed, zero skipped**, followed by a passing `npm run build` (TypeScript, Vite and the shared size checker). Test duration was 172,365.846 ms. The command used a writable temporary directory and limited concurrent test workers:
+
+```sh
+TMPDIR=/workspace/scratch/9721420b61c7/tmp node --experimental-strip-types --test --test-concurrency=2 tests/*.test.ts && npm run build
+```
+
+Total production JavaScript was **489,236 gzip bytes against the 512,000-byte budget**: battlefield 49,274; index 105,072; Phaser 330,423; soundscape worker 1,687; service worker 2,780. Vite's existing large-Phaser-chunk warning remains; the enforced combined JavaScript gate passed.
+
+All seven intermediate source prefixes passed their applicable focused contracts and TypeScript checks. The full-suite/build result above applies to the final combined source; it does not claim the full suite ran independently on every intermediate prefix. Final focused affected groups additionally passed 64/64, with independent renderer review passing 36/36. Reset compatibility was corrected at its original boundary; renderer contracts retain current enemy targets, faction transforms, immutable simulation coordinates, static grade/no postpass and the heavy-role distinction. Camera behavior also rejects repeated ranks, permits real priority cut-in and suppresses every tested rank in reduced motion.
+
+This documentation-only annotation changes no source or tests and adds no counted iteration. Native/browser QA remains blocked: mandatory mobile touch, orientation/backgrounding, CPU-throttled play and viewed before/after screenshots are still unchecked. The passing CPU-side gates do not establish pixel or mobile acceptance.
