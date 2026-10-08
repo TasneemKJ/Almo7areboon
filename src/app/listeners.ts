@@ -20,7 +20,7 @@ import type { Skill, UnitKind } from '../game/types.ts';
 import { chapterPresentation } from '../ui/chapter-presentation.ts';
 import { unlockAudio, suspendAudio, updateAudioMix } from '../view/audio.ts';
 import { troopUnlockMessage } from '../ui/army-screen.ts';
-import { summonedCardsHtml } from '../ui/cards-screen.ts';
+import { cardPackPreview, summonedCardsHtml, type CardQuantity } from '../ui/cards-screen.ts';
 import { expeditionChoiceHtml } from '../ui/results-screen.ts';
 import { claimableWeek, syncWeekly, weekId } from '../game/weekly.ts';
 import { earlierChapter } from '../ui/regroup-learning.ts';
@@ -129,9 +129,10 @@ export function installListeners(deps: ListenersDeps): void {
     if(button.dataset.claim){const fromJourney=ports.navState.modal==='journey';if(ports.action({type:'claim',id:button.dataset.claim})){if(fromJourney&&ports.playable()&&ports.navState.modal!=='session')ports.showModal('journey',journeyScreenHtml(ports.sessionState.game.profile,ports.sessionState.game.state));else ports.showQuests();}return true;}
     if(button.dataset.battle!==undefined){if(ports.action({type:'select-battle',battle:Number(button.dataset.battle)}))ports.closeModal();return true;}
     if(button.dataset.pack!==undefined){
+      if(ports.navState.activeTab!=='cards'||ports.navState.modal||!button.closest('#secondary-screen')||button.dataset.pack!==String(ports.navState.cardQuantity))return true;
       const before=[...ports.sessionState.game.profile.cards],count=Number(button.dataset.pack) as 1|10|50;
       const accepted=ports.action({type:'summon',count});
-      if(!ports.playable()||ports.navState.modal==='session')return true;
+      if(!ports.playable()||(ports.navState.modal as string|null)==='session')return true;
       if(accepted)ports.showModal('summon',summonedCardsHtml(before,ports.sessionState.game.profile));
       else ports.toast('This pack is unavailable. Your gems were not spent.');return true;
     }
@@ -229,6 +230,13 @@ export function installListeners(deps: ListenersDeps): void {
     });
     lifetime.listen<Event>(root,'change',async e=>{
       const input=e.target;
+      if(input instanceof HTMLSelectElement&&input.dataset.cardQuantity!==undefined){
+        if(ports.navState.activeTab!=='cards'||ports.navState.modal||input!==$('card-quantity')||!$('secondary-screen').contains(input)||!ports.guardAction()||ports.navState.modal)return;
+        if(!['1','10','50'].includes(input.value))return;
+        const count=Number(input.value) as CardQuantity,pack=cardPackPreview(ports.sessionState.game.profile,count),button=$('card-summon') as HTMLButtonElement;
+        ports.navState.cardQuantity=count;button.dataset.pack=input.value;button.disabled=pack.disabled;button.setAttribute('aria-label',pack.label);
+        textIfChanged($('card-pack-preview'),pack.text);return;
+      }
       if(input instanceof HTMLSelectElement&&input.dataset.questSelect!==undefined){
         if(ports.navState.modal!=='quests'||!$('modal-layer').contains(input)||input!==$('quest-goal')||!ports.guardAction()||ports.navState.modal!=='quests')return;
         if(!questRecords(ports.sessionState.game.profile,localDay()).some(record=>record.key===input.value))return;
