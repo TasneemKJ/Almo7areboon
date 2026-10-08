@@ -156,17 +156,49 @@ Advanced Camp leaves remain dense and unaccepted. This work does not claim all-s
 - [x] Count a just-settled receipt when Monday begins between pre-step baseline and event drain; retain accepted-start-only synchronization.
 - [ ] Recheck exact reconciled source, native weekly ownership, required CI and unchanged main before the root merge decision.
 
-- [x] Juice 1: Role-weighted recruit arrival; mutation behavior test passes; [20-idea audit](docs/audits/2026-10-08-juice-01.md).
-- [ ] Juice 1: required mobile touch, CPU throttle, rotation and viewed before/after screenshots before shipping.
+## Portfolio field audit — 2026-10-08
 
-- [x] Juice 2: Grounded recruit contact prints; mutation behavior test passes; [20-idea audit](docs/audits/2026-10-08-juice-02.md).
-- [ ] Juice 2: required mobile touch, CPU throttle, rotation and viewed before/after screenshots before shipping.
+IDEAL / 5Ws and twenty candidates for each bounded iteration: `docs/audits/2026-10-08-portfolio-repair.md`. No design rule override; source-only findings are not deployed-play evidence.
 
-## Current juice design review (2026-10-08)
+- [x] AM1: expose canonical Meteor cover breaking through the painted cover target.
+- [x] AM2: retain canonical gate-danger instruction in the physical field cue.
+- [x] AM3: carry canonical Chronicle mission guidance into the existing field cue.
+- [x] AM4: name the actual support ability at the supplies choice and teach that target.
+- [x] AM5: add supported next-attempt advice to compact Regroup while retaining three choices.
+- [x] AM6: separate changing visual progress from stable spoken instructions.
+- [x] Verify source regressions, broad tests and typecheck; record exact verification in the audit.
+- [ ] Exact-source native browser/touch/AT/visual acceptance remains open; local Chromium cannot launch.
 
-The earlier short idea lists were expanded during review into twenty concrete action/object alternatives per behavior, with selected, deferred and rejected reasons. This documentation refinement adds no iteration count. The full IDEAL/5Ws and all twenty ideas for each cycle are recorded here:
+- [x] AM7: require owned, strict/configurable preview and fixture startup; prove foreign-server rejection before browser launch.
 
-- Juice 1: Role-weighted recruit arrival — [20 concrete alternatives and decisions](docs/audits/2026-10-08-juice-01.md).
-- Juice 2: Grounded recruit contact prints — [20 concrete alternatives and decisions](docs/audits/2026-10-08-juice-02.md).
+## Bug audit M3 — 8 October 2026
 
-Review verification: existing reset-order and faction gesture contracts are preserved. Current checks require matching image/vector faction composition and prohibit simulation coordinate writes. Coordinator serial full verification and required browser acceptance remain pending.
+- [x] Reproduce and minimally repair current offline-dependency eviction during stale-bundle cleanup. The 20-probe IDEAL / 5Ws review and evidence are tracked in `docs/audits/2026-10-08-bug-audit.md`.
+- [x] Verify 29 production service-worker/download regressions and the production build (487,827 bytes gzip); all five emitted bundles retain current dependency protection.
+- [x] Complete the final full test run: 1,337 passed, zero failures, skips or cancellations.
+- [ ] Complete independent review of the frozen fix and regression evidence.
+- [ ] Complete native offline/reload acceptance when an authorized browser is available.
+
+
+## Current review, cycles 22–28 — 2026-10-08
+
+IDEAL/5Ws and twenty alternatives per distinct scenario: `docs/audits/2026-10-08-field-reliability.md`. Checked against the current design and interaction rules; no overrides or economy changes.
+
+- [x] 22: Preserve canonical critical-gate guidance in the actual physical field.
+- [x] 23: Explain the available Food Drop route through physical Supplies during a wait.
+- [x] 24: Retain formation, incoming-wave and Chronicle objective guidance beyond opening.
+- [x] 25: Offer the existing Meteor command at intact road cover when no enemy exists.
+- [x] 26: Name the actual captain replacement on the visible support button.
+- [x] 27: Replace three card purchase buttons with native quantity/cost preview and one guarded Summon command, as approved in the existing future-cards task.
+- [x] 28: Keep countdowns visible while announcing only meaningful field instruction changes.
+- [x] Verify the exact batch with all source tests, lint, build and an independent source review; record the distinct red/green scenarios in the audit.
+- [ ] Native touch, rotation, enlarged text, screen-reader and screenshot acceptance: the existing mobile-touch script could not open a page because local Chromium exited with SIGTRAP. No visual or physical-device acceptance is claimed.
+
+- [x] Reconcile PR190 with main `d8eb374`: retain both documentation additions and all original source blobs; combined full suite 1,356 passes, build 488,910 gzip bytes, and all five emitted bundles protected by the offline manifest/page. Integration evidence is appended to `docs/audits/2026-10-08-field-reliability.md`; native acceptance remains open.
+
+
+### PR190 reconciliation with PR189 — 8 October 2026
+
+- [x] Merge latest physical-field main `a4bb398` into published head `3e671b3`, retaining one guidance/status path, native cover focus safety, both skill effects, Regroup advice and owned review-server checks.
+- [x] Re-run combined source gates: targeted 45/45; full npm test 1,375/1,375 with zero failures/skips; TypeScript/build pass, 489,329/512,000 gzip bytes.
+- [ ] Complete required exact-head rendered/mobile/offline checks; the separate production play review is not PR-head acceptance. No gate waiver, browser workaround or manual workflow trigger is part of this integration.
