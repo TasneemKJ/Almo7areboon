@@ -55,6 +55,7 @@ export function createBattlefieldEffects(host:EffectsHost,layers:{fx:Phaser.Game
    baseHit.player=Math.max(0,baseHit.player-dt);baseHit.enemy=Math.max(0,baseHit.enemy-dt);
    particles.stepSparks(dt);particles.stepRings(dt);
    cues.stepBolts(dt,bolt=>{
+    if(bolt.meteor)answers.meteorLanding(bolt.to.x,bolt.to.y);
     if(bolt.targetBase&&bolt.targetSide!==undefined&&bolt.targetAge!==undefined)baseImpact(bolt.to.x,bolt.to.y,bolt.damage,bolt.heavy,bolt.targetSide,bolt.targetAge);
     else impact(bolt.to.x,bolt.to.y,bolt.damage,bolt.age,bolt.kind,bolt.side,bolt.heavy);
     if(bolt.memory)marks.remember(bolt.memory);

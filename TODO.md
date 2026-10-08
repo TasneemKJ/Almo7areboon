@@ -171,6 +171,9 @@ Advanced Camp leaves remain dense and unaccepted. This work does not claim all-s
 - [x] Juice 5: Food Drop settles at the camp; mutation behavior test passes; [20-idea audit](docs/audits/2026-10-08-juice-05.md).
 - [ ] Juice 5: required mobile touch, CPU throttle, rotation and viewed before/after screenshots before shipping.
 
+- [x] Juice 6: Meteor pressure at physical arrival; mutation behavior test passes; [20-idea audit](docs/audits/2026-10-08-juice-06.md).
+- [ ] Juice 6: required mobile touch, CPU throttle, rotation and viewed before/after screenshots before shipping.
+
 ## Current juice design review (2026-10-08)
 
 The earlier short idea lists were expanded during review into twenty concrete action/object alternatives per behavior, with selected, deferred and rejected reasons. This documentation refinement adds no iteration count. The full IDEAL/5Ws and all twenty ideas for each cycle are recorded here:
@@ -180,5 +183,6 @@ The earlier short idea lists were expanded during review into twenty concrete ac
 - Juice 3: Ballistic projectile glow continuity — [20 concrete alternatives and decisions](docs/audits/2026-10-08-juice-03.md).
 - Juice 4: Authoritative thaw fracture cue — [20 concrete alternatives and decisions](docs/audits/2026-10-08-juice-04.md).
 - Juice 5: Food Drop settles at the camp — [20 concrete alternatives and decisions](docs/audits/2026-10-08-juice-05.md).
+- Juice 6: Meteor pressure at physical arrival — [20 concrete alternatives and decisions](docs/audits/2026-10-08-juice-06.md).
 
-Review verification: existing reset-order and faction gesture contracts are preserved. Current checks require matching image/vector faction composition and prohibit simulation coordinate writes. Coordinator serial full verification and required browser acceptance remain pending.
+Review verification: existing reset-order and faction gesture contracts are preserved. Current checks require matching image/vector faction composition and prohibit simulation coordinate writes. Accepted Meteor retains current enemy targets, cap and truthful no-target fallback while adding reduced-motion contact. Coordinator serial full verification and required browser acceptance remain pending.

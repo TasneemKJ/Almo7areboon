@@ -246,7 +246,7 @@ class Battlefield extends Phaser.Scene {
     }
     if(e.skill==='meteor'){
      const targets=[...this.army.units.values()].filter(v=>v.side==='enemy').slice(0,6);
-     if(this.reduce){this.effects.floatText(225,this.layout.groundY-85,'METEOR','#ffd6a5',true);for(const v of targets)this.marks.remember({kind:'meteor',x:v.x,lane:v.lane,side:'player'});return;}
+     if(this.reduce){this.effects.floatText(225,this.layout.groundY-85,'METEOR','#ffd6a5',true);for(const v of targets){this.effects.meteorLanding(v.x,v.y-15);this.marks.remember({kind:'meteor',x:v.x,lane:v.lane,side:'player'});}return;}
      for(const v of targets.length?targets:[{x:310,y:this.layout.groundY,lane:1}]){const memory:BattlefieldMemoryInput={kind:'meteor',x:v.x,lane:v.lane,side:'player'};this.effects.pushBolt({from:{x:v.x-70,y:v.y-150},to:{x:v.x,y:v.y-15},life:.4,max:.4,arc:0,age:0,kind:2,side:'player',heavy:true,damage:0,meteor:true,memory:targets.length?memory:undefined},false);}
      this.cameras.main.shake(180,.0025);this.cameras.main.flash(180,255,190,120);
     }
