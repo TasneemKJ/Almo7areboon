@@ -110,3 +110,9 @@ Presentation is anchored to accepted events/authoritative battle intervals, boun
 
 ### Juice 5: Food Drop settles at the camp (2026-10-08)
 Presentation is anchored to accepted events/authoritative battle intervals, bounded and reset on replacement; reduced motion retains still meaning. No simulation, reward, cost, control or save changes.
+
+### Juice 6: Meteor pressure at physical arrival (2026-10-08)
+Presentation is anchored to accepted events/authoritative battle intervals, bounded and reset on replacement; reduced motion retains still meaning. No simulation, reward, cost, control or save changes.
+
+### Juice 7: Camera impulse priority and recovery (2026-10-08)
+Presentation is anchored to accepted events/authoritative battle intervals, bounded and reset on replacement; reduced motion retains still meaning. No simulation, reward, cost, control or save changes.

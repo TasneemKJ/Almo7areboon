@@ -19,7 +19,7 @@ test('accepted Meteor lands only on real current enemy views and survives reduce
  assert.match(code,/view\.lane=unit\.lane/);
  assert.match(code,/const targets=\[\.\.\.this\.army\.units\.values\(\)\]\.filter\(v=>v\.side==='enemy'\)\.slice\(0,6\)/);
  assert.match(code,/kind:'meteor',x:v\.x,lane:v\.lane,side:'player'/);
- assert.match(code,/if\(this\.reduce\)\{[^}]*for\(const v of targets\)this\.marks\.remember/);
+ assert.match(code,/if\(this\.reduce\)\{[^}]*for\(const v of targets\)\{this\.effects\.meteorLanding\(v\.x,v\.y-15\);this\.marks\.remember\(\{kind:'meteor',x:v\.x,lane:v\.lane,side:'player'\}\);\}return;/);
  assert.match(code,/memory:targets\.length\?memory:undefined/,'the no-target fallback meteor must not leave a false scar');
 });
 
