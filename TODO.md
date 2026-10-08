@@ -156,6 +156,14 @@ Advanced Camp leaves remain dense and unaccepted. This work does not claim all-s
 - [x] Count a just-settled receipt when Monday begins between pre-step baseline and event drain; retain accepted-start-only synchronization.
 - [ ] Recheck exact reconciled source, native weekly ownership, required CI and unchanged main before the root merge decision.
 
+## Bug audit M3 — 8 October 2026
+
+- [x] Reproduce and minimally repair current offline-dependency eviction during stale-bundle cleanup. The 20-probe IDEAL / 5Ws review and evidence are tracked in `docs/audits/2026-10-08-bug-audit.md`.
+- [x] Verify 29 production service-worker/download regressions and the production build (487,827 bytes gzip); all five emitted bundles retain current dependency protection.
+- [x] Complete the final full test run: 1,337 passed, zero failures, skips or cancellations.
+- [ ] Complete independent review of the frozen fix and regression evidence.
+- [ ] Complete native offline/reload acceptance when an authorized browser is available.
+
 
 ## Current review, cycles 22–28 — 2026-10-08
 
@@ -170,3 +178,5 @@ IDEAL/5Ws and twenty alternatives per distinct scenario: `docs/audits/2026-10-08
 - [x] 28: Keep countdowns visible while announcing only meaningful field instruction changes.
 - [x] Verify the exact batch with all source tests, lint, build and an independent source review; record the distinct red/green scenarios in the audit.
 - [ ] Native touch, rotation, enlarged text, screen-reader and screenshot acceptance: the existing mobile-touch script could not open a page because local Chromium exited with SIGTRAP. No visual or physical-device acceptance is claimed.
+
+- [x] Reconcile PR190 with main `d8eb374`: retain both documentation additions and all original source blobs; combined full suite 1,356 passes, build 488,910 gzip bytes, and all five emitted bundles protected by the offline manifest/page. Integration evidence is appended to `docs/audits/2026-10-08-field-reliability.md`; native acceptance remains open.

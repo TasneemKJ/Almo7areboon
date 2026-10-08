@@ -213,6 +213,30 @@ test('bundle cleanup keeps the scripts and styles required by the cached game sh
   assert.equal((await fixture.cache.keys()).filter(key => /\/assets\/.*\.(js|css)$/.test(key.url)).length, 6);
 });
 
+for (const scope of ['https://game.test/', 'https://game.test/game/']) {
+  test(`bundle cleanup preserves installed lazy dependencies under ${scope}`, async () => {
+    const installAssets = [
+      './assets/battlefield-AB12cd34.js',
+      './assets/phaser-EF56gh78.js',
+      './assets/soundscape-worker-IJ90kl12.js',
+    ];
+    const fixture = cacheFixture({
+      scope, installAssets,
+      shell: '<script src="./assets/index-MN34op56.js"></script><link href="./assets/index-QR78st90.css">',
+    });
+    await fixture.install();
+    for (let index = 0; index < 9; index++) await fixture.request(`assets/older-${index}.js`, 'cors');
+    const fetches = fixture.fetches;
+    for (const path of installAssets) {
+      assert.ok(await fixture.cache.match(path), `installed lazy dependency ${path} must survive`);
+      assert.equal(await (await fixture.request(path, 'cors'))?.text(), 'network response');
+    }
+    assert.equal(fixture.fetches, fetches, 'current immutable dependencies remain usable without network requests');
+    assert.equal((await fixture.cache.keys()).filter(key => /\/assets\/.*\.(js|css)$/.test(key.url)).length, 6);
+    assert.equal(await fixture.cache.match('assets/older-0.js'), undefined, 'obsolete bundles remain eligible for cleanup');
+  });
+}
+
 test('query-string visits update one canonical offline navigation instead of stranding the old shell', async () => {
   const fixture = cacheFixture();
   await fixture.cache.put('./', fixture.basic('old shell'));

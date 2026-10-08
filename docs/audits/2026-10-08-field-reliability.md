@@ -62,3 +62,20 @@ Each cycle is complete only after its distinct red/green scenario is recorded. B
 - Native attempt: `scripts/mobile-touch-check.mjs` against the local production preview with the shared installed Chromium 153 and browser lock exited with `SIGTRAP` before any browser page or context opened. No gameplay assertion, screenshot, frame measurement, screen-reader session or physical-phone observation ran. The local preview was stopped. Native touch/rotation/text/AT and rendered release acceptance remain open.
 
 The tests above exercise changed behavior through existing public domain/controllers/listeners. They do not establish uncoached comprehension, fun, return play, popularity, Arabic support or physical-device performance. All seven cycles are new scenarios against the pinned main baseline; historical QA40 cases and pre-existing PR186 are not counted as this work.
+
+
+## Integration with current main — 8 October 2026
+
+PR190 head `49e0a67323d6bbadbe06cedb8ac0fdfd2fadd324` was reconciled with current main `d8eb374d81dd827118c74894195d56da6592836b`, whose only intervening change is PR188's offline dependency-retention fix. This is integration of the existing seven cycles, not another improvement batch. The PR had no conversation comments, review submissions or inline threads at the integration read.
+
+Only the append-only `DESIGN.md` and `TODO.md` sections conflicted; both original blocks were retained. All nineteen original PR production/test/QA-script blobs are unchanged. Current main's `public/sw.js`, `tests/service-worker.test.ts` and bug-audit document are also unchanged. The worker protects generated installation dependencies while the PR's UI modules remain in the ordinary emitted bundles; neither side changes progression, prices, save compatibility or the other's ownership rules.
+
+Verification on the combined source:
+
+- Refreshed-main worker/download baseline: **29 tests passed** and build passed.
+- Combined affected worker/controller/listener/cards/interface group: **235 tests passed**.
+- Required complete suite: **1,356 tests passed**, zero failures, cancellations or skips, **36.87 seconds**, using `node --experimental-strip-types --test --test-concurrency=2 tests/*.test.ts` with a writable `TMPDIR`.
+- Lint, build, QA-script syntax and diff checks passed. Production JavaScript is **488,910 gzip bytes** against the existing **512,000-byte** budget. The prior 1,354-test/488,889-byte results above remain the original PR-head evidence; these combined results supersede them for integration.
+- Inspection of the actual built HTML and service worker confirms that all **five emitted JavaScript/CSS bundles** are protected by the page or the **69-entry installation manifest**, including battlefield, Phaser and the audio worker. This supplements the root/nested worker regressions; it is not native offline-play evidence.
+
+No browser, workflow or deployment action was performed for this reconciliation. Required rendered/mobile/offline acceptance remains open, without a waiver or weakened gate. Remote PR-head publication and merge remain with the coordinating reviewer.
