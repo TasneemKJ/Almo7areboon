@@ -1,5 +1,7 @@
-import {physicalSkillCue} from './field-skill-guidance.ts';
-import {battleGuidance,foodIsPiling} from './battle-hud.ts';
+import {physicalFieldCue} from './field-skill-guidance.ts';
+import {fieldAnnouncement} from './field-announcement.ts';
+import {fieldCoverTarget} from './field-cover-target.ts';
+import {foodIsPiling} from './battle-hud.ts';
 import {releaseFieldContext} from './field-focus.ts';
 import type {Game} from '../game/simulation.ts';
 import type {Skill,UnitKind} from '../game/types.ts';
@@ -49,11 +51,11 @@ function syncGates(gates:readonly HTMLButtonElement[],arena:ReturnType<typeof ar
 /** Presentation ownership only. Every mutation still goes through main's guarded dispatch. */
 export function createFieldController(root:HTMLElement){
  const find=(id:string)=>root.querySelector<HTMLElement>(`#${id}`)!;
- const world=find('world'),context=find('field-context'),cue=find('field-cue');
+ const world=find('world'),context=find('field-context'),cue=find('field-cue'),announcement=find('field-guidance-status');
  const recruits=Array.from(root.querySelectorAll<HTMLButtonElement>('[data-field-recruit]'));
  const gates=Array.from(root.querySelectorAll<HTMLButtonElement>('[data-field-gate]'));
  const standard=find('field-standard') as HTMLButtonElement,supplies=find('field-supplies') as HTMLButtonElement,enemy=find('field-enemy') as HTMLButtonElement;
- let selected:number|'supplies'|null=null,contextKey='',origin:HTMLElement|null=null;
+ let selected:number|'supplies'|'cover'|null=null,contextKey='',origin:HTMLElement|null=null;
  const pause=root.querySelector<HTMLElement>('[data-command="field-pause"]')!;
  const place=placeBox;
  const clear=()=>{selected=null;releaseFieldContext(context,origin,pause);enemy.classList.remove('selected');};
@@ -62,7 +64,10 @@ export function createFieldController(root:HTMLElement){
   select(kind:string,game:Game){
    if(game.state.phase!=='running'||game.state.paused)return;
    if(kind==='supplies'){selected='supplies';origin=supplies;}
-   else if(kind==='enemy'){const id=Number(enemy.dataset.enemyId);if(game.state.units.some(u=>u.id===id&&u.side==='enemy'&&u.hp>0)){selected=id;origin=enemy;}}
+   else if(kind==='enemy'){
+    if(fieldCoverTarget(game)){selected='cover';origin=enemy;}
+    else {const id=Number(enemy.dataset.enemyId);if(game.state.units.some(u=>u.id===id&&u.side==='enemy'&&u.hp>0)){selected=id;origin=enemy;}}
+   }
    this.update(game);
   },
   update(game:Game){
@@ -78,22 +83,30 @@ export function createFieldController(root:HTMLElement){
    standard.setAttribute('aria-label',rally);textIfChanged(standard.querySelector<HTMLElement>('span')!,s.chronicle?.rally?'Release':'Gather');
    supplies.hidden=!running||s.stats.deployed===0;supplies.setAttribute('aria-label',skillCue(p,s,'food',game.canUseSkill('food')).label);
    const target=typeof selected==='number'?s.units.find(u=>u.id===selected&&u.side==='enemy'&&u.hp>0):s.units.find(u=>u.side==='enemy'&&u.hp>0);
-   enemy.hidden=!running||!target;
-   if(target){
-    const size=48,x=target.x*.45*arena.scale,y=(arena.groundY+target.lane*arena.laneGap)*arena.scale;
-    place(enemy,{x:Math.max(0,Math.min(w-size,x-size/2)),y:Math.max(0,Math.min(h-size,y-size)),width:size,height:size});enemy.dataset.enemyId=String(target.id);
+   const cover=target?null:fieldCoverTarget(game);
+   enemy.hidden=!running||(!target&&!cover);
+   if(target||cover){
+    const size=48,x=(target?.x??cover!.x)*.45*arena.scale,y=(arena.groundY+(target?target.lane*arena.laneGap:-8))*arena.scale;
+    place(enemy,{x:Math.max(0,Math.min(w-size,x-size/2)),y:Math.max(0,Math.min(h-size,y-size)),width:size,height:size});enemy.dataset.enemyId=target?String(target.id):'';
+    enemy.setAttribute('aria-label',cover?'Select road shelter for Meteor':'Select enemy for a tactical skill');
+    textIfChanged(enemy.querySelector<HTMLElement>('span')!,cover?'Select shelter':'Select enemy');
    }
-   if(!running||s.paused||(typeof selected==='number'&&!target)||(selected==='supplies'&&!game.canUseSkill('food'))||(typeof selected==='number'&&!game.canUseSkill('freeze')&&!game.canUseSkill('meteor')))clear();
-   const nextKey=selected===null?'':selected==='supplies'?'supplies':'enemy';
+   if(!running||s.paused||(typeof selected==='number'&&!target)||(selected==='cover'&&!cover)||(selected==='supplies'&&!game.canUseSkill('food'))||(typeof selected==='number'&&!game.canUseSkill('freeze')&&!game.canUseSkill('meteor')))clear();
+   const nextKey=selected===null?'':selected==='supplies'?'supplies':selected==='cover'?'cover':'enemy';
    if(nextKey!==contextKey){
     contextKey=nextKey;
-    context.innerHTML=nextKey==='enemy'?'<button data-skill="freeze">Freeze</button><button data-skill="meteor">Meteor</button>':nextKey==='supplies'?'<button data-skill="food">Use supplies</button><button data-command="field-dismiss">Back</button>':'';
+    context.innerHTML=nextKey==='enemy'?'<button data-skill="freeze">Freeze</button><button data-skill="meteor">Meteor</button>':nextKey==='cover'?'<button data-skill="meteor">Meteor</button><button data-command="field-dismiss">Back</button>':nextKey==='supplies'?'<button data-skill="food"></button><button data-command="field-dismiss">Back</button>':'';
    }
-   context.hidden=selected===null;enemy.classList.toggle('selected',typeof selected==='number');
-   context.querySelectorAll<HTMLButtonElement>('[data-skill]').forEach(button=>{const skill=button.dataset.skill as Skill;button.disabled=!game.canUseSkill(skill);button.setAttribute('aria-label',skillCue(p,s,skill,!button.disabled).label);});
-   const status=game.deploymentStatus(0),skillHint=physicalSkillCue(battleGuidance(p,s,game.waveStatus().preview,status));
-   const message=!running?'':s.stats.deployed===0?`Tap the waiting defender. ${ERAS[p.age].units[0].cost} food.`:skillHint?skillHint:status.reason==='food'?`The camp needs food. Ready in ${Math.ceil(status.waitSeconds)}s.`:p.wins===0&&s.stats.deployed<3?'Tap the defender again when their ground lights.':orders.canCast?'Momentum ready. Your gate holds; their gate advances.':'';
+   context.hidden=selected===null;enemy.classList.toggle('selected',typeof selected==='number'||selected==='cover');
+   context.querySelectorAll<HTMLButtonElement>('[data-skill]').forEach(button=>{
+    const skill=button.dataset.skill as Skill;button.disabled=!game.canUseSkill(skill);
+    const label=skillCue(p,s,skill,!button.disabled).label;button.setAttribute('aria-label',label);
+    if(skill==='food')textIfChanged(button,label.split(' · ')[0]);
+   });
+   const status=game.deploymentStatus(0),skillHint=physicalFieldCue(p,s,game.waveStatus().preview,status);
+   const message=!running?'':s.paused||skillHint.startsWith('Your base is in danger.')?skillHint:s.stats.deployed===0?`Tap the waiting defender. ${ERAS[p.age].units[0].cost} food.`:skillHint?skillHint:status.reason==='food'?`The camp needs food. Ready in ${Math.ceil(status.waitSeconds)}s.`:p.wins===0&&s.stats.deployed<3?'Tap the defender again when their ground lights.':orders.canCast?'Momentum ready. Your gate holds; their gate advances.':'';
    textIfChanged(cue,message);cue.hidden=!message;
+   textIfChanged(announcement,fieldAnnouncement(message));
   },
  };
 }

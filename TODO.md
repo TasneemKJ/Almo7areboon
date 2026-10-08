@@ -155,3 +155,18 @@ Advanced Camp leaves remain dense and unaccepted. This work does not claim all-s
 - [x] Preserve integer/monotonic weekly admission, mutation-free claims, reset/import ownership and no repeated rollback checks.
 - [x] Count a just-settled receipt when Monday begins between pre-step baseline and event drain; retain accepted-start-only synchronization.
 - [ ] Recheck exact reconciled source, native weekly ownership, required CI and unchanged main before the root merge decision.
+
+
+## Current review, cycles 22–28 — 2026-10-08
+
+IDEAL/5Ws and twenty alternatives per distinct scenario: `docs/audits/2026-10-08-field-reliability.md`. Checked against the current design and interaction rules; no overrides or economy changes.
+
+- [x] 22: Preserve canonical critical-gate guidance in the actual physical field.
+- [x] 23: Explain the available Food Drop route through physical Supplies during a wait.
+- [x] 24: Retain formation, incoming-wave and Chronicle objective guidance beyond opening.
+- [x] 25: Offer the existing Meteor command at intact road cover when no enemy exists.
+- [x] 26: Name the actual captain replacement on the visible support button.
+- [x] 27: Replace three card purchase buttons with native quantity/cost preview and one guarded Summon command, as approved in the existing future-cards task.
+- [x] 28: Keep countdowns visible while announcing only meaningful field instruction changes.
+- [x] Verify the exact batch with all source tests, lint, build and an independent source review; record the distinct red/green scenarios in the audit.
+- [ ] Native touch, rotation, enlarged text, screen-reader and screenshot acceptance: the existing mobile-touch script could not open a page because local Chromium exited with SIGTRAP. No visual or physical-device acceptance is claimed.

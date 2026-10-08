@@ -17,16 +17,27 @@ export function multiplier(value: number): string {
   return Number(fixed) < 1000 ? fixed : compactNumber(value);
 }
 
-export function cardsScreenHtml(profile: Profile): string {
+export type CardQuantity = 1|10|50;
+
+/** Read-only purchase preview. Settlement remains the canonical summon action. */
+export function cardPackPreview(profile:Profile,count:CardQuantity) {
+  const cost=cardPackCost(count);
+  const available=CARD_DEFS.reduce((sum,_,i)=>sum+Math.max(0,1000-profile.cards[i]),0);
+  return {text:`${count} ${count===1?'card':'cards'} · ${cost.toLocaleString('en-US')} gems`,
+    label:`Summon ${count} ${count===1?'card':'cards'} for ${cost} gems`,
+    disabled:profile.gems<cost||available<count||!availableSummonOdds(profile.summonCount,profile.cards).some(odds=>odds>0)};
+}
+
+export function cardsScreenHtml(profile: Profile, quantity:CardQuantity=1): string {
   const bonus = cardBonus(profile), summon = summonLevel(profile.summonCount);
   const odds = availableSummonOdds(profile.summonCount, profile.cards);
-  const available = CARD_DEFS.reduce((sum, card, i) => sum + Math.max(0, 1000 - profile.cards[i]), 0);
-  const canDraw = odds.some(odds => odds > 0);
+  const pack=cardPackPreview(profile,quantity);
   return `<div class="screen-heading"><span class="eyebrow">PERMANENT POWER</span><h2 id="secondary-title" tabindex="-1">Cards</h2><p>Your collection strengthens every battle.</p></div>
   <div class="bonus-strip"><span>${icon('battle')} Damage <b>×${multiplier(bonus.damage)}</b></span><span>${icon('heart')} Health <b>×${multiplier(bonus.health)}</b></span></div>
   <details class="collection-details"><summary>Food, base and coin bonuses</summary><p>Food ×${multiplier(bonus.food)} · Base ×${multiplier(bonus.base)} · Coins ×${multiplier(bonus.coins)}</p></details>
   <section class="summon-panel" aria-label="Summon cards"><h3>Summon level ${summon.level}</h3><p>${summon.required ? `${summon.progress} / ${summon.required} draws to the next level` : 'Maximum summon level'}</p>
-  <div class="pack-options">${([1,10,50] as const).map(count => `<button class="big-button blue" data-pack="${count}" ${profile.gems < cardPackCost(count) || available < count || !canDraw ? 'disabled' : ''} aria-label="Summon ${count} ${count === 1 ? 'card' : 'cards'} for ${cardPackCost(count)} gems"><span>${count} ${count === 1 ? 'card' : 'cards'}</span><small>${icon('gem')} ${cardPackCost(count).toLocaleString('en-US')}</small></button>`).join('')}</div>
+  <div class="card-pack-choice"><label for="card-quantity">Quantity</label><select id="card-quantity" data-card-quantity aria-describedby="card-pack-preview">${([1,10,50] as const).map(count=>`<option value="${count}"${count===quantity?' selected':''}>${count} ${count===1?'card':'cards'}</option>`).join('')}</select></div>
+  <p id="card-pack-preview" class="card-pack-preview">${pack.text}</p><button id="card-summon" class="big-button blue card-summon" data-pack="${quantity}" ${pack.disabled?'disabled':''} aria-label="${pack.label}">Summon</button>
   <details class="collection-details"><summary>Current draw odds</summary><p>${['Common','Rare','Epic','Legendary'].map((rarity,i)=>`${rarity} ${Number(odds[i].toFixed(2))}%`).join(' · ')}</p><p>Odds improve as you summon. Full cards are excluded. No real-money purchases.</p></details></section>
   <p class="collection-summary">${profile.cards.filter(count=>count>0).length} / ${CARD_DEFS.length} discovered · All bonuses apply automatically.</p>
   <div class="collection-grid">${CARD_DEFS.map((card,i)=>{
