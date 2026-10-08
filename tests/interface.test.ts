@@ -75,7 +75,7 @@ test('P28: guidance explains first deployment, pause, danger and waiting for foo
 test('P31: results show durable statistics and do not imply a second reward claim',async()=>{
  const path='../src/ui/results-screen.ts';const screen=await import(path).catch(()=>null);assert.ok(screen,'results screen must exist');
  const g=new Game();g.dispatch({type:'start'});g.dispatch({type:'spawn',kind:0});g.state.enemyHp=0;g.step(1/60);
- const html=screen.resultsHtml(g.profile,g.state);assert.match(html,/Already added/);assert.match(html,/Warriors deployed/);assert.match(html,/Food spent/);assert.match(html,/10 gems/);
+ const html=screen.resultsHtml(g.profile,g.state);assert.match(html,/Already added/);assert.match(html,/Warriors deployed/);assert.match(html,/Food spent/);const receipt=g.profile.pendingVictory;assert.ok(receipt?.settlement==='mastery-v1');assert.match(html,new RegExp(`${receipt.masteryGems} gems`));assert.doesNotMatch(html,/victory bonus: up to 10 gems/);
  const h=new Game(g.profile);assert.equal(screen.resultsHtml(h.profile,h.state),html);
 });
 test('P33: reduced-motion policy applies to renderer, not only CSS transitions',async()=>{

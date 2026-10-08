@@ -131,7 +131,9 @@ export function installListeners(deps: ListenersDeps): void {
     if(button.dataset.pack!==undefined){
       if(ports.navState.activeTab!=='cards'||ports.navState.modal||!button.closest('#secondary-screen')||button.dataset.pack!==String(ports.navState.cardQuantity))return true;
       const before=[...ports.sessionState.game.profile.cards],count=Number(button.dataset.pack) as 1|10|50;
-      if(ports.action({type:'summon',count})&&ports.playable())ports.showModal('summon',summonedCardsHtml(before,ports.sessionState.game.profile));
+      const accepted=ports.action({type:'summon',count});
+      if(!ports.playable()||(ports.navState.modal as string|null)==='session')return true;
+      if(accepted)ports.showModal('summon',summonedCardsHtml(before,ports.sessionState.game.profile));
       else ports.toast('This pack is unavailable. Your gems were not spent.');return true;
     }
     return false;

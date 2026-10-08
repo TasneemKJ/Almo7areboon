@@ -51,7 +51,7 @@ export interface SessionState {
 export interface LifecycleDeps {
   initialGame: Game;
   dom: Pick<Runtime, '$' | 'coin' | 'fieldControls' | 'isolateModal' | 'lifetime' | 'money' | 'motionQuery' | 'root' | 'updateArmy' | 'automated' | 'clearTimer' | 'downloadText' | 'hidden' | 'now' | 'query' | 'rootElement' | 'setTimer' | 'locks' | 'storage'>;
-  ports: Pick<ShellApi, 'clearPrestigeContext' | 'closeModal' | 'navState' | 'questSaveNotice' | 'questState' | 'refreshQuestRecord' | 'renderScreen' | 'showModal' | 'showResult' | 'switchTab' | 'syncCamp' | 'syncEntry' | 'syncWeek'>;
+  ports: Pick<ShellApi, 'clearPrestigeContext' | 'closeModal' | 'navState' | 'preferenceNotice' | 'questSaveNotice' | 'questState' | 'refreshQuestRecord' | 'renderScreen' | 'showModal' | 'showResult' | 'switchTab' | 'syncCamp' | 'syncEntry' | 'syncWeek'>;
 }
 
 export function createLifecycle(deps: LifecycleDeps) {
@@ -130,6 +130,10 @@ export function createLifecycle(deps: LifecycleDeps) {
     const result=sessionState.session.save({...sessionState.game.profile,lastSeen:Math.floor(Date.now()/60000)*60000}),ok=result.ok;sessionState.lastSave=dom.now();
     if(result.reason==='write-failed'&&!sessionState.savedWarning){sessionState.savedWarning=true;toast('Progress could not be saved. Export a backup from Settings before closing this tab.');}
     if(ok){sessionState.savedWarning=false;sessionState.lastSavedAt=Date.now();}
+    if(playable()&&(ports.navState.modal==='settings'||ports.navState.modal==='save-recovery')){
+      const notice=$(ports.navState.modal==='settings'?'preference-status':'recovery-status');
+      if(notice)textIfChanged(notice,ports.preferenceNotice());
+    }
     return ok;
   }
   function syncPause(){
