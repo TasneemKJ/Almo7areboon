@@ -43,7 +43,7 @@ export function createBattlefieldEffects(host:EffectsHost,layers:{fx:Phaser.Game
    ring(x,y,targetSide==='player'?0x8fe7f0:0xffbb8b,heavy?29:18);
    flare(x,y,heavy?34:22,targetSide==='player'?0x7fdcff:0xffa060,heavy?.34:.24);
    if(amount>0)floatText(x,y-17,compactNumber(amount),'#fff1c8',false,heavy);
-   if(heavy&&!host.reduce())host.scene.cameras.main.shake(55,.0012);
+   if(heavy)answers.cameraKick(55,.0012,1);
   }
  function impact(x:number,y:number,amount:number,age:number,kind:Unit['kind'],side:Side,heavy=kind===2):void {
    cues.pushImpactCue({x,y,age,kind,side,life:heavy?.3:.24,max:heavy?.3:.24});

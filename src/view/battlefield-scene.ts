@@ -228,13 +228,13 @@ class Battlefield extends Phaser.Scene {
     // A heavy falling is the loudest thing on the field: wider dust, a second ring and a short low shake (none when reduced).
     this.effects.emit(x,y-10,18,e.side==='player'?0x82cce8:0xe6b388,true,.7,e.lane??1);this.effects.emit(x,y-16,8,0xf4e6c2,false,.45,e.lane??1);
     this.effects.flare(x,y-14,34,e.side==='player'?0x5ccfff:0xff8a50,.38);this.effects.ring(x,y-6,e.side==='player'?0x82cce8:0xf0c08a,30);
-    if(!this.reduce)this.cameras.main.shake(70,.0016);
+    this.effects.cameraKick(70,.0016,2);
     return;
    }
    if(e.type==='death'){this.effects.emit(x,y-12,9,e.side==='player'?0x82cce8:0xe6b388,true,.52,e.lane??1);this.effects.flare(x,y-14,18,e.side==='player'?0x5ccfff:0xff8a50,.3);}
    if(e.type==='coin'&&e.amount){this.marks.recordCoin(e,this.effects.floatText(x,y-51,`+${compactNumber(e.amount)}`,'#ffdf7f'));}
    if(e.type==='win'&&game.state.chronicle&&['escort','hold','rescue'].includes(game.state.chronicle.objective)){this.effects.floatText(225,this.layout.groundY-70,'THE COMPANY RETURNS','#e5d4ad',true);this.effects.ring(110,this.layout.groundY-12,0xd5bd89,24);return;}
-   if(e.type==='win'){this.effects.emit(408,this.layout.groundY-27,40,0xffd373,false,1.25);this.effects.flare(411,this.layout.groundY-30,120,0xffd27a,1.1);if(!this.reduce){this.cameras.main.shake(100,.0015);this.cameras.main.flash(260,255,226,170);}}
+   if(e.type==='win'){this.effects.emit(408,this.layout.groundY-27,40,0xffd373,false,1.25);this.effects.flare(411,this.layout.groundY-30,120,0xffd27a,1.1);if(!this.reduce){this.effects.cameraKick(100,.0015,4);this.cameras.main.flash(260,255,226,170);}}
    if(e.type==='lose')this.effects.emit(39,this.layout.groundY-10,20,0xb6a484,true,.8);
    if(e.type==='evolve')this.effects.ring(225,this.layout.groundY,0xd2f9d8,200);
    if(e.type==='skill'){
@@ -248,7 +248,7 @@ class Battlefield extends Phaser.Scene {
      const targets=[...this.army.units.values()].filter(v=>v.side==='enemy').slice(0,6);
      if(this.reduce){this.effects.floatText(225,this.layout.groundY-85,'METEOR','#ffd6a5',true);for(const v of targets){this.effects.meteorLanding(v.x,v.y-15);this.marks.remember({kind:'meteor',x:v.x,lane:v.lane,side:'player'});}return;}
      for(const v of targets.length?targets:[{x:310,y:this.layout.groundY,lane:1}]){const memory:BattlefieldMemoryInput={kind:'meteor',x:v.x,lane:v.lane,side:'player'};this.effects.pushBolt({from:{x:v.x-70,y:v.y-150},to:{x:v.x,y:v.y-15},life:.4,max:.4,arc:0,age:0,kind:2,side:'player',heavy:true,damage:0,meteor:true,memory:targets.length?memory:undefined},false);}
-     this.cameras.main.shake(180,.0025);this.cameras.main.flash(180,255,190,120);
+     this.effects.cameraKick(180,.0025,3);this.cameras.main.flash(180,255,190,120);
     }
    }
   }
