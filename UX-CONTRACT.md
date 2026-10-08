@@ -95,3 +95,9 @@ Teaching cues are single lines in the deploy hint, never panels. In the first-ev
 Defeat names the troop role that dealt the most damage. Settings offers "Troop shapes" (circle melee, triangle ranged, square heavy; filled yours, outlined enemy; off by default) and ends with "Last saved HH:MM" (memory only; opening Settings saves once). A returning player (at least one win, six hours or more away) sees the welcome-back line in the existing Home subtitle; it grants nothing and adds no toast. The daily streak survives one missed day, at most once every seven days, and the Quests row says so before claiming.
 
 Heavy troops fall louder (wider dust, second ring, short low shake) and a heavy blow on a unit freezes the scene for about 50 ms at most twice a second; neither shake nor freeze happens with reduced motion. A battle that starts in a new week opens that week's goal first.
+
+## Physical field correction contract — 8 October 2026
+
+An unbroken cover which canonical Meteor can affect is reachable by a native44px physical target without requiring a living enemy. Its context offers only the relevant Meteor action. Gate danger retains canonical priority in the field cue; authored Chronicle objective progress reaches that same visible cue. Supplies selection names the actual available Food Drop/captain ability. Regroup keeps three choices and shows the existing state-supported next-attempt advice.
+
+The visible cue and its stable spoken instruction are separate DOM nodes: numeric visual progress does not trigger repeated polite announcements. Urgent instructions and a genuinely different action still announce. Every mutation remains behind the existing guarded dispatch, and a pause or completed battle clears tactical contexts.

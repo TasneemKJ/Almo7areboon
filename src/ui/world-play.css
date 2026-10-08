@@ -18,6 +18,9 @@
 .world-hit:focus-visible .world-target-name,.world-hit:hover .world-target-name{opacity:1}
 .gate-hit.order-ready{box-shadow:0 0 0 2px #eac16a88,0 0 16px #f1c57344}
 .enemy-hit.selected{box-shadow:0 0 0 2px #efc767}
+.cover-hit{border-radius:8px;box-shadow:inset 0 0 0 1px #efc76788}
+.cover-hit.selected{box-shadow:0 0 0 2px #efc767}
+.cover-hit .world-target-name{opacity:1}
 .field-chrome{position:absolute;right:max(12px,env(safe-area-inset-right));top:max(12px,env(safe-area-inset-top));z-index:8;display:flex;align-items:flex-start;gap:8px}
 .field-chrome button{min-width:44px;min-height:44px;border:1px solid #d8bd7f88;border-radius:12px;background:#16352ee6;color:#fff0c9;font:inherit;font-size:13px;padding:8px 12px}
 .field-chrome button:focus-visible{outline:3px solid #fff0c9;outline-offset:3px}

@@ -155,3 +155,18 @@ Advanced Camp leaves remain dense and unaccepted. This work does not claim all-s
 - [x] Preserve integer/monotonic weekly admission, mutation-free claims, reset/import ownership and no repeated rollback checks.
 - [x] Count a just-settled receipt when Monday begins between pre-step baseline and event drain; retain accepted-start-only synchronization.
 - [ ] Recheck exact reconciled source, native weekly ownership, required CI and unchanged main before the root merge decision.
+
+## Portfolio field audit — 2026-10-08
+
+IDEAL / 5Ws and twenty candidates for each bounded iteration: `docs/audits/2026-10-08-portfolio-repair.md`. No design rule override; source-only findings are not deployed-play evidence.
+
+- [x] AM1: expose canonical Meteor cover breaking through the painted cover target.
+- [x] AM2: retain canonical gate-danger instruction in the physical field cue.
+- [x] AM3: carry canonical Chronicle mission guidance into the existing field cue.
+- [x] AM4: name the actual support ability at the supplies choice and teach that target.
+- [x] AM5: add supported next-attempt advice to compact Regroup while retaining three choices.
+- [x] AM6: separate changing visual progress from stable spoken instructions.
+- [x] Verify source regressions, broad tests and typecheck; record exact verification in the audit.
+- [ ] Exact-source native browser/touch/AT/visual acceptance remains open; local Chromium cannot launch.
+
+- [x] AM7: require owned, strict/configurable preview and fixture startup; prove foreign-server rejection before browser launch.
