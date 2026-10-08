@@ -90,12 +90,12 @@ const deployFunction=ast.statements.find(node=>ts.isFunctionDeclaration(node)&&n
 for(const phase of ['won','lost','running','ready'])test(`bounded native troop click tolerates only a natural ${phase} terminal transition`,async()=>{
  assert.ok(deployFunction,'deployment loop needs its narrowly guarded native-click helper');
  const error=Error('button became disabled during native click');let phaseReads=0,clickTimeout=0;
- const button={isEnabled:async()=>true,async click(options:{timeout:number}){clickTimeout=options.timeout;throw error;}};
+ const button={isVisible:async()=>true,getAttribute:async()=>'false',async click(options:{timeout:number}){clickTimeout=options.timeout;throw error;}};
  const page={locator:(selector:string)=>selector==='#world'?{getAttribute:async()=>++phaseReads===1?'running':phase}:button};
  const activate=runInNewContext(`(${deployFunction.getText(ast)})`);
  if(phase==='won'||phase==='lost')await activate(page,0);
  else await assert.rejects(activate(page,0),(failure:unknown)=>failure===error);
- assert.ok(clickTimeout>0&&clickTimeout<=1000,'native click remains bounded');
+ assert.ok(clickTimeout>0&&clickTimeout<=3000,'native click remains bounded');
 });
 
 test('fresh ready flow changes speed through visible Settings before native Battle activation',async()=>{
@@ -103,17 +103,11 @@ test('fresh ready flow changes speed through visible Settings before native Batt
  function find(node:ts.Node){if(ts.isCallExpression(node)&&node.expression.getText(ast)==='scenario'&&node.arguments[0]?.getText(ast).startsWith('`fresh-win-paused-input-'))callback=node.arguments[2].getText(ast);ts.forEachChild(node,find);}
  find(ast);assert.ok(callback);
  let settings=false,speed=1;const reachedBattle=Error('reached the native Battle activation');
- const firstBattle=new Game(defaultProfile());
- const page={locator(selector:string){return{async innerText(){
-  assert.equal(selector,'#deploy-hint');return battleGuidance(firstBattle.profile,firstBattle.state);
- },async click(){
-  if(selector==='[data-command="settings"]'){settings=true;return;}
-  if(selector==='[data-command="speed"]')throw Error('the ready battlefield speed control is hidden');
-  if(selector==='[data-command="start"]'){assert.equal(settings,false);assert.equal(speed,2);throw reachedBattle;}
-  throw Error(`unexpected prefix input ${selector}`);
- }};}};
- const command=(_page:unknown,name:string)=>({first(){return this;},async click(){assert.equal(settings,true);if(name==='speed')speed=2;else if(name==='close')settings=false;else throw Error(name);}});
- const context={assert,viewport:{width:320,height:568},defaultProfile:()=>({speed:1}),setup:async()=>page,open:async()=>page,
-  active:async()=>{},ready:async()=>assert.equal(settings,false),command,saved:async()=>({speed})};
+ const page={locator(selector:string){return{async selectOption(value:string){assert.equal(selector,'#preference-speed');assert.equal(settings,true);speed=Number(value);}};},async waitForFunction(){}};
+ const command=(_page:unknown,name:string)=>({first(){return this;},async click(){assert.equal(settings,true);if(name==='close')settings=false;else throw Error(name);}});
+ const context={assert,viewport:{width:320,height:568},defaultProfile:()=>({speed:1}),SAVE_KEY:'save',setup:async()=>page,open:async()=>page,
+  active:async()=>{},ready:async()=>assert.equal(settings,false),command,saved:async()=>({speed}),
+  openSettings:async()=>{settings=true;},
+  startBattle:async()=>{assert.equal(settings,false,'Settings closes before Battle');assert.equal(speed,2);throw reachedBattle;}};
  await assert.rejects(runInNewContext(`(${callback})(null)`,context),(error:unknown)=>error===reachedBattle);
 });

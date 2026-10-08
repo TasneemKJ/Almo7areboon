@@ -62,7 +62,8 @@ for (const trigger of ['preference', 'focus']) test(`${trigger} fault reaches it
     if (!conflict && storage.get(primary) !== JSON.stringify(profile)) { conflict = true; settings = false; detectedBy = origin; }
     return !conflict;
   };
-  const button = { click() { if (check('preference')) profile.speed = 2; } };
+  // The speed preference is a select: the scenario sets its value and dispatches the change the handler listens for.
+  const button = { value: '1', dispatchEvent() { if (check('preference')) profile.speed = 2; } };
   const browser = {
     localStorage: { getItem: (key: string) => storage.get(key) ?? null, setItem: (key: string, value: string) => storage.set(key, value) },
     document: { querySelector: () => settings ? button : null },
@@ -86,7 +87,7 @@ for (const trigger of ['preference', 'focus']) test(`${trigger} fault reaches it
     },
   };
   const context = {
-    trigger, primary, backup, assert, setup: async () => page, open: async () => page, active: async () => {},
+    trigger, primary, backup, assert, setup: async () => page, open: async () => page, active: async () => {}, openSettings: async () => { settings = true; },
     fixture: (overrides: object) => ({ ...profile, ...overrides }),
     bytes: async () => [storage.get(primary), storage.get(backup)],
     blocked: async () => assert.equal(conflict, true), exported: async () => ({ ...profile }),
