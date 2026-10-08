@@ -8,6 +8,7 @@ import {unitPortrait} from '../view/unit-illustrations.ts';
 import {chapterLandscape,chapterPresentation,unitPresentationName} from './chapter-presentation.ts';
 import {TROOP_SPECIALTIES} from './army-screen.ts';
 import type {CampFocus,CampStation} from './camp-owner.ts';
+import {nextGoalLabel} from './next-goal.ts';
 const number=(n:number)=>Math.floor(n).toLocaleString('en-US');
 const escape=(text:string)=>text.replace(/[&<>"']/g,char=>({'&':'&amp;','<':'&lt;','>':'&gt;','"':'&quot;',"'":'&#39;'}[char]!));
 const heading=(title:string,notice:string)=>`<h2 id="dialog-title">${title}</h2><p id="camp-focus-save-status" class="camp-saving-note" role="status" aria-live="polite" ${notice?'':'hidden'}>${escape(notice)}</p>`;
@@ -19,10 +20,16 @@ function companyArt(p:Readonly<Profile>):string {
  return ([0,1,2] as const).map(kind=>`<img class="camp-person ${p.unlocked[kind]?'joined':'visiting'}" src="${unitPortrait(p.age,kind)}" alt=""/>`).join('');
 }
 /** Pure reading only. No transient Camp presentation is part of a saved profile. */
-export function campRootHtml(p:Readonly<Profile>):string {
+/** The next journal goal as read-only heading text: Camp keeps Battle/Home as its only root controls. */
+export function campGoalText(p:Readonly<Profile>,day:number):string {
+ const goal=nextGoalLabel(p,day);
+ return goal.text==='Your journey'?'':`Next goal: ${goal.text} · see the Journal`;
+}
+export function campRootHtml(p:Readonly<Profile>,day?:number):string {
  const chapter=chapterPresentation(p.age),destination=chapterPresentation(p.enemyAge),route=p.chronicle?.enabled?routeDefinition(p.chronicle.route).name:'';
+ const goal=day===undefined?'':campGoalText(p,day);
  const place=(id:CampStation,name:string,art:string,detail:string)=>`<button class="camp-place camp-place-${id}" data-camp-station="${id}" aria-label="${name}. ${detail}"><span class="camp-place-art" aria-hidden="true">${art}</span><span class="camp-place-name">${name}</span></button>`;
- return `<div class="camp-scene"><div class="camp-ground"><img class="camp-landscape" src="${chapterLandscape(p.age)}" alt=""/><header class="camp-heading"><p class="eyebrow">THE COMPANY AT REST</p><h1>${chapter.title}</h1><p>Destination: ${destination.title}${route?` · ${route}`:''}</p></header><div class="camp-places" aria-label="Places in Camp">${place('storehouse','Storehouse',storehouseIllustration(p.foodLevel),'Improve food or pack bread')}${place('gate','Home gate',`<img src="${campGateImage(p.age)}" alt=""/>${p.baseLevel?'<i class="camp-gate-brace"></i>':''}`,'Strengthen the gate or prepare repairs')}${place('company','Your company',companyArt(p),'Meet your troops and prepare your company')}${place('journal','Journal',journalIllustration(),'Choose a battle or read company records')}</div></div></div><footer class="camp-footer"><p>Battle starts when you choose Battle.</p><div><button class="big-button green" data-command="camp-battle">Battle</button><button class="big-button secondary" data-command="camp-home">Home</button></div></footer>`;
+ return `<div class="camp-scene"><div class="camp-ground"><img class="camp-landscape" src="${chapterLandscape(p.age)}" alt=""/><header class="camp-heading"><p class="eyebrow">THE COMPANY AT REST</p><h1>${chapter.title}</h1><p>Destination: ${destination.title}${route?` · ${route}`:''}</p>${goal?`<p class="camp-goal">${escape(goal)}</p>`:''}</header><div class="camp-places" aria-label="Places in Camp">${place('storehouse','Storehouse',storehouseIllustration(p.foodLevel),'Improve food or pack bread')}${place('gate','Home gate',`<img src="${campGateImage(p.age)}" alt=""/>${p.baseLevel?'<i class="camp-gate-brace"></i>':''}`,'Strengthen the gate or prepare repairs')}${place('company','Your company',companyArt(p),'Meet your troops and prepare your company')}${place('journal','Journal',journalIllustration(),'Choose a battle or read company records')}</div></div></div><footer class="camp-footer"><p>Battle starts when you choose Battle.</p><div><button class="big-button green" data-command="camp-battle">Battle</button><button class="big-button secondary" data-command="camp-home">Home</button></div></footer>`;
 }
 function preparationHtml(p:Readonly<Profile>,focus:'storehouse'|'gate'):string {
  const c=p.chronicle,preparation=focus==='storehouse'?'bread':'repair';

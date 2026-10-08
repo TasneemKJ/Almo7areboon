@@ -5,7 +5,8 @@ import type { Profile, LegacyChoice } from '../game/types.ts';
 
 
 import { type CampOwner } from '../ui/camp-owner.ts';
-import {campRootHtml,campFocusHtml} from '../ui/camp-screen.ts';
+import {campRootHtml,campFocusHtml,campGoalText} from '../ui/camp-screen.ts';
+import { localDay } from '../game/data.ts';
 import { canOwnCamp, isCampStation, campActionFromData, type CampFocus } from '../ui/camp-owner.ts';
 import { type StoryFollowUp } from '../ui/story-flow.ts';
 import { journeyScreenHtml } from '../ui/journey-screen.ts';
@@ -209,8 +210,8 @@ export function createNavigation(deps: NavigationDeps) {
     if(!visible){navState.campOwner=null;$('camp-view').hidden=true;if(!canOwnCamp(ports.sessionState.game.profile,ports.sessionState.game.state))root!.dataset.fieldMode='field';return;}
     navState.campOwner??={kind:'root'};
     if(navState.campOwner.kind==='advanced'&&!navState.modal&&navState.activeTab==='battle')navState.campOwner={kind:'root'};
-    const p=ports.sessionState.game.profile,key=JSON.stringify([p.age,p.enemyAge,p.foodLevel,p.baseLevel,p.unlocked,p.chronicle?.route]);
-    if(key!==navState.campRenderKey){navState.campRenderKey=key;htmlIfChanged($('camp-view'),campRootHtml(p));}
+    const p=ports.sessionState.game.profile,day=localDay(),key=JSON.stringify([p.age,p.enemyAge,p.foodLevel,p.baseLevel,p.unlocked,p.chronicle?.route,campGoalText(p,day)]);
+    if(key!==navState.campRenderKey){navState.campRenderKey=key;htmlIfChanged($('camp-view'),campRootHtml(p,day));}
     $('camp-view').hidden=navState.activeTab!=='battle';$('camp-view').inert=navState.modal!==null||navState.activeTab!=='battle';
     $('battle-view').inert=true;
     root!.querySelectorAll<HTMLElement>('.resources,.bottom-nav').forEach(node=>{node.inert=true;});

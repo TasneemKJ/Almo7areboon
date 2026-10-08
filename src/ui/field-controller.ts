@@ -10,6 +10,7 @@ import {troopControlLabel} from './army-screen.ts';
 import {orderStatus} from './battle-orders.ts';
 import {skillCue} from './skill-cues.ts';
 import {textIfChanged} from './dom-state.ts';
+import {fieldFoodReadout} from './field-controls.ts';
 
 const placeBox=(node:HTMLElement,rect:CampTarget|{x:number;y:number;width:number;height:number})=>{
   const value=`left:${rect.x}px;top:${rect.y}px;width:${rect.width}px;height:${rect.height}px`;
@@ -49,7 +50,7 @@ function syncGates(gates:readonly HTMLButtonElement[],arena:ReturnType<typeof ar
 /** Presentation ownership only. Every mutation still goes through main's guarded dispatch. */
 export function createFieldController(root:HTMLElement){
  const find=(id:string)=>root.querySelector<HTMLElement>(`#${id}`)!;
- const world=find('world'),context=find('field-context'),cue=find('field-cue');
+ const world=find('world'),context=find('field-context'),cue=find('field-cue'),food=find('field-food');
  const recruits=Array.from(root.querySelectorAll<HTMLButtonElement>('[data-field-recruit]'));
  const gates=Array.from(root.querySelectorAll<HTMLButtonElement>('[data-field-gate]'));
  const standard=find('field-standard') as HTMLButtonElement,supplies=find('field-supplies') as HTMLButtonElement,enemy=find('field-enemy') as HTMLButtonElement;
@@ -94,6 +95,8 @@ export function createFieldController(root:HTMLElement){
    const status=game.deploymentStatus(0),skillHint=physicalSkillCue(battleGuidance(p,s,game.waveStatus().preview,status));
    const message=!running?'':s.stats.deployed===0?`Tap the waiting defender. ${ERAS[p.age].units[0].cost} food.`:skillHint?skillHint:status.reason==='food'?`The camp needs food. Ready in ${Math.ceil(status.waitSeconds)}s.`:p.wins===0&&s.stats.deployed<3?'Tap the defender again when their ground lights.':orders.canCast?'Momentum ready. Your gate holds; their gate advances.':'';
    textIfChanged(cue,message);cue.hidden=!message;
+   const readout=fieldFoodReadout(s.food);food.hidden=!running;textIfChanged(food.querySelector<HTMLElement>('span')!,readout.text);
+   if(food.getAttribute('aria-label')!==readout.label)food.setAttribute('aria-label',readout.label);food.classList.toggle('full',readout.full);
   },
  };
 }

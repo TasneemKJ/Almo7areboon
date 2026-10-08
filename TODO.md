@@ -155,3 +155,11 @@ Advanced Camp leaves remain dense and unaccepted. This work does not claim all-s
 - [x] Preserve integer/monotonic weekly admission, mutation-free claims, reset/import ownership and no repeated rollback checks.
 - [x] Count a just-settled receipt when Monday begins between pre-step baseline and event drain; retain accepted-start-only synchronization.
 - [ ] Recheck exact reconciled source, native weekly ownership, required CI and unchanged main before the root merge decision.
+
+## World-first mobile pass (8 October 2026)
+- [x] Bring the review:* browser journeys up to date with the world-first shell (shared launcher, 47xx ports, real routes).
+- [x] Field food readout at the top-left edge; Camp next-goal line; place-name plates; full-height Camp pages; no sideways dialog pan.
+- [x] Preferences through Game.dispatch; architecture test forbids shell writes to game state.
+- [ ] Retire the hidden legacy battle HUD (resources, ready panel, deployment cards, upgrades, bottom navigation, battle skills): it still renders invisibly and several state probes read it.
+- [ ] Investigate the first-frame stall when a battle starts (7-12 s in headless software GL at 2x density, all in WebGL ReadPixels during commit); check on real phones before acting.
+- [ ] Evolution's evolve action sits below six era cards at 390x844; consider surfacing it near the top.

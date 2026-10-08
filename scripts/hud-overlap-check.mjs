@@ -13,7 +13,7 @@
 import {launchChromium, enterCamp, goHome, openQuests, openSettings} from './lib/browser.mjs';
 
 const url = process.argv[2] ?? 'http://127.0.0.1:4173/';
-const FIELD = ['#age-title', '#field-cue', '.field-chrome button', '[data-field-recruit]', '[data-field-gate]', '#field-standard', '#field-supplies'];
+const FIELD = ['#age-title', '#field-food', '#field-cue', '.field-chrome button', '[data-field-recruit]', '[data-field-gate]', '#field-standard', '#field-supplies'];
 const CAMP = ['.camp-heading', '.camp-place', '.camp-footer button'];
 const sizes = [[320, 568], [360, 640], [375, 667], [390, 844], [412, 915], [768, 1024]];
 const save = {version: 2, timeline: 1, age: 0, enemyAge: 0, furthestBattle: 0, coins: 123456, gems: 100000, foodLevel: 0, baseLevel: 0, unlocked: [true, true, true], cards: Array(30).fill(0), summonCount: 0, summonSeed: 99, pendingVictory: null, kills: 0, wins: 1, deployed: 3, claimed: [], dailyDay: 0, dailyStreak: 0, sound: false, speed: 1, motion: 'system', played: true};
