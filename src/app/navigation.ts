@@ -20,7 +20,7 @@ import { entryCopy, hasPriorPlay, entrySecondary } from '../ui/entry-screen.ts';
 import { preferencesHtml, saveRecoveryHtml } from '../ui/preferences-screen.ts';
 import { evolutionScreenHtml } from '../ui/evolution-screen.ts';
 import { icon } from '../view/icons.ts';
-import { cardsScreenHtml } from '../ui/cards-screen.ts';
+import { cardsScreenHtml, type CardQuantity } from '../ui/cards-screen.ts';
 import { compactResultsHtml, resultsHtml } from '../ui/results-screen.ts';
 import { startCountUp } from '../ui/count-up.ts';
 import { legacyCurrentHtml, prestigeDetailsHtml, prestigeDialogHtml } from '../ui/prestige-presentation.ts';
@@ -34,6 +34,7 @@ import type { ShellApi } from './shell.ts';
 /** State owned by the navigation module. Siblings see only the slice it exposes through its ports. */
 export interface NavState {
   activeTab: string;
+  cardQuantity: CardQuantity;
   modal: string|null;
   modalVersion: number;
   focusBefore: HTMLElement|null;
@@ -63,6 +64,7 @@ export function createNavigation(deps: NavigationDeps) {
   const { $, fieldControls, isolateModal, lifetime, root } = deps.dom;
   const navState: NavState = {
     activeTab: 'battle',
+    cardQuantity: 1,
     modal: null,
     modalVersion: 0,
     focusBefore: null,
@@ -128,7 +130,7 @@ export function createNavigation(deps: NavigationDeps) {
       }
       html=evolutionScreenHtml(p,ports.sessionState.game.state);
     }else if(navState.activeTab==='cards'){
-      html=cardsScreenHtml(p);
+      html=cardsScreenHtml(p,navState.cardQuantity);
     }else if(navState.activeTab==='skills'){
       const captain=p.chronicle?.enabled&&p.chronicle.captain!=='none'?CAPTAINS.find(c=>c.id===p.chronicle!.captain):undefined;
       html=`<div class="screen-heading"><span class="eyebrow">TURN THE TIDE</span><h2 id="secondary-title" tabindex="-1">Battle skills</h2><p>The right move can change everything.</p></div><div class="skill-list">${[{id:'freeze',name:'Freeze',tag:'CONTROL',copy:`Freeze every enemy for ${legacyEffects(p.legacy).freezeSeconds} seconds. Give your army time to strike.`,color:'#73bbdb'},{id:'meteor',name:'Meteor',tag:'DAMAGE',copy:'Hit every enemy on the battlefield. Best saved for a big wave.',color:'#de805d'},{id:'food',name:captain?.skill??'Food Drop',tag:captain?'CAPTAIN':'SUPPORT',copy:captain?.description??'Gain up to 10 food instantly, limited by 99-food storage. Deploy reinforcements when you need them.',color:'#97bc6a'}].map(s=>`<article class="skill-detail"><div class="skill-art" style="background:${s.color}">${icon(s.id)}</div><div><small>${s.tag}</small><h3>${s.name}</h3><p>${s.copy}</p><span class="skill-rule">ONCE PER BATTLE</span></div></article>`).join('')}</div><div class="skill-note">${icon('battle')}<p>Select an enemy in battle for Freeze or Meteor. Inspect the supplies after deploying a troop for your support skill. Each skill refreshes when a new battle begins.</p></div><button class="big-button green" data-tab="battle">BACK TO BATTLE ${icon('arrow')}</button>`;
@@ -364,5 +366,5 @@ export function createNavigation(deps: NavigationDeps) {
     };
     screens[kind]();
   }
-  return { entryReady, syncEntry, enterWorld, switchTab, renderScreen, showModal, closeModal, showResult, showResultDetails, showHome, enterCamp, syncCamp, showCampFocus, returnToCamp, handleCampInput, showFieldPause, showLeaveBattle, leaveBattle, continueWithProvision, clearPrestigeContext, openPrestige, refreshPrestige, returnFromPrestige, returnToChapters, dismissModal, preferenceNotice, showSettings, showSaveRecovery, showStoryFollowUp, navState: navState as Pick<NavState, 'activeTab' | 'campOwner' | 'entryEntered' | 'entrySaved' | 'entryWelcome' | 'evolutionFromResult' | 'focusFrame' | 'modal' | 'modalVersion' | 'pendingImport' | 'prestigeDraft' | 'prestigeExpectedTimeline' | 'prestigeOrigin' | 'settingsOrigin'> };
+  return { entryReady, syncEntry, enterWorld, switchTab, renderScreen, showModal, closeModal, showResult, showResultDetails, showHome, enterCamp, syncCamp, showCampFocus, returnToCamp, handleCampInput, showFieldPause, showLeaveBattle, leaveBattle, continueWithProvision, clearPrestigeContext, openPrestige, refreshPrestige, returnFromPrestige, returnToChapters, dismissModal, preferenceNotice, showSettings, showSaveRecovery, showStoryFollowUp, navState: navState as Pick<NavState, 'activeTab' | 'cardQuantity' | 'campOwner' | 'entryEntered' | 'entrySaved' | 'entryWelcome' | 'evolutionFromResult' | 'focusFrame' | 'modal' | 'modalVersion' | 'pendingImport' | 'prestigeDraft' | 'prestigeExpectedTimeline' | 'prestigeOrigin' | 'settingsOrigin'> };
 }
