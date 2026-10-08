@@ -205,6 +205,7 @@ class Battlefield extends Phaser.Scene {
     this.effects.ring(x,y-10,e.storyCue==='shatter'?0xacc9c5:0xd5bd89,18);
     if((e.amount??0)<=0)return;
    }
+   this.effects.recordProvision(e);
    if(e.type==='spawn')this.effects.recordArrival(e,game.state.units);
    if(e.type==='spawn'){this.effects.emit(x,y,5,0xdfd4b1,true,.4,e.lane??1);this.effects.ring(x,y,0xc9e2b3,13);this.effects.flare(x,y-4,16,e.side==='enemy'?0xff8b55:0x6fd6ff,.3);}
    if(e.type==='hit'){
