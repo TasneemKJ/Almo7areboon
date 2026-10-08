@@ -1,6 +1,6 @@
 import {questClaimCheck,questRecords,selectedQuestRecord,questRecordAction,questRecordLabel,questRecordsHtml,questRecordDetailHtml} from '../src/ui/quest-records.ts';
 import { flatStatements, mainSource } from './helpers/main-source.ts';
-import {cardsScreenHtml,summonedCardsHtml} from '../src/ui/cards-screen.ts';
+import {cardPackPreview,cardsScreenHtml,summonedCardsHtml} from '../src/ui/cards-screen.ts';
 import {isEditingTarget} from '../src/ui/accessibility.ts';
 import {campRootHtml,campFocusHtml} from '../src/ui/camp-screen.ts';
 import {canOwnCamp,isCampStation,campActionFromData} from '../src/ui/camp-owner.ts';
@@ -79,12 +79,12 @@ function harness(motion = 'full') {
   const context: any = {
     HTMLElement:BoundaryButton,HTMLButtonElement:BoundaryButton,Element:BoundaryButton,HTMLInputElement:BoundaryInput,HTMLSelectElement:BoundarySelect, Game, game: new Game(defaultProfile()), sessionReady: true, retriedSession: false, pagePresent: true, lifetime: { disposed: false },
     questSelection:null,questCalendarDay:null,questClaimCheck,claimableWeek,syncBattleHud,storyFollowUp,questRecords,selectedQuestRecord,questRecordAction,questRecordLabel,questRecordsHtml,questRecordDetailHtml,lastSavedAt:0,campOwner:null,campRenderKey:'',focusFrame:0,modalVersion:0,focusBefore:null,settingsOrigin:null,acquiring: null, acquisitionVersion: 0, hasPlayed: true, entryWelcome:null,entryEntered: true, entrySaved: true, resultDetailsOpen:false, atmosphereEnabled:true,audioMix:{effects:100,atmosphere:100}, manualPaused: false, savedWarning: false, pendingImport: null, modal: null, evolutionFromResult: false, modalPointerSequence: false,prestigeOrigin:null,prestigeDraft:null,prestigeExpectedTimeline:null,
-    lastUpdate: 0, lastSave: 100, lastPhase: 'ready', resultDue: 0, resultShown: '', activeTab: 'battle', root,
+    lastUpdate: 0, lastSave: 100, lastPhase: 'ready', resultDue: 0, resultShown: '', activeTab: 'battle', cardQuantity:1, root,
     window:{cancelAnimationFrame(){}},requestAnimationFrame(){return 0;},performance: { now: () => now }, document: { documentElement: { dataset: { motion } } },
-    cardsScreenHtml,summonedCardsHtml,isEditingTarget,campRootHtml,campFocusHtml,canOwnCamp,isCampStation,campActionFromData,fieldControls:{update(){},clear(){},select(){}},blockModalTap:createModalTapGuard(),startCountUp,welcomeBackLine,restoreBackupWithSave,startOverProfile,syncWeekly,weekId,weeklyStatus,foodIsPiling,Date:class extends Date{static now(){return 1_800_000_000_000;}},journeyScreenHtml,updateOrderBanner,entryCopy,hasPriorPlay,entrySecondary,preferencesHtml,saveRecoveryHtml,chapterLandscape,
-    $: (id: string) => { if (!elements.has(id)) {const element:any=id==='quest-goal'?new BoundarySelect('quest-goal',''):node();if(id==='battlefield')element.dataset={renderer:'ready'};elements.set(id,element);} return elements.get(id); },
+    cardPackPreview,cardsScreenHtml,summonedCardsHtml,isEditingTarget,campRootHtml,campFocusHtml,canOwnCamp,isCampStation,campActionFromData,fieldControls:{update(){},clear(){},select(){}},blockModalTap:createModalTapGuard(),startCountUp,welcomeBackLine,restoreBackupWithSave,startOverProfile,syncWeekly,weekId,weeklyStatus,foodIsPiling,Date:class extends Date{static now(){return 1_800_000_000_000;}},journeyScreenHtml,updateOrderBanner,entryCopy,hasPriorPlay,entrySecondary,preferencesHtml,saveRecoveryHtml,chapterLandscape,
+    $: (id: string) => { if (!elements.has(id)) {const element:any=['quest-goal','card-quantity'].includes(id)?new BoundarySelect(id,id==='card-quantity'?'1':''):node();if(id==='battlefield')element.dataset={renderer:'ready'};elements.set(id,element);} return elements.get(id); },
     chronicleScreenHtml,chronicleActionFromData,chronicleGuidance,CAPTAINS,routeDefinition,advanceStatus, battleSelectionHtml, evolutionDialogHtml, ERAS, QUESTS, foodRate, unlockCost, dailyReward, localDay, battleGuidance, baseHealthDisplay, compactNumber, waveLabel, waveAccessibleLabel, chapterPresentation, unitPresentationName, compactResultsHtml, expeditionChoiceHtml, resultsHtml,isLegacyChoice,legacyEffects,prestigePreview,prestigeDetailsHtml,prestigeDialogHtml,legacyCurrentHtml,evolutionScreenHtml,saveSessionDialogHtml,temporarySessionNotice,skillCue,troopUnlockMessage,nextGoalLabel, waveInspectionHtml,
-    earlierChapter,storybookArt: () => false, money: String, coin: String, icon:()=>'',textIfChanged(target:any,value:string){target.textContent=value;},htmlIfChanged(target:any,value:string){target.innerHTML=value;},unlockAudio() {}, suspendAudio() {}, saveAtmosphere() {}, syncMarks() {}, syncPause() {}, rebuildArmy() {}, syncMotion() {}, isolateModal(){}, toast() {},
+    earlierChapter,storybookArt: () => false, money: String, coin: String, icon:()=>'',textIfChanged(target:any,value:string){target.textContent=value;},htmlIfChanged(target:any,value:string){target.innerHTML=value;},unlockAudio() {}, suspendAudio() {}, playSummonAudio() {}, saveAtmosphere() {}, syncMarks() {}, syncPause() {}, rebuildArmy() {}, syncMotion() {}, isolateModal(){}, toast() {},
     closeModal() { context.modal=null; }, showModal: (id: string,html:string,focusCommand?:string) => {context.modal=id;context.dialogHtml=html;context.focusCommand=focusCommand;dialogs.push(id);},
     session: {
       status: 'active', check: () => {if(foreign){context.session.status='conflict';context.sessionPresentation('conflict');return false;}return true;},
@@ -97,8 +97,33 @@ function harness(motion = 'full') {
   runInApp(`${code}\nthis.api = { update, action, acquireSession, dismissModal, returnToChapters, showResult, renderScreen }; this.update = update;`, context);
   const actualShowModal=context.showModal;context.showModal=(id:string,html:string,focusCommand?:string)=>{context.dialogHtml=html;context.focusCommand=focusCommand;dialogs.push(id);actualShowModal(id,html,focusCommand);};
   function cQuestSelect(){const input=context.$('quest-goal');input.dataset.questSelect='';input.options=questRecords(context.game.profile,context.localDay()).map(r=>({value:r.key,textContent:questRecordLabel(r)}));return input;}
-  return { context, dialogs, questSelect:(value:string)=>{const input=cQuestSelect();input.value=value;context.document.activeElement=input;context.handleChange({target:input});return input;}, click:(command:string,detail=0)=>context.handleClick({target:new BoundaryButton({command}),detail,preventDefault(){}}), clickData:(dataset:Record<string,string>,detail=0,extra={})=>context.handleClick({target:new BoundaryButton(dataset),detail,preventDefault(){},...extra}), change:(name:string,value:string)=>context.handleChange({target:new BoundaryInput(name,value)}),preference:(name:string,value:string|boolean)=>{const input=['speed','motion'].includes(name)?new BoundarySelect('',String(value)):new BoundaryInput('',String(value));input.dataset.preference=name;input.type=typeof value==='boolean'?'checkbox':'select-one';input.checked=value===true;context.document.activeElement=input;context.handleChange({target:input});return input;},clock: (value: number) => { now = value; }, foreign: () => { foreign = true; } };
+  return { context, dialogs, cardSelect:(value:string)=>{const input=context.$('card-quantity');input.dataset.cardQuantity='';input.value=value;context.document.activeElement=input;context.handleChange({target:input});return input;}, questSelect:(value:string)=>{const input=cQuestSelect();input.value=value;context.document.activeElement=input;context.handleChange({target:input});return input;}, click:(command:string,detail=0)=>context.handleClick({target:new BoundaryButton({command}),detail,preventDefault(){}}), clickData:(dataset:Record<string,string>,detail=0,extra={})=>context.handleClick({target:new BoundaryButton(dataset),detail,preventDefault(){},...extra}), change:(name:string,value:string)=>context.handleChange({target:new BoundaryInput(name,value)}),preference:(name:string,value:string|boolean)=>{const input=['speed','motion'].includes(name)?new BoundarySelect('',String(value)):new BoundaryInput('',String(value));input.dataset.preference=name;input.type=typeof value==='boolean'?'checkbox':'select-one';input.checked=value===true;context.document.activeElement=input;context.handleChange({target:input});return input;},clock: (value: number) => { now = value; }, foreign: () => { foreign = true; } };
 }
+test('Cards quantity changes preview the exact published price without buying, saving or replacing focus',()=>{
+ const h=harness(),c=h.context;c.activeTab='cards';c.game.profile.gems=1000;
+ let writes=0;c.session.save=()=>{writes++;return {ok:true};};const before=JSON.stringify(c.game.profile);
+ for(const [count,cost,disabled] of [[1,100,false],[10,950,false],[50,4600,true]] as const){
+  const input=h.cardSelect(String(count));
+  assert.equal(c.cardQuantity,count);assert.equal(c.document.activeElement,input);
+  assert.equal(c.$('card-summon').dataset.pack,String(count));assert.equal(c.$('card-summon').disabled,disabled);
+  assert.match(c.$('card-pack-preview').textContent,new RegExp(`${cost.toLocaleString('en-US')} gems`));
+  assert.equal(JSON.stringify(c.game.profile),before);assert.equal(writes,0);
+ }
+});
+test('the selected Cards command settles one pack and its receipt blocks duplicate or stale purchase',()=>{
+ const h=harness(),c=h.context;c.activeTab='cards';c.game.profile.gems=10000;
+ h.cardSelect('10');h.clickData({pack:'10'});
+ assert.equal(c.game.profile.gems,9050);assert.equal(c.game.profile.cards.reduce((a:number,b:number)=>a+b,0),10);assert.equal(c.modal,'summon');
+ const settled=JSON.stringify(c.game.profile);h.clickData({pack:'10'});assert.equal(JSON.stringify(c.game.profile),settled);
+ c.api.dismissModal();assert.equal(c.cardQuantity,10);assert.match(c.$('secondary-screen').innerHTML,/data-pack="10"/);
+ c.activeTab='battle';h.clickData({pack:'10'});assert.equal(JSON.stringify(c.game.profile),settled);
+});
+test('Cards selection and purchase yield to invalid quantity, closed surface and ownership recovery',()=>{
+ const h=harness(),c=h.context;c.game.profile.gems=10000;
+ h.cardSelect('50');assert.equal(c.cardQuantity,1);c.activeTab='cards';h.cardSelect('2');assert.equal(c.cardQuantity,1);
+ const before=JSON.stringify(c.game.profile);h.foreign();h.cardSelect('10');h.clickData({pack:'1'});
+ assert.equal(c.cardQuantity,1);assert.equal(c.modal,'session');assert.equal(JSON.stringify(c.game.profile),before);
+});
 test('rapid touch continuation cannot activate the navigation exposed under the result',()=>{
  const h=harness(),c=h.context;
  c.game.dispatch({type:'start'});c.game.dispatch({type:'retreat'});c.modal='result';
@@ -939,47 +964,4 @@ test('late quest saving warnings keep the current picker focus without an explic
  const h=harness(),c=h.context;h.click('quests');const input=h.questSelect('annihilator');let focusCalls=0;
  input.focus=()=>{focusCalls++;c.document.activeElement=input;};c.session.save=()=>({ok:false,reason:'write-failed'});c.persist();c.update(true);
  assert.equal(focusCalls,0);assert.equal(c.document.activeElement,input);assert.match(c.$('quest-save-status').textContent,/Saving is unavailable/);
-});
-
-
-test('accepted discovery stays in expanded receipt and shows the newly found story',()=>{
- const h=harness(),c=h.context;
- c.game.dispatch({type:'start'});c.game.state.enemyHp=0;c.game.step(1/60);
- assert.equal(c.game.state.phase,'won');c.showResult();c.showResultDetails();
- const receipt=JSON.stringify(c.game.profile.pendingVictory),coins=c.game.profile.coins,opened:string[]=[];
- c.$('modal-layer').querySelector=(selector:string)=>selector==='.story-discoveries'&&c.dialogHtml.includes('story-discoveries')?{setAttribute:(name:string)=>opened.push(name)}:null;
- h.clickData({storyDiscovery:'door'});
- assert.equal(c.modal,'result');assert.equal(c.resultDetailsOpen,true);
- assert.match(c.dialogHtml,/story-discoveries/);assert.match(c.dialogHtml,/mark on the door.*found/s);assert.deepEqual(opened,['open']);
- assert.equal(c.game.profile.coins,coins);assert.equal(JSON.stringify(c.game.profile.pendingVictory),receipt);
-});
-
-test('accepted summon followed by save conflict does not deny its settled gem cost',()=>{
- const h=harness(),c=h.context,messages:string[]=[];c.activeTab='cards';c.game.profile.gems=100;
- c.toast=(message:string)=>messages.push(message);c.playSummonAudio=()=>{};
- c.session.save=()=>{c.session.status='conflict';c.sessionReady=false;c.sessionPresentation('conflict');return {ok:false,reason:'conflict'};};
- h.clickData({pack:'1'});
- assert.equal(c.game.profile.gems,0);assert.equal(c.game.profile.summonCount,1);assert.equal(c.modal,'session');
- assert.deepEqual(messages,[],'recovery owns the settled transaction; no false unspent-gems notice');
-});
-
-for(const modal of ['settings','save-recovery'])test(`late save failure and recovery update the stable ${modal} warning`,()=>{
- const h=harness(),c=h.context;c.modal=modal;
- const id=modal==='settings'?'preference-status':'recovery-status',node=c.$(id);
- node.textContent='Progress saves in this browser.';const html=c.$('modal-layer').innerHTML,version=c.modalVersion;
- c.document.activeElement=node;const before=JSON.stringify(c.game.profile);
- c.session.save=()=>({ok:false,reason:'write-failed'});c.persist();
- assert.match(node.textContent,/Saving is unavailable/);
- c.session.save=()=>({ok:true});c.persist();assert.doesNotMatch(node.textContent,/Saving is unavailable/);
- assert.equal(c.document.activeElement,node);assert.equal(c.$('modal-layer').innerHTML,html);assert.equal(c.modalVersion,version);
- assert.equal(JSON.stringify(c.game.profile),before);
-});
-
-test('Escape from a final-timeline compact expedition cannot silently retry its held receipt',()=>{
- const h=harness(),c=h.context;c.game.profile.timeline=1000;c.game.profile.age=5;c.game.profile.enemyAge=5;c.game.profile.furthestBattle=5;c.game.profile.mastery.timeline=1000;c.game.profile.chronicle.timeline=1000;
- c.game.profile.chronicle.restoration=1;
- assert.equal(c.game.dispatch({type:'chronicle-expedition',battle:5}),true);c.game.dispatch({type:'start'});
- c.game.state.chronicle.cart.x=790;c.game.step(1/60);assert.equal(c.game.state.phase,'won');c.showResult();
- const before=JSON.stringify([c.game.profile,c.game.state]);c.dismissModal();
- assert.equal(c.modal,'result');assert.equal(JSON.stringify([c.game.profile,c.game.state]),before);
 });

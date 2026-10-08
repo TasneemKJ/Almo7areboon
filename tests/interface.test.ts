@@ -35,7 +35,8 @@ test('P22: card screen renders actual rarities, levels, odds and all three pack 
  const path='../src/ui/cards-screen.ts';const screen=await import(path).catch(()=>null);assert.ok(screen,'card screen must exist');
  const p=defaultProfile();p.cards[0]=3;p.gems=1000;const html=screen.cardsScreenHtml(p);
  assert.equal((html.match(/class="collection-card /g)??[]).length,30);
- assert.match(html,/LEGENDARY/);assert.match(html,/LEVEL 2/);assert.match(html,/data-pack="1"/);assert.match(html,/data-pack="10"/);assert.match(html,/data-pack="50"[^>]*disabled/);
+ assert.match(html,/LEGENDARY/);assert.match(html,/LEVEL 2/);assert.match(html,/data-pack="1"/);assert.match(html,/<option value="10"/);assert.match(html,/<option value="50"/);
+ assert.match(screen.cardsScreenHtml(p,50),/data-pack="50"[^>]*disabled/);
  assert.match(html,/Summon level 1/);assert.match(html,/0 \/ 5/);
 });
 test('P23: battle selection exposes only unlocked ready-state battles',()=>{

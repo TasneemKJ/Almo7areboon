@@ -7,6 +7,7 @@ import {TROOP_FRAME} from './unit-illustrations.ts';
 import {troopPose} from './visual-theme.ts';
 import {characterGesture} from './character-gesture.ts';
 import {hitReaction} from './combat-choreography.ts';
+import {paintFrost} from './frost-release.ts';
 import {battleAftermathPose} from './battle-aftermath.ts';
 import {lanePresentation,rankStagger,troopScale} from './lane-perspective.ts';
 import type {ArmyHost,ArmyLayers} from './battlefield-army.ts';
@@ -19,6 +20,7 @@ type G=Phaser.GameObjects.Graphics;
 /** Everything a troop sprite needs to be posed for one frame. */
 export interface TroopFrame {
  unit:Unit;state:BattleState;reduce:boolean;x:number;y:number;frozen:boolean;scale:number;direction:number;facingDirection:number;
+ arrival?:{sx:number;sy:number;lift:number;forward:number};
  pose:ReturnType<typeof troopPose>;gesture:ReturnType<typeof characterGesture>;
  verdict:ReturnType<typeof battleAftermathPose>|null;recoil:{x:number;y:number;angle:number};
  perspective:ReturnType<typeof lanePresentation>;
@@ -27,6 +29,7 @@ export interface TroopFrame {
 /** Ground shadow, focus marks and team halo under a troop. */
 export function paintTroopGround(g:G,h:G,f:TroopFrame):void {
  const {unit,x,y,frozen,perspective}=f;
+ if(frozen)paintFrost(h,x,y,f.state.freezeUntil,f.state.time,f.reduce);
  for(const mark of unitFocusMarks(unit.side,unit.lane,unit.kind,unit.hitFlash,frozen)){g.fillStyle(mark.color,mark.alpha);g.fillEllipse(x+mark.x,y+mark.y,mark.width,mark.height);}
  g.fillStyle(0x243c42,perspective.shadowAlpha);g.fillEllipse(x+3,y+3,perspective.shadowWidth,perspective.shadowHeight);
  const halo=teamHalo(unit.side,unit.kind,perspective.scale,unit.hitFlash,frozen);
@@ -38,6 +41,7 @@ export function paintTroopGround(g:G,h:G,f:TroopFrame):void {
 /** Poses a troop sprite (image or vector fallback) from its frame; aftermath poses override the live pose. */
 export function poseTroop(body:ImageOrFallback,f:TroopFrame):void {
  const {unit,state,reduce,x,y,frozen,scale,direction,facingDirection,pose,gesture,verdict,recoil,perspective}=f;
+ const arrival=f.arrival??{sx:1,sy:1,lift:0,forward:0};
  if(body instanceof Phaser.GameObjects.Image){
   const density=TROOP_FRAME.height/body.height;
   if(verdict){
@@ -45,12 +49,12 @@ export function poseTroop(body:ImageOrFallback,f:TroopFrame):void {
    body.setPosition(x+recoil.x+verdict.forward*facingDirection,y-verdict.lift+recoil.y);
   }else{
    if(!state.paused)body.setFrame(String(pose.frame));
-   body.setAngle(pose.angle*direction+gesture.angle*direction+recoil.angle);body.setScale(scale*density*gesture.sx,scale*density*gesture.sy).setFlipX(direction<0);
-   body.setPosition(x+recoil.x+gesture.forward*direction,y-(state.paused?0:pose.lift)-gesture.lift+recoil.y);
+   body.setAngle(pose.angle*direction+gesture.angle*direction+recoil.angle);body.setScale(scale*density*gesture.sx*arrival.sx,scale*density*gesture.sy*arrival.sy).setFlipX(direction<0);
+   body.setPosition(x+recoil.x+(gesture.forward+arrival.forward)*direction,y-(state.paused?0:pose.lift)-gesture.lift-arrival.lift+recoil.y);
   }
   if(unit.hitFlash>0)body.setTintFill(0xfff9db);else if(frozen)body.setTint(0x91e5f0);else if(unit.storyShadow)body.setTint((state.chronicle?.revealUntil??0)>state.time?0xd4e3bc:0xb8b8d1);else if(storybookArt(unit.age)&&unit.side==='enemy')body.setTint(0xffd9b5);else body.clearTint();
  }else{
-  body.setPosition(verdict?x+recoil.x+verdict.forward*facingDirection:x+recoil.x+gesture.forward*direction,verdict?y-verdict.lift+recoil.y:y-gesture.lift+recoil.y).setScale(facingDirection*perspective.scale*(verdict?verdict.sx:gesture.sx),perspective.scale*(verdict?verdict.sy:gesture.sy)).setAngle(verdict?verdict.angle*facingDirection+recoil.angle:pose.angle*direction+gesture.angle*direction+recoil.angle);
+  body.setPosition(verdict?x+recoil.x+verdict.forward*facingDirection:x+recoil.x+(gesture.forward+arrival.forward)*direction,verdict?y-verdict.lift+recoil.y:y-gesture.lift-arrival.lift+recoil.y).setScale(facingDirection*perspective.scale*(verdict?verdict.sx:gesture.sx*arrival.sx),perspective.scale*(verdict?verdict.sy:gesture.sy*arrival.sy)).setAngle(verdict?verdict.angle*facingDirection+recoil.angle:pose.angle*direction+gesture.angle*direction+recoil.angle);
   drawTroop(body,unit.age,unit.kind,unit.side,verdict?verdict.frame/7:reduce||frozen?0:state.time,verdict?verdict.mode==='triumph':unit.attacking,unit.hitFlash>0);
  }
 }
@@ -92,7 +96,7 @@ export function updateTroopViews(c:TroopViewContext):void {
   const facingDirection=verdict?.facing==='home'?-direction:direction;
   if(verdict){aftermathCounts[verdict.mode]++;aftermathCounts.roles[unit.kind]++;aftermathCounts.maxForward=Math.max(aftermathCounts.maxForward,verdict.forward);aftermathCounts.maxLift=Math.max(aftermathCounts.maxLift,verdict.lift);aftermathCounts.maxAngle=Math.max(aftermathCounts.maxAngle,Math.abs(verdict.angle));}
   const recoil=verdict?stillReaction:hitReaction(unit.hitFlash,unit.side,unit.kind,host.reduce()||frozen);
-  const frame:TroopFrame={unit,state:host.game.state,reduce:host.reduce(),x,y,frozen,scale,direction,facingDirection,pose,gesture,verdict,recoil,perspective};
+  const frame:TroopFrame={arrival:effects.arrivalFor(unit.id),unit,state:host.game.state,reduce:host.reduce(),x,y,frozen,scale,direction,facingDirection,pose,gesture,verdict,recoil,perspective};
   paintTroopGround(g,h,frame);
   poseTroop(view.body,frame);
   // Troops win a same-baseline tie against the building and its damage marks.
