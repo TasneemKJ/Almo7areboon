@@ -12,6 +12,10 @@ Ordered tasks. Tick a task when it is done and never delete finished tasks. This
 - Every visual iteration needs three current before views and matching exact-head after evidence before merge.
 
 ## Done
+- [x] Observe actual renderer effect objects in the layering fixture after effects moved into their owner; preserve trait identity, graphics, lifetime, reset, projectile and reduced-motion assertions.
+- [x] Migrate all 16 save-session review scenarios to Home, Camp, Preferences and Save & recovery; normalize ready fixtures before installation and retain profile, ownership, exact-byte, quota, receipt and temporary-session assertions.
+- [x] Migrate the browser review to native Home, Camp and physical field controls; retain chapter/role portraits, text clipping, 44px targets, evolution, click/touch/keyboard isolation, exact food conservation and wave/trait checks. Synchronize resize assertions with stable rendered geometry.
+- [x] Honor explicit `CHROMIUM_PATH` across standard npm browser reviews while preserving headless/timeout defaults and Playwright-managed behavior when unset; add regression coverage.
 - [x] Ready-screen Journey button names the nearest reward (`src/ui/next-goal.ts`)
 - [x] Hide the boxed focus ring on programmatic dialog-title focus unless keyboard-focused
 - [x] Fast `verify` gate (build + `test:fast`); heavy workflows manual; `weekly-full.yml` safety net; failure-only trimmed CI evidence
