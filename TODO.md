@@ -170,3 +170,11 @@ IDEAL / 5Ws and twenty candidates for each bounded iteration: `docs/audits/2026-
 - [ ] Exact-source native browser/touch/AT/visual acceptance remains open; local Chromium cannot launch.
 
 - [x] AM7: require owned, strict/configurable preview and fixture startup; prove foreign-server rejection before browser launch.
+
+## Bug audit M3 — 8 October 2026
+
+- [x] Reproduce and minimally repair current offline-dependency eviction during stale-bundle cleanup. The 20-probe IDEAL / 5Ws review and evidence are tracked in `docs/audits/2026-10-08-bug-audit.md`.
+- [x] Verify 29 production service-worker/download regressions and the production build (487,827 bytes gzip); all five emitted bundles retain current dependency protection.
+- [x] Complete the final full test run: 1,337 passed, zero failures, skips or cancellations.
+- [ ] Complete independent review of the frozen fix and regression evidence.
+- [ ] Complete native offline/reload acceptance when an authorized browser is available.
