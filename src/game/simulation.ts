@@ -14,10 +14,10 @@ import { ERAS, eraEconomyScale, cardBonus, foodRate } from './data.ts';
 import { defaultProfile, loadProfile } from './save.ts';
 import { upgradeStatusFor, waveStatusFor, type UpgradeStatus } from './status-queries.ts';
 import { claimDaily, claimQuest, claimWeekly, evolve, summonCards, syncWeek, unlockTroop, upgradeBase, type EconomyPort } from './economy-actions.ts';
+import { applyPreference } from './preferences.ts';
 import type { Action, BattleState, DeploymentStatus, GameEvent, GamePort, Profile, Side, Skill, Unit, UnitKind } from './types.ts';
 
 const FIXED_STEP = 1 / 60;
-
 type ActionOf<T extends Action['type']> = Action & { type: T };
 
 export class Game implements GamePort {
@@ -132,6 +132,7 @@ export class Game implements GamePort {
     'weekly-sync': (game, action: ActionOf<'weekly-sync'>) => syncWeek(game.economy, action),
     'weekly': (game, action: ActionOf<'weekly'>) => claimWeekly(game.economy, action),
     'claim': (game, action: ActionOf<'claim'>) => claimQuest(game.economy, action),
+    'preference': (game, action: ActionOf<'preference'>) => applyPreference(game.profile, action),
   };
 
   private doOrder(action: ActionOf<'order'>): boolean {
