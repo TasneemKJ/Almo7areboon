@@ -1,5 +1,6 @@
 import type Phaser from 'phaser';
 import {DeathVisuals} from './death-visuals.ts';
+import {createActionEchoes} from './action-echoes.ts';
 import {baseDamagePalette,baseDamageStage} from './base-damage.ts';
 import {compactNumber} from '../game/format.ts';
 import type {GamePort,Side,Unit} from '../game/types';
@@ -26,6 +27,7 @@ export interface EffectsHost {
  */
 export function createBattlefieldEffects(host:EffectsHost,layers:{fx:Phaser.GameObjects.Graphics;glow:Phaser.GameObjects.Graphics;groundFx:Phaser.GameObjects.Graphics[]},marks:ReturnType<typeof createBattlefieldMarks>){
  const {fx,glow,groundFx}=layers;
+ const answers=createActionEchoes({...host,camera:host.scene.cameras.main},layers);
  const particles=createParticles(host,layers);
  const cues=createCues(host,layers);
  const {emit,ring,flare,floatText}=particles;
@@ -57,18 +59,18 @@ export function createBattlefieldEffects(host:EffectsHost,layers:{fx:Phaser.Game
     else impact(bolt.to.x,bolt.to.y,bolt.damage,bolt.age,bolt.kind,bolt.side,bolt.heavy);
     if(bolt.memory)marks.remember(bolt.memory);
    });
-   particles.stepFlares(dt);particles.stepFloaters(dt);
+   particles.stepFlares(dt);particles.stepFloaters(dt);answers.step(dt);
    marks.rewardEvidence(particles.floaters());
  }
  function reset(reason:'motion'|'scene'='scene'):void {
-  stop=0;cool=0;delete host.canvas().dataset.battleOrder;baseHit={player:0,enemy:0};
+  stop=0;cool=0;answers.reset();delete host.canvas().dataset.battleOrder;baseHit={player:0,enemy:0};
   marks.reset(reason,cues.pendingMemories());
   delete host.canvas().dataset.battlefieldMemoryPending;
   for(const g of groundFx)g.clear();
   cues.clear();fallen.clear();particles.clear();glow.clear();
  }
  return {
-  fallen,emit,ring,flare,floatText,impact,baseImpact,step,reset,
+  ...answers,fallen,emit,ring,flare,floatText,impact,baseImpact,step,reset,
   /** Seconds left on each base's hit pulse, read by the base-damage painter. */
   baseHit:(side:Side)=>baseHit[side],
   pushImpactCue:cues.pushImpactCue,pushAttackCue:cues.pushAttackCue,pushBolt:cues.pushBolt,
