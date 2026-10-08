@@ -283,7 +283,7 @@ try {
     if (started) break; await new Promise(resolve => setTimeout(resolve, 250));
   }
   assert.ok(started, `Preview did not start: ${serverLog}`);
-  browser = await chromium.launch({ headless: true, timeout: 30000 });
+  browser = await chromium.launch({...(process.env.CHROMIUM_PATH ? { executablePath: process.env.CHROMIUM_PATH } : {}), headless: true, timeout: 30000 });
   for (const viewport of [{ width: 320, height: 568 }, { width: 390, height: 844 }]) {
     const width = viewport.width;
     await scenario(`evolve-return-${width}`, viewport, async context => {

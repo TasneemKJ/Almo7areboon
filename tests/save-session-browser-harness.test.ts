@@ -3,6 +3,9 @@ import assert from 'node:assert/strict';
 import { readFileSync } from 'node:fs';
 import { runInNewContext } from 'node:vm';
 import ts from 'typescript';
+import { decodeSave } from '../src/game/save.ts';
+import { syncWeekly, weekId } from '../src/game/weekly.ts';
+import { localDay } from '../src/game/data.ts';
 
 // Execute the browser scenario's actual orchestration. A deterministic scheduler
 // runs an autosave check after every browser task, including the foreign write.
@@ -62,7 +65,7 @@ for (const trigger of ['preference', 'focus']) test(`${trigger} fault reaches it
     if (!conflict && storage.get(primary) !== JSON.stringify(profile)) { conflict = true; settings = false; detectedBy = origin; }
     return !conflict;
   };
-  const button = { click() { if (check('preference')) profile.speed = 2; } };
+  const button = { value: '1', dispatchEvent(event: { type: string }) { assert.equal(event.type, 'change'); assert.equal(this.value, '2'); if (check('preference')) profile.speed = Number(this.value); } };
   const browser = {
     localStorage: { getItem: (key: string) => storage.get(key) ?? null, setItem: (key: string, value: string) => storage.set(key, value) },
     document: { querySelector: () => settings ? button : null },
@@ -86,7 +89,7 @@ for (const trigger of ['preference', 'focus']) test(`${trigger} fault reaches it
     },
   };
   const context = {
-    trigger, primary, backup, assert, setup: async () => page, open: async () => page, active: async () => {},
+    trigger, primary, backup, assert, settings: async () => { settings = true; }, setup: async () => page, open: async () => page, active: async () => {},
     fixture: (overrides: object) => ({ ...profile, ...overrides }),
     bytes: async () => [storage.get(primary), storage.get(backup)],
     blocked: async () => assert.equal(conflict, true), exported: async () => ({ ...profile }),
@@ -94,4 +97,35 @@ for (const trigger of ['preference', 'focus']) test(`${trigger} fault reaches it
   await runInNewContext(`(${callback})(null)`, context);
   assert.equal(detectedBy, trigger, 'the requested guard must observe foreign bytes before autosave can');
   assert.deepEqual(profile, { gems: 100, speed: 1 });
+});
+
+const campFunction = ast.statements.find(node => ts.isFunctionDeclaration(node) && node.name?.text === 'camp');
+const progressFunction = ast.statements.find(node => ts.isFunctionDeclaration(node) && node.name?.text === 'progress');
+assert.ok(campFunction && progressFunction, 'ready Camp entry must check its progression baseline');
+for (const corrupt of [false, true]) test(`Camp navigation ${corrupt ? 'rejects an accidental progression mutation' : 'keeps the ready save intact'}`, async () => {
+  const stored = { coins: 500, gems: 100, wins: 0, pendingVictory: null, played: true };
+  const clicked: string[] = [];
+  const page = { locator: (selector: string) => ({
+    async click() { clicked.push(selector); if (corrupt) stored.coins += 1; },
+    async waitFor() {}, async getAttribute() { return 'ready'; },
+  }) };
+  const run = runInNewContext(`${progressFunction.getText(ast)}; (${campFunction.getText(ast)})(page)`, {
+    page, assert, bytes: async () => [JSON.stringify(stored)],
+  });
+  if (corrupt) await assert.rejects(run, /Camp entry preserves stored progression/);
+  else await run;
+  assert.deepEqual(clicked, ['#entry-secondary[data-command="home-camp"]'], 'read-only Camp route never clicks Play');
+});
+
+const fixtureStatement = ast.statements.find(node => ts.isVariableStatement(node) && node.declarationList.declarations.some(declaration => declaration.name.getText(ast) === 'fixture'));
+assert.ok(fixtureStatement, 'canonical save fixture must exist');
+for (const pendingVictory of [null, { timeline: 1, battle: 0, earned: 77, seconds: 12, playerHp: 100, stats: {} }]) test(`returning ${pendingVictory ? 'receipt' : 'ready'} fixture is canonical before Home entry`, () => {
+  const profile = runInNewContext(`${fixtureStatement.getText(ast)}; fixture(overrides)`, { decodeSave, syncWeekly, weekId, localDay, assert, overrides: { pendingVictory } });
+  assert.equal(profile.version, 5, 'Home is read-only; fixture cannot wait for it to persist a schema migration');
+  const decoded = decodeSave(JSON.stringify(profile));
+  assert.ok(decoded.profile, 'canonical fixture decodes to a supported profile');
+  assert.deepEqual(profile, decoded.profile, 'no deferred normalization can be mistaken for a navigation mutation');
+  assert.deepEqual([profile.coins, profile.gems, profile.wins, profile.kills, profile.deployed, profile.played], [500, 100, 0, 0, 0, true]);
+  assert.equal(syncWeekly(profile, weekId(localDay())), false, 'legitimate load-time weekly baseline is already settled');
+  assert.equal(profile.pendingVictory?.earned ?? null, pendingVictory?.earned ?? null);
 });

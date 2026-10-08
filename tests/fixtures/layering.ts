@@ -1,4 +1,6 @@
 import Phaser from 'phaser';
+import type {createBattlefieldEffects} from '../../src/view/battlefield-effects.ts';
+import type {ImpactCue,AttackCue,Bolt} from '../../src/view/battlefield-types.ts';
 import { Game } from '../../src/game/simulation.ts';
 import { defaultProfile } from '../../src/game/save.ts';
 import type { GameEvent, GamePort, Unit } from '../../src/game/types.ts';
@@ -75,13 +77,28 @@ const port: GamePort = {
   drainEvents: () => { if (frames < 3) return []; const events = pending; pending = []; return events; },
 };
 
+// Read the actual accepted cue objects. Production owns their mutable lifetime;
+// this fixture does not reproduce animation timing or substitute rendering.
+function observeEffectCues(effects:Pick<ReturnType<typeof createBattlefieldEffects>,'pushImpactCue'|'pushAttackCue'|'pushBolt'|'reset'>){
+ let impacts:ImpactCue[]=[],attacks:AttackCue[]=[],bolts:Bolt[]=[];
+ const pushImpact=effects.pushImpactCue,pushAttack=effects.pushAttackCue,pushBolt=effects.pushBolt,reset=effects.reset;
+ effects.pushImpactCue=cue=>{pushImpact(cue);impacts.push(cue);};
+ effects.pushAttackCue=cue=>{pushAttack(cue);attacks.push(cue);};
+ effects.pushBolt=(cue,capped)=>{pushBolt(cue,capped);bolts.push(cue);};
+ effects.reset=reason=>{reset(reason);impacts=[];attacks=[];bolts=[];};
+ return ()=>({traits:impacts.filter(cue=>cue.trait&&cue.life>0).map(cue=>({...cue})),sourceCues:attacks.filter(cue=>cue.life>0).length,projectiles:bolts.filter(cue=>cue.life>0).length});
+}
+let cueEvidence:ReturnType<typeof observeEffectCues>;
 let scene: Phaser.Scene;
 // A fixture-only plugin uses Phaser's ordinary plugin API to observe the real
 // scene graph. It adds no display objects and does not alter rendering order.
 class ReviewPlugin extends Phaser.Plugins.ScenePlugin {
   constructor(current: Phaser.Scene, manager: Phaser.Plugins.PluginManager, key: string) {
     super(current, manager, key);
-    if (current.sys.settings.key === 'battlefield') scene = current;
+    if (current.sys.settings.key === 'battlefield') {
+      scene = current;
+      current.events.once(Phaser.Scenes.Events.CREATE,()=>{cueEvidence=observeEffectCues((current as unknown as {effects:ReturnType<typeof createBattlefieldEffects>}).effects);});
+    }
   }
 }
 Phaser.Plugins.PluginCache.register('LayeringReview', ReviewPlugin, 'layeringReview');
@@ -102,9 +119,6 @@ type RendererDiagnostics = Phaser.Scene & {
   mist?:Phaser.GameObjects.Container;
   villageViewport?:VillageViewport;
   storybookDepth?:readonly {region:string;kind:string;points:readonly {x:number;y:number}[]}[];
-  impactCues?: {trait?:string;x:number;y:number;lane?:number;life:number}[];
-  attackCues?: unknown[];
-  bolts?: unknown[];
   reduce?: boolean;
 };
 // Decode the actual Graphics path stream emitted by the production renderer.
@@ -156,8 +170,7 @@ function inspect() {
     ready: frames >= 6, age:game.profile.age, enemyAge:game.profile.enemyAge, lane, health, effectMode, includeTroops,
     images, groundEffects: actual.groundFx?.map(graphics) ?? [],
     baseDamage: graphics(actual.baseDamage),
-    traits:actual.impactCues?.filter(cue=>cue.trait).map(cue=>({...cue}))??[],
-    sourceCues:actual.attackCues?.length??0,projectiles:actual.bolts?.length??0,reduced:actual.reduce,
+    ...cueEvidence(),reduced:actual.reduce,
     state: { time: game.state.time, paused: game.state.paused, unitCount: game.state.units.length },
     canvas: { width: scene.game.canvas.width, height: scene.game.canvas.height },
     village:village?{mood:{...villageMood},plate:VILLAGE_PLATES[game.profile.age],viewport:actual.villageViewport,

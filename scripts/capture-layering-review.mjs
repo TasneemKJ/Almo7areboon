@@ -86,7 +86,7 @@ try {
     await new Promise(resolve => setTimeout(resolve, 250));
   }
   assert.ok(ready, `Fixture server did not start: ${serverLog}`);
-  browser = await chromium.launch({ headless: true });
+  browser = await chromium.launch({...(process.env.CHROMIUM_PATH ? { executablePath: process.env.CHROMIUM_PATH } : {}), headless: true });
   const context = await browser.newContext({ viewport: { width: 490, height: 550 }, deviceScaleFactor: 2, reducedMotion: 'no-preference' });
   const cases = [];
   for (const age of [0, 1, 3, 4, 5]) for (const health of [70, 25]) for (const lane of [0, 1, 2]) {
