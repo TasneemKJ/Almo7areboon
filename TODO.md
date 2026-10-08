@@ -206,3 +206,5 @@ IDEAL/5Ws and twenty alternatives per distinct scenario: `docs/audits/2026-10-08
 - [x] Merge latest physical-field main `a4bb398` into published head `3e671b3`, retaining one guidance/status path, native cover focus safety, both skill effects, Regroup advice and owned review-server checks.
 - [x] Re-run combined source gates: targeted 45/45; full npm test 1,375/1,375 with zero failures/skips; TypeScript/build pass, 489,329/512,000 gzip bytes.
 - [ ] Complete required exact-head rendered/mobile/offline checks; the separate production play review is not PR-head acceptance. No gate waiver, browser workaround or manual workflow trigger is part of this integration.
+
+- [x] Replace the missing-font battlefield Pause glyph with two painted bars; preserve its accessible name and pause behavior (2026-10-08 playtest).

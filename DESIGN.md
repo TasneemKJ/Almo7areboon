@@ -139,3 +139,5 @@ Visible field countdowns remain inspectable without a live region announcing eac
 ### Reconciled physical field — 8 October 2026
 
 The shelter has one dedicated native target while no enemy is alive, with focus safely returning to Pause when that target expires. The ordinary enemy target continues to own enemy tactics. One guidance resolver keeps immediate and incoming-wave priorities, authored objectives and captain-supply teaching; one separate stable status announces changed meaning. Meteor explains both living-enemy damage and intact-shelter destruction when both apply. Cards, costs, battle balance and save formats keep the already reviewed behavior.
+
+The battlefield Pause control uses two local SVG bars so its visual affordance does not depend on system-font Roman numeral coverage. The native button keeps its 44px target and accessible name.
