@@ -95,3 +95,10 @@ Teaching cues are single lines in the deploy hint, never panels. In the first-ev
 Defeat names the troop role that dealt the most damage. Settings offers "Troop shapes" (circle melee, triangle ranged, square heavy; filled yours, outlined enemy; off by default) and ends with "Last saved HH:MM" (memory only; opening Settings saves once). A returning player (at least one win, six hours or more away) sees the welcome-back line in the existing Home subtitle; it grants nothing and adds no toast. The daily streak survives one missed day, at most once every seven days, and the Quests row says so before claiming.
 
 Heavy troops fall louder (wider dust, second ring, short low shake) and a heavy blow on a unit freezes the scene for about 50 ms at most twice a second; neither shake nor freeze happens with reduced motion. A battle that starts in a new week opens that week's goal first.
+
+
+## Receipt/focus/save integrity — 8 October 2026 source candidate
+
+Discovery/provision follow-up renders the full existing result before opening its discovery disclosure, retaining its read-only receipt and reward state. Expedition result direction reads the active encounter; the compact result offers canonical expedition continuation even when ordinary timeline advancement is capped; Escape keeps that held expedition result instead of silently retrying it. Settled mastery receipts report their exact existing credit and omit the legacy up-to-10-gem promise.
+
+Shared modal restoration rejects disabled or aria-disabled requested/prior command controls; enabled command priority, story-action matching, scroll/version/lifecycle guards and native fallback remain shared. Owned persistence refreshes only the stable Preferences/recovery status node, never the fields, modal version or focus; session recovery preempts that refresh. A settled summon followed by ownership loss leaves recovery authoritative and issues no false unspent-gems failure. Source tests are not native/mobile acceptance.

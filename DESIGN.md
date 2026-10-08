@@ -115,3 +115,10 @@ This replaces only the dense Quests leaf. The Journey catalogue, chapter/Chronic
 The open record follows local midnight/Monday without moving the native Goal field. A calendar mismatch uses the same eligibility text area and status-labeled choice; no new control, toast or clock-repair flow is added. A removed/disabled focused Claim returns focus to Goal. Returning saves retain the established Camp/Journal and result Details/Journey entry routes.
 
 Quest record typography uses root-relative sizes: the normal 16px-root appearance is preserved, while the record, native field, eligibility copy and actions honor 200% root-text settings. The paper dialog keeps its existing body scroll owner; type is never shrunk to fit. The portrait/short-landscape title sizes preserve their original proportions. This is scoped to the new Quests leaf and does not claim that every retained legacy screen has the same text scaling.
+
+
+## Receipt and recovery clarity — 8 October 2026 source candidate
+
+An accepted discovery/provision keeps the existing full receipt expanded and its discovery disclosure open, so the found folktale remains readable. Compact completion remains the first view. An expedition receipt describes its own encounter and keeps that chapter’s landscape; active expedition continuation takes priority over ordinary timeline-limit return. This presents the existing canonical loop and never advances it by rendering. Mastery receipts keep their exact credited gem breakdown without the legacy victory-bonus claim.
+
+Open Preferences and Save recovery update their existing saving-status line when later persistence fails or succeeds. Native fields, focus and dialog ownership stay stable. Modal command restoration excludes disabled commands and uses the existing available-action fallback. An accepted summon that yields ownership to recovery cannot claim that gems were unspent. All changes remain candidates pending exact-source native visual and touch acceptance; original art, tone, economics and menu inventory are unchanged.

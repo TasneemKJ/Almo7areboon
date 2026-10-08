@@ -151,8 +151,8 @@ export function createNavigation(deps: NavigationDeps) {
     isolateModal(true);ports.syncPause();dom.cancelFrame(navState.focusFrame);
     navState.focusFrame=dom.requestFrame(()=>{
       if(lifetime.disposed||layer.hidden||version!==navState.modalVersion)return;
-      const previous=sameModal&&command?Array.from(layer.querySelectorAll<HTMLElement>('[data-command]')).find(element=>element.dataset.command===command):null;
-      const requested=focusCommand?Array.from(layer.querySelectorAll<HTMLElement>('[data-command]')).find(element=>element.dataset.command===focusCommand):null;
+      const previous=sameModal&&command?Array.from(layer.querySelectorAll<HTMLElement>('[data-command]')).find(element=>element.dataset.command===command&&!element.matches(':disabled,[aria-disabled="true"]')):null;
+      const requested=focusCommand?Array.from(layer.querySelectorAll<HTMLElement>('[data-command]')).find(element=>element.dataset.command===focusCommand&&!element.matches(':disabled,[aria-disabled="true"]')):null;
       const storyMatch=storyAction?Array.from(layer.querySelectorAll<HTMLElement>('[data-story-route],[data-story-captain],[data-story-tale],[data-story-preparation],[data-story-discovery],[data-story-provision]')).find(element=>JSON.stringify(chronicleActionFromData(element.dataset))===JSON.stringify(storyAction)):storyPage!==undefined?Array.from(layer.querySelectorAll<HTMLElement>('[data-story-page]')).find(element=>element.dataset.storyPage===storyPage):null;
       const storyPrevious=sameModal&&storyMatch&&!storyMatch.matches(':disabled,[aria-disabled="true"]')?storyMatch:null;
       const dialog=layer.querySelector<HTMLElement>('.dialog');if(previousScroll!==null&&previousScroll!==undefined&&dialog)dialog.scrollTop=previousScroll;
@@ -335,7 +335,7 @@ export function createNavigation(deps: NavigationDeps) {
     if(navState.modal==='result-expedition'){showResult();return;}
     if(navState.modal==='result'){
       if(navState.resultDetailsOpen){showResult('result-details');return;}
-      if(advanceStatus(ports.sessionState.game.profile,ports.sessionState.game.state).reason==='complete')returnToChapters();
+      if(advanceStatus(ports.sessionState.game.profile,ports.sessionState.game.state).reason==='complete'&&!(ports.sessionState.game.state.phase==='won'&&ports.sessionState.game.profile.chronicle?.expedition))returnToChapters();
       return;
     }
     if(navState.modal==='evolve'&&navState.evolutionFromResult){navState.evolutionFromResult=false;showResult();return;}
@@ -356,7 +356,7 @@ export function createNavigation(deps: NavigationDeps) {
     const toBattle=()=>{closeModal(false);ports.sessionState.manualPaused=false;switchTab('battle');};
     const screens:Record<StoryFollowUp,()=>void>={
       stay:()=>{},
-      discoveries:()=>{showResult();openDetails('.story-discoveries');},
+      discoveries:()=>{if(navState.modal!=='result')showResult();showResultDetails();openDetails('.story-discoveries');},
       chronicle,
       battle:toBattle,
       'battle-chronicle':()=>{toBattle();chronicle();},

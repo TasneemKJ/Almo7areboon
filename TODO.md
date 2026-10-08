@@ -155,3 +155,19 @@ Advanced Camp leaves remain dense and unaccepted. This work does not claim all-s
 - [x] Preserve integer/monotonic weekly admission, mutation-free claims, reset/import ownership and no repeated rollback checks.
 - [x] Count a just-settled receipt when Monday begins between pre-step baseline and event drain; retain accepted-start-only synchronization.
 - [ ] Recheck exact reconciled source, native weekly ownership, required CI and unchanged main before the root merge decision.
+
+
+## 8 October 2026 bounded engagement source candidates
+
+Seven independent candidate cycles are documented with twenty ideas and IDEAL/5Ws each in `docs/audits/2026-10-08-source-engagement.md`. Source completion does not clear native acceptance.
+
+- [x] C1: Discoveries stay readable; observed RED → GREEN using actual production functions/presenters.
+- [x] C2: Available modal focus; observed RED → GREEN using actual production functions/presenters.
+- [x] C3: Honest summon conflict outcome; observed RED → GREEN using actual production functions/presenters.
+- [x] C4: Stable save-status recovery; observed RED → GREEN using actual production functions/presenters.
+- [x] C5: Expedition receipt direction; observed RED → GREEN using actual production functions/presenters.
+- [x] C6: Timeline-limit expedition continuation; observed RED → GREEN using actual production functions/presenters.
+- [x] C7: Mastery gem receipt honesty; observed RED → GREEN using actual production functions/presenters.
+- [ ] Complete exact-source native screenshot/touch/rotation/background/CPU/200%-text gates; Chromium launch is blocked before page creation.
+- [ ] Independent review of the candidate diff; preserve open PR 186 files and check the current integration head.
+- [ ] Review terminal-limit defeat copy: ordinary `complete` admission also covers an uncleared final loss; the compact sentence currently says the journey is complete. This audit reports the copy gap without counting or implementing an extra cycle.
