@@ -16,7 +16,10 @@ export function skillCue(profile:Readonly<Profile>,state:Readonly<BattleState>,s
   if(remaining>1e-9)return {badge:`${Math.ceil(remaining-1e-9)}s`,label:`Freeze active: ${Math.ceil(remaining-1e-9)} battle seconds remain${state.paused?' · battle paused':''}`,opportunity:false,activeEffect:true};
   return {badge:used?'✓':String(targets),label:`Freeze enemies for ${duration} seconds${used?' · used this battle':` · ${targetText}; starts immediately${suffix}`}`,opportunity:active&&available&&!used&&targets>=3,activeEffect:false};
  }
- if(skill==='meteor')return {badge:used?'✓':String(targets),label:used?'Meteor strike · used this battle':`Meteor strike · ${targetText}; damages every living enemy${suffix}`,opportunity:active&&available&&!used&&targets>=3,activeEffect:false};
+ if(skill==='meteor'){
+  const cover=state.chronicle?.enabled&&state.chronicle.landmark.kind==='cover'&&!state.chronicle.landmark.broken?'; breaks road shelter':'';
+  return {badge:used?'✓':String(targets),label:used?'Meteor strike · used this battle':`Meteor strike · ${targetText}; damages every living enemy${cover}${suffix}`,opportunity:active&&available&&!used&&targets>=3,activeEffect:false};
+ }
  const captain=profile.chronicle?.enabled&&profile.chronicle.captain!=='none'?CAPTAINS.find(c=>c.id===profile.chronicle!.captain):undefined;
  if(captain){
   const remaining=running&&used?Math.max(0,((captain.id==='gatekeeper'?state.chronicle?.shieldUntil:state.chronicle?.revealUntil)??0)-state.time):0;
