@@ -21,7 +21,8 @@ test('the food readout sits at the top-left edge, opposite Pause and clear of sa
  assert.match(food,/top:max\(12px,env\(safe-area-inset-top\)\)/);
  assert.match(food,/pointer-events:none/,'it never steals a tap from the world');
  const stage=rule(css('world-play.css'),'#app[data-field-mode="field"] .stage');
- assert.match(stage,/left:64px/,'the title leaves room for the readout');
+ assert.match(stage,/left:72px/,'the title leaves room for the readout');
+ assert.match(food,/max-width:56px/,'the readout stays inside the title gutter (12px + 56px < 72px)');
 });
 
 test('Camp pages use the whole screen: no band reserved for the hidden header or bottom navigation',()=>{

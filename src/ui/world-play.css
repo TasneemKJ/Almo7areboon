@@ -6,7 +6,7 @@
 #app[data-field-mode="field"] .resources,#app[data-field-mode="field"] .deployment,#app[data-field-mode="field"] .upgrades,#app[data-field-mode="field"] .bottom-nav,
 #app[data-field-mode="field"] .world-tools,#app[data-field-mode="field"] .battle-meta,#app[data-field-mode="field"] .battle-skills,
 #app[data-field-mode="field"] .stage .eyebrow,#app[data-field-mode="field"] .stage .scene-name,#app[data-field-mode="field"] .stage .battle-select{display:none!important}
-#app[data-field-mode="field"] .stage{position:absolute;top:max(20px,env(safe-area-inset-top));left:64px;right:64px;margin:0;pointer-events:none}
+#app[data-field-mode="field"] .stage{position:absolute;top:max(20px,env(safe-area-inset-top));left:72px;right:72px;margin:0;pointer-events:none}
 #app[data-field-mode="field"] .stage h1{font-size:21px;margin:0;text-align:center}
 .field-targets{position:absolute;inset:0;pointer-events:none;z-index:5}
 .world-hit{position:absolute;border:0;background:transparent;padding:0;border-radius:50%;box-shadow:none;pointer-events:auto;touch-action:manipulation;color:#fff4d0;cursor:pointer}
@@ -45,8 +45,9 @@
 @keyframes field-teach-ring{0%,100%{box-shadow:0 0 6px #ffd27a55}50%{box-shadow:0 0 20px #ffd27acc}}
 
 /* Food readout: the one resource the field's core tap spends, at the top-left edge opposite Pause, clear of the title. */
-.field-food{position:absolute;z-index:8;left:max(12px,env(safe-area-inset-left));top:max(12px,env(safe-area-inset-top));display:flex;align-items:center;gap:4px;min-height:44px;margin:0;padding:0 10px 0 6px;border:1px solid #d8bd7f88;border-radius:12px;background:#16352ee6;color:#fff0c9;font-weight:800;font-size:15px;font-variant-numeric:tabular-nums;pointer-events:none}
+.field-food{position:absolute;z-index:8;left:max(12px,env(safe-area-inset-left));top:max(12px,env(safe-area-inset-top));display:flex;align-items:center;gap:2px;min-height:44px;max-width:56px;box-sizing:border-box;margin:0;padding:0 8px 0 4px;border:1px solid #d8bd7f88;border-radius:12px;background:#16352ee6;color:#fff0c9;font-weight:800;font-size:14px;font-variant-numeric:tabular-nums;pointer-events:none}
 .field-food[hidden]{display:none}
-.field-food .icon{width:24px;height:24px}
+.field-food .icon{width:20px;height:20px}
+@media(max-width:360px){#app[data-field-mode="field"] .stage h1{font-size:18px}}
 .field-food.full{border-color:#efce81}
 #app[data-field-mode="camp"] .field-food{display:none}
