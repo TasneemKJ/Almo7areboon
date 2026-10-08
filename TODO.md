@@ -155,3 +155,11 @@ Advanced Camp leaves remain dense and unaccepted. This work does not claim all-s
 - [x] Preserve integer/monotonic weekly admission, mutation-free claims, reset/import ownership and no repeated rollback checks.
 - [x] Count a just-settled receipt when Monday begins between pre-step baseline and event drain; retain accepted-start-only synchronization.
 - [ ] Recheck exact reconciled source, native weekly ownership, required CI and unchanged main before the root merge decision.
+
+## Bug audit M3 — 8 October 2026
+
+- [x] Reproduce and minimally repair current offline-dependency eviction during stale-bundle cleanup. The 20-probe IDEAL / 5Ws review and evidence are tracked in `docs/audits/2026-10-08-bug-audit.md`.
+- [x] Verify 29 production service-worker/download regressions and the production build (487,827 bytes gzip); all five emitted bundles retain current dependency protection.
+- [x] Complete the final full test run: 1,337 passed, zero failures, skips or cancellations.
+- [ ] Complete independent review of the frozen fix and regression evidence.
+- [ ] Complete native offline/reload acceptance when an authorized browser is available.
