@@ -115,3 +115,7 @@ This replaces only the dense Quests leaf. The Journey catalogue, chapter/Chronic
 The open record follows local midnight/Monday without moving the native Goal field. A calendar mismatch uses the same eligibility text area and status-labeled choice; no new control, toast or clock-repair flow is added. A removed/disabled focused Claim returns focus to Goal. Returning saves retain the established Camp/Journal and result Details/Journey entry routes.
 
 Quest record typography uses root-relative sizes: the normal 16px-root appearance is preserved, while the record, native field, eligibility copy and actions honor 200% root-text settings. The paper dialog keeps its existing body scroll owner; type is never shrunk to fit. The portrait/short-landscape title sizes preserve their original proportions. This is scoped to the new Quests leaf and does not claim that every retained legacy screen has the same text scaling.
+
+## Offline dependency retention (8 October 2026)
+
+A completed installation retains the current battlefield, Phaser and generated audio-worker bundles when obsolete bundles are cleaned up. An older open tab may still request older files; cleanup keeps the current installation manifest and the cached page's dependencies while removing obsolete entries. This repairs returning offline play without changing game mechanics, art, controls, save schema, cache version or deployment policy. Checked against DESIGN_RULES.md; native offline/reload acceptance remains separate from the executable worker regression.
