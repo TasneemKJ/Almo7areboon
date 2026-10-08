@@ -159,10 +159,14 @@ Advanced Camp leaves remain dense and unaccepted. This work does not claim all-s
 - [x] Juice 1: Role-weighted recruit arrival; mutation behavior test passes; [20-idea audit](docs/audits/2026-10-08-juice-01.md).
 - [ ] Juice 1: required mobile touch, CPU throttle, rotation and viewed before/after screenshots before shipping.
 
+- [x] Juice 2: Grounded recruit contact prints; mutation behavior test passes; [20-idea audit](docs/audits/2026-10-08-juice-02.md).
+- [ ] Juice 2: required mobile touch, CPU throttle, rotation and viewed before/after screenshots before shipping.
+
 ## Current juice design review (2026-10-08)
 
 The earlier short idea lists were expanded during review into twenty concrete action/object alternatives per behavior, with selected, deferred and rejected reasons. This documentation refinement adds no iteration count. The full IDEAL/5Ws and all twenty ideas for each cycle are recorded here:
 
 - Juice 1: Role-weighted recruit arrival — [20 concrete alternatives and decisions](docs/audits/2026-10-08-juice-01.md).
+- Juice 2: Grounded recruit contact prints — [20 concrete alternatives and decisions](docs/audits/2026-10-08-juice-02.md).
 
 Review verification: existing reset-order and faction gesture contracts are preserved. Current checks require matching image/vector faction composition and prohibit simulation coordinate writes. Coordinator serial full verification and required browser acceptance remain pending.

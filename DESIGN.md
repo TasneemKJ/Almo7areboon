@@ -118,3 +118,6 @@ Quest record typography uses root-relative sizes: the normal 16px-root appearanc
 
 ### Juice 1: Role-weighted recruit arrival (2026-10-08)
 Presentation is anchored to accepted events/authoritative battle intervals, bounded and reset on replacement; reduced motion retains still meaning. No simulation, reward, cost, control or save changes.
+
+### Juice 2: Grounded recruit contact prints (2026-10-08)
+Presentation is anchored to accepted events/authoritative battle intervals, bounded and reset on replacement; reduced motion retains still meaning. No simulation, reward, cost, control or save changes.
