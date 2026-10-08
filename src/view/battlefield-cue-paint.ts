@@ -5,6 +5,7 @@ import type {projectileGeometry} from './projectile-art.ts';
 import type {Bolt,Flare,ImpactCue} from './battlefield-types.ts';
 import {projectileGlow} from './cinematic-grade.ts';
 import {projectileStyle} from './projectile-art.ts';
+import {projectileTrailPoint} from './projectile-trail.ts';
 
 type G=Phaser.GameObjects.Graphics;
 
@@ -69,7 +70,7 @@ export function paintImpactMark(g:G,mark:ReturnType<typeof impactMaterialFrame>[
 export function paintBoltLight(glow:G,bolt:Bolt,shot:ReturnType<typeof projectileGeometry>,progress:number):void {
   const light=projectileGlow(projectileStyle(bolt.age,bolt.heavy,bolt.meteor).shape,bolt.side);
   if(light.alpha>0){
-   const back=Math.max(0,progress-.22),tail={x:bolt.from.x+(shot.tip.x-bolt.from.x)*(back/Math.max(.01,progress)),y:bolt.from.y+(shot.tip.y-bolt.from.y)*(back/Math.max(.01,progress))};
+   const tail=projectileTrailPoint(bolt.from,bolt.to,progress,bolt.arc);
    if(light.trail>0){glow.lineStyle(light.radius*.7,light.color,light.alpha*light.trail*.35);glow.lineBetween(tail.x,tail.y,shot.tip.x,shot.tip.y);}
    glow.fillStyle(light.color,light.alpha*.3);glow.fillCircle(shot.tip.x,shot.tip.y,light.radius);
    glow.fillStyle(light.color,light.alpha*.6);glow.fillCircle(shot.tip.x,shot.tip.y,light.radius*.45);

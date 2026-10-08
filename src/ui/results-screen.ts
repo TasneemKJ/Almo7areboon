@@ -58,7 +58,7 @@ export function resultsHtml(profile: Profile, state: BattleState): string {
 /** Ordinary completion is a short decision. The full receipt stays optional. */
 export function compactResultsHtml(profile:Profile,state:BattleState):string {
  const won=state.phase==='won',advance=advanceStatus(profile,state),run=profile.chronicle?.expedition;
- let command='retry',label='Retry',next='Your earned coins stay with you.';
+ let command='retry',label='Retry',next=`Your earned coins stay with you.${won?'':` ${masteryAdvice(profile,state)}`}`;
  if(advance.reason==='complete'){command='return-chapters';label='Return to chapters';next='Your journey is complete. Your progress stays.';}
  else if(run&&won){command=run.stage<2?'result-expedition':'story-continue';label=run.stage<2?'Choose help & continue':'Bring the company home';next=`Encounter ${run.stage+1} of 3 complete.`;}
  else if(won&&advance.allowed){command='next';label=advance.target==='timeline'?'Preview next timeline':'Continue';next=advance.target==='timeline'?'Review the next timeline before changing your progress.':`${chapterPresentation(advance.nextBattle!).title} is next.`;}

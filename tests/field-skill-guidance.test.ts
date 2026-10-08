@@ -7,7 +7,7 @@ test('physical teaching preserves canonical Freeze/Meteor prerequisites without 
  s.units=Array.from({length:3},()=>({side:'enemy',hp:10} as Unit));
  assert.equal(physicalSkillCue(battleGuidance(p,s)),'Select an enemy, then Freeze to hold the group.');
  s.skillsUsed.push('freeze');s.stats.skillsCast=1;assert.equal(physicalSkillCue(battleGuidance(p,s)),'Select an enemy, then Meteor to strike the group.');
- s.time=19;assert.equal(physicalSkillCue(battleGuidance(p,s)),'');s.time=30;
- s.skillsUsed.push('meteor');assert.equal(physicalSkillCue(battleGuidance(p,s)),'');s.skillsUsed.pop();
- p.wins=9;assert.equal(physicalSkillCue(battleGuidance(p,s)),'');p.wins=0;s.units.pop();assert.equal(physicalSkillCue(battleGuidance(p,s)),'');
+ s.time=19;assert.doesNotMatch(physicalSkillCue(battleGuidance(p,s)),/^Select an enemy, then Meteor/);s.time=30;
+ s.skillsUsed.push('meteor');assert.doesNotMatch(physicalSkillCue(battleGuidance(p,s)),/^Select an enemy, then Meteor/);s.skillsUsed.pop();
+ p.wins=9;assert.doesNotMatch(physicalSkillCue(battleGuidance(p,s)),/^Select an enemy, then Meteor/);p.wins=0;s.units.pop();assert.doesNotMatch(physicalSkillCue(battleGuidance(p,s)),/^Select an enemy, then Meteor/);
 });

@@ -7,6 +7,7 @@ import {TROOP_FRAME} from './unit-illustrations.ts';
 import {troopPose} from './visual-theme.ts';
 import {characterGesture} from './character-gesture.ts';
 import {hitReaction} from './combat-choreography.ts';
+import {paintFrost} from './frost-release.ts';
 import {battleAftermathPose} from './battle-aftermath.ts';
 import {lanePresentation,rankStagger,troopScale} from './lane-perspective.ts';
 import type {ArmyHost,ArmyLayers} from './battlefield-army.ts';
@@ -28,6 +29,7 @@ export interface TroopFrame {
 /** Ground shadow, focus marks and team halo under a troop. */
 export function paintTroopGround(g:G,h:G,f:TroopFrame):void {
  const {unit,x,y,frozen,perspective}=f;
+ if(frozen)paintFrost(h,x,y,f.state.freezeUntil,f.state.time,f.reduce);
  for(const mark of unitFocusMarks(unit.side,unit.lane,unit.kind,unit.hitFlash,frozen)){g.fillStyle(mark.color,mark.alpha);g.fillEllipse(x+mark.x,y+mark.y,mark.width,mark.height);}
  g.fillStyle(0x243c42,perspective.shadowAlpha);g.fillEllipse(x+3,y+3,perspective.shadowWidth,perspective.shadowHeight);
  const halo=teamHalo(unit.side,unit.kind,perspective.scale,unit.hitFlash,frozen);
