@@ -125,3 +125,17 @@ Visual food/objective progress can update each second. A separate invisible stat
 ## Offline dependency retention (8 October 2026)
 
 A completed installation retains the current battlefield, Phaser and generated audio-worker bundles when obsolete bundles are cleaned up. An older open tab may still request older files; cleanup keeps the current installation manifest and the cached page's dependencies while removing obsolete entries. This repairs returning offline play without changing game mechanics, art, controls, save schema, cache version or deployment policy. Checked against DESIGN_RULES.md; native offline/reload acceptance remains separate from the executable worker regression.
+
+
+## Tactical clarity and focused card purchase — current review, 2026-10-08
+
+The existing physical field keeps one guidance line. Canonical gate danger precedes onboarding; scarce-food teaching names the available Supplies → Food Drop route; later formation and wave guidance remain visible. Active Chronicle objective text uses the existing authored domain query after immediate danger, food needs and opening skill/formation lessons. In the road route, incoming-wave advice takes priority over generic formation during the canonical eight-second tactical teaching window; other authored mission objectives remain intact. Direct tactical targeting also reaches an intact painted road shelter when Meteor is legal and no enemy is present. The same native target and guarded skill dispatch own it. Supplies presents Food Drop or the captain's actual replacement by name.
+
+Cards uses one native quantity field for 1, 10 or 50 cards, the existing exact gem cost and one Summon action. Choosing quantity does not spend, save or replace the field; the accepted summon still opens its original receipt. Collection limits, odds, card bonuses and currency prices stay canonical. This addresses the approved quantity/purchase slice only; the remaining collection and advanced-screen design debt stays explicit.
+
+Visible field countdowns remain inspectable without a live region announcing each second. One visually hidden status announces meaningful guidance changes, including urgent gate danger. Timing-only changes do not compete with action feedback. No additional visible controls, art, saved fields or audio voices are introduced. English remains the shipped locale; native viewport and physical-device acceptance are recorded separately.
+
+
+### Reconciled physical field — 8 October 2026
+
+The shelter has one dedicated native target while no enemy is alive, with focus safely returning to Pause when that target expires. The ordinary enemy target continues to own enemy tactics. One guidance resolver keeps immediate and incoming-wave priorities, authored objectives and captain-supply teaching; one separate stable status announces changed meaning. Meteor explains both living-enemy damage and intact-shelter destruction when both apply. Cards, costs, battle balance and save formats keep the already reviewed behavior.

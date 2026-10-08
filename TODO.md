@@ -178,3 +178,27 @@ IDEAL / 5Ws and twenty candidates for each bounded iteration: `docs/audits/2026-
 - [x] Complete the final full test run: 1,337 passed, zero failures, skips or cancellations.
 - [ ] Complete independent review of the frozen fix and regression evidence.
 - [ ] Complete native offline/reload acceptance when an authorized browser is available.
+
+
+## Current review, cycles 22–28 — 2026-10-08
+
+IDEAL/5Ws and twenty alternatives per distinct scenario: `docs/audits/2026-10-08-field-reliability.md`. Checked against the current design and interaction rules; no overrides or economy changes.
+
+- [x] 22: Preserve canonical critical-gate guidance in the actual physical field.
+- [x] 23: Explain the available Food Drop route through physical Supplies during a wait.
+- [x] 24: Retain formation, incoming-wave and Chronicle objective guidance beyond opening.
+- [x] 25: Offer the existing Meteor command at intact road cover when no enemy exists.
+- [x] 26: Name the actual captain replacement on the visible support button.
+- [x] 27: Replace three card purchase buttons with native quantity/cost preview and one guarded Summon command, as approved in the existing future-cards task.
+- [x] 28: Keep countdowns visible while announcing only meaningful field instruction changes.
+- [x] Verify the exact batch with all source tests, lint, build and an independent source review; record the distinct red/green scenarios in the audit.
+- [ ] Native touch, rotation, enlarged text, screen-reader and screenshot acceptance: the existing mobile-touch script could not open a page because local Chromium exited with SIGTRAP. No visual or physical-device acceptance is claimed.
+
+- [x] Reconcile PR190 with main `d8eb374`: retain both documentation additions and all original source blobs; combined full suite 1,356 passes, build 488,910 gzip bytes, and all five emitted bundles protected by the offline manifest/page. Integration evidence is appended to `docs/audits/2026-10-08-field-reliability.md`; native acceptance remains open.
+
+
+### PR190 reconciliation with PR189 — 8 October 2026
+
+- [x] Merge latest physical-field main `a4bb398` into published head `3e671b3`, retaining one guidance/status path, native cover focus safety, both skill effects, Regroup advice and owned review-server checks.
+- [x] Re-run combined source gates: targeted 45/45; full npm test 1,375/1,375 with zero failures/skips; TypeScript/build pass, 489,329/512,000 gzip bytes.
+- [ ] Complete required exact-head rendered/mobile/offline checks; the separate production play review is not PR-head acceptance. No gate waiver, browser workaround or manual workflow trigger is part of this integration.

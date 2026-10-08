@@ -1,3 +1,6 @@
+import {Game} from '../../src/game/simulation.ts';
+import {createFieldController} from '../../src/ui/field-controller.ts';
+
 /** A narrow DOM boundary for exercising the actual physical controller. */
 export class FieldNode {
  ownerDocument:{activeElement:FieldNode|null};dataset:Record<string,string>={};hidden=false;disabled=false;title='';clientWidth=390;clientHeight=844;isConnected=true;
@@ -24,4 +27,12 @@ export function fieldDom(){
  const gates=['hold','advance'].map(kind=>{const node=new FieldNode(root.ownerDocument);node.dataset.fieldGate=kind;return node;});
  root.querySelectorAll=selector=>selector==='[data-field-recruit]'?recruits:selector==='[data-field-gate]'?gates:[];
  return {root,recruits,gates,node:(id:string)=>root.querySelector(`#${id}`)};
+}
+
+/** Runs the real controller; the native DOM is the only substituted boundary. */
+export function fieldHarness(game=new Game()){
+ const dom=fieldDom(),controller=createFieldController(dom.root as unknown as HTMLElement);
+ if(game.state.phase==='ready')game.dispatch({type:'start'});
+ game.state.stats.deployed=1;
+ return {...dom,game,controller,update:()=>controller.update(game)};
 }

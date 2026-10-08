@@ -76,7 +76,7 @@ test('supplies choices visibly name Food Drop and each authored captain replacem
 test('the canonical Food Drop lesson points to the physical supplies target',()=>{
  const h=harness();h.game.state.stats.deployed=1;h.game.state.food=0;
  assert.match(battleGuidance(h.game.profile,h.game.state),/^Food Drop/);h.update();
- assert.match(h.node('field-cue').textContent,/Select supplies.*Food Drop/);
+ assert.match(h.node('field-cue').textContent,/Tap Supplies.*Food Drop/);
 });
 test('visual food countdown changes without repeatedly rewriting the spoken instruction',()=>{
  const h=harness();h.game.profile.wins=6;h.game.state.stats.deployed=3;h.game.state.food=0;
@@ -98,4 +98,13 @@ test('compact Regroup keeps its three choices and includes the supported next-at
  const h=harness();h.game.state.phase='lost';
  const html=compactResultsHtml(h.game.profile,h.game.state),advice=masteryAdvice(h.game.profile,h.game.state);
  assert.ok(html.includes(advice));assert.equal((html.match(/<button\b/g)||[]).length,3);assert.match(html,/Your earned coins stay/);
+});
+
+test('the generic captain lesson reaches Supplies while canonical imminent wave counters still take priority',()=>{
+ const h=harness('road');h.game.profile.chronicle!.captain='gatekeeper';h.game.profile.chronicle!.tutorial=4;
+ h.game.profile.unlocked=[true,true,true];h.game.state.stats.deployed=3;h.game.state.food=10;h.game.state.time=25;
+ const original=h.game.waveStatus();h.game.waveStatus=()=>({...original,preview:null});h.update();
+ assert.equal(h.node('field-cue').textContent,'Select supplies, then Stand together. Each skill works once per battle.');
+ h.game.waveStatus=()=>({...original,preview:{...original.preview!,nextIn:2,intent:'volley'}});h.update();
+ assert.equal(h.node('field-cue').textContent,'Ranged enemies are coming. Melee guards take less damage from them.');
 });
