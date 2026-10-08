@@ -1,16 +1,17 @@
 /** Adapt the canonical teaching decision to physical enemy selection; do not
  * duplicate or broaden its wins, time, skill-use or enemy-count predicates. */
-export function physicalSkillCue(canonical:string):string {
+export function physicalSkillCue(canonical:string,supportName='Food Drop'):string {
  if(canonical.startsWith('Your base is in danger.'))return canonical;
  if(canonical.startsWith('Food Drop adds'))return canonical.replace('Food Drop adds','Tap Supplies for Food Drop: add');
  if(canonical.startsWith('Food is piling up'))return canonical;
  if(canonical.includes('Tap Freeze'))return 'Select an enemy, then Freeze to hold the group.';
  if(canonical.includes('Tap Meteor'))return 'Select an enemy, then Meteor to strike the group.';
+ if(canonical.startsWith('Try a skill:')&&canonical.includes(supportName))return `Select supplies, then ${supportName}. Each skill works once per battle.`;
  if(canonical.startsWith('Ranged troops are affordable.'))return 'Ranged troops are affordable. Visit Company in Camp after this battle to unlock them.';
  return canonical;
 }
 /** One physical instruction: immediate needs precede the current authored objective. */
-export function physicalFieldCue(profile:Profile,state:BattleState,preview:WavePreview|null,melee:Readonly<DeploymentStatus>):string {
+export function physicalFieldCue(profile:Profile,state:BattleState,preview:WavePreview|null,melee:Readonly<DeploymentStatus>,supportName='Food Drop'):string {
  const canonical=battleGuidance(profile,state,preview,melee),story=state.chronicle;
  const immediate=canonical.startsWith('Your base is in danger.')||canonical.startsWith('Food is piling up')
   ||canonical.includes('Tap Freeze')||canonical.includes('Tap Meteor')||canonical.startsWith('Try a skill:')
@@ -20,7 +21,7 @@ export function physicalFieldCue(profile:Profile,state:BattleState,preview:WaveP
  const objective=story?.enabled&&state.phase==='running'&&!state.paused&&state.stats.deployed>0
   &&!immediate&&!incoming&&melee.reason!=='food'
   &&(story.route!=='road'||story.rally||profile.unlocked[1]);
- return physicalSkillCue(objective?chronicleGuidance(profile,state):canonical);
+ return physicalSkillCue(objective?chronicleGuidance(profile,state):canonical,supportName);
 }
 import {chronicleGuidance} from '../game/chronicle-combat.ts';
 import type {BattleState,DeploymentStatus,Profile} from '../game/types.ts';

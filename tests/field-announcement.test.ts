@@ -6,7 +6,7 @@ import {createChronicle} from '../src/game/chronicle.ts';
 import {createChronicleBattle} from '../src/game/chronicle-combat.ts';
 
 function spoken(h:ReturnType<typeof fieldHarness>){
- const node=h.node('field-guidance-status'),changes:string[]=[];let current='';
+ const node=h.node('field-announcement'),changes:string[]=[];let current='';
  Object.defineProperty(node,'textContent',{get:()=>current,set:(value:string)=>{current=value;changes.push(value);}});
  return changes;
 }
@@ -14,7 +14,7 @@ function spoken(h:ReturnType<typeof fieldHarness>){
 test('visible field countdowns remain inspectable without a live role and have a separate polite decision status',()=>{
  const html=fieldControlsHtml(),cue=html.match(/<p id="field-cue"[^>]*>/)![0];
  assert.doesNotMatch(cue,/role="status"|aria-live/);
- assert.match(html,/<p id="field-guidance-status"[^>]*class="sr-only"[^>]*role="status"[^>]*aria-live="polite"/);
+ assert.match(html,/<p id="field-announcement"[^>]*class="sr-only"[^>]*role="status"[^>]*aria-live="polite"/);
 });
 test('actual controller speaks a food decision once while its visible seconds count down, then announces danger',()=>{
  const h=fieldHarness(),changes=spoken(h);h.game.profile.wins=0;h.game.state.time=1;

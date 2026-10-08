@@ -17,8 +17,9 @@ export function skillCue(profile:Readonly<Profile>,state:Readonly<BattleState>,s
   return {badge:used?'✓':String(targets),label:`Freeze enemies for ${duration} seconds${used?' · used this battle':` · ${targetText}; starts immediately${suffix}`}`,opportunity:active&&available&&!used&&targets>=3,activeEffect:false};
  }
  if(skill==='meteor'){
-  const cover=targets===0&&state.chronicle?.enabled&&state.chronicle.landmark.kind==='cover'&&!state.chronicle.landmark.broken;
-  return {badge:used?'✓':cover?'COVER':String(targets),label:used?'Meteor strike · used this battle':cover?`Meteor strike · breaks the road shelter${suffix}`:`Meteor strike · ${targetText}; damages every living enemy${suffix}`,opportunity:active&&available&&!used&&(targets>=3||!!cover),activeEffect:false};
+  const cover=state.chronicle?.enabled&&state.chronicle.landmark.kind==='cover'&&!state.chronicle.landmark.broken;
+  const coverOnly=targets===0&&cover;
+  return {badge:used?'✓':coverOnly?'COVER':String(targets),label:used?'Meteor strike · used this battle':coverOnly?`Meteor strike · breaks the road shelter${suffix}`:`Meteor strike · ${targetText}; damages every living enemy${cover?'; breaks road shelter':''}${suffix}`,opportunity:active&&available&&!used&&(targets>=3||!!coverOnly),activeEffect:false};
  }
  const captain=profile.chronicle?.enabled&&profile.chronicle.captain!=='none'?CAPTAINS.find(c=>c.id===profile.chronicle!.captain):undefined;
  if(captain){

@@ -1,6 +1,6 @@
 /** Real browser screenshots and geometry checks for the portrait battle UI. */
 import {chromium} from 'playwright';
-import {spawn} from 'node:child_process';
+import {reviewPort,startReviewServer} from './review-server.mjs';
 import {mkdirSync} from 'node:fs';
 import assert from 'node:assert/strict';
 
@@ -15,7 +15,7 @@ async function tacticalSession(browser, errors, assetFailures, overrides={}, tou
  const page=await context.newPage();
  page.on('pageerror',error=>errors.push(error.message));
  page.on('response',response=>{if(response.url().includes('/art/storybook/')&&!response.ok())assetFailures.push(`${response.status()} ${response.url()}`);});
- await page.goto('http://127.0.0.1:4173/',{waitUntil:'networkidle'});
+ await page.goto(reviewOrigin,{waitUntil:'networkidle'});
  await page.waitForFunction(()=>!document.querySelector('.world-loader'),{timeout:15000});
  return {context,page};
 }
@@ -158,22 +158,15 @@ async function captureTacticalWaves(browser,errors,assetFailures,output) {
  }finally{await context.close();}
 }
 async function captureTraitFixtures(browser,errors,assetFailures,output) {
- const fixtureServer=spawn(process.execPath,['node_modules/vite/bin/vite.js','--host','127.0.0.1','--port','4175','--strictPort'],{stdio:'pipe'});
+ const fixtureServer=await startReviewServer({port:reviewPort(process.env.ALMO_FIXTURE_PORT,4175),preview:false,readyPath:'/tests/fixtures/layering.html'});
  try{
-  let ready=false;
-  for(let attempt=0;attempt<60;attempt++){
-   if(fixtureServer.exitCode!==null)throw new Error('Trait fixture server exited');
-   try{ready=(await fetch('http://127.0.0.1:4175/tests/fixtures/layering.html')).ok;}catch{}
-   if(ready)break;await new Promise(resolve=>setTimeout(resolve,250));
-  }
-  assert.ok(ready,'trait fixture server starts');
   // Isolating each trait prevents the other two accents from masking a missing draw.
   for(const trait of ['guard','pierce','sweep']){
    const context=await browser.newContext({viewport:{width:390,height:844},deviceScaleFactor:2});
    const page=await context.newPage();page.on('pageerror',error=>errors.push(error.message));
    page.on('response',response=>{if(response.url().includes('/art/storybook/')&&!response.ok())assetFailures.push(`${response.status()} ${response.url()}`);});
    try{
-    await page.goto(`http://127.0.0.1:4175/tests/fixtures/layering.html?age=3&health=100&lane=1&effects=none&traits=${trait}&width=390`,{waitUntil:'networkidle'});
+    await page.goto(`${fixtureServer.origin}/tests/fixtures/layering.html?age=3&health=100&lane=1&effects=none&traits=${trait}&width=390`,{waitUntil:'networkidle'});
     await page.waitForSelector('body[data-ready="true"]',{timeout:15000});
     const diagnostic=await page.evaluate(()=>window.layeringReview.inspect());
     assert.deepEqual(diagnostic.traits.map(c=>c.trait),[trait]);
@@ -189,7 +182,7 @@ async function captureTraitFixtures(browser,errors,assetFailures,output) {
    const page=await context.newPage();page.on('pageerror',error=>errors.push(error.message));
    page.on('response',response=>{if(response.url().includes('/art/storybook/')&&!response.ok())assetFailures.push(`${response.status()} ${response.url()}`);});
    try{
-    await page.goto(`http://127.0.0.1:4175/tests/fixtures/layering.html?age=3&health=100&lane=1&effects=none&traits=all&motion=${motion}&width=${width}`,{waitUntil:'networkidle'});
+    await page.goto(`${fixtureServer.origin}/tests/fixtures/layering.html?age=3&health=100&lane=1&effects=none&traits=all&motion=${motion}&width=${width}`,{waitUntil:'networkidle'});
     await page.waitForSelector('body[data-ready="true"]',{timeout:15000});
     const diagnostic=await page.evaluate(()=>window.layeringReview.inspect());
     assert.deepEqual(diagnostic.traits.map(c=>c.trait),['guard','pierce','sweep'],'all resolved accents reach real renderer');
@@ -206,28 +199,21 @@ async function captureTraitFixtures(browser,errors,assetFailures,output) {
     await page.waitForFunction(()=>window.layeringReview.inspect().traits.length===0&&window.layeringReview.inspect().projectiles===0,{timeout:2000});
    }finally{await context.close();}
   }
- }finally{fixtureServer.kill('SIGTERM');}
+ }finally{await fixtureServer.close();}
 }
 
 const output='artifacts/browser-review';
 mkdirSync(output,{recursive:true});
-const server=spawn(process.execPath,['node_modules/vite/bin/vite.js','preview','--host','127.0.0.1','--port','4173'],{stdio:'pipe'});
+const server=await startReviewServer({port:reviewPort(process.env.ALMO_REVIEW_PORT,4173)}),reviewOrigin=`${server.origin}/`;
 let browser;
 try {
- let ready=false;
- for(let i=0;i<60;i++){
-  if(server.exitCode!==null)throw new Error(`Vite preview exited ${server.exitCode}`);
-  try {const response=await fetch('http://127.0.0.1:4173/');if(response.ok){ready=true;break;}} catch {}
-  await new Promise(resolve=>setTimeout(resolve,250));
- }
- assert.ok(ready,'Vite preview did not start');
  browser=await chromium.launch({headless:true});
  const context=await browser.newContext({viewport:{width:390,height:844},deviceScaleFactor:2});
  const page=await context.newPage(),errors=[],assetFailures=[];
  page.on('pageerror',error=>errors.push(error.message));
  page.on('response',response=>{if(response.url().includes('/art/storybook/')&&!response.ok())assetFailures.push(`${response.status()} ${response.url()}`);});
  await page.addInitScript(()=>document.addEventListener('visual-fallback',()=>{window.__visualFallback=true;}));
- await page.goto('http://127.0.0.1:4173/',{waitUntil:'networkidle'});
+ await page.goto(reviewOrigin,{waitUntil:'networkidle'});
  await page.waitForSelector('#battlefield canvas');
  await page.waitForFunction(()=>!document.querySelector('.world-loader'));
  assert.equal(await page.evaluate(()=>window.__visualFallback),undefined,'art must load without renderer fallback');
@@ -270,7 +256,7 @@ try {
  const narrow=await browser.newContext({viewport:{width:320,height:640},deviceScaleFactor:2});
  const small=await narrow.newPage();
  small.on('pageerror',error=>errors.push(error.message));
- await small.goto('http://127.0.0.1:4173/',{waitUntil:'networkidle'});
+ await small.goto(reviewOrigin,{waitUntil:'networkidle'});
  await small.waitForFunction(()=>!document.querySelector('.world-loader'));
  const layout=await small.evaluate(()=>{
   const shell=document.querySelector('.game-shell').getBoundingClientRect();
@@ -287,7 +273,7 @@ try {
  const showcase=await browser.newContext({viewport:{width:390,height:844},deviceScaleFactor:2});
  await showcase.addInitScript(()=>localStorage.setItem('almo7areboon.save.v1',JSON.stringify({version:2,timeline:1,age:0,enemyAge:0,coins:0,cards:[],unlocked:[true,true,true],sound:false})));
  const army=await showcase.newPage();army.on('pageerror',error=>errors.push(error.message));
- await army.goto('http://127.0.0.1:4173/',{waitUntil:'networkidle'});
+ await army.goto(reviewOrigin,{waitUntil:'networkidle'});
  await army.waitForFunction(()=>!document.querySelector('.world-loader'));
  await army.getByRole('button',{name:/^BATTLE/}).click();
  await army.getByRole('button',{name:/Food drop/i}).click();
@@ -305,7 +291,7 @@ try {
  });
  const journey=await chapter.newPage();journey.on('pageerror',error=>errors.push(error.message));
  journey.on('response',response=>{if(response.url().includes('/art/storybook/')&&!response.ok())assetFailures.push(`${response.status()} ${response.url()}`);});
- await journey.goto('http://127.0.0.1:4173/',{waitUntil:'networkidle'});
+ await journey.goto(reviewOrigin,{waitUntil:'networkidle'});
  await journey.waitForFunction(()=>!document.querySelector('.world-loader'));
  await journey.getByRole('button',{name:'Evolution',exact:true}).click();
  assert.ok(await journey.locator('.era-landscape').nth(1).getAttribute('src')==='/art/storybook/olive/village.webp');
@@ -324,7 +310,7 @@ try {
  });
  const farm=await olive.newPage();farm.on('pageerror',error=>errors.push(error.message));
  farm.on('response',response=>{if(response.url().includes('/art/storybook/')&&!response.ok())assetFailures.push(`${response.status()} ${response.url()}`);});
- await farm.goto('http://127.0.0.1:4173/',{waitUntil:'networkidle'});
+ await farm.goto(reviewOrigin,{waitUntil:'networkidle'});
  await farm.waitForFunction(()=>!document.querySelector('.world-loader'));
  const farmPortraits=await farm.locator('.unit-card img').evaluateAll(images=>images.map(img=>({src:img.getAttribute('src'),ready:img.complete&&img.naturalWidth>0})));
  assert.equal(farmPortraits.length,3);
@@ -354,7 +340,7 @@ try {
  });
  const coast=await harborTransition.newPage();coast.on('pageerror',error=>errors.push(error.message));
  coast.on('response',response=>{if(response.url().includes('/art/storybook/')&&!response.ok())assetFailures.push(`${response.status()} ${response.url()}`);});
- await coast.goto('http://127.0.0.1:4173/',{waitUntil:'networkidle'});
+ await coast.goto(reviewOrigin,{waitUntil:'networkidle'});
  await coast.waitForFunction(()=>!document.querySelector('.world-loader'));
  await coast.getByRole('button',{name:'Evolution',exact:true}).click();
  assert.equal(await coast.locator('.era-landscape').nth(2).getAttribute('src'),'/art/storybook/harbor/village.webp');
@@ -373,7 +359,7 @@ try {
  });
  const quay=await harbor.newPage();quay.on('pageerror',error=>errors.push(error.message));
  quay.on('response',response=>{if(response.url().includes('/art/storybook/')&&!response.ok())assetFailures.push(`${response.status()} ${response.url()}`);});
- await quay.goto('http://127.0.0.1:4173/',{waitUntil:'networkidle'});
+ await quay.goto(reviewOrigin,{waitUntil:'networkidle'});
  await quay.waitForFunction(()=>!document.querySelector('.world-loader'));
  const harborPortraits=await quay.locator('.unit-card img').evaluateAll(images=>images.map(img=>({src:img.getAttribute('src'),ready:img.complete&&img.naturalWidth>0})));
  assert.equal(harborPortraits.length,3);assert.ok(harborPortraits.every(p=>p.ready&&p.src.includes('/art/storybook/harbor/')));
@@ -402,7 +388,7 @@ try {
  });
  const crossing=await lanternTransition.newPage();crossing.on('pageerror',error=>errors.push(error.message));
  crossing.on('response',response=>{if(response.url().includes('/art/storybook/')&&!response.ok())assetFailures.push(`${response.status()} ${response.url()}`);});
- await crossing.goto('http://127.0.0.1:4173/',{waitUntil:'networkidle'});
+ await crossing.goto(reviewOrigin,{waitUntil:'networkidle'});
  await crossing.waitForFunction(()=>!document.querySelector('.world-loader'));
  await crossing.getByRole('button',{name:'Evolution',exact:true}).click();
  assert.equal(await crossing.locator('.era-landscape').nth(3).getAttribute('src'),'/art/storybook/lantern/village.webp');
@@ -421,7 +407,7 @@ try {
  });
  const quarter=await lantern.newPage();quarter.on('pageerror',error=>errors.push(error.message));
  quarter.on('response',response=>{if(response.url().includes('/art/storybook/')&&!response.ok())assetFailures.push(`${response.status()} ${response.url()}`);});
- await quarter.goto('http://127.0.0.1:4173/',{waitUntil:'networkidle'});
+ await quarter.goto(reviewOrigin,{waitUntil:'networkidle'});
  await quarter.waitForFunction(()=>!document.querySelector('.world-loader'));
  const lanternPortraits=await quarter.locator('.unit-card img').evaluateAll(images=>images.map(img=>({src:img.getAttribute('src'),ready:img.complete&&img.naturalWidth>0})));
  assert.equal(lanternPortraits.length,3);assert.ok(lanternPortraits.every(p=>p.ready&&p.src.includes('/art/storybook/lantern/')));
@@ -449,7 +435,7 @@ try {
  });
  const ascent=await hillsideTransition.newPage();ascent.on('pageerror',error=>errors.push(error.message));
  ascent.on('response',response=>{if(response.url().includes('/art/storybook/')&&!response.ok())assetFailures.push(`${response.status()} ${response.url()}`);});
- await ascent.goto('http://127.0.0.1:4173/',{waitUntil:'networkidle'});
+ await ascent.goto(reviewOrigin,{waitUntil:'networkidle'});
  await ascent.waitForFunction(()=>!document.querySelector('.world-loader'));
  await ascent.getByRole('button',{name:'Evolution',exact:true}).click();
  assert.equal(await ascent.locator('.era-landscape').nth(4).getAttribute('src'),'/art/storybook/hillside/village.webp');
@@ -468,7 +454,7 @@ try {
  });
  const watch=await hillside.newPage();watch.on('pageerror',error=>errors.push(error.message));
  watch.on('response',response=>{if(response.url().includes('/art/storybook/')&&!response.ok())assetFailures.push(`${response.status()} ${response.url()}`);});
- await watch.goto('http://127.0.0.1:4173/',{waitUntil:'networkidle'});
+ await watch.goto(reviewOrigin,{waitUntil:'networkidle'});
  await watch.waitForFunction(()=>!document.querySelector('.world-loader'));
  const hillsidePortraits=await watch.locator('.unit-card img').evaluateAll(async images=>Promise.all(images.map(async img=>{
   await img.decode();return {src:img.getAttribute('src'),ready:img.complete&&img.naturalWidth>0&&img.naturalHeight>0};
@@ -500,7 +486,7 @@ try {
  });
  const beyond=await courtyardsTransition.newPage();beyond.on('pageerror',error=>errors.push(error.message));
  beyond.on('response',response=>{if(response.url().includes('/art/storybook/')&&!response.ok())assetFailures.push(`${response.status()} ${response.url()}`);});
- await beyond.goto('http://127.0.0.1:4173/',{waitUntil:'networkidle'});
+ await beyond.goto(reviewOrigin,{waitUntil:'networkidle'});
  await beyond.waitForFunction(()=>!document.querySelector('.world-loader'));
  await beyond.getByRole('button',{name:'Evolution',exact:true}).click();
  assert.equal(await beyond.locator('.era-landscape').nth(5).getAttribute('src'),'/art/storybook/courtyards/village.webp');
@@ -519,7 +505,7 @@ try {
  });
  const future=await courtyards.newPage();future.on('pageerror',error=>errors.push(error.message));
  future.on('response',response=>{if(response.url().includes('/art/storybook/')&&!response.ok())assetFailures.push(`${response.status()} ${response.url()}`);});
- await future.goto('http://127.0.0.1:4173/',{waitUntil:'networkidle'});
+ await future.goto(reviewOrigin,{waitUntil:'networkidle'});
  await future.waitForFunction(()=>!document.querySelector('.world-loader'));
  const courtyardsPortraits=await future.locator('.unit-card img').evaluateAll(async images=>Promise.all(images.map(async img=>{
   await img.decode();return {src:img.getAttribute('src'),ready:img.complete&&img.naturalWidth>0&&img.naturalHeight>0};
@@ -551,5 +537,5 @@ try {
  console.log(JSON.stringify({density,screenshots:42,tacticalInputSessions:11,narrowControls:layout.length,errors,assetFailures},null,2));
 } finally {
  await browser?.close();
- server.kill('SIGTERM');
+ await server.close();
 }
