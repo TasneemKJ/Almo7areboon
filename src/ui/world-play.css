@@ -46,3 +46,21 @@
 .recruit-hit.teach.recruit-ready::after{border-width:2px;box-shadow:0 0 16px #ffd27a99}
 :root[data-motion="full"] .recruit-hit.teach.recruit-ready::after{animation:field-teach-ring 1.3s ease-in-out infinite}
 @keyframes field-teach-ring{0%,100%{box-shadow:0 0 6px #ffd27a55}50%{box-shadow:0 0 20px #ffd27acc}}
+
+/* Momentum is tactical knowledge, not another permanent action deck.
+   On touch, reveal the painted gate choices only once the game admits orders. */
+.gate-hit.order-ready .world-target-name,
+.gate-hit[aria-pressed="true"] .world-target-name{
+ opacity:1;bottom:calc(100% + 5px);min-width:48px;max-width:96px;
+ white-space:normal;overflow-wrap:normal;
+ padding:6px 8px;border:1px solid #d8bd7f88;
+ border-radius:9px;background:#122e2bec;
+ color:#fff0c9;font:700 13px/1.25 'Trebuchet MS',sans-serif;
+ box-shadow:0 4px 12px #091c1b77;
+}
+.gate-hit[aria-pressed="true"] .world-target-name{background:#5a4726f5;color:#fff6d9}
+@media(max-width:359px){.gate-hit.order-ready .world-target-name{max-width:78px;font-size:12px}}
+@media(forced-colors:active){
+ .gate-hit.order-ready .world-target-name,.gate-hit[aria-pressed="true"] .world-target-name{
+  background:Canvas;color:CanvasText;border:1px solid Highlight}
+}
