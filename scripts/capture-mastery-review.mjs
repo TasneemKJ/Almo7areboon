@@ -1,9 +1,9 @@
 /** Built-app mastery acceptance. Seeds use real simulation actions before startup;
  * browser flows use painted controls, keyboard input, storage and exports only. */
 import assert from 'node:assert/strict';
-import { mkdirSync, readFileSync, rmSync, writeFileSync } from 'node:fs';
+import { mkdirSync, readFileSync, writeFileSync } from 'node:fs';
 import { spawn, spawnSync } from 'node:child_process';
-import {freePort, launchChromium, enterWorld, enterCamp, openCampStation, openEvolution, openSettings, pauseField, resumeField} from './lib/browser.mjs';
+import { chromium } from 'playwright';
 import { Game } from '../src/game/simulation.ts';
 import { defaultProfile, decodeSave, SAVE_KEY, BACKUP_KEY } from '../src/game/save.ts';
 import { createMastery } from '../src/game/mastery.ts';
@@ -12,8 +12,8 @@ import { reviewScouting } from './capture-scouting-review.mjs';
 import { villageVoice, villageMoment } from '../src/ui/chapter-scouting.ts';
 import { ERAS } from '../src/game/data.ts';
 
-const output = 'artifacts/browser-review/mastery', port = await freePort(), origin = `http://127.0.0.1:${port}`;
-rmSync(output, { recursive: true, force: true }); mkdirSync(output, { recursive: true });
+const output = 'artifacts/browser-review/mastery', origin = 'http://127.0.0.1:4176';
+mkdirSync(output, { recursive: true });
 const diagnostics = {
   revision: spawnSync('git', ['rev-parse', 'HEAD'], { encoding: 'utf8' }).stdout.trim(),
   origin, status: 'failed', seeds: [], cases: [], pageErrors: [], assetFailures: [], layouts: [],
@@ -98,34 +98,11 @@ async function open(context) {
   return page;
 }
 async function active(page) { await page.waitForFunction(() => document.querySelector('#app')?.dataset.saveSession === 'active'); }
-/** Settled and idle: the entry screen with Play enabled, or Camp at a ready battle, with no dialog or Camp screen open. */
 async function ready(page) {
-  await page.waitForFunction(() => {
-    const app = document.getElementById('app');
-    if (!document.getElementById('modal-layer')?.hidden || !document.getElementById('secondary-screen')?.hidden) return false;
-    if (app?.dataset.entry !== 'play') return document.getElementById('entry-play')?.disabled === false;
-    return app.dataset.fieldMode === 'camp' && document.querySelector('#world')?.dataset.phase === 'ready';
-  });
-}
-const atEntry = async page => (await page.locator('#app').getAttribute('data-entry')) !== 'play';
-/** A settled result waits behind the entry screen until the player chooses Play. */
-async function enterIfHome(page) { if (await atEntry(page) && !(await page.locator('#modal-layer:not([hidden])').count())) await enterWorld(page); }
-/** The battle picker through Camp: Journal, then Choose battle. */
-async function openPicker(page) {
-  await openCampStation(page, 'journal'); await command(page, 'camp-chapters').click();
-  await page.getByRole('heading', { name: 'Choose a battle', exact: true }).waitFor();
-}
-/** Start the ready battle from wherever the player stands: entry Play, or Camp's Battle. */
-async function startBattle(page) {
-  if (await atEntry(page)) await enterWorld(page); else await page.locator('[data-command="camp-battle"]').click();
-  await page.waitForFunction(() => document.querySelector('#world')?.dataset.phase === 'running');
+  await page.waitForFunction(() => document.querySelector('#world')?.dataset.phase === 'ready' && document.querySelector('#modal-layer')?.hidden && document.querySelector('#secondary-screen')?.hidden && document.querySelector('#battle-view')?.inert === false && document.querySelector('[data-tab="battle"]')?.getAttribute('aria-current') === 'page');
 }
 async function result(page, won = true) {
-  await enterIfHome(page);
   await page.locator('.result-dialog').waitFor({ timeout: 150000 });
-  // The result opens as a short decision (Victory / Regroup); the full receipt with every route is its Details view.
-  await page.waitForFunction(won => [won ? 'Victory' : 'Regroup', won ? 'VICTORY!' : 'REGROUP'].includes(document.querySelector('.result-dialog #dialog-title')?.textContent.trim()), won);
-  if (await page.locator('.result-dialog .compact-result').count()) await command(page, 'result-details').click();
   await page.getByRole('heading', { name: won ? 'VICTORY!' : 'REGROUP', exact: true }).waitFor();
   if(await page.locator('#app').getAttribute('data-save-session')==='active') {
     const profile=await saved(page);
@@ -151,15 +128,13 @@ async function result(page, won = true) {
     }
   }
 }
-/** Export from the session dialog, or from Settings through Save & recovery. */
 async function exported(page) {
-  if (!(await page.locator('#modal-layer [data-command="export"]').isVisible())) await command(page, 'save-recovery').click();
-  const [download] = await Promise.all([page.waitForEvent('download'), page.locator('#modal-layer [data-command="export"]').click()]);
-  return JSON.parse(readFileSync(await download.path(), 'utf8')).profile;
+  const pending = page.waitForEvent('download'); await page.locator('[data-command="export"]').click();
+  return JSON.parse(readFileSync(await (await pending).path(), 'utf8')).profile;
 }
 async function memoryProfile(page) {
-  await openSettings(page); const profile = await exported(page);
-  await page.keyboard.press('Escape'); await page.keyboard.press('Escape'); return profile;
+  await page.locator('[data-command="settings"]').click(); const profile = await exported(page);
+  await command(page, 'close').first().click(); return profile;
 }
 async function isolation(page) {
   assert.equal(await page.locator('#battle-view').evaluate(node => node.inert), true);
@@ -229,8 +204,6 @@ async function inspect(page, name, seals = false) {
   assert.equal(await page.locator('body').getAttribute('data-review-fallback'), null, 'no missing-art fallback');
 }
 async function scenario(name, viewport, callback, options = {}) {
-  // ONLY=name,name runs a subset while debugging; the full run requires every case.
-  if (process.env.ONLY && !process.env.ONLY.split(',').some(only => name.startsWith(only))) return;
   const context = await browser.newContext({ viewport, reducedMotion: 'reduce', acceptDownloads: true });
   context.setDefaultTimeout(12000);
   await context.addInitScript(() => document.addEventListener('visual-fallback', () => { document.body.dataset.reviewFallback = 'true'; }));
@@ -248,9 +221,9 @@ async function scenario(name, viewport, callback, options = {}) {
 }
 /** Keep native input bounded when real combat replaces controls during its await. */
 async function deployIfAvailable(page, kind) {
-  const button = page.locator(`[data-field-recruit="${kind}"]`);
-  if (await page.locator('#world').getAttribute('data-phase') !== 'running' || !await button.isVisible() || await button.getAttribute('aria-disabled') === 'true') return;
-  try { await button.click({ timeout: 3000, noWaitAfter: true }); }
+  const button = page.locator(`[data-unit="${kind}"]`);
+  if (await page.locator('#world').getAttribute('data-phase') !== 'running' || !await button.isEnabled()) return;
+  try { await button.click({ timeout: 750 }); }
   catch (error) {
     const phase = await page.locator('#world').getAttribute('data-phase');
     // Only a verified natural terminal transition excuses this input race.
@@ -259,7 +232,7 @@ async function deployIfAvailable(page, kind) {
   }
 }
 async function startAndLose(page) {
-  await startBattle(page);
+  await page.locator('[data-command="start"]').click();
   // Observe natural battle resolution, with no deployment/skill and no outcome injection.
   await result(page, false);
 }
@@ -267,13 +240,11 @@ async function assertContinue(page, source, chapter, before) {
   const next = command(page, 'next'); await next.click({ clickCount: 2 });
   if (chapter === 5) {
     await page.locator('[data-command="confirm-prestige"]').waitFor({state:'visible'});
-    // lastSeen is the owner's minute-rounded autosave stamp, not progress.
-    const settled = async () => { const { lastSeen, ...profile } = await saved(source); return profile; };
-    const { lastSeen, ...expected } = before; assert.deepEqual(await settled(), expected, 'preview does not mutate the settled save');
+    assert.deepEqual(await saved(source), before, 'preview does not mutate the settled save');
     await page.locator('[data-command="confirm-prestige"]').click({clickCount:2});
   }
   await ready(page);
-  assert.equal(await page.locator('#app').getAttribute('data-field-mode'), 'camp', 'double continuation lands in Camp at the next battle');
+  assert.equal(await page.locator('[data-tab="battle"]').getAttribute('aria-current'), 'page', 'double continuation retains Battle navigation');
   assert.equal(await page.locator('#secondary-screen').isHidden(), true, 'double continuation cannot click through into a secondary screen');
   const after = await saved(source);
   assert.equal(after.wins, before.wins, 'continuation creates no extra win'); assert.equal(after.pendingVictory, null);
@@ -281,7 +252,7 @@ async function assertContinue(page, source, chapter, before) {
     assert.equal(after.timeline, before.timeline + 1); assert.equal(after.gems, before.gems + 100);
     assert.equal(after.coins, 0); assert.equal(after.enemyAge, 0); assert.equal(after.furthestBattle, 0);
     assert.ok(after.mastery.chapters.every(record => record.earnedMask === 0));
-    await openPicker(page); assert.equal(await command(page, 'next').count(), 0);
+    await page.locator('[data-command="battles"]').click(); assert.equal(await command(page, 'next').count(), 0);
     await command(page, 'close').first().click();
   } else {
     assert.equal(after.enemyAge, chapter + 1); assert.equal(after.furthestBattle, before.furthestBattle);
@@ -303,7 +274,7 @@ try {
     partial: winSeed(prepared(0), 'clear-only-intentionally-missed-objectives', { clearOnly: true }),
   };
   assert.ok(seeds.evolve.coins >= ERAS[0].evolveCost); assert.ok(seeds.insufficient.coins < ERAS[0].evolveCost);
-  server = spawn(process.execPath, ['node_modules/vite/bin/vite.js', 'preview', '--host', '127.0.0.1', '--port', String(port), '--strictPort'], { stdio: 'pipe' });
+  server = spawn(process.execPath, ['node_modules/vite/bin/vite.js', 'preview', '--host', '127.0.0.1', '--port', '4176', '--strictPort'], { stdio: 'pipe' });
   server.stdout.on('data', chunk => { serverLog += chunk; }); server.stderr.on('data', chunk => { serverLog += chunk; });
   let started = false;
   for (let attempt = 0; attempt < 80; attempt++) {
@@ -312,7 +283,7 @@ try {
     if (started) break; await new Promise(resolve => setTimeout(resolve, 250));
   }
   assert.ok(started, `Preview did not start: ${serverLog}`);
-  browser = await launchChromium({ headless: true, timeout: 30000 });
+  browser = await chromium.launch({...(process.env.CHROMIUM_PATH ? { executablePath: process.env.CHROMIUM_PATH } : {}), headless: true, timeout: 30000 });
   for (const viewport of [{ width: 320, height: 568 }, { width: 390, height: 844 }]) {
     const width = viewport.width;
     await scenario(`evolve-return-${width}`, viewport, async context => {
@@ -344,7 +315,7 @@ try {
       assert.equal(await command(page, 'confirm-evolve').count(), 0); assert.deepEqual(ledger(await saved(source)), before);
       await inspect(page, `insufficient-result-${width}`, true); await command(page, 'next').click(); await ready(page);
       // The confirmation's own disabled affordability is reachable on Evolution.
-      await openEvolution(page);
+      await page.getByRole('button', { name: 'Evolution', exact: true }).click();
       assert.equal(await page.locator('[data-command="evolve"]').isDisabled(), true);
       return before;
     });
@@ -382,7 +353,7 @@ try {
       await inspect(page, `loss-${chapter}-${reload}-${width}`, true);
       if (reload) {
         await page.reload({ waitUntil: 'networkidle' }); await active(page); await ready(page);
-        await openPicker(page);
+        await page.locator('[data-command="battles"]').click(); await page.getByRole('heading', { name: 'Choose a battle', exact: true }).waitFor();
         await inspect(page, `picker-${chapter}-${width}`, true);
         assert.equal(await page.locator('.battle-option [data-command="next"]').count(), 0, 'selection and continuation are separate');
       }
@@ -393,13 +364,12 @@ try {
     await scenario(`older-replay-${width}`, viewport, async context => {
       const replay = new Game(seeds.older); assert.equal(replay.dispatch({ type: 'retry' }), true);
       const source = await setup(context, replay.profile), page = await open(context); await active(page); await ready(page);
-      await openPicker(page); await page.locator('[data-battle="1"]').click(); await ready(page);
-      await startBattle(page);
+      await page.locator('[data-command="battles"]').click(); await page.locator('[data-battle="1"]').click(); await ready(page);
+      await page.locator('[data-command="start"]').click();
+      await page.locator('[data-skill="food"]').click();
       const deadline = Date.now() + 150000;
       while (await page.locator('#world').getAttribute('data-phase') === 'running' && Date.now() < deadline) {
         for (const kind of [2, 1, 0]) await deployIfAvailable(page, kind);
-        // E is the Food skill; it is only offered once a troop is on the field.
-        await page.keyboard.press('e');
         await page.waitForTimeout(200);
       }
       await result(page); const before = await saved(source);
@@ -425,17 +395,16 @@ try {
       const source = await setup(context, old ? legacy(seeds.terminal) : seeds.terminal), page = await open(context); await result(page);
       const before = await saved(source); assert.equal(await command(page, 'next').count(), 0);
       await inspect(page, `terminal-${old}-${route}-${width}`, true);
-      // Escape first returns from Details to the short result, then a completed journey returns to chapters.
-      if (route === 'Escape') { await page.keyboard.press('Escape'); await page.keyboard.press('Escape'); } else await command(page, 'return-chapters').click();
+      if (route === 'Escape') await page.keyboard.press('Escape'); else await command(page, 'return-chapters').click();
       await page.getByRole('heading', { name: 'Choose a battle', exact: true }).waitFor();
       assert.equal(await page.locator('#world').getAttribute('data-phase'), 'ready'); assert.equal(await command(page, 'next').count(), 0);
       const after = await saved(source); assert.equal(after.pendingVictory, null);
       for (const field of ['coins', 'gems', 'wins', 'mastery', 'furthestBattle', 'timeline']) assert.deepEqual(after[field], before[field], field);
       await page.keyboard.press('Escape'); await ready(page);
-      assert.equal(await page.locator('#camp-view').evaluate(node => node.hidden || node.inert), false, 'Camp is usable again');
-      await openSettings(page); await command(page, 'close').first().click(); await ready(page);
+      assert.equal(await page.locator('#battle-view').evaluate(node => node.inert), false);
+      await page.locator('[data-command="settings"]').click(); await command(page, 'close').first().click(); await ready(page);
       await page.reload({ waitUntil: 'networkidle' }); await ready(page);
-      await openPicker(page); await command(page, 'close').first().click(); await ready(page);
+      await page.locator('[data-command="battles"]').click(); await command(page, 'close').first().click(); await ready(page);
       return ledger(after);
     });
   }
@@ -494,38 +463,39 @@ try {
   for (const viewport of [{ width: 320, height: 568 }, { width: 390, height: 844 }]) await scenario(`fresh-win-paused-input-${viewport.width}`, viewport, async context => {
     const fresh = defaultProfile(); fresh.sound = false; fresh.motion = 'reduced';
     const source = await setup(context, fresh), page = await open(context); await active(page); await ready(page);
-    await openSettings(page);
-    await page.locator('#preference-speed').selectOption('2'); await page.waitForFunction(key => JSON.parse(localStorage.getItem(key)).speed === 2, SAVE_KEY);
+    assert.match(await page.locator('#deploy-hint').innerText(),/Tap Battle.*spend food.*fight automatically/,'fresh play teaches the deploy loop');
+    await page.locator('[data-command="settings"]').click();
+    await command(page, 'speed').click(); assert.equal((await saved(source)).speed, 2);
     await command(page, 'close').first().click(); await ready(page);
-    await startBattle(page);
-    assert.match(await page.locator('#field-cue').innerText(), /Tap the waiting defender/, 'fresh play teaches the first deployment on the field');
-    await pauseField(page);
+    await page.locator('[data-command="start"]').click();
+    await page.locator('[data-command="pause"]').click();
     const before = ledger(await saved(source)), food = await page.locator('#food-count').textContent();
     for (const key of ['1', '2', '3', 'q', 'w', 'e']) await page.keyboard.press(key);
     assert.deepEqual(ledger(await saved(source)), before); assert.equal(await page.locator('#food-count').textContent(), food);
-    assert.equal(await page.locator('#field-targets').evaluate(node => !!node.closest('[inert]')), true, 'paused field targets are inert');
-    assert.equal(await command(page, 'next').count(), 0, 'the pause offers no continuation'); await resumeField(page);
+    assert.equal(await page.locator('[data-unit="1"]').isDisabled(), true);
+    assert.equal(await page.locator('[data-command="battles"]').isDisabled(), true, 'paused running battle cannot open continuation picker');
+    assert.equal(await command(page, 'next').count(), 0); await page.locator('[data-command="pause"]').click();
+    await page.locator('[data-skill="food"]').click();
     const deadline = Date.now() + 150000;
     while (await page.locator('#world').getAttribute('data-phase') === 'running' && Date.now() < deadline) {
-      await deployIfAvailable(page, 0); await page.keyboard.press('e');
+      await deployIfAvailable(page, 0);
       await page.waitForTimeout(200);
     }
     await result(page); const won = await saved(source);
     assert.equal(won.wins, 1); assert.ok(won.mastery.chapters[0].earnedMask & 1); assert.equal(won.pendingVictory.settlement, 'mastery-v1');
     await inspect(page, `fresh-win-${viewport.width}`, true);
     await command(page, 'next').click(); await ready(page); const purchaseBefore = await saved(source);
-    await openCampStation(page, 'storehouse'); await page.locator('[data-camp-action="food"]').click();
-    await page.waitForFunction(key => JSON.parse(localStorage.getItem(key)).foodLevel === 1, SAVE_KEY); const purchaseAfter = await saved(source);
+    await page.locator('[data-command="upgrade-food"]').click(); const purchaseAfter = await saved(source);
     assert.equal(purchaseAfter.foodLevel, 1); assert.equal(purchaseAfter.coins, purchaseBefore.coins - 50);
     assert.deepEqual(purchaseAfter.mastery, won.mastery); assert.equal(purchaseAfter.wins, won.wins);
     return { victory: ledger(won), usefulPurchase: { cost: 50, foodLevel: purchaseAfter.foodLevel } };
   });
   assert.deepEqual(diagnostics.pageErrors, [], 'no application page errors');
   assert.deepEqual(diagnostics.assetFailures, [], 'storybook requests succeed');
-  if (!process.env.ONLY) assert.equal(diagnostics.cases.length, 37, 'all specified browser scenarios ran');
-  await reviewPrestige({scenario,seeds,setup,open,active,ready,result,saved,bytes,command,inspect,isolation,exported,memoryProfile,startAndLose,openPicker,startBattle});
-  await reviewScouting({scenario,seeds,setup,open,active,ready,result,saved,bytes,command,inspect,openPicker,startBattle});
-  if (!process.env.ONLY) assert.equal(diagnostics.cases.length,53,'37 mastery, 14 prestige and 2 scouting scenarios ran');
+  assert.equal(diagnostics.cases.length, 37, 'all specified browser scenarios ran');
+  await reviewPrestige({scenario,seeds,setup,open,active,ready,result,saved,bytes,command,inspect,isolation,exported,memoryProfile,startAndLose});
+  await reviewScouting({scenario,seeds,setup,open,active,ready,result,saved,bytes,command,inspect});
+  assert.equal(diagnostics.cases.length,53,'37 mastery, 14 prestige and 2 scouting scenarios ran');
   assert.deepEqual(diagnostics.pageErrors, [], 'prestige raises no application errors');
   assert.ok(diagnostics.cases.every(item => item.status === 'passed'), JSON.stringify(diagnostics.cases.filter(item => item.status !== 'passed'), null, 2));
   diagnostics.status = 'passed'; console.log(`Mastery browser review passed: ${diagnostics.cases.length} cases`);

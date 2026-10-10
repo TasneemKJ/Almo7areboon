@@ -35,7 +35,8 @@ test('P22: card screen renders actual rarities, levels, odds and all three pack 
  const path='../src/ui/cards-screen.ts';const screen=await import(path).catch(()=>null);assert.ok(screen,'card screen must exist');
  const p=defaultProfile();p.cards[0]=3;p.gems=1000;const html=screen.cardsScreenHtml(p);
  assert.equal((html.match(/class="collection-card /g)??[]).length,30);
- assert.match(html,/LEGENDARY/);assert.match(html,/LEVEL 2/);assert.match(html,/data-pack="1"/);assert.match(html,/data-pack="10"/);assert.match(html,/data-pack="50"[^>]*disabled/);
+ assert.match(html,/LEGENDARY/);assert.match(html,/LEVEL 2/);assert.match(html,/data-pack="1"/);assert.match(html,/<option value="10"/);assert.match(html,/<option value="50"/);
+ assert.match(screen.cardsScreenHtml(p,50),/data-pack="50"[^>]*disabled/);
  assert.match(html,/Summon level 1/);assert.match(html,/0 \/ 5/);
 });
 test('P23: battle selection exposes only unlocked ready-state battles',()=>{
@@ -74,7 +75,7 @@ test('P28: guidance explains first deployment, pause, danger and waiting for foo
 test('P31: results show durable statistics and do not imply a second reward claim',async()=>{
  const path='../src/ui/results-screen.ts';const screen=await import(path).catch(()=>null);assert.ok(screen,'results screen must exist');
  const g=new Game();g.dispatch({type:'start'});g.dispatch({type:'spawn',kind:0});g.state.enemyHp=0;g.step(1/60);
- const html=screen.resultsHtml(g.profile,g.state);assert.match(html,/Already added/);assert.match(html,/Warriors deployed/);assert.match(html,/Food spent/);assert.match(html,/10 gems/);
+ const html=screen.resultsHtml(g.profile,g.state);assert.match(html,/Already added/);assert.match(html,/Warriors deployed/);assert.match(html,/Food spent/);const receipt=g.profile.pendingVictory;assert.ok(receipt?.settlement==='mastery-v1');assert.match(html,new RegExp(`${receipt.masteryGems} gems`));assert.doesNotMatch(html,/victory bonus: up to 10 gems/);
  const h=new Game(g.profile);assert.equal(screen.resultsHtml(h.profile,h.state),html);
 });
 test('P33: reduced-motion policy applies to renderer, not only CSS transitions',async()=>{

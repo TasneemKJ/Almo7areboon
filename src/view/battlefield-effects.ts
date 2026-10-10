@@ -1,5 +1,6 @@
 import type Phaser from 'phaser';
 import {DeathVisuals} from './death-visuals.ts';
+import {createActionEchoes} from './action-echoes.ts';
 import {baseDamagePalette,baseDamageStage} from './base-damage.ts';
 import {compactNumber} from '../game/format.ts';
 import type {GamePort,Side,Unit} from '../game/types';
@@ -26,6 +27,7 @@ export interface EffectsHost {
  */
 export function createBattlefieldEffects(host:EffectsHost,layers:{fx:Phaser.GameObjects.Graphics;glow:Phaser.GameObjects.Graphics;groundFx:Phaser.GameObjects.Graphics[]},marks:ReturnType<typeof createBattlefieldMarks>){
  const {fx,glow,groundFx}=layers;
+ const answers=createActionEchoes({...host,camera:host.scene.cameras.main},layers);
  const particles=createParticles(host,layers);
  const cues=createCues(host,layers);
  const {emit,ring,flare,floatText}=particles;
@@ -41,7 +43,7 @@ export function createBattlefieldEffects(host:EffectsHost,layers:{fx:Phaser.Game
    ring(x,y,targetSide==='player'?0x8fe7f0:0xffbb8b,heavy?29:18);
    flare(x,y,heavy?34:22,targetSide==='player'?0x7fdcff:0xffa060,heavy?.34:.24);
    if(amount>0)floatText(x,y-17,compactNumber(amount),'#fff1c8',false,heavy);
-   if(heavy&&!host.reduce())host.scene.cameras.main.shake(55,.0012);
+   if(heavy)answers.cameraKick(55,.0012,1);
   }
  function impact(x:number,y:number,amount:number,age:number,kind:Unit['kind'],side:Side,heavy=kind===2):void {
    cues.pushImpactCue({x,y,age,kind,side,life:heavy?.3:.24,max:heavy?.3:.24});
@@ -53,22 +55,23 @@ export function createBattlefieldEffects(host:EffectsHost,layers:{fx:Phaser.Game
    baseHit.player=Math.max(0,baseHit.player-dt);baseHit.enemy=Math.max(0,baseHit.enemy-dt);
    particles.stepSparks(dt);particles.stepRings(dt);
    cues.stepBolts(dt,bolt=>{
+    if(bolt.meteor)answers.meteorLanding(bolt.to.x,bolt.to.y);
     if(bolt.targetBase&&bolt.targetSide!==undefined&&bolt.targetAge!==undefined)baseImpact(bolt.to.x,bolt.to.y,bolt.damage,bolt.heavy,bolt.targetSide,bolt.targetAge);
     else impact(bolt.to.x,bolt.to.y,bolt.damage,bolt.age,bolt.kind,bolt.side,bolt.heavy);
     if(bolt.memory)marks.remember(bolt.memory);
    });
-   particles.stepFlares(dt);particles.stepFloaters(dt);
+   particles.stepFlares(dt);particles.stepFloaters(dt);answers.step(dt);
    marks.rewardEvidence(particles.floaters());
  }
  function reset(reason:'motion'|'scene'='scene'):void {
-  stop=0;cool=0;delete host.canvas().dataset.battleOrder;baseHit={player:0,enemy:0};
+  stop=0;cool=0;answers.reset();delete host.canvas().dataset.battleOrder;baseHit={player:0,enemy:0};
   marks.reset(reason,cues.pendingMemories());
   delete host.canvas().dataset.battlefieldMemoryPending;
   for(const g of groundFx)g.clear();
   cues.clear();fallen.clear();particles.clear();glow.clear();
  }
  return {
-  fallen,emit,ring,flare,floatText,impact,baseImpact,step,reset,
+  ...answers,fallen,emit,ring,flare,floatText,impact,baseImpact,step,reset,
   /** Seconds left on each base's hit pulse, read by the base-damage painter. */
   baseHit:(side:Side)=>baseHit[side],
   pushImpactCue:cues.pushImpactCue,pushAttackCue:cues.pushAttackCue,pushBolt:cues.pushBolt,

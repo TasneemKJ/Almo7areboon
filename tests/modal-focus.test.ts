@@ -37,7 +37,7 @@ test('rerendering after finding a discovery moves focus to an enabled control',(
 test('a fresh result dialog focuses its outcome heading before below-the-fold actions',()=>{
  const document:any={activeElement:null};
  const heading:any={id:'dialog-title',dataset:{initialFocus:''},focus(){document.activeElement=this;}};
- const action:any={dataset:{command:'review-battlefield'},focus(){document.activeElement=this;}};
+ const action:any={dataset:{command:'review-battlefield'},matches(){return false;},focus(){document.activeElement=this;}};
  const dialog:any={scrollTop:0,focus(){document.activeElement=this;}};
  const layer:any={hidden:true,innerHTML:'',querySelector(selector:string){return selector==='.dialog'?dialog:selector==='[data-initial-focus]'?heading:null;},querySelectorAll(selector:string){return selector==='[data-command]'?[action]:[];}};
  const context:any={campOwner:null,modal:null,modalVersion:0,focusFrame:0,focusBefore:null,document,lifetime:{disposed:false},playable:()=>true,$:()=>layer,icon:()=>'',isolateModal(){},syncPause(){},modalFocusables:()=>[action],chronicleActionFromData,window:{cancelAnimationFrame(){}},requestAnimationFrame(callback:()=>void){callback();return 1;}};
@@ -52,7 +52,7 @@ test('replacing another modal with results resets scroll and focuses the outcome
  const document:any={activeElement:null};
  const oldClose:any={dataset:{command:'close'},focus(){document.activeElement=this;}};
  const heading:any={id:'dialog-title',dataset:{initialFocus:''},focus(){document.activeElement=this;}};
- const action:any={dataset:{command:'review-battlefield'},focus(){document.activeElement=this;}};
+ const action:any={dataset:{command:'review-battlefield'},matches(){return false;},focus(){document.activeElement=this;}};
  document.activeElement=oldClose;
  let dialog:any={scrollTop:486,focus(){document.activeElement=this;}};
  const layer:any={hidden:false,get innerHTML(){return '';},set innerHTML(_value:string){dialog={scrollTop:0,focus(){document.activeElement=this;}};},querySelector(selector:string){return selector==='.dialog'?dialog:selector==='[data-initial-focus]'?heading:null;},querySelectorAll(selector:string){return selector==='[data-command]'?[action]:[];}};
@@ -69,4 +69,16 @@ test('focused Preferences, recovery and consequence dialogs do not add a fourth 
   context.showModal(name,'<h2 id="dialog-title">Test</h2>'+Array.from({length:count},(_,i)=>`<button data-command="test-${i}">Action</button>`).join(''));
   assert.equal((layer.innerHTML.match(/<button\b/g)||[]).length,count,name);assert.doesNotMatch(layer.innerHTML,/close-button/);
  }
+});
+
+
+for(const requested of [false,true])test(`disabled ${requested?'requested':'previous'} command falls back to an available modal action`,()=>{
+ const document:any={activeElement:null};
+ const control=(command:string,disabled=false)=>({dataset:{command},disabled,matches(selector:string){return disabled&&selector.includes(':disabled');},focus(){if(!this.disabled)document.activeElement=this;}});
+ const active=control('next'),disabled=control('next',true),back=control('result-back');document.activeElement=active;
+ const dialog:any={scrollTop:110,focus(){document.activeElement=this;}};
+ const layer:any={hidden:false,innerHTML:'',querySelector(selector:string){return selector==='.dialog'?dialog:null;},querySelectorAll(selector:string){return selector==='[data-command]'?[disabled,back]:[];}};
+ const context:any={campOwner:null,modal:'result',modalVersion:0,focusFrame:0,focusBefore:null,document,lifetime:{disposed:false},playable:()=>true,$:()=>layer,icon:()=>'',isolateModal(){},syncPause(){},modalFocusables:()=>[back],chronicleActionFromData,window:{cancelAnimationFrame(){}},requestAnimationFrame(callback:()=>void){callback();return 1;}};
+ runInApp(code,context);context.showModal('result','',requested?'next':undefined);
+ assert.equal(document.activeElement,back);assert.equal(dialog.scrollTop,110);
 });

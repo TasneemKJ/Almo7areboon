@@ -4,6 +4,8 @@ import { Game } from '../src/game/simulation.ts';
 import { ERAS } from '../src/game/data.ts';
 import { createFieldController } from '../src/ui/field-controller.ts';
 import type { Unit } from '../src/game/types.ts';
+import { createChronicle } from '../src/game/chronicle.ts';
+import { createChronicleBattle } from '../src/game/chronicle-combat.ts';
 
 class Node {
  ownerDocument={activeElement:null};dataset:Record<string,string>={};hidden=false;disabled=false;title='';innerHTML='';textContent='';clientWidth=390;clientHeight=600;
@@ -36,4 +38,55 @@ test('physical piling cue and ring obey the canonical threshold, phase, pause, a
   h.update();assert.doesNotMatch(h.cue.textContent,/Food is piling up/,condition);
   assert.equal(h.recruits[0].classes.has('teach'),condition==='undeployed',condition);
  }
+});
+
+test('actual physical field retains canonical danger before piling food and first deployment',()=>{
+ for(const deployed of [0,1]){
+  const h=harness();h.g.state.stats.deployed=deployed;h.g.state.playerHp=h.g.state.playerMaxHp*.3;
+  const before=JSON.stringify([h.g.profile,h.g.state]);h.update();
+  assert.equal(h.cue.textContent,'Your base is in danger. Deploy reinforcements or use a skill.');
+  assert.equal(JSON.stringify([h.g.profile,h.g.state]),before);
+ }
+});
+
+test('actual field names Supplies and Food Drop when it is the canonical alternative to waiting',()=>{
+ const h=harness();h.g.state.food=0;h.g.state.time=4;h.g.state.units=h.g.state.units.slice(0,2);h.update();
+ assert.match(h.cue.textContent,/Supplies.*Food Drop.*10.*once per battle.*wait \d+s/);
+ h.g.state.skillsUsed.push('food');h.update();assert.doesNotMatch(h.cue.textContent,/Food Drop/);
+ h.g.state.skillsUsed=[];h.g.profile.chronicle={...h.g.profile.chronicle!,enabled:true,captain:'gatekeeper'};h.update();
+ assert.doesNotMatch(h.cue.textContent,/Food Drop/);
+});
+
+
+test('actual field keeps ranged-cover guidance after opening skill teaching',()=>{
+ const h=harness();h.g.profile.wins=1;h.g.state.food=10;h.g.state.time=1;h.g.state.stats.skillsCast=1;
+ h.g.state.skillsUsed=['freeze','meteor','food'];h.g.state.units=[{id:1,side:'player',kind:1,hp:10,x:150,lane:1}] as Unit[];
+ h.update();assert.equal(h.cue.textContent,'Ranged troops need cover. Add a melee guard.');
+});
+test('actual field keeps the canonical incoming-wave counter for experienced players',()=>{
+ const h=harness();h.g.profile.wins=7;h.g.state.food=10;const wave=h.g.waveStatus();
+ h.g.waveStatus=()=>({...wave,preview:{...wave.preview!,number:1,total:3,nextIn:7,intent:'volley',counts:[0,2,0]}});
+ h.update();assert.equal(h.cue.textContent,'Ranged enemies are coming. Melee guards take less damage from them.');
+});
+test('actual field states the authored Chronicle objective while preserving urgent danger',()=>{
+ const h=harness();h.g.profile.wins=7;h.g.state.food=10;
+ h.g.profile.chronicle={...createChronicle(),enabled:true,route:'watch'};h.g.state.chronicle=createChronicleBattle(h.g.profile);
+ const before=JSON.stringify([h.g.profile,h.g.state]);h.update();
+ assert.equal(h.cue.textContent,'Keep the courtyard safe · 45 seconds left');assert.equal(JSON.stringify([h.g.profile,h.g.state]),before);
+ h.g.state.playerHp=h.g.state.playerMaxHp*.2;h.update();assert.match(h.cue.textContent,/^Your base is in danger/);
+});
+
+test('Chronicle routes retain the food and first-skill lessons before their objective',()=>{
+ for(const route of ['watch','road'] as const)for(const lesson of ['piling','freeze','meteor']){
+  const h=harness();h.g.profile.unlocked[1]=true;
+  h.g.profile.chronicle={...createChronicle(),enabled:true,route};h.g.state.chronicle=createChronicleBattle(h.g.profile);
+  h.g.state.food=lesson==='piling'?26:10;
+  if(lesson==='meteor'){h.g.state.skillsUsed=['freeze'];h.g.state.stats.skillsCast=1;}
+  h.update();
+  assert.match(h.cue.textContent,lesson==='piling'?/^Food is piling up/:lesson==='freeze'?/Select an enemy, then Freeze/:/Select an enemy, then Meteor/,`${route} ${lesson}`);
+ }
+});
+test('a paused field cannot teach deployment before the first defender',()=>{
+ const h=harness();h.g.state.stats.deployed=0;h.g.state.paused=true;h.update();
+ assert.equal(h.cue.textContent,'Battle paused. Resume to deploy your army.');
 });

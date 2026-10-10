@@ -17,6 +17,4 @@ test('the battlefield scene keeps the review diagnostics the layering fixture re
  // The battlefield split moved cues into a collaborator; the trait review read undefined and saw no accents.
  const scene=readFileSync(new URL('../src/view/battlefield-scene.ts',import.meta.url),'utf8');
  for(const name of ['attackCues','impactCues','bolts'])assert.match(scene,new RegExp(`get ${name}\\(\\)\\{return this\\.effects\\?\\.cueSnapshot\\(\\)\\.${name};\\}`));
- const fixture=readFileSync(new URL('./fixtures/layering.ts',import.meta.url),'utf8');
- for(const name of ['impactCues','attackCues','bolts'])assert.ok(fixture.includes(`actual.${name}`),`fixture reads ${name}`);
 });

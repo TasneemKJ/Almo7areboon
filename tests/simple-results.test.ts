@@ -33,3 +33,31 @@ test('defeat uses one safety line and zero earnings never claim an added payout'
  assert.doesNotMatch(html,/Already added|YOUR PROGRESS IS SAFE/);assert.match(html,/Your earned coins stay with you/);
  g.state.phase='won';assert.doesNotMatch(compactResultsHtml(g.profile,g.state),/Already added/);
 });
+
+function wonExpedition(terminal=false){
+ const p=defaultProfile();p.chronicle!.restoration=1;
+ if(terminal){p.timeline=1000;p.age=5;p.enemyAge=5;p.furthestBattle=5;p.mastery.timeline=1000;p.chronicle!.timeline=1000;}
+ const g=new Game(p);assert.equal(g.dispatch({type:'chronicle-expedition',battle:p.enemyAge}),true);
+ assert.equal(g.dispatch({type:'start'}),true);g.state.chronicle!.cart.x=790;g.step(1/60);
+ assert.equal(g.state.phase,'won');return g;
+}
+test('expedition Details describes its own encounter instead of the next ordinary chapter',()=>{
+ const g=wonExpedition(),before=JSON.stringify([g.profile,g.state]),html=resultsHtml(g.profile,g.state);
+ assert.match(html,/Encounter 1 of 3 complete/);assert.doesNotMatch(html,/Olive Terraces is next/);
+ assert.match(html,/Choose provisions/);assert.equal(JSON.stringify([g.profile,g.state]),before);
+});
+test('a final-timeline expedition still offers its canonical continuation',()=>{
+ const g=wonExpedition(true),before=JSON.stringify([g.profile,g.state]),html=compactResultsHtml(g.profile,g.state);
+ assert.match(html,/data-command="result-expedition"/);assert.doesNotMatch(html,/data-command="return-chapters"/);
+ assert.equal(controls(html),3);assert.equal(JSON.stringify([g.profile,g.state]),before);
+ assert.equal(g.dispatch({type:'chronicle-provision',provision:'shelter'}),true);
+ assert.equal(g.dispatch({type:'chronicle-continue'}),true);assert.equal(g.state.phase,'ready');
+ assert.equal(g.profile.enemyAge,5);assert.equal(g.profile.chronicle!.expedition!.stage,1);
+});
+test('a settled mastery receipt reports its real gems without promising the legacy victory bonus',()=>{
+ const g=new Game();g.dispatch({type:'start'});g.state.enemyHp=0;g.step(1/60);
+ assert.equal(g.state.phase,'won');const receipt=g.profile.pendingVictory;assert.ok(receipt?.settlement==='mastery-v1');assert.equal(receipt.masteryGems,50);
+ const before=JSON.stringify([g.profile,g.state]),html=resultsHtml(g.profile,g.state);
+ assert.match(html,/Mastery credited: .*50 gems/);assert.doesNotMatch(html,/victory bonus: up to 10 gems/);
+ assert.equal(JSON.stringify([g.profile,g.state]),before);
+});

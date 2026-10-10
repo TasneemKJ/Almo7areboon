@@ -12,6 +12,10 @@ Ordered tasks. Tick a task when it is done and never delete finished tasks. This
 - Every visual iteration needs three current before views and matching exact-head after evidence before merge.
 
 ## Done
+- [x] Observe actual renderer effect objects in the layering fixture after effects moved into their owner; preserve trait identity, graphics, lifetime, reset, projectile and reduced-motion assertions.
+- [x] Migrate all 16 save-session review scenarios to Home, Camp, Preferences and Save & recovery; normalize ready fixtures before installation and retain profile, ownership, exact-byte, quota, receipt and temporary-session assertions.
+- [x] Migrate the browser review to native Home, Camp and physical field controls; retain chapter/role portraits, text clipping, 44px targets, evolution, click/touch/keyboard isolation, exact food conservation and wave/trait checks. Synchronize resize assertions with stable rendered geometry.
+- [x] Honor explicit `CHROMIUM_PATH` across standard npm browser reviews while preserving headless/timeout defaults and Playwright-managed behavior when unset; add regression coverage.
 - [x] Ready-screen Journey button names the nearest reward (`src/ui/next-goal.ts`)
 - [x] Hide the boxed focus ring on programmatic dialog-title focus unless keyboard-focused
 - [x] Fast `verify` gate (build + `test:fast`); heavy workflows manual; `weekly-full.yml` safety net; failure-only trimmed CI evidence
@@ -156,6 +160,55 @@ Advanced Camp leaves remain dense and unaccepted. This work does not claim all-s
 - [x] Count a just-settled receipt when Monday begins between pre-step baseline and event drain; retain accepted-start-only synchronization.
 - [ ] Recheck exact reconciled source, native weekly ownership, required CI and unchanged main before the root merge decision.
 
+## Portfolio field audit — 2026-10-08
+
+IDEAL / 5Ws and twenty candidates for each bounded iteration: `docs/audits/2026-10-08-portfolio-repair.md`. No design rule override; source-only findings are not deployed-play evidence.
+
+- [x] AM1: expose canonical Meteor cover breaking through the painted cover target.
+- [x] AM2: retain canonical gate-danger instruction in the physical field cue.
+- [x] AM3: carry canonical Chronicle mission guidance into the existing field cue.
+- [x] AM4: name the actual support ability at the supplies choice and teach that target.
+- [x] AM5: add supported next-attempt advice to compact Regroup while retaining three choices.
+- [x] AM6: separate changing visual progress from stable spoken instructions.
+- [x] Verify source regressions, broad tests and typecheck; record exact verification in the audit.
+- [ ] Exact-source native browser/touch/AT/visual acceptance remains open; local Chromium cannot launch.
+
+- [x] AM7: require owned, strict/configurable preview and fixture startup; prove foreign-server rejection before browser launch.
+
+## Bug audit M3 — 8 October 2026
+
+- [x] Reproduce and minimally repair current offline-dependency eviction during stale-bundle cleanup. The 20-probe IDEAL / 5Ws review and evidence are tracked in `docs/audits/2026-10-08-bug-audit.md`.
+- [x] Verify 29 production service-worker/download regressions and the production build (487,827 bytes gzip); all five emitted bundles retain current dependency protection.
+- [x] Complete the final full test run: 1,337 passed, zero failures, skips or cancellations.
+- [ ] Complete independent review of the frozen fix and regression evidence.
+- [ ] Complete native offline/reload acceptance when an authorized browser is available.
+
+
+## Current review, cycles 22–28 — 2026-10-08
+
+IDEAL/5Ws and twenty alternatives per distinct scenario: `docs/audits/2026-10-08-field-reliability.md`. Checked against the current design and interaction rules; no overrides or economy changes.
+
+- [x] 22: Preserve canonical critical-gate guidance in the actual physical field.
+- [x] 23: Explain the available Food Drop route through physical Supplies during a wait.
+- [x] 24: Retain formation, incoming-wave and Chronicle objective guidance beyond opening.
+- [x] 25: Offer the existing Meteor command at intact road cover when no enemy exists.
+- [x] 26: Name the actual captain replacement on the visible support button.
+- [x] 27: Replace three card purchase buttons with native quantity/cost preview and one guarded Summon command, as approved in the existing future-cards task.
+- [x] 28: Keep countdowns visible while announcing only meaningful field instruction changes.
+- [x] Verify the exact batch with all source tests, lint, build and an independent source review; record the distinct red/green scenarios in the audit.
+- [ ] Native touch, rotation, enlarged text, screen-reader and screenshot acceptance: the existing mobile-touch script could not open a page because local Chromium exited with SIGTRAP. No visual or physical-device acceptance is claimed.
+
+- [x] Reconcile PR190 with main `d8eb374`: retain both documentation additions and all original source blobs; combined full suite 1,356 passes, build 488,910 gzip bytes, and all five emitted bundles protected by the offline manifest/page. Integration evidence is appended to `docs/audits/2026-10-08-field-reliability.md`; native acceptance remains open.
+
+
+### PR190 reconciliation with PR189 — 8 October 2026
+
+- [x] Merge latest physical-field main `a4bb398` into published head `3e671b3`, retaining one guidance/status path, native cover focus safety, both skill effects, Regroup advice and owned review-server checks.
+- [x] Re-run combined source gates: targeted 45/45; full npm test 1,375/1,375 with zero failures/skips; TypeScript/build pass, 489,329/512,000 gzip bytes.
+- [ ] Complete required exact-head rendered/mobile/offline checks; the separate production play review is not PR-head acceptance. No gate waiver, browser workaround or manual workflow trigger is part of this integration.
+
+- [x] Replace the missing-font battlefield Pause glyph with two painted bars; preserve its accessible name and pause behavior (2026-10-08 playtest).
+
 ## World-first mobile pass (8 October 2026)
 - [x] Bring the review:* browser journeys up to date with the world-first shell (shared launcher, 47xx ports, real routes).
 - [x] Field food readout at the top-left edge; Camp next-goal line; place-name plates; full-height Camp pages; no sideways dialog pan.
@@ -163,3 +216,6 @@ Advanced Camp leaves remain dense and unaccepted. This work does not claim all-s
 - [ ] Retire the hidden legacy battle HUD (resources, ready panel, deployment cards, upgrades, bottom navigation, battle skills): it still renders invisibly and several state probes read it.
 - [ ] Investigate the first-frame stall when a battle starts (7-12 s in headless software GL at 2x density, all in WebGL ReadPixels during commit); check on real phones before acting.
 - [ ] Evolution's evolve action sits below six era cards at 390x844; consider surfacing it near the top.
+
+## Review-script reconciliation (10 October 2026)
+- [ ] Two sessions rewrote the review journeys in parallel; main's versions were kept at merge. Move `verify-save-sessions`, `capture-mastery-review`, `capture-upgrade-text-review`, `capture-browser-review` and `capture-layering-review` onto `scripts/lib/browser.mjs` (free 47xx ports, current Camp and field routes) and empty `pendingUpdate` in `tests/review-scripts.test.ts`.

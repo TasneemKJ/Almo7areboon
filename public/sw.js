@@ -3,7 +3,7 @@ const CACHE = 'almo7areboon-runtime-v1';
 // Vite replaces this list with the shipped artwork and generated worker files.
 const INSTALL_ASSETS = [];
 const SCOPE = new URL(self.registration.scope);
-// Bound old bundles without evicting scripts/styles still required by the cached page.
+// Bound old bundles without evicting current shell or installed lazy dependencies.
 const KEEP_BUNDLES = 6;
 const inScope = url => {
   if (url.origin !== self.location.origin) return false;
@@ -20,7 +20,8 @@ async function trimBundles(cache) {
   });
   if (bundles.length <= KEEP_BUNDLES) return;
   const page = await cache.match(SCOPE.href);
-  const required = new Set(page ? shellURLs(await page.text()) : []);
+  const required = new Set(INSTALL_ASSETS.map(path => new URL(path, SCOPE).href));
+  for (const url of page ? shellURLs(await page.text()) : []) required.add(url);
   const stale = bundles.filter(request => !required.has(request.url));
   for (const request of stale.slice(0, bundles.length - KEEP_BUNDLES)) await cache.delete(request);
 }

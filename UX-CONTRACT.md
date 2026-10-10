@@ -95,3 +95,15 @@ Teaching cues are single lines in the deploy hint, never panels. In the first-ev
 Defeat names the troop role that dealt the most damage. Settings offers "Troop shapes" (circle melee, triangle ranged, square heavy; filled yours, outlined enemy; off by default) and ends with "Last saved HH:MM" (memory only; opening Settings saves once). A returning player (at least one win, six hours or more away) sees the welcome-back line in the existing Home subtitle; it grants nothing and adds no toast. The daily streak survives one missed day, at most once every seven days, and the Quests row says so before claiming.
 
 Heavy troops fall louder (wider dust, second ring, short low shake) and a heavy blow on a unit freezes the scene for about 50 ms at most twice a second; neither shake nor freeze happens with reduced motion. A battle that starts in a new week opens that week's goal first.
+
+
+## Current physical guidance and Cards review — 8 October 2026
+
+Urgent physical instructions and opening skill lessons retain their canonical priority and state predicates. In the road route, imminent incoming-wave advice (eight seconds or less) precedes generic Chronicle formation and announces a changed enemy counter. Gate danger outranks opening instructions; Food Drop teaching names Supplies while retaining the once-per-battle rule; later tactical and Chronicle guidance use existing domain queries. The tactical target may refer to a living enemy or, only when no enemy exists and Meteor is available, intact road cover. Selection itself is read-only and the current guarded skill action remains the sole mutation path. The support button's visible name and accessible effect follow the same skill cue.
+
+Cards quantity selection is a native field with 1/10/50 options, one exact-cost preview and one Summon command. A change preserves focus and makes no purchase. Commit rechecks current phase/session/admission, and the result modal prevents an old field button or repeated pointer sequence from drawing again. Published prices, odds, bonuses, card capacity and receipt semantics remain unchanged. The visible field hint is not a countdown live region; meaningful normalized instructions use one separate visually hidden status owner.
+## Physical field correction contract — 8 October 2026
+
+An unbroken cover which canonical Meteor can affect is reachable by a native44px physical target without requiring a living enemy. Its context offers only the relevant Meteor action. Gate danger retains canonical priority in the field cue; authored Chronicle objective progress reaches that same visible cue. Supplies selection names the actual available Food Drop/captain ability. Regroup keeps three choices and shows the existing state-supported next-attempt advice.
+
+The visible cue and its stable spoken instruction are separate DOM nodes: numeric visual progress does not trigger repeated polite announcements. Urgent instructions and a genuinely different action still announce. Every mutation remains behind the existing guarded dispatch, and a pause or completed battle clears tactical contexts.

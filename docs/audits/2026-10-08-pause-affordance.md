@@ -1,0 +1,7 @@
+# Playtest pause affordance
+
+IDEAL / five Ws: phone players need a recognizable pause action during battle; at the top-right battlefield control, Chromium without the Roman numeral glyph displays a hollow missing-character box. Identify via 390px and landscape captures, define two visible pause bars with the existing accessible name, explore bounded options, implement local SVG, look back through actual pause/resume and keyboard checks.
+
+Twenty audit ideas across the required lenses: 1 font-independent pause icon; 2 defender silhouette clarity; 3 dusk contrast; 4 quiet battle hints; 5 first-tap deployment learning; 6 food timing feedback; 7 honest loss receipts; 8 skill cue readability; 9 audio gesture boundaries; 10 concise retreat copy; 11 keyboard focus return; 12 touch target geometry; 13 replay preparation clarity; 14 pause continuity; 15 reload deployment preservation; 16 first-paint asset readiness; 17 source/build release gates; 18 second-tab ownership; 19 daily reward legibility; 20 reduced-motion readability. Shortlist: fix the reproduced pause glyph defect; playtest the others without inventing changes.
+
+The root cause is U+2161 rendered through inherited system fonts. Existing UI uses SVG shapes for font-independent affordances. Keep the current native button, accessible name, 44px hit area, colors and pause behavior; replace only its visual content with two currentColor SVG bars. No save/simulation changes. Screenshot evidence is outside the repository under `/workspace/playtest40/evidence/Almo7areboon/`.

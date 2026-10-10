@@ -121,7 +121,7 @@ test('battlefield bakes the grade into static art instead of paying a per-frame 
  for(const layer of ['halos','glow'])assert.match(source,new RegExp(`this\\.${layer}=this\\.add\\.graphics\\(\\)\\.setBlendMode\\(Phaser\\.BlendModes\\.ADD\\)`));
  assert.ok(source.indexOf('this.glow=this.add.graphics()')<source.indexOf('this.bars=this.add.graphics()'),'health bars must draw above glow');
  assert.match(source,/function flare\([^)]*\):void \{\n\s+if\(host\.reduce\(\)\)return;/,'reduced motion must not flash');
- assert.match(source,/if\(!this\.reduce\)\{this\.cameras\.main\.shake\(100,\.0015\);this\.cameras\.main\.flash/);
+ assert.match(source,/if\(!this\.reduce\)\{this\.effects\.cameraKick\(100,\.0015,4\);this\.cameras\.main\.flash/);
 });
 
 test('bright chapters keep a dimmer road pool so troops stay darker than the lane',()=>{

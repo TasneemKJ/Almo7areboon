@@ -18,6 +18,9 @@
 .world-hit:focus-visible .world-target-name,.world-hit:hover .world-target-name{opacity:1}
 .gate-hit.order-ready{box-shadow:0 0 0 2px #eac16a88,0 0 16px #f1c57344}
 .enemy-hit.selected{box-shadow:0 0 0 2px #efc767}
+.cover-hit{border-radius:8px;box-shadow:inset 0 0 0 1px #efc76788}
+.cover-hit.selected{box-shadow:0 0 0 2px #efc767}
+.cover-hit .world-target-name{opacity:1}
 .field-chrome{position:absolute;right:max(12px,env(safe-area-inset-right));top:max(12px,env(safe-area-inset-top));z-index:8;display:flex;align-items:flex-start;gap:8px}
 .field-chrome button{min-width:44px;min-height:44px;border:1px solid #d8bd7f88;border-radius:12px;background:#16352ee6;color:#fff0c9;font:inherit;font-size:13px;padding:8px 12px}
 .field-chrome button:focus-visible{outline:3px solid #fff0c9;outline-offset:3px}
@@ -51,3 +54,20 @@
 @media(max-width:360px){#app[data-field-mode="field"] .stage h1{font-size:18px}}
 .field-food.full{border-color:#efce81}
 #app[data-field-mode="camp"] .field-food{display:none}
+/* Momentum is tactical knowledge, not another permanent action deck.
+   On touch, reveal the painted gate choices only once the game admits orders. */
+.gate-hit.order-ready .world-target-name,
+.gate-hit[aria-pressed="true"] .world-target-name{
+ opacity:1;bottom:calc(100% + 5px);min-width:48px;max-width:96px;
+ white-space:normal;overflow-wrap:normal;
+ padding:6px 8px;border:1px solid #d8bd7f88;
+ border-radius:9px;background:#122e2bec;
+ color:#fff0c9;font:700 13px/1.25 'Trebuchet MS',sans-serif;
+ box-shadow:0 4px 12px #091c1b77;
+}
+.gate-hit[aria-pressed="true"] .world-target-name{background:#5a4726f5;color:#fff6d9}
+@media(max-width:359px){.gate-hit.order-ready .world-target-name{max-width:78px;font-size:12px}}
+@media(forced-colors:active){
+ .gate-hit.order-ready .world-target-name,.gate-hit[aria-pressed="true"] .world-target-name{
+  background:Canvas;color:CanvasText;border:1px solid Highlight}
+}

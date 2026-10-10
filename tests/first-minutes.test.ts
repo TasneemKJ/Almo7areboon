@@ -49,7 +49,8 @@ test('death events carry the fallen unit role so a heavy can fall louder', async
   assert.ok(seen.size >= 1, "a death event carries a role");
   const field = battlefieldSource();
   assert.match(field, /e\.type==='death'&&e\.kind===2/);
-  assert.match(field, /if\(!this\.reduce\)this\.cameras\.main\.shake\(70,\.0016\)/);
+  const heavy=field.slice(field.indexOf("if(e.type==='death'&&e.kind===2){"),field.indexOf("if(e.type==='death'){"));
+  assert.match(heavy, /this\.effects\.cameraKick\(70,\.0016,2\);[\s\S]*return;/,'heavy death keeps its separate bounded camera consequence');
 });
 
 test('piling food: the hint and ring chase a first-timer who banks food after the first deployment', async () => {
