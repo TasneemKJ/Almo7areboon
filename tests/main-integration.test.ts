@@ -2,7 +2,7 @@ import {questClaimCheck,questRecords,selectedQuestRecord,questRecordAction,quest
 import { flatStatements, mainSource } from './helpers/main-source.ts';
 import {cardPackPreview,cardsScreenHtml,summonedCardsHtml} from '../src/ui/cards-screen.ts';
 import {isEditingTarget} from '../src/ui/accessibility.ts';
-import {campRootHtml,campFocusHtml} from '../src/ui/camp-screen.ts';
+import {campRootHtml,campFocusHtml,campGoalText} from '../src/ui/camp-screen.ts';
 import {canOwnCamp,isCampStation,campActionFromData} from '../src/ui/camp-owner.ts';
 import {preferencesHtml,saveRecoveryHtml} from '../src/ui/preferences-screen.ts';
 import {entryCopy,hasPriorPlay,entrySecondary} from '../src/ui/entry-screen.ts';
@@ -81,7 +81,7 @@ function harness(motion = 'full') {
     questSelection:null,questCalendarDay:null,questClaimCheck,claimableWeek,syncBattleHud,storyFollowUp,questRecords,selectedQuestRecord,questRecordAction,questRecordLabel,questRecordsHtml,questRecordDetailHtml,lastSavedAt:0,campOwner:null,campRenderKey:'',focusFrame:0,modalVersion:0,focusBefore:null,settingsOrigin:null,acquiring: null, acquisitionVersion: 0, hasPlayed: true, entryWelcome:null,entryEntered: true, entrySaved: true, resultDetailsOpen:false, atmosphereEnabled:true,audioMix:{effects:100,atmosphere:100}, manualPaused: false, savedWarning: false, pendingImport: null, modal: null, evolutionFromResult: false, modalPointerSequence: false,prestigeOrigin:null,prestigeDraft:null,prestigeExpectedTimeline:null,
     lastUpdate: 0, lastSave: 100, lastPhase: 'ready', resultDue: 0, resultShown: '', activeTab: 'battle', cardQuantity:1, root,
     window:{cancelAnimationFrame(){}},requestAnimationFrame(){return 0;},performance: { now: () => now }, document: { documentElement: { dataset: { motion } } },
-    cardPackPreview,cardsScreenHtml,summonedCardsHtml,isEditingTarget,campRootHtml,campFocusHtml,canOwnCamp,isCampStation,campActionFromData,fieldControls:{update(){},clear(){},select(){}},blockModalTap:createModalTapGuard(),startCountUp,welcomeBackLine,restoreBackupWithSave,startOverProfile,syncWeekly,weekId,weeklyStatus,foodIsPiling,Date:class extends Date{static now(){return 1_800_000_000_000;}},journeyScreenHtml,updateOrderBanner,entryCopy,hasPriorPlay,entrySecondary,preferencesHtml,saveRecoveryHtml,chapterLandscape,
+    cardPackPreview,cardsScreenHtml,summonedCardsHtml,isEditingTarget,campRootHtml,campFocusHtml,campGoalText,canOwnCamp,isCampStation,campActionFromData,fieldControls:{update(){},clear(){},select(){}},blockModalTap:createModalTapGuard(),startCountUp,welcomeBackLine,restoreBackupWithSave,startOverProfile,syncWeekly,weekId,weeklyStatus,foodIsPiling,Date:class extends Date{static now(){return 1_800_000_000_000;}},journeyScreenHtml,updateOrderBanner,entryCopy,hasPriorPlay,entrySecondary,preferencesHtml,saveRecoveryHtml,chapterLandscape,
     $: (id: string) => { if (!elements.has(id)) {const element:any=['quest-goal','card-quantity'].includes(id)?new BoundarySelect(id,id==='card-quantity'?'1':''):node();if(id==='battlefield')element.dataset={renderer:'ready'};elements.set(id,element);} return elements.get(id); },
     chronicleScreenHtml,chronicleActionFromData,chronicleGuidance,CAPTAINS,routeDefinition,advanceStatus, battleSelectionHtml, evolutionDialogHtml, ERAS, QUESTS, foodRate, unlockCost, dailyReward, localDay, battleGuidance, baseHealthDisplay, compactNumber, waveLabel, waveAccessibleLabel, chapterPresentation, unitPresentationName, compactResultsHtml, expeditionChoiceHtml, resultsHtml,isLegacyChoice,legacyEffects,prestigePreview,prestigeDetailsHtml,prestigeDialogHtml,legacyCurrentHtml,evolutionScreenHtml,saveSessionDialogHtml,temporarySessionNotice,skillCue,troopUnlockMessage,nextGoalLabel, waveInspectionHtml,
     earlierChapter,storybookArt: () => false, money: String, coin: String, icon:()=>'',textIfChanged(target:any,value:string){target.textContent=value;},htmlIfChanged(target:any,value:string){target.innerHTML=value;},unlockAudio() {}, suspendAudio() {}, playSummonAudio() {}, saveAtmosphere() {}, syncMarks() {}, syncPause() {}, rebuildArmy() {}, syncMotion() {}, isolateModal(){}, toast() {},
@@ -312,6 +312,13 @@ for(const origin of ['result','battles'])for(const route of ['close','Escape'])t
  if(route==='Escape')c.api.dismissModal();else h.click('close');
  assert.equal(c.modal,origin);assert.equal(JSON.stringify(c.game.profile),before);assert.equal(c.prestigeOrigin,null);assert.equal(c.focusCommand,'next');
  h.click('next');assert.equal(c.modal,'prestige');
+});
+test('cancelling a preview opened from the result details returns to the details on Next',()=>{
+ const h=settledHarness(5),c=h.context;
+ h.click('result-details');assert.equal(c.resultDetailsOpen,true);
+ h.click('next');assert.equal(c.modal,'prestige');
+ h.click('close');
+ assert.equal(c.modal,'result');assert.equal(c.resultDetailsOpen,true,'the full receipt stays open');assert.equal(c.focusCommand,'next');
 });
 for(const reload of [false,true])test(`real cleared-final loss ${reload?'reloaded picker':'result'} opens preview and cancellation preserves the loss ledger`,()=>{
  const h=harness(),c=h.context;c.game=new Game(realVictory(5,1,false).profile);assert.equal(c.game.dispatch({type:'retry'}),true);assert.equal(c.game.dispatch({type:'start'}),true);

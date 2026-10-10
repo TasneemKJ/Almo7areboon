@@ -208,3 +208,14 @@ IDEAL/5Ws and twenty alternatives per distinct scenario: `docs/audits/2026-10-08
 - [ ] Complete required exact-head rendered/mobile/offline checks; the separate production play review is not PR-head acceptance. No gate waiver, browser workaround or manual workflow trigger is part of this integration.
 
 - [x] Replace the missing-font battlefield Pause glyph with two painted bars; preserve its accessible name and pause behavior (2026-10-08 playtest).
+
+## World-first mobile pass (8 October 2026)
+- [x] Bring the review:* browser journeys up to date with the world-first shell (shared launcher, 47xx ports, real routes).
+- [x] Field food readout at the top-left edge; Camp next-goal line; place-name plates; full-height Camp pages; no sideways dialog pan.
+- [x] Preferences through Game.dispatch; architecture test forbids shell writes to game state.
+- [ ] Retire the hidden legacy battle HUD (resources, ready panel, deployment cards, upgrades, bottom navigation, battle skills): it still renders invisibly and several state probes read it.
+- [ ] Investigate the first-frame stall when a battle starts (7-12 s in headless software GL at 2x density, all in WebGL ReadPixels during commit); check on real phones before acting.
+- [ ] Evolution's evolve action sits below six era cards at 390x844; consider surfacing it near the top.
+
+## Review-script reconciliation (10 October 2026)
+- [ ] Two sessions rewrote the review journeys in parallel; main's versions were kept at merge. Move `verify-save-sessions`, `capture-mastery-review`, `capture-upgrade-text-review`, `capture-browser-review` and `capture-layering-review` onto `scripts/lib/browser.mjs` (free 47xx ports, current Camp and field routes) and empty `pendingUpdate` in `tests/review-scripts.test.ts`.

@@ -5,7 +5,8 @@ import type { Profile, LegacyChoice } from '../game/types.ts';
 
 
 import { type CampOwner } from '../ui/camp-owner.ts';
-import {campRootHtml,campFocusHtml} from '../ui/camp-screen.ts';
+import {campRootHtml,campFocusHtml,campGoalText} from '../ui/camp-screen.ts';
+import { localDay } from '../game/data.ts';
 import { canOwnCamp, isCampStation, campActionFromData, type CampFocus } from '../ui/camp-owner.ts';
 import { type StoryFollowUp } from '../ui/story-flow.ts';
 import { journeyScreenHtml } from '../ui/journey-screen.ts';
@@ -187,10 +188,11 @@ export function createNavigation(deps: NavigationDeps) {
     if(ports.playable()&&navState.modal!=='session'){navState.resultDetailsOpen=false;showModal('result',compactResultsHtml(ports.sessionState.game.profile,ports.sessionState.game.state),focusCommand);}
     if(fresh&&navState.modal==='result')startCountUp($('modal-layer'),compactNumber,dom.rootElement().dataset.motion==='reduced');
   }
-  function showResultDetails(){
-    if(!ports.guardAction()||navState.modal!=='result')return;
+  /** The full receipt; a return from its own next-timeline preview lands back here on Next. */
+  function showResultDetails(focusCommand='result-back'){
+    if(!ports.guardAction()||(navState.modal!=='result'&&!(navState.modal==='prestige'&&navState.resultDetailsOpen)))return;
     navState.resultDetailsOpen=true;
-    showModal('result',`<button class="big-button secondary result-back" data-command="result-back">Back to result</button>${resultsHtml(ports.sessionState.game.profile,ports.sessionState.game.state)}`,'result-back');
+    showModal('result',`<button class="big-button secondary result-back" data-command="result-back">Back to result</button>${resultsHtml(ports.sessionState.game.profile,ports.sessionState.game.state)}`,focusCommand);
   }
   function showHome(){
     const fromCamp=navState.entryEntered&&root!.dataset.fieldMode==='camp'&&navState.modal===null;
@@ -210,8 +212,8 @@ export function createNavigation(deps: NavigationDeps) {
     if(!visible){navState.campOwner=null;$('camp-view').hidden=true;if(!canOwnCamp(ports.sessionState.game.profile,ports.sessionState.game.state))root!.dataset.fieldMode='field';return;}
     navState.campOwner??={kind:'root'};
     if(navState.campOwner.kind==='advanced'&&!navState.modal&&navState.activeTab==='battle')navState.campOwner={kind:'root'};
-    const p=ports.sessionState.game.profile,key=JSON.stringify([p.age,p.enemyAge,p.foodLevel,p.baseLevel,p.unlocked,p.chronicle?.route]);
-    if(key!==navState.campRenderKey){navState.campRenderKey=key;htmlIfChanged($('camp-view'),campRootHtml(p));}
+    const p=ports.sessionState.game.profile,day=localDay(),key=JSON.stringify([p.age,p.enemyAge,p.foodLevel,p.baseLevel,p.unlocked,p.chronicle?.route,campGoalText(p,day)]);
+    if(key!==navState.campRenderKey){navState.campRenderKey=key;htmlIfChanged($('camp-view'),campRootHtml(p,day));}
     $('camp-view').hidden=navState.activeTab!=='battle';$('camp-view').inert=navState.modal!==null||navState.activeTab!=='battle';
     $('battle-view').inert=true;
     root!.querySelectorAll<HTMLElement>('.resources,.bottom-nav').forEach(node=>{node.inert=true;});
@@ -315,7 +317,7 @@ export function createNavigation(deps: NavigationDeps) {
   function returnFromPrestige(){
     if(!ports.guardAction()||navState.modal!=='prestige')return;
     const origin=navState.prestigeOrigin;clearPrestigeContext();
-    if(origin==='result')showResult('next');
+    if(origin==='result'){if(navState.resultDetailsOpen)showResultDetails('next');else showResult('next');}
     else if(origin==='battles')showModal('battles',battleSelectionHtml(ports.sessionState.game.profile,ports.sessionState.game.state),'next');
     else closeModal();
   }

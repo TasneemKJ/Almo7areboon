@@ -59,6 +59,10 @@ class Battlefield extends Phaser.Scene {
   private readonly hud:ReturnType<typeof createHudMeasure>;
   private readonly marks:ReturnType<typeof createBattlefieldMarks>;
   private effects!:ReturnType<typeof createBattlefieldEffects>;
+  // Review diagnostics (tests/fixtures/layering.ts) read the live cues; the collaborator owns them.
+  get attackCues(){return this.effects?.cueSnapshot().attackCues;}
+  get impactCues(){return this.effects?.cueSnapshot().impactCues;}
+  get bolts(){return this.effects?.cueSnapshot().bolts;}
   private army!:ReturnType<typeof createBattlefieldArmy>;
   private atmosphere!:ReturnType<typeof createBattlefieldAtmosphere>;
   private halos!:Phaser.GameObjects.Graphics;

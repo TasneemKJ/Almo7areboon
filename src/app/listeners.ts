@@ -96,7 +96,7 @@ export function installListeners(deps: ListenersDeps): void {
       else ports.refreshPrestige();
     },
     'pause':()=>{if(ports.sessionState.game.state.phase==='running'){ports.sessionState.manualPaused=!ports.sessionState.manualPaused;ports.syncPause();ports.update(true);}},
-    'speed':()=>{ports.sessionState.game.profile.speed=ports.sessionState.game.profile.speed===1?2:1;ports.persist();ports.update(true);if(ports.navState.modal==='settings'&&ports.playable())ports.showSettings();},
+    'speed':()=>{ports.sessionState.game.dispatch({type:'preference',preference:'speed',value:ports.sessionState.game.profile.speed===1?2:1});ports.persist();ports.update(true);if(ports.navState.modal==='settings'&&ports.playable())ports.showSettings();},
     'settings':()=>{ports.persist();ports.showSettings();},
     'quests':()=>{ports.showQuests();},
     'save-recovery':()=>{ports.showSaveRecovery();},
@@ -247,13 +247,13 @@ export function installListeners(deps: ListenersDeps): void {
         if(preference){
           if(ports.navState.modal!=='settings'||!input.closest('#modal-layer')||!ports.guardAction()||ports.navState.modal!=='settings')return;
           if(input instanceof HTMLInputElement&&input.type==='checkbox'){
-            if(preference==='sound'){ports.sessionState.game.profile.sound=input.checked;if(input.checked)unlockAudio(true);else suspendAudio();}
+            if(preference==='sound'){ports.sessionState.game.dispatch({type:'preference',preference:'sound',value:input.checked});if(input.checked)unlockAudio(true);else suspendAudio();}
             else if(preference==='atmosphere'){ports.sessionState.atmosphereEnabled=input.checked;saveAtmosphere(ports.sessionState.atmosphereEnabled);ports.syncPause();return;}
-            else if(preference==='marks'){if(input.checked)ports.sessionState.game.profile.marks=true;else delete ports.sessionState.game.profile.marks;ports.syncMarks();}
+            else if(preference==='marks'){ports.sessionState.game.dispatch({type:'preference',preference:'marks',value:input.checked});ports.syncMarks();}
             else return;
           }else if(input instanceof HTMLSelectElement){
-            if(preference==='speed'&&(input.value==='1'||input.value==='2'))ports.sessionState.game.profile.speed=Number(input.value) as 1|2;
-            else if(preference==='motion'&&(input.value==='system'||input.value==='reduced')){ports.sessionState.game.profile.motion=input.value;ports.syncMotion();}
+            if(preference==='speed'&&(input.value==='1'||input.value==='2'))ports.sessionState.game.dispatch({type:'preference',preference:'speed',value:Number(input.value) as 1|2});
+            else if(preference==='motion'&&(input.value==='system'||input.value==='reduced')){ports.sessionState.game.dispatch({type:'preference',preference:'motion',value:input.value});ports.syncMotion();}
             else return;
           }else return;
           ports.persist();ports.syncPause();ports.update(true);if(ports.navState.modal==='settings')textIfChanged($('preference-status'),ports.preferenceNotice());return;

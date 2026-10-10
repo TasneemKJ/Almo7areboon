@@ -109,3 +109,15 @@ test('the Storehouse is a distinct painted provisioning stall, with an earned fo
  assert.match(camp.campFocusHtml(game,'storehouse'),/src="\/art\/storybook\/camp\/storehouse\.webp"/);
  assert.ok(existsSync(new URL('../public/art/storybook/camp/storehouse.webp',import.meta.url)));
 });
+test('Camp always shows the next journal goal as read-only text, never as an extra control',()=>{
+ assert.ok(camp);
+ const game=gameAt(0),day=20000;
+ game.profile.dailyDay=day;game.profile.dailyStreak=1;
+ const html:string=camp.campRootHtml(game.profile,day),goal=camp.campGoalText(game.profile,day);
+ assert.match(goal,/^Next goal: .+ · see the Journal$/,'a fresh company has an open milestone to name');
+ assert.ok(html.includes(`<p class="camp-goal">${goal}</p>`));
+ assert.equal(buttons(html).length,6,'Battle/Home and the four places stay the only root controls');
+ const before=JSON.stringify(game.profile);camp.campRootHtml(game.profile,day);assert.equal(JSON.stringify(game.profile),before,'reading the goal claims nothing');
+ const daily=gameAt(0);daily.profile.dailyDay=0;
+ assert.match(camp.campGoalText(daily.profile,day),/Daily reward/,'a ready daily reward is the next goal');
+});

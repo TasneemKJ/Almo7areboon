@@ -126,3 +126,14 @@ test('only the runtime and its page port touch browser globals in the shell', ()
     assert.doesNotMatch(code, /\b(document|window|navigator|performance|localStorage|requestAnimationFrame|cancelAnimationFrame|location)\b/, `${rel} reaches a browser global; use the dom port`);
   }
 });
+
+test('the shell and UI tell the game what to do instead of writing its profile or battle state', () => {
+  // Preferences, purchases and claims go through Game.dispatch; only the presentation pause is assigned from the shell.
+  for (const { rel, text } of sources.filter(s => s.rel.startsWith('app/') || s.rel.startsWith('ui/') || s.rel === 'main.ts')) {
+    const code = text.replace(/\/\*[\s\S]*?\*\/|\/\/.*$/gm, '');
+    for (const match of code.matchAll(/game\.(profile|state)\.([\w.]+)\s*(?:=(?!=)|\+\+|--|\+=|-=)|delete\s+[\w.]*game\.profile\.\w+/g)) {
+      if (rel === 'app/lifecycle.ts' && match[0].startsWith('game.state.paused')) continue;
+      assert.fail(`${rel} writes ${match[0].trim()}; dispatch an action instead`);
+    }
+  }
+});
