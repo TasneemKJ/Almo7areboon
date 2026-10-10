@@ -171,3 +171,12 @@ test('renderer mounting and readiness do not depend on Home or Camp visibility',
   context.entryEntered=true;context.root.dataset.fieldMode='field';assert.equal(record.options?.isVisible(),true);assert.equal(record.mounts,1,'returning to the field reuses the renderer');
  }
 });
+
+test('a hidden field stops drawing its scene and draws again on return, so off-screen frames never pile up',()=>{
+ const h=harness(),visibility:boolean[]=[];
+ h.scene.sys={settings:{visible:true},setVisible(value:boolean){this.settings.visible=value;visibility.push(value);}};
+ h.app.root.dataset.fieldMode='camp';h.frame(50);h.frame(50);
+ assert.deepEqual(visibility,[false],'Home, Camp and the opening tale render nothing behind them');
+ h.app.root.dataset.fieldMode='field';h.frame(50);
+ assert.deepEqual(visibility,[false,true],'the field draws again the frame it is shown');
+});

@@ -76,3 +76,12 @@ field. **When:** first launch, or on request. **Why:** premise and tone before t
 8. **No press feedback on Skip.** Fixed: scale 0.96 within 100ms on press.
 9. Overshoot check: no `outBack` or under-damped spring anywhere; the company's arrival eases to a halt.
 10. Rival column crossed the caption area. Fixed: it walks the far road inside the camera layer.
+
+## Found while verifying: the hidden field kept drawing
+
+Headless Chromium froze the main thread for 8.5s when Play was pressed after 9s on Home, on main as well, and for
+about 20s at the tale's hand-over. A CPU profile put 18.8s of 20s in native "(program)" time (software GL), not
+in JavaScript. The battlefield scene skipped its update while hidden but Phaser still drew it every frame into
+a `display:none` canvas. The scene now sets itself invisible while the field is hidden and visible again on the
+first shown frame (`view/battlefield-scene.ts`). After the change: no main-thread gap over 400ms through the tale
+and the hand-over, at about 45-50 frames per second in the same headless setup. Real-device effect is unmeasured.

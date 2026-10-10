@@ -270,6 +270,8 @@ class Battlefield extends Phaser.Scene {
    if(this.lastState!==game.state){this.lastState=game.state;this.aftermath=null;delete this.game.canvas.dataset.battleAftermath;delete this.game.canvas.dataset.villageVerdict;delete this.game.canvas.dataset.villageWatchfire;delete this.game.canvas.dataset.villageOrderAnswer;delete this.game.canvas.dataset.villageMusterAnswer;this.villageMuster=createVillageMuster();this.musterFrame=null;this.marks.restartOrder();this.effects.reset();this.army.clearUnits();}
    if(reduced&&!this.reduce)this.effects.reset('motion');this.reduce=reduced;
    this.syncEra();for(const event of events)this.event(event);
+   // A hidden field (Home, the opening tale, other tabs) draws nothing: queued off-screen frames stalled the first visible one.
+   const sys=this.sys as Phaser.Scenes.Systems|undefined,visible=!options.isVisible||options.isVisible();if(sys?.settings&&sys.settings.visible!==visible)sys.setVisible(visible);
    if(options.isVisible&&!options.isVisible()){onFrame();return;}
    if(!game.state.paused&&!this.reduce)this.clock+=dt;
    this.orderFrame=orderPresentationFrame(game.state,this.layout.groundY,this.reduce,this.layout.laneGap);
