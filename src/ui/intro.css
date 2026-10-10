@@ -34,7 +34,7 @@
 @keyframes intro-raise{to{background-position-x:80%}}
 /* Down the lantern road from the far hill, toward the village. */
 @keyframes intro-march-left{from{transform:translate(calc(-50% + var(--h)*2.6),calc(-100% - var(--h)*1.15))}to{transform:translate(calc(-50% - var(--h)*1.9),calc(-100% + var(--h)*.85))}}
-@keyframes intro-march-right{from{transform:translateX(-115%)}to{transform:none}}
+@keyframes intro-march-right{from{transform:translateX(-62vw)}to{transform:none}}
 /* One line per beat, in the lower third above the controls. */
 .intro-copy{position:absolute;inset-inline:max(24px,env(safe-area-inset-left)) max(24px,env(safe-area-inset-right));bottom:calc(max(18px,env(safe-area-inset-bottom)) + 74px);display:grid;justify-items:center;text-align:center;text-shadow:0 2px 12px #061b1bee}
 .intro-kicker{grid-area:1/1;align-self:start;margin:0;font-size:10px;letter-spacing:.22em;font-weight:700;opacity:0;transform:translateY(-22px);transition:opacity .6s ease}
@@ -50,8 +50,9 @@
 .intro-skip:focus{outline:none}
 .intro-skip:focus-visible{outline:3px solid #fff5d6;outline-offset:3px}
 @media(max-height:540px) and (orientation:landscape){
- .intro-ground{bottom:13%}
- .intro-band-rival{left:65%;top:9%}
+ .intro-ground{bottom:20%}
+ .intro-band-company{left:auto;right:17%}
+ .intro-band-rival{left:62%;top:16%}
  .intro-copy{justify-items:start;text-align:start;inset-inline-end:40%;bottom:max(18px,env(safe-area-inset-bottom))}
  .intro-line{max-width:26ch;font-size:clamp(18px,5.2vh,24px)}
  .intro-kicker{transform:translateY(-20px)}

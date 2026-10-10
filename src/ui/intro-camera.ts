@@ -18,8 +18,9 @@ export const BEAT_FRAMES: Readonly<Record<'dusk' | 'rival' | 'rivalWide' | 'gath
   dusk: { frame: { scale: 1.2, x: 0, y: 1.5, dim: .16 }, response: 4.2 },
   // Toward the lantern road on the far hill, where the rival column walks down. A landscape screen crops the
   // plate's top away, so it tilts further up to find the same road.
-  rival: { frame: { scale: 1.4, x: -20, y: 8, dim: .4 }, response: 3.8 },
-  rivalWide: { frame: { scale: 1.4, x: -20, y: 30, dim: .4 }, response: 3.8 },
+  // Offsets stay inside what the 1.4 zoom covers, so no edge of the plate is ever shown.
+  rival: { frame: { scale: 1.4, x: -18, y: 8, dim: .4 }, response: 3.8 },
+  rivalWide: { frame: { scale: 1.4, x: -18, y: 15, dim: .4 }, response: 3.8 },
   gather: { frame: { scale: 1.05, x: 0, y: .5, dim: 0 }, response: 3.6 },
   settle: { frame: { ...HOME_FRAME }, response: .9 },
 });
@@ -71,5 +72,14 @@ export function plateTransform(frame: CameraFrame): string {
  */
 export const WORLD_SHARE = .35;
 export function worldTransform(frame: CameraFrame): string {
-  return plateTransform({ scale: 1 + (frame.scale - 1) * WORLD_SHARE, x: frame.x * WORLD_SHARE, y: frame.y * WORLD_SHARE, dim: 0 });
+  const scale = Math.max(1, 1 + (frame.scale - 1) * WORLD_SHARE), spare = (scale - 1) * 100;
+  // The field never zooms out or slides past its own edges (its origin is the centre).
+  const clamp = (value: number) => Math.min(spare / 2, Math.max(-spare / 2, value * WORLD_SHARE));
+  return plateTransform({ scale, x: clamp(frame.x), y: clamp(frame.y), dim: 0 });
+}
+
+/** True when a plate frame (transform origin 50% 46%) still covers the whole screen. */
+export function coversScreen(frame: CameraFrame): boolean {
+  const s = frame.scale, x = frame.x / 100, y = frame.y / 100;
+  return .5 - .5 * s + x <= 1e-6 && .5 + .5 * s + x >= 1 - 1e-6 && .46 - .46 * s + y <= 1e-6 && .46 + .54 * s + y >= 1 - 1e-6;
 }

@@ -5,7 +5,7 @@ import { Game } from '../src/game/simulation.ts';
 import { BACKUP_KEY, SAVE_KEY, decodeSave, defaultProfile, firstLaunchProfile, loadProfileWithStatus, saveProfile } from '../src/game/save.ts';
 import { startOverProfile } from '../src/game/reset.ts';
 import { INTRO_BEATS, INTRO_SETTLE_MS, introCues, introHtml, introLength } from '../src/ui/intro-screen.ts';
-import { BEAT_FRAMES, HOME_FRAME, cameraSettled, createCamera, retarget, stepCamera } from '../src/ui/intro-camera.ts';
+import { BEAT_FRAMES, HOME_FRAME, beatFrame, cameraSettled, coversScreen, createCamera, retarget, stepCamera, worldTransform } from '../src/ui/intro-camera.ts';
 import { SCORE_BEATS, SCORE_BED, SCORE_PEAK_LIMIT, SCORE_RESOLVE, SKIP_FADE, noteAttack, type ScoreNote } from '../src/view/intro-score.ts';
 import { preferencesHtml } from '../src/ui/preferences-screen.ts';
 import * as audio from '../src/view/audio.ts';
@@ -198,4 +198,22 @@ test('only taps open the tale, and Settings offers Watch intro', () => {
   const app = readFileSync(new URL('../src/app/intro.ts', import.meta.url), 'utf8');
   assert.equal((app.match(/start\((false|replay)\)/g) || []).length, 2, 'the tale starts only from Play or Watch intro');
   assert.match(preferencesHtml(defaultProfile(), true, { effects: 100, atmosphere: 100 }, true, ''), /data-command="watch-intro">Watch intro</);
+});
+
+test('camera never shows an edge of the plate, on the way or at rest, in portrait or landscape', () => {
+  for (const wide of [false, true]) {
+    const camera = createCamera();
+    for (const [i, beat] of INTRO_BEATS.entries()) {
+      const aim = beatFrame(beat.id, wide); assert.ok(coversScreen(aim.frame), `${beat.id} target covers`);
+      retarget(camera, aim.frame, aim.response);
+      for (let t = 0; t < beat.ms / 1000; t += 1 / 60) { stepCamera(camera, 1 / 60); assert.ok(coversScreen(camera.value), `${wide ? 'landscape' : 'portrait'} ${beat.id} at ${t.toFixed(2)}s`); }
+      if (i === INTRO_BEATS.length - 1) { retarget(camera, BEAT_FRAMES.settle.frame, BEAT_FRAMES.settle.response); for (let t = 0; t < 2; t += 1 / 60) { stepCamera(camera, 1 / 60); assert.ok(coversScreen(camera.value)); } }
+    }
+  }
+  // The field's share of a mid-tale skip never zooms out or slides past its edges.
+  const parse = (css: string) => css.replace('translate3d', '').match(/-?[\d.]+/g)!.map(Number);
+  for (const frame of [BEAT_FRAMES.rival.frame, BEAT_FRAMES.rivalWide.frame, { scale: 1.1, x: -30, y: 25, dim: 0 }, { scale: .95, x: 4, y: 0, dim: 0 }]) {
+    const [x, y, , scale] = parse(worldTransform(frame));
+    assert.ok(scale >= 1 && Math.abs(x) <= (scale - 1) * 50 + 1e-9 && Math.abs(y) <= (scale - 1) * 50 + 1e-9, JSON.stringify(frame));
+  }
 });
