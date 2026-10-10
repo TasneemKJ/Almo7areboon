@@ -28,6 +28,7 @@ function createContext():void {
   context=owner;buses={effects,atmosphere};
  }catch(error){for(const node of nodes)try{node.disconnect();}catch{/* Try all partially constructed nodes. */}try{void owner?.close().catch(()=>{});}catch{/* Optional audio. */}throw error;}
 }
+import {SCORE_BED,SCORE_BEATS,SCORE_RESOLVE,BED_FADE_IN,RESOLVE_FADE,SKIP_FADE,noteAttack,type IntroBeatId,type ScoreNote} from './intro-score.ts';
 import {selectCombatCues,type CombatCue,type CombatCueId,type CueCooldown} from './combat-cues.ts';
 import type {GameEvent} from '../game/types.ts';
 interface Effect {voice?:CueVoice;id:CombatCueId;critical:boolean;closed:boolean}
@@ -59,12 +60,12 @@ export function unlockAudio(enabled=true):void {
   }catch{/* Unsupported or disallowed browser audio must not break gameplay. */}
 }
 export function suspendAudio():void {
-  stopCombatAudio();permitted=false;resumeVersion++;soundscape.cancelPending();synthesis.dispose();
+  endIntroScore('skip');stopCombatAudio();permitted=false;resumeVersion++;soundscape.cancelPending();synthesis.dispose();
   soundscape.update(context,intent.age,false,intent.mood,buses?.atmosphere.node);
   try{if(context&&context.state!=='closed')void context.suspend().catch(()=>{});}catch{/* Optional audio. */}
 }
 export function disposeAudio():void {
-  stopCombatAudio();const previous=context;context=undefined;
+  endIntroScore('skip');stopCombatAudio();const previous=context;context=undefined;
   permitted=false;resumeVersion++;intent={age:0,audible:false,mood:{alarmMix:0,alarmSerial:0}};soundscape.dispose();clearBuses();transients=freshTransients();synthesis.dispose();
   try{if(previous&&previous.state!=='closed')void previous.close().catch(()=>{});}catch{/* Optional audio. */}
 }
@@ -152,4 +153,51 @@ export function playSummonAudio(enabled:boolean):void {
 /** Optional finite direct-summon tail; all other stops release every effect. */
 export function stopCombatAudio(preserveSummon=false):void {
  for(const effect of transients.effects)if(!preserveSummon||effect.id!=='summon')effect.voice?.dispose();transients.last.clear();
+}
+/**
+ * The opening tale's score. It plays only after a gesture has already unlocked audio (the tap on Play or
+ * Watch intro), only with Sound on, and through the same effects and atmosphere buses, so the volume
+ * sliders apply; the music parts need Atmosphere. Every voice ends with a ramp, never a cut.
+ */
+interface IntroScore {context:AudioContext;effects:GainNode;atmosphere:GainNode|null;voices:Set<OscillatorNode>;bed:GainNode[]}
+let introScore:IntroScore|null=null;
+function scoreVoice(score:IntroScore,note:ScoreNote,at:number,hold=false):GainNode|null {
+ const out=note.bus==='effects'?score.effects:score.atmosphere;if(!out)return null;
+ const osc=score.context.createOscillator(),gain=score.context.createGain();
+ osc.type=note.wave;osc.frequency.setValueAtTime(note.hz,at);if(note.to)osc.frequency.exponentialRampToValueAtTime(note.to,at+note.dur);
+ gain.gain.setValueAtTime(0,at);gain.gain.linearRampToValueAtTime(note.peak,at+(hold?BED_FADE_IN:noteAttack(note)));
+ if(!hold){gain.gain.exponentialRampToValueAtTime(.0001,at+note.dur);osc.stop(at+note.dur+.02);}
+ osc.connect(gain);gain.connect(out);score.voices.add(osc);
+ osc.onended=()=>{score.voices.delete(osc);try{osc.disconnect();gain.disconnect();}catch{/* Optional audio. */}};
+ osc.start(at);return gain;
+}
+/** Starts the bed. Returns false, and stays silent, when no gesture has unlocked audio or Sound is off. */
+export function beginIntroScore(enabled:boolean,atmosphere:boolean):boolean {
+ endIntroScore('skip');
+ if(!enabled||!permitted||!context||context.state==='closed'||!buses)return false;
+ try{
+  const owner=context,effects=owner.createGain();effects.connect(buses.effects.node);
+  let music:GainNode|null=null;if(atmosphere){music=owner.createGain();music.connect(buses.atmosphere.node);}
+  const score:IntroScore={context:owner,effects,atmosphere:music,voices:new Set(),bed:[]};introScore=score;
+  for(const note of SCORE_BED){const gain=scoreVoice(score,note,owner.currentTime,true);if(gain)score.bed.push(gain);}
+  return true;
+ }catch{introScore=null;return false;}
+}
+/** One beat's accents and motif, scheduled from the moment the picture changes. */
+export function introScoreBeat(id:IntroBeatId):void {
+ const score=introScore;if(!score)return;
+ try{const now=score.context.currentTime;for(const note of SCORE_BEATS[id])scoreVoice(score,note,now+note.at);}catch{/* Optional audio. */}
+}
+/** 'resolve' swells the closing chord while the bed fades with the picture; 'skip' fades everything in 0.2s. */
+export function endIntroScore(mode:'resolve'|'skip'):void {
+ const score=introScore;if(!score)return;introScore=null;
+ try{
+  const now=score.context.currentTime,fade=mode==='resolve'?RESOLVE_FADE:SKIP_FADE;
+  if(mode==='resolve')for(const note of SCORE_RESOLVE)scoreVoice(score,note,now+note.at);
+  const ramp=(gain:AudioParam,seconds:number)=>{gain.cancelScheduledValues(now);gain.setValueAtTime(gain.value,now);gain.linearRampToValueAtTime(0,now+seconds);};
+  if(mode==='skip'){ramp(score.effects.gain,fade);if(score.atmosphere)ramp(score.atmosphere.gain,fade);}
+  else for(const bed of score.bed)ramp(bed.gain,fade);
+  const end=now+(mode==='resolve'?Math.max(fade,...SCORE_RESOLVE.map(note=>note.at+note.dur)):fade)+.05;
+  for(const osc of score.voices)try{osc.stop(end);}catch{/* Already stopped. */}
+ }catch{/* Optional audio. */}
 }

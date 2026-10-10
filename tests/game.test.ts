@@ -271,9 +271,11 @@ function unit(id: number, side: 'player' | 'enemy', x: number, hp = 26, kind: 0 
 });
 
  test('corrupt, future-version, absent and unavailable saves recover safely', () => {
-  for (const raw of [null, '{broken', 'null', '[]', '{"version":99,"coins":900}']) {
+  for (const raw of ['{broken', 'null', '[]', '{"version":99,"coins":900}']) {
     assert.deepEqual(loadProfile({ getItem: () => raw }), defaultProfile());
   }
+  // Only a browser with no save at all is a first launch, which owes the opening intro.
+  assert.deepEqual(loadProfile({ getItem: () => null }), { ...defaultProfile(), introPending: true });
   assert.deepEqual(loadProfile({ getItem: () => { throw new Error('blocked'); } }), defaultProfile());
   assert.equal(saveProfile(defaultProfile(), { setItem: () => { throw new Error('quota'); } }), false);
 });

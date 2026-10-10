@@ -14,6 +14,11 @@ export function defaultProfile(): Profile {
   return { version: 5, chronicle: createChronicle(), legacy: {rank:0,selected:'hearth'}, mastery: createMastery(1), timeline: 1, age: 0, enemyAge: 0, furthestBattle: 0, coins: 0, gems: 100, foodLevel: 0, baseLevel: 0, unlocked: [true, false, false], cards: CARD_DEFS.map(() => 0), summonCount: 0, summonSeed: 0x6d2b79f5, pendingVictory: null, kills: 0, wins: 0, deployed: 0, claimed: [], dailyDay: 0, dailyStreak: 0, sound: true, speed: 1, motion: 'system' };
 }
 
+/** A brand-new browser: the default profile plus the one-time opening intro. */
+export function firstLaunchProfile(): Profile {
+  return { ...defaultProfile(), introPending: true };
+}
+
 function integer(value: unknown, fallback: number, min: number, max: number): number {
   return typeof value === 'number' && Number.isFinite(value) ? Math.min(max, Math.max(min, Math.floor(value))) : fallback;
 }
@@ -112,6 +117,8 @@ function readGoalsAndPreferences(data: Raw, clean: Profile): void {
   clean.motion = data.motion === 'reduced' ? 'reduced' : 'system';
   // Optional preference: stored only when on, so existing saves keep their exact shape.
   if (data.marks === true) clean.marks = true;
+  // Optional: the opening intro is still owed. Only a first launch sets it, so a save without it never replays the intro.
+  if (data.introPending === true) clean.introPending = true;
 }
 
 function validate(value: unknown): Profile {
@@ -153,7 +160,8 @@ export function loadProfileWithStatus(storage: Pick<Storage, 'getItem'>): { prof
     const backupRaw = source.getItem(BACKUP_KEY), backup = backupRaw ? decodeSave(backupRaw) : null;
     if (backup?.profile) return { profile: backup.profile, status: 'recovered' };
     if (backup?.problem === 'unsupported') return { profile: defaultProfile(), status: 'unsupported' };
-    return { profile: defaultProfile(), status: raw || backupRaw ? 'corrupt' : 'new' };
+    if (raw || backupRaw) return { profile: defaultProfile(), status: 'corrupt' };
+    return { profile: firstLaunchProfile(), status: 'new' };
   } catch { return { profile: defaultProfile(), status: 'unavailable' }; }
 }
 

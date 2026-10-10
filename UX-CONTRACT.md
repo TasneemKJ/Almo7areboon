@@ -107,3 +107,10 @@ Cards quantity selection is a native field with 1/10/50 options, one exact-cost 
 An unbroken cover which canonical Meteor can affect is reachable by a native44px physical target without requiring a living enemy. Its context offers only the relevant Meteor action. Gate danger retains canonical priority in the field cue; authored Chronicle objective progress reaches that same visible cue. Supplies selection names the actual available Food Drop/captain ability. Regroup keeps three choices and shows the existing state-supported next-attempt advice.
 
 The visible cue and its stable spoken instruction are separate DOM nodes: numeric visual progress does not trigger repeated polite announcements. Urgent instructions and a genuinely different action still announce. Every mutation remains behind the existing guarded dispatch, and a pause or completed battle clears tactical contexts.
+
+## Opening tale — 10 October 2026
+- A brand-new browser (no save and no backup) owes the tale; the profile carries the optional `introPending: true`. Any existing save, a recovered backup and a corrupt save never play it. Start over does not replay it.
+- Play opens it; the tap is the gesture that unlocks audio. A native 44px Skip button sits bottom right inside the safe area from the first frame; Escape also skips. Skip records the tale as seen and enters the field from the frame on screen.
+- Seen or skipped is `Game.dispatch({type:'preference',preference:'intro',value:false})`; Settings → Watch intro dispatches `value:true` and plays it from where the player is. From a live battle the battle stays paused and the tale returns to the field pause.
+- While the tale plays the page below is inert and hears no input. A lost save session ends it without recording or entering.
+- Reduced motion keeps the beats as stills with short cross-fades; it does not mute sound. Sound follows Sound, Atmosphere and both volume sliders.

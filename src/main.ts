@@ -13,6 +13,7 @@ import './ui/skill-cues.css';
 import './ui/battle-banner.css';
 import './ui/simple-entry.css';
 import './ui/preferences.css';
+import './ui/intro.css';
 import './ui/landscape-rail.css';
 import { createBattlefieldPort } from './game/battlefield-port.ts';
 import { localDay } from './game/data.ts';
@@ -25,6 +26,7 @@ import { createLifecycle } from './app/lifecycle.ts';
 import { createNavigation } from './app/navigation.ts';
 import { createQuests } from './app/quests.ts';
 import { installListeners } from './app/listeners.ts';
+import { createIntro } from './app/intro.ts';
 import type { ShellApi } from './app/shell.ts';
 
 // Composition root: the DOM handles and the flow modules are wired here and nowhere else. Each module owns its state.
@@ -34,7 +36,7 @@ const dom = createRuntime(initialGame.profile);
 const { $, root, lifetime, isolateModal } = dom;
 const ports = {} as ShellApi;
 const wiring = { dom, ports };
-Object.assign(ports, createLifecycle({ ...wiring, initialGame }), createNavigation(wiring), createQuests(wiring));
+Object.assign(ports, createLifecycle({ ...wiring, initialGame }), createNavigation(wiring), createQuests(wiring), createIntro(wiring));
 installListeners(wiring);
 updateAudioMix(ports.sessionState.audioMix);
 const port=createBattlefieldPort(()=>ports.sessionState.game,ports.action,dt=>{
