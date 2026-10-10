@@ -42,7 +42,7 @@ export interface InputState {
 /** What the listeners module needs: its slice of state, DOM handles and sibling operations. */
 export interface ListenersDeps {
   dom: Pick<Runtime, '$' | 'blockModalTap' | 'fieldControls' | 'lifetime' | 'money' | 'motionQuery' | 'root' | 'activeElement' | 'hidden' | 'now' | 'pageEvents' | 'reload' | 'viewEvents'>;
-  ports: Pick<ShellApi, 'acquireSession' | 'action' | 'adoptRestoredGame' | 'claimQuestRecord' | 'clearPrestigeContext' | 'closeModal' | 'continueWithProvision' | 'dismissModal' | 'enterCamp' | 'enterWorld' | 'exportSave' | 'guardAction' | 'handleCampInput' | 'leaveBattle' | 'navState' | 'openPrestige' | 'persist' | 'playable' | 'preferenceNotice' | 'questState' | 'rebuildArmy' | 'refreshPrestige' | 'refreshQuestRecord' | 'renderScreen' | 'returnToCamp' | 'returnToChapters' | 'sessionState' | 'showFieldPause' | 'showHome' | 'showLeaveBattle' | 'showModal' | 'showQuests' | 'showResult' | 'showResultDetails' | 'showSaveRecovery' | 'showSettings' | 'showStoryFollowUp' | 'suspendSession' | 'switchTab' | 'syncMarks' | 'syncMotion' | 'syncPause' | 'syncWeek' | 'toast' | 'update'>;
+  ports: Pick<ShellApi, 'acquireSession' | 'action' | 'adoptRestoredGame' | 'claimQuestRecord' | 'clearPrestigeContext' | 'closeModal' | 'continueWithProvision' | 'dismissModal' | 'enterCamp' | 'enterWorld' | 'exportSave' | 'guardAction' | 'handleCampInput' | 'leaveBattle' | 'navState' | 'openPrestige' | 'persist' | 'playable' | 'playIntro' | 'watchIntro' | 'preferenceNotice' | 'questState' | 'rebuildArmy' | 'refreshPrestige' | 'refreshQuestRecord' | 'renderScreen' | 'returnToCamp' | 'returnToChapters' | 'sessionState' | 'showFieldPause' | 'showHome' | 'showLeaveBattle' | 'showModal' | 'showQuests' | 'showResult' | 'showResultDetails' | 'showSaveRecovery' | 'showSettings' | 'showStoryFollowUp' | 'suspendSession' | 'switchTab' | 'syncMarks' | 'syncMotion' | 'syncPause' | 'syncWeek' | 'toast' | 'update'>;
 }
 
 export function installListeners(deps: ListenersDeps): void {
@@ -98,6 +98,7 @@ export function installListeners(deps: ListenersDeps): void {
     'pause':()=>{if(ports.sessionState.game.state.phase==='running'){ports.sessionState.manualPaused=!ports.sessionState.manualPaused;ports.syncPause();ports.update(true);}},
     'speed':()=>{ports.sessionState.game.dispatch({type:'preference',preference:'speed',value:ports.sessionState.game.profile.speed===1?2:1});ports.persist();ports.update(true);if(ports.navState.modal==='settings'&&ports.playable())ports.showSettings();},
     'settings':()=>{ports.persist();ports.showSettings();},
+    'watch-intro':()=>{ports.watchIntro();},
     'quests':()=>{ports.showQuests();},
     'save-recovery':()=>{ports.showSaveRecovery();},
     'import':()=>{if(ports.navState.modal==='save-recovery'&&ports.sessionState.session.status==='active')$('import-save')?.click();},
@@ -181,7 +182,7 @@ export function installListeners(deps: ListenersDeps): void {
       if(ports.handleCampInput(button))return;
       unlockAudio(ports.sessionState.game.profile.sound);
       if(command==='reload-world'){if(!ports.navState.entryEntered&&!ports.navState.modal&&$('battlefield').dataset.renderer==='failed')dom.reload();return;}
-      if(command==='enter-world'){ports.enterWorld();return;}
+      if(command==='enter-world'){if(!ports.playIntro())ports.enterWorld();return;}
       if(command==='home'){ports.showHome();return;}
       if(command==='home-camp'){ports.enterCamp();return;}
       if(command==='leave-battle'){ports.showLeaveBattle();return;}

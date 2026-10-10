@@ -26,6 +26,12 @@ Ordered tasks. Tick a task when it is done and never delete finished tasks. This
 - [x] Touch check `npm run review:mobile-touch` (320-412 portrait, 844x390, 4x CPU, #158 tap orders to a result)
 
 ## Next
+- [x] Opening tale on first launch: three beats, spring camera, Skip, Watch intro, reduced-motion stills, synthesized score (docs/audits/2026-10-10-opening-tale.md)
+- [ ] Opening tale: physical iPhone Safari check of the audio unlock and safe-area Skip; listening review of the score levels
+- [ ] Opening tale: optional narrated line per beat (the beat table has `ar` and `voice` slots; the owner is deciding)
+- [ ] Opening tale: show the Arabic line when an Arabic locale ships
+- [x] Entering the field after idling on Home stalled headless Chromium for 8-20s (native GL time, also on main): the hidden battlefield scene now stops drawing until it is shown
+- [ ] Confirm the hidden-scene render saving on a real phone (battery and first-frame time)
 - [ ] Weekly suite records the performance budgets in `docs/performance-budgets.md`; add frame-rate capture
 - [x] First-battle teaching ring on the first troop card (0.3.8) and again while food piles up (0.3.12)
 - [x] Count-up battle earnings on the result (round 6); victory/defeat motifs already existed
