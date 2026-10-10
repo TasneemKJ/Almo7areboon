@@ -123,7 +123,8 @@ try {
     assert.equal((await saved(peer)).gems, 0);
     await openCards(peer); assert.match(await peer.locator('.collection-summary').textContent(), /^1 \/ 30 discovered/);
     await openSettings(peer); await toggleSpeed(peer);
-    assert.equal(JSON.parse((await bytes(source))[0]).speed, 2);
+    // Another page sees the write once the browser propagates it between renderers.
+    await storedMatches(source, { speed: 2 }); assert.equal(JSON.parse((await bytes(source))[0]).speed, 2);
     await peer.reload({ waitUntil: 'networkidle' }); await active(peer); assert.equal(await speedSetting(peer), '2'); assert.equal((await saved(peer)).gems, 0);
   });
   await scenario('simultaneous-startup', async context => {

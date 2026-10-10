@@ -67,5 +67,7 @@ export function createCues(host:CueHost,layers:{fx:Phaser.GameObjects.Graphics;g
   /** Accepted in-flight impacts, so a reset can commit them to battlefield memory. */
   pendingMemories:()=>bolts.flatMap(b=>b.memory?[b.memory]:[]),
   clear():void {attackCues=[];impactCues=[];bolts=[];},
+  /** Read-only view of the live cues for review diagnostics; callers cannot change what is painted. */
+  snapshot():{attackCues:readonly AttackCue[];impactCues:readonly ImpactCue[];bolts:readonly Bolt[]} {return {attackCues:[...attackCues],impactCues:[...impactCues],bolts:[...bolts]};},
  };
 }

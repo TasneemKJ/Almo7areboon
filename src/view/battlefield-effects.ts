@@ -72,6 +72,7 @@ export function createBattlefieldEffects(host:EffectsHost,layers:{fx:Phaser.Game
   /** Seconds left on each base's hit pulse, read by the base-damage painter. */
   baseHit:(side:Side)=>baseHit[side],
   pushImpactCue:cues.pushImpactCue,pushAttackCue:cues.pushAttackCue,pushBolt:cues.pushBolt,
+  cueSnapshot:cues.snapshot,
   /** Hit-stop: a heavy blow freezes the scene for about 50 ms, at most twice a second. */
   hitStop:{
    get count():number {return stops;},

@@ -39,6 +39,11 @@ async function session(browser,record,{viewport={width:390,height:844},touch=tru
  return {context,page};
 }
 const counters=page=>page.evaluate(key=>{const p=JSON.parse(localStorage.getItem(key));return {deployed:p.deployed,coins:p.coins,food:Number(document.querySelector('#food-count').textContent)};},SAVE);
+/** Pause, open Settings (which saves), read the saved counters, then resume: the counters are settled, not mid-autosave. */
+async function settled(page){
+ await pauseField(page);await page.locator('#modal-layer [data-command=settings]').click();await page.locator('#modal-layer .preferences-dialog').waitFor();
+ const value=await counters(page);await page.keyboard.press('Escape');await resumeField(page);return value;
+}
 const noFallback=async page=>assert.equal(await page.locator('body').getAttribute('data-review-fallback'),null,'production art loads without fallback');
 const noSideways=async page=>assert.equal(await page.evaluate(()=>document.documentElement.scrollWidth>innerWidth),false,'no horizontal scroll');
 
@@ -46,14 +51,15 @@ const noSideways=async page=>assert.equal(await page.evaluate(()=>document.docum
 async function captureOpening(browser,record,output){
  const {context,page}=await session(browser,record);
  try{
-  await page.waitForSelector('#battlefield canvas');await noFallback(page);
+  await page.waitForSelector('#battlefield canvas',{state:'attached'});await noFallback(page);
   const paintedIconNames=['coin','gem','food','battle','evolution','cards','skills','shield','gear','quest','lock','freeze','meteor','heart','flag','trophy'];
   const decoded=await page.evaluate(async urls=>Promise.all(urls.map(url=>new Promise(resolve=>{const image=new Image();image.onload=()=>resolve(image.naturalWidth===128&&image.naturalHeight===128);image.onerror=()=>resolve(false);image.src=url;}))),paintedIconNames.map(name=>`/art/storybook/interface/${name}.webp`));
   assert.ok(decoded.every(Boolean),'all 16 painted icons decode at their intended density');
-  const density=await page.locator('#battlefield canvas').evaluate(canvas=>({width:canvas.width,height:canvas.height,cssWidth:canvas.clientWidth,cssHeight:canvas.clientHeight}));
-  assert.ok(density.width/density.cssWidth>=1.9&&density.width/density.cssWidth<=2.1,`canvas density: ${JSON.stringify(density)}`);
   await page.screenshot({path:`${output}/01-entry-390.png`});
   await enterWorld(page);
+  // The battlefield is laid out once the world is on screen; it renders at device density.
+  const density=await page.locator('#battlefield canvas').evaluate(canvas=>({width:canvas.width,height:canvas.height,cssWidth:canvas.clientWidth,cssHeight:canvas.clientHeight}));
+  assert.ok(density.width/density.cssWidth>=1.9&&density.width/density.cssWidth<=2.1,`canvas density: ${JSON.stringify(density)}`);
   const title=await page.locator('.stage h1').evaluate(node=>parseFloat(getComputedStyle(node).fontSize));
   assert.ok(title<=22,`the battle title stays quiet at the top edge: ${title}px`);
   assert.match(await page.locator('#field-cue').innerText(),/Tap the waiting defender/,'the first battle teaches its first tap on the field');
@@ -74,11 +80,10 @@ async function verifyTacticalInputs(browser,record){
    await enterWorld(page);await page.waitForTimeout(400);
    const troop=page.locator(`[data-field-recruit="${kind}"]`);
    await page.waitForFunction(kind=>document.querySelector(`[data-field-recruit="${kind}"]`)?.getAttribute('aria-disabled')==='false',kind,{timeout:20000});
-   const before=await counters(page);
+   const before=await settled(page);
    if(method==='keyboard')await page.keyboard.press(String(kind+1));else if(method==='touch')await troop.tap();else await troop.click();
-   await page.keyboard.press('Space');
-   await page.waitForFunction(([key,count])=>JSON.parse(localStorage.getItem(key)).deployed>=count,[SAVE,before.deployed+1],{timeout:8000}).catch(()=>{});
-   const after=await counters(page);
+   // Pause through its own control (Space would press the still-focused recruit), then read the saved counters.
+   const after=await settled(page);
    assert.equal(after.deployed,before.deployed+1,`${method} ${kind+1} deploys exactly once`);
   }finally{await context.close();}
  }
@@ -132,7 +137,7 @@ async function captureEvolution(browser,record,output){
   assert.equal(await page.locator('.era-landscape').nth(1).getAttribute('src'),'/art/storybook/olive/village.webp');
   await page.locator('[data-command="evolve"]').click();
   await page.getByRole('button',{name:'EVOLVE TO OLIVE TERRACES',exact:true}).click();
-  await page.waitForFunction(()=>document.querySelector('#app').dataset.era==='1');
+  await page.waitForFunction(()=>document.querySelector('.game-shell').dataset.era==='1');
   assert.equal(await page.locator('#app').getAttribute('data-art-style'),'storybook');
   await page.screenshot({path:`${output}/05-evolution-olive-390.png`});
   await noFallback(page);
