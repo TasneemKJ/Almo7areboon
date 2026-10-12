@@ -12,7 +12,8 @@ import {orderStatus} from './battle-orders.ts';
 import {skillCue} from './skill-cues.ts';
 import {textIfChanged} from './dom-state.ts';
 import {fieldFoodReadout} from './field-controls.ts';
-import {gateChoiceLabel} from './field-gate-label.ts';
+import {gateChoiceLabel,gateLabelLift} from './field-gate-label.ts';
+import {storybookArt} from '../view/storybook-art.ts';
 
 const placeBox=(node:HTMLElement,rect:CampTarget|{x:number;y:number;width:number;height:number})=>{
   const value=`left:${rect.x}px;top:${rect.y}px;width:${rect.width}px;height:${rect.height}px`;
@@ -37,12 +38,14 @@ function syncRecruits(recruits:readonly HTMLButtonElement[],plan:ReturnType<type
 }
 
 /** The Hold and Advance gate buttons at their bases. */
-function syncGates(gates:readonly HTMLButtonElement[],arena:ReturnType<typeof arenaLayout>,w:number,orders:ReturnType<typeof orderStatus>,running:boolean):void {
- const place=placeBox;
+function syncGates(gates:readonly HTMLButtonElement[],arena:ReturnType<typeof arenaLayout>,w:number,orders:ReturnType<typeof orderStatus>,running:boolean,ages:{player:number;enemy:number}):void {
  for(const node of gates){
   const hold=node.dataset.fieldGate==='hold',x=(hold?39:411)*arena.scale;
   const size=Math.max(44,Math.min(88,72*arena.scale));
-  place(node,{x:Math.max(0,Math.min(w-size,x-size/2)),y:Math.max(0,arena.groundY*arena.scale-48*arena.scale),width:size,height:Math.max(44,Math.min(90,65*arena.scale))});
+  // The revealed label rises above the base health bar instead of covering it (see world-play.css).
+  const lift=gateLabelLift(arena.scale,!!storybookArt(hold?ages.player:ages.enemy));
+  const value=`left:${Math.max(0,Math.min(w-size,x-size/2))}px;top:${Math.max(0,arena.groundY*arena.scale-48*arena.scale)}px;width:${size}px;height:${Math.max(44,Math.min(90,65*arena.scale))}px;--gate-label-lift:${lift}px`;
+  if(node.getAttribute('style')!==value)node.setAttribute('style',value);
   node.hidden=!running;node.setAttribute('aria-disabled',String(!orders.canCast));node.setAttribute('aria-pressed',String(orders.active===node.dataset.fieldGate));
   node.setAttribute('aria-label',`${hold?'Hold: protect troops and your gate':'Advance: stronger strikes and faster movement'}. Costs 60 momentum, lasts 10 seconds. ${orders.label}`);
   node.classList.toggle('order-ready',orders.canCast);
@@ -76,7 +79,7 @@ export function createFieldController(root:HTMLElement){
    if(!w||!h)return;
    const plan=campLayout(w,h),arena=arenaLayout(w,h),available=campRecruits(p),orders=orderStatus(s),running=s.phase==='running';
    syncRecruits(recruits,plan,available,game,running);
-   syncGates(gates,arena,w,orders,running);
+   syncGates(gates,arena,w,orders,running,{player:p.age,enemy:p.enemyAge});
    place(standard,plan.standard);place(supplies,plan.supplies);
    standard.hidden=!running||!s.chronicle?.enabled||s.stats.deployed===0;
    standard.setAttribute('aria-disabled',String(s.paused));standard.setAttribute('aria-pressed',String(s.chronicle?.rally??false));
