@@ -39,6 +39,7 @@ export function createIntro(deps: IntroDeps) {
   const { ports, dom } = deps;
   const { root, lifetime } = dom;
   const introState: IntroState = { playing: false, beat: 0, replay: false, wasPaused: false, timers: [], layer: null, camera: null, frame: 0, lastTick: 0 };
+  let language:'en'|'ar'='en';
   const reduced = () => dom.rootElement().dataset.motion === 'reduced';
   const schedule = (ms: number, run: () => void) => { introState.timers.push(dom.setTimer(run, ms)); };
   const shell = () => root.querySelector<HTMLElement>('.game-shell');
@@ -78,16 +79,16 @@ export function createIntro(deps: IntroDeps) {
     layer.dataset.beat = beat.id;
     if (introState.camera) { const aim = beatFrame(beat.id, layer.clientWidth > layer.clientHeight); retarget(introState.camera, aim.frame, aim.response); }
     const live = layer.querySelector<HTMLElement>('#intro-live');
-    if (live) live.textContent = beat.en;
+    if (live) live.textContent = beat[language];
     // Sound follows the picture's clock: each beat's accents start when its frame does.
     introScoreBeat(beat.id);
   }
   function start(replay: boolean) {
     stopCamera();
     const layer = dom.createElement('div');
-    layer.id = 'intro-layer'; layer.className = 'intro-layer';
-    layer.setAttribute('role', 'dialog'); layer.setAttribute('aria-modal', 'true'); layer.setAttribute('aria-label', 'Opening tale');
-    layer.innerHTML = introHtml(ports.sessionState.game.profile.enemyAge);
+    layer.id = 'intro-layer'; layer.className = 'intro-layer';layer.lang=language;
+    layer.setAttribute('role', 'dialog'); layer.setAttribute('aria-modal', 'true'); layer.setAttribute('aria-label', language==='ar'?'الحكاية الافتتاحية':'Opening tale');
+    layer.innerHTML = introHtml(ports.sessionState.game.profile.enemyAge,language);
     // The tale owns its input: nothing below it hears these events.
     layer.addEventListener('pointerdown', event => event.stopPropagation());
     layer.addEventListener('click', event => {
@@ -95,10 +96,18 @@ export function createIntro(deps: IntroDeps) {
       const target = (event.target as Element | null)?.closest?.('[data-intro="skip"]');
       if (target) { event.preventDefault(); finish(true); }
     });
+    layer.querySelector('select')?.addEventListener('change',event=>{
+      language=(event.target as HTMLSelectElement).value==='ar'?'ar':'en';layer.lang=language;
+      layer.setAttribute('aria-label',language==='ar'?'الحكاية الافتتاحية':'Opening tale');
+      const kicker=layer.querySelector<HTMLElement>('.intro-kicker');if(kicker){kicker.textContent=language==='ar'?'حكاية من بلاد الشام':'A LEVANTINE FOLKTALE';kicker.lang=language;}
+      layer.querySelectorAll<HTMLElement>('.intro-line').forEach((line,index)=>{line.textContent=INTRO_BEATS[index][language];line.lang=language;line.dir=language==='ar'?'rtl':'ltr';});
+      const skip=layer.querySelector<HTMLElement>('.intro-skip');if(skip)skip.textContent=language==='ar'?'تخطّ':'Skip';
+      const live=layer.querySelector<HTMLElement>('#intro-live');if(live){live.textContent=INTRO_BEATS[introState.beat][language];live.lang=language;}
+    });
     layer.addEventListener('keydown', event => {
       event.stopPropagation();
       if (event.key === 'Escape') { event.preventDefault(); finish(true); }
-      if (event.key === 'Tab') { event.preventDefault(); layer.querySelector<HTMLElement>('.intro-skip')?.focus(); }
+      if (event.key === 'Tab') { event.preventDefault(); const controls=Array.from(layer.querySelectorAll<HTMLElement>('select,button'));const index=controls.indexOf(layer.querySelector<HTMLElement>(':focus')!);controls[(index+(event.shiftKey?-1:1)+controls.length)%controls.length]?.focus(); }
     });
     // The camera opens on the home screen's framing of the same plate, so the first frame is not a cut.
     Object.assign(introState, { playing: true, replay, layer, beat: 0, timers: [], camera: reduced() ? null : createCamera(), lastTick: dom.now() });

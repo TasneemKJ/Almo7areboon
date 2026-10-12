@@ -546,11 +546,11 @@ test('explicit field Resume releases a manual pause without restarting the battl
  assert.equal(c.manualPaused,false);assert.equal(c.modal,null);assert.equal(JSON.stringify([c.game.profile,c.game.state]),before);
 });
 
-test('Preferences is seven native fields and four direct actions, with no nested catalogue',()=>{
+test('Preferences is seven native fields and five direct actions, with no nested catalogue',()=>{
  const h=harness(),c=h.context;h.click('settings');
- assert.equal((c.dialogHtml.match(/<button\b/g)||[]).length,4);
+ assert.equal((c.dialogHtml.match(/<button\b/g)||[]).length,5);
  assert.equal((c.dialogHtml.match(/<input\b|<select\b/g)||[]).length,7);
- for(const label of ['Sound','Atmosphere','Effects','Battle speed','Motion','Troop shapes','Watch intro','Save &amp; recovery','Start over','Done'])assert.match(c.dialogHtml,new RegExp(label));
+ for(const label of ['Sound','Atmosphere','Effects','Battle speed','Motion','Troop shapes','Watch intro','Watch film','Save &amp; recovery','Start over','Done'])assert.match(c.dialogHtml,new RegExp(label));
  assert.doesNotMatch(c.dialogHtml,/<details|data-command="retreat"|data-command="export"|data-command="import"/);
 });
 test('Settings Done returns to the paused surface without clearing manual pause',()=>{

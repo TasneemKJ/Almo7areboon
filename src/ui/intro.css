@@ -70,3 +70,8 @@
 :root[data-motion="reduced"] .intro-dim{transition:opacity .3s ease}
 :root[data-motion="reduced"] .intro-layer[data-beat="gather"] .intro-company i{background-position-x:80%}
 :root[data-motion="reduced"] .intro-skip{transition:none}
+/* The company's indigo cloth, shared with the optional film, rises beside the gathering hands. */
+.intro-standard{position:absolute;left:76%;bottom:0;height:calc(var(--h)*1.65);width:4px;background:#b7955f;box-shadow:1px 0 0 #ebca86}
+.intro-standard i{position:absolute;left:3px;top:6px;width:calc(var(--h)*.65);height:calc(var(--h)*.5);background:#24505c;border-block:1px solid #dfbc73;transform-origin:left center;animation:intro-cloth 3.5s ease-in-out infinite}
+.intro-standard i::after{content:"";position:absolute;left:42%;top:28%;width:12%;height:40%;border-radius:50%;background:#edcb7b}
+@keyframes intro-cloth{0%,100%{transform:skewY(-3deg) scaleX(.97)}50%{transform:skewY(3deg) scaleX(1)}}

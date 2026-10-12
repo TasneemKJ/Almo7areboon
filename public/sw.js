@@ -80,6 +80,8 @@ async function match(cache, key) {
 self.addEventListener('fetch', event => {
   const request = event.request, url = new URL(request.url);
   if (request.method !== 'GET' || !inScope(url)) return;
+  // Optional cinema stays lazy; the browser/server own media range requests.
+  if (/\/film\/.*\.(mp4|wav)$/.test(url.pathname) || request.headers?.has('range')) return;
   const navigation = request.mode === 'navigate';
   // Campaign/query links and index.html must update the same offline entry page.
   url.search = '';

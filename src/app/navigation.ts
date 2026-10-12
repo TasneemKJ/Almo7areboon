@@ -149,8 +149,8 @@ export function createNavigation(deps: NavigationDeps) {
     if(!replacing)navState.focusBefore=dom.activeElement() as HTMLElement;
     navState.modal=id;navState.modalVersion++;const version=navState.modalVersion;
     const dismissButton=`<button class="close-button" data-command="close" aria-label="Close">${icon('close')}</button>`;
-    const dismissMarkup=['quests','camp-focus','field-pause','settings','save-recovery','reset','import','leave-battle','result','result-expedition','session'].includes(id)?'':id==='chronicle'?dismissButton:`<div class="dialog-dismiss">${dismissButton}</div>`;
-    layer.hidden=false;layer.innerHTML=`<section class="dialog ${(id==='result'||id==='result-expedition')?'result-dialog':id==='session'?'session-dialog':id==='camp-focus'?'camp-dialog':id==='settings'?'preferences-dialog':id==='quests'?'quest-record-dialog':id==='prestige'?'prestige-dialog':id==='chronicle'?'chronicle-dialog':''}" role="dialog" tabindex="-1" aria-modal="true" aria-labelledby="dialog-title">${dismissMarkup}${html}</section>`;
+    const dismissMarkup=['film','quests','camp-focus','field-pause','settings','save-recovery','reset','import','leave-battle','result','result-expedition','session'].includes(id)?'':id==='chronicle'?dismissButton:`<div class="dialog-dismiss">${dismissButton}</div>`;
+    layer.hidden=false;layer.innerHTML=`<section class="dialog ${(id==='result'||id==='result-expedition')?'result-dialog':id==='session'?'session-dialog':id==='camp-focus'?'camp-dialog':id==='film'?'film-dialog':id==='settings'?'preferences-dialog':id==='quests'?'quest-record-dialog':id==='prestige'?'prestige-dialog':id==='chronicle'?'chronicle-dialog':''}" role="dialog" tabindex="-1" aria-modal="true" aria-labelledby="dialog-title">${dismissMarkup}${html}</section>`;
     isolateModal(true);ports.syncPause();dom.cancelFrame(navState.focusFrame);
     navState.focusFrame=dom.requestFrame(()=>{
       if(lifetime.disposed||layer.hidden||version!==navState.modalVersion)return;
@@ -332,6 +332,7 @@ export function createNavigation(deps: NavigationDeps) {
     if(navState.modal==='camp-focus'){returnToCamp();return;}
     if(navState.campOwner?.kind==='advanced'&&['chronicle','journey','quests','battles'].includes(navState.modal??'')){returnToCamp();return;}
     if(navState.modal==='settings'){const origin=navState.settingsOrigin;navState.settingsOrigin=null;if(origin==='field-pause'){showFieldPause('settings');return;}closeModal();return;}
+    if(navState.modal==='film'){showSettings('watch-film');return;}
     if(navState.modal==='save-recovery'||navState.modal==='reset'){showSettings(navState.modal==='reset'?'reset':'save-recovery');return;}
     if(navState.modal==='import'){navState.pendingImport=null;showSaveRecovery('import');return;}
     if((navState.modal==='chronicle'||navState.modal==='journey'||navState.modal==='quests')&&(ports.sessionState.game.state.phase==='won'||ports.sessionState.game.state.phase==='lost')){showResult();return;}
@@ -347,7 +348,7 @@ export function createNavigation(deps: NavigationDeps) {
   }
   function preferenceNotice(){return ports.sessionState.session.status==='temporary'?temporarySessionNotice:ports.sessionState.savedWarning?'Saving is unavailable. Export a backup before closing.':`Progress saves in this browser. Export keeps a separate copy.${ports.sessionState.lastSavedAt?` Last saved ${new Date(ports.sessionState.lastSavedAt).toLocaleTimeString([],{hour:'numeric',minute:'2-digit'})}.`:''}`;}
   function showSettings(focusCommand?:string){
-    if(!['settings','save-recovery','reset','import'].includes(navState.modal??''))navState.settingsOrigin=navState.modal==='field-pause'?'field-pause':null;
+    if(!['film','settings','save-recovery','reset','import'].includes(navState.modal??''))navState.settingsOrigin=navState.modal==='field-pause'?'field-pause':null;
     showModal('settings',preferencesHtml(ports.sessionState.game.profile,ports.sessionState.atmosphereEnabled,ports.sessionState.audioMix,ports.sessionState.session.status==='active',preferenceNotice()),focusCommand);
   }
   function showSaveRecovery(focusCommand?:string){

@@ -46,9 +46,9 @@ test('the intro preference changes only through Game.dispatch with validated val
   assert.equal(JSON.stringify(g.state), battle);
 });
 
-test('timing table: two or three beats, six to ten seconds, one short line per beat in English and Arabic', () => {
+test('timing table: two or three beats, ten to twelve seconds, one short line per beat in English and Arabic', () => {
   assert.ok(INTRO_BEATS.length >= 2 && INTRO_BEATS.length <= 3);
-  assert.ok(introLength() >= 6000 && introLength() <= 10000, String(introLength()));
+  assert.ok(introLength() >= 10000 && introLength() <= 12000, String(introLength()));
   assert.deepEqual(introCues(), [INTRO_BEATS[0].ms, INTRO_BEATS[0].ms + INTRO_BEATS[1].ms]);
   for (const beat of INTRO_BEATS) {
     assert.ok(beat.en.split(' ').length <= 8 && /[.]$/.test(beat.en), beat.en);

@@ -14,6 +14,7 @@ import './ui/battle-banner.css';
 import './ui/simple-entry.css';
 import './ui/preferences.css';
 import './ui/intro.css';
+import './ui/company-film.css';
 import './ui/landscape-rail.css';
 import { createBattlefieldPort } from './game/battlefield-port.ts';
 import { localDay } from './game/data.ts';

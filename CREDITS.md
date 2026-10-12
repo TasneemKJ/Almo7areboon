@@ -11,3 +11,8 @@ Flag for the owner: the AI-assisted origin of the storybook art and the project'
 ## Privacy
 
 The game has no accounts, analytics or backend. Progress is stored only in this browser (`localStorage`, the `almo7areboon.save.v1` key and its backup) and in the offline cache. Nothing is sent anywhere; export and import are local files you control. Clearing site data removes your progress.
+
+## Company cinema
+“Those who walk together” reuses this repository's original authored settlement and company artwork. Original bilingual text, camera choreography, indigo standard, compositing and procedural instrumental score are reproducible in `film/produce.py`. Caption rasterization uses installed DejaVu Serif and Noto Naskh Arabic; no font files, external recordings or third-party footage are shipped. No narration.
+
+The separately composed widescreen publication files, close-up thumbnails and optional UTF-8 caption tracks are reproduced by `film/youtube.py`; upload copy lives in `film/youtube/UPLOAD.md`. These use the same AI-assisted authored art sources and original score, and are not downloaded by the game.

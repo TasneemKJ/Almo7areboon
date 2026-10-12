@@ -1,0 +1,50 @@
+{
+  "en": {
+    "path": "public/film/company-en.mp4",
+    "sha256": "9e838a0328f28469e54479dd2fe9bba8390ee12721c9dde9732c079ec402e644",
+    "programs": [],
+    "stream_groups": [],
+    "streams": [
+      {
+        "codec_name": "h264",
+        "width": 1080,
+        "height": 1920,
+        "r_frame_rate": "24/1"
+      },
+      {
+        "codec_name": "aac",
+        "sample_rate": "48000",
+        "channels": 2,
+        "r_frame_rate": "0/0"
+      }
+    ],
+    "format": {
+      "duration": "60.000000",
+      "size": "19208842"
+    }
+  },
+  "ar": {
+    "path": "public/film/company-ar.mp4",
+    "sha256": "453e4971bdce35ac545af7d7717097298e811e84347e5b9dfc6b06f0dc091f06",
+    "programs": [],
+    "stream_groups": [],
+    "streams": [
+      {
+        "codec_name": "h264",
+        "width": 1080,
+        "height": 1920,
+        "r_frame_rate": "24/1"
+      },
+      {
+        "codec_name": "aac",
+        "sample_rate": "48000",
+        "channels": 2,
+        "r_frame_rate": "0/0"
+      }
+    ],
+    "format": {
+      "duration": "60.000000",
+      "size": "18980452"
+    }
+  }
+}

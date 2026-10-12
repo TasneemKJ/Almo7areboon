@@ -1,0 +1,8 @@
+__pycache__/
+score.wav
+*.render.mp4
+youtube/*.render.mp4
+
+# Local composition review stills; release thumbnails remain tracked.
+youtube/contact-sheet.jpg
+youtube/preview-*.jpg

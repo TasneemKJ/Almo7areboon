@@ -1,3 +1,4 @@
+import { companyFilmHtml, mountCompanyFilm } from '../ui/company-film.ts';
 
 
 
@@ -99,6 +100,7 @@ export function installListeners(deps: ListenersDeps): void {
     'speed':()=>{ports.sessionState.game.dispatch({type:'preference',preference:'speed',value:ports.sessionState.game.profile.speed===1?2:1});ports.persist();ports.update(true);if(ports.navState.modal==='settings'&&ports.playable())ports.showSettings();},
     'settings':()=>{ports.persist();ports.showSettings();},
     'watch-intro':()=>{ports.watchIntro();},
+    'watch-film':()=>{if(ports.navState.modal!=='settings'||!ports.guardAction())return;ports.showModal('film',companyFilmHtml(),'close');if((ports.navState.modal as string|null)==='film')mountCompanyFilm($('modal-layer'),ports.sessionState.game.profile.sound,ports.sessionState.audioMix.atmosphere);},
     'quests':()=>{ports.showQuests();},
     'save-recovery':()=>{ports.showSaveRecovery();},
     'import':()=>{if(ports.navState.modal==='save-recovery'&&ports.sessionState.session.status==='active')$('import-save')?.click();},
@@ -296,6 +298,9 @@ export function installListeners(deps: ListenersDeps): void {
       if(ports.navState.modal){
         if(e.key==='Escape'){ports.dismissModal();e.preventDefault();}
         if(e.key==='Tab'){
+          // Let the native media shadow tree traverse its own seek/volume/fullscreen controls.
+          // The surrounding film controls remain in the canonical modal boundary trap.
+          if(ports.navState.modal==='film'&&dom.activeElement()?.tagName==='VIDEO')return;
           const elements=modalFocusables($('modal-layer')),index=nextFocusIndex(elements.indexOf(dom.activeElement() as HTMLElement),elements.length,e.shiftKey);
           e.preventDefault();(index===null?$('modal-layer').querySelector<HTMLElement>('.dialog'):elements[index])?.focus();
         }return;

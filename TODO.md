@@ -225,3 +225,9 @@ IDEAL/5Ws and twenty alternatives per distinct scenario: `docs/audits/2026-10-08
 
 ## Review-script reconciliation (10 October 2026)
 - [ ] Two sessions rewrote the review journeys in parallel; main's versions were kept at merge. Move `verify-save-sessions`, `capture-mastery-review`, `capture-upgrade-text-review`, `capture-browser-review` and `capture-layering-review` onto `scripts/lib/browser.mjs` (free 47xx ports, current Camp and field routes) and empty `pendingUpdate` in `tests/review-scripts.test.ts`.
+
+## Company cinema, 12 October 2026
+- [x] Produce two original local 60-second English/Arabic portrait company films from authored artwork.
+- [x] Extend the canonical opening to 12 seconds with language selection and retained skip/reduced-motion/once-only semantics.
+- [x] Add an optional Preferences movie with native seeking, retry, background pause and canonical modal ownership.
+- [ ] Physical iOS/Android/Safari cinema and listening acceptance.
