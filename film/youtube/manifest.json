@@ -1,6 +1,6 @@
 {
   "company-wide-en.mp4": {
-    "sha256": "228bedabae94eea7f61c1371620c78f1a4432aa70ba4dfbbce293e0f2181fa7c",
+    "sha256": "07220addb1407d3df290c5ea1ae2cf93696e9d5e14bde366d9d02cdec85d7e22",
     "programs": [],
     "stream_groups": [],
     "streams": [
@@ -19,11 +19,11 @@
     ],
     "format": {
       "duration": "60.000000",
-      "size": "23961922"
+      "size": "18191814"
     }
   },
   "company-wide-ar.mp4": {
-    "sha256": "c5429e1d0aa600e2a6621438c739c6bb76658f6441510e32f55983f07ee1e1a6",
+    "sha256": "2e957cb43ef9e85c47af86a106e4b69153ea3972370a8d5d2faa8839214762b8",
     "programs": [],
     "stream_groups": [],
     "streams": [
@@ -42,7 +42,7 @@
     ],
     "format": {
       "duration": "60.000000",
-      "size": "23790853"
+      "size": "17989079"
     }
   }
 }
