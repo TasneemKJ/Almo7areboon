@@ -3,6 +3,7 @@
 Semantic versioning. Each merged batch adds an entry; `package.json` and the top heading carry the same version (a test checks). Git tags are cut by the maintainer at release time (only `v0.2.0` exists).
 
 ## 0.3.14 - 2026-10-06
+- Visual pass: revealed Hold/Advance gate labels anchor to their gate's outer edge (Advance no longer runs off the right edge on phones) and sit above the base health bar instead of hiding it; the sticky Back to Camp button on Cards and Evolution keeps paper above it so scrolled cards no longer show over it.
 - Weekly goal edge closed: a battle that starts in a new week opens it first, and a win that is the first thing seen in a new week counts the seals it just settled (they were earned this week) instead of making them the base.
 - Docs pass: UX-CONTRACT describes the shipped dialog header, cues, preferences and goals; TODO ticks what shipped and keeps open items honest; `package-lock.json` carries the package version; a test pins package, lock and changelog versions together.
 

@@ -58,7 +58,7 @@
    On touch, reveal the painted gate choices only once the game admits orders. */
 .gate-hit.order-ready .world-target-name,
 .gate-hit[aria-pressed="true"] .world-target-name{
- opacity:1;bottom:calc(100% + 5px);min-width:48px;max-width:96px;
+ opacity:1;bottom:calc(100% + var(--gate-label-lift,5px));min-width:48px;max-width:96px;
  white-space:normal;overflow-wrap:normal;
  padding:6px 8px;border:1px solid #d8bd7f88;
  border-radius:9px;background:#122e2bec;
@@ -67,6 +67,9 @@
 }
 .gate-hit[aria-pressed="true"] .world-target-name{background:#5a4726f5;color:#fff6d9}
 @media(max-width:359px){.gate-hit.order-ready .world-target-name{max-width:78px;font-size:12px}}
+/* The gates hug the screen edges: each label grows inward from its own gate's outer edge, never off-screen. */
+.gate-hit[data-field-gate="hold"] .world-target-name{left:0;right:auto;transform:none}
+.gate-hit[data-field-gate="advance"] .world-target-name{left:auto;right:0;transform:none}
 @media(forced-colors:active){
  .gate-hit.order-ready .world-target-name,.gate-hit[aria-pressed="true"] .world-target-name{
   background:Canvas;color:CanvasText;border:1px solid Highlight}

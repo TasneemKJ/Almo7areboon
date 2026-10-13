@@ -67,6 +67,11 @@ These incoming results describe that prior-main source and do not replace the ex
 - [ ] The review scripts hard-code ports 4175, 4176 and 4177, which other repos on a shared machine also use (the save-session and browser reviews fail against a foreign server on 4175); make the port an environment variable
 - [ ] `review:contrast` reports setting-row labels at 4.05:1 (Motion and Troop shapes status chips) and the daily-reward button at 4.41:1 as candidates; confirm or fix
 
+## Visual pass, 2026-10-12
+- [x] Hold/Advance gate labels grow inward from the screen edge (the Advance label was clipped off the right edge at 360-412 widths) and rise above the base health bars instead of covering them (portrait and landscape)
+- [x] Sticky Back to Camp on Cards/Evolution keeps paper above it, so scrolled cards no longer peek over the button
+- [ ] Battle result screen not captured in this pass: a touch-only battle at Harbor/First Fires did not end within 7 minutes on software WebGL
+
 ## Village command response, 2026-10-05
 - [x] Implement quieter gate readiness from authoritative Hold/Advance validity, with static reduced-motion parity
 - [x] Route accepted simulation order events to distinct bounded Hold/Advance accents; test rejected input, draining, mute and voice limits
