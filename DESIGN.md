@@ -153,3 +153,6 @@ The optional one-minute “Those who walk together” film uses existing source-
 
 ### Grounded company cinema (13 October 2026)
 The optional film uses one source-coordinate camera for scenery, company and planted standard. Feet belong to the authored road; establishing/valley views carry no unsupported figures. Contact shadows preserve the original painting, and portrait/wide thumbnails share the same placement discipline. Evidence: `docs/audits/2026-10-13-grounded-cinema.md`.
+
+### Waiting company legibility (13 October 2026)
+Waiting recruits use a shared48–72 CSS-pixel height bounded by neighbour spacing and combat clearance. Authored sprite, contact shadow and native hit region scale together; small/short layouts preserve the quiet foreground and all existing actions. See `docs/audits/2026-10-13-waiting-company.md`.

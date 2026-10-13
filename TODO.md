@@ -236,4 +236,9 @@ IDEAL/5Ws and twenty alternatives per distinct scenario: `docs/audits/2026-10-08
 - [x] Share source camera projection, road contact and scale across portrait/wide film.
 - [x] Remove unsupported valley figures; correct translucent shadows, planted standard, portrait spacing and thumbnail footing.
 - [x] View all 24 native shot/language/format frames; pass three renderer regressions.
-- [ ] Finish four final encodes, update manifests and verify decoded final files.
+- [x] Finish four final encodes, update manifests and verify decoded final files.
+
+## Waiting company legibility — 13 October 2026
+- [x] View current phone/desktop field and preserve the authored Home composition.
+- [x] Enlarge waiting recruits within shared native/painted geometry, with bounded shadow and combat clearance.
+- [ ] Verify final mobile matrix, real deployment, rotation, reduced motion and full source/build.

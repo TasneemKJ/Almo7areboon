@@ -54,4 +54,4 @@ UTF-8 SRT files reproduce the six authored caption cues (each begins 0.45 second
 
 Verification: ffprobe confirmed both encodes at exactly 60.000 seconds, 1920×1080, 24fps, H.264 and 48kHz stereo AAC. The encoded score in both languages measured −15.52 LUFS integrated and −5.36 dBTP. Both movies receive SHA-256/ffprobe entries in `manifest.json`; inspect with `ffprobe -v error -show_format -show_streams company-wide-en.mp4` and `sha256sum company-wide-*.mp4` from this folder.
 
-Final file sizes: English 23,961,922 bytes; Arabic 23,790,853 bytes. Both decoded cleanly through all 1,440 frames. Final English and Arabic closing frames were inspected for title placement, caption margins and glyph shaping.
+Final file sizes: English 18,191,814 bytes; Arabic 17,989,079 bytes. Both decoded cleanly through all 1,440 frames. Final English and Arabic closing frames were inspected for title placement, caption margins and glyph shaping.

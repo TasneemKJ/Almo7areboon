@@ -14,9 +14,9 @@ export function paintFieldCamp(host:ArmyHost,layers:ArmyLayers,campActors:readon
   if(!visible)return;
   const target=plan.recruits[kind],x=target.footX/scale,y=target.footY/scale;
   actor.setPosition(x,y).setDepth(y);
-  if(actor instanceof Phaser.GameObjects.Image)actor.setScale(48/(actor.height*scale)).setFlipX(false);
-  else {actor.setScale(.75/scale);drawTroop(actor,host.game.profile.age,kind as 0|1|2,'player',0,false);}
-  if(unlocked.includes(kind as 0|1|2)){layers.shadows.fillStyle(0x192c25,.3);layers.shadows.fillEllipse(x,y+2/scale,28/scale,7/scale);}
+  if(actor instanceof Phaser.GameObjects.Image)actor.setScale(plan.recruitHeight/(actor.height*scale)).setFlipX(false);
+  else {actor.setScale(.75*(plan.recruitHeight/48)/scale);drawTroop(actor,host.game.profile.age,kind as 0|1|2,'player',0,false);}
+  if(unlocked.includes(kind as 0|1|2)){layers.shadows.fillStyle(0x192c25,.3);layers.shadows.fillEllipse(x,y+2/scale,plan.recruitHeight*.58/scale,plan.recruitHeight*.145/scale);}
  });
  if(navigator.webdriver){
   const rendered=campActors.flatMap((actor,kind)=>{if(!actor.visible||!(actor instanceof Phaser.GameObjects.Image))return [];const b=actor.getBounds();return [{kind,bounds:{left:b.left/host.pixelRatio,top:b.top/host.pixelRatio,right:b.right/host.pixelRatio,bottom:b.bottom/host.pixelRatio,width:b.width/host.pixelRatio,height:b.height/host.pixelRatio}}];});

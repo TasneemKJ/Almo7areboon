@@ -15,3 +15,5 @@ Evidence: 24 native-sized PNGs at `/tmp/moh-ground/{portrait,wide}-{en,ar}-{5,15
 Four complete movies and their manifests are regenerating from this final source. Final encode metadata/decode verification will be appended when complete. Runtime UI and save formats are unchanged by this cinema correction.
 
 Fresh repository verification on the grounded source: all 1,452 tests passed, no failures/skips/cancellations. Typecheck and production build passed; JavaScript 497,852 bytes gzip against 512,000-byte budget. Logs: `/tmp/moh-ground/tests.log` and `/tmp/moh-ground/build.log`.
+
+Final four encodes completed. Root independently fully decoded both portrait and both widescreen files and viewed both encoded language contact sheets. All are 60 seconds / 24fps, H.264 with 48kHz stereo AAC; portrait 1080×1920 and wide 1920×1080. Manifests record the new verified hashes. Both separately grounded thumbnails were viewed.
