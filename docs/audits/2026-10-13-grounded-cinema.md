@@ -13,3 +13,5 @@ Evidence: 24 native-sized PNGs at `/tmp/moh-ground/{portrait,wide}-{en,ar}-{5,15
 `python -m unittest discover -s film -p 'test_*.py'`: 3 passed. Checks exercise both camera formats through start/mid/end company shots, source road limits and height scaling, empty unsupported shots, and a pixel sample proving the shadow retains ground color. Initial assertion exposed only floating-point roundoff (330.00000000000006); the strict limit now allows 0.000001 tolerance.
 
 Four complete movies and their manifests are regenerating from this final source. Final encode metadata/decode verification will be appended when complete. Runtime UI and save formats are unchanged by this cinema correction.
+
+Fresh repository verification on the grounded source: all 1,452 tests passed, no failures/skips/cancellations. Typecheck and production build passed; JavaScript 497,852 bytes gzip against 512,000-byte budget. Logs: `/tmp/moh-ground/tests.log` and `/tmp/moh-ground/build.log`.

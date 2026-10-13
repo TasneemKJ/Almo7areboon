@@ -1,7 +1,7 @@
 {
   "en": {
     "path": "public/film/company-en.mp4",
-    "sha256": "9e838a0328f28469e54479dd2fe9bba8390ee12721c9dde9732c079ec402e644",
+    "sha256": "d56b2c5747add79b12e9c277ab4a12b5fe382e47610615030c8c2f1ab05a87ee",
     "programs": [],
     "stream_groups": [],
     "streams": [
@@ -20,12 +20,12 @@
     ],
     "format": {
       "duration": "60.000000",
-      "size": "19208842"
+      "size": "14765689"
     }
   },
   "ar": {
     "path": "public/film/company-ar.mp4",
-    "sha256": "453e4971bdce35ac545af7d7717097298e811e84347e5b9dfc6b06f0dc091f06",
+    "sha256": "345d5a0a8bd0ec24a7eda0a634f93cb0cf0d7fd64b1b8fe2ee99cada6eef8b12",
     "programs": [],
     "stream_groups": [],
     "streams": [
@@ -44,7 +44,7 @@
     ],
     "format": {
       "duration": "60.000000",
-      "size": "18980452"
+      "size": "14614324"
     }
   }
 }
