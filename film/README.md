@@ -22,6 +22,6 @@ The shipped encodes are inventoried with SHA-256 and ffprobe metadata in `manife
 
 ## Widescreen publication package
 
-`python film/youtube.py --preview` prepares a five-moment bilingual contact sheet and separately composed 1280×720 thumbnails. `python film/youtube.py` renders the native 1920×1080 English/Arabic films into `film/youtube/`. This version rearranges scenery, company planes, foreground and titles for widescreen, retaining the original score. Upload copy and credits are in `film/youtube/UPLOAD.md`. No upload or publication is performed.
+`python film/youtube.py --preview` prepares a six-scene bilingual contact sheet and separately composed 1280×720 thumbnails. `python film/youtube.py` renders the native 1920×1080 English/Arabic films into `film/youtube/`. This version rearranges scenery, company planes, foreground and titles for widescreen, retaining the original score. Upload copy and credits are in `film/youtube/UPLOAD.md`. No upload or publication is performed.
 
 Final widescreen exports: English 18,191,814 bytes and Arabic 17,989,079 bytes. Both are exactly 60 seconds, 1920×1080, 24fps H.264/AAC stereo, and decoded cleanly through 1,440 frames. Both score tracks measure −15.52 LUFS / −5.36 dBTP. `film/youtube/manifest.json` records verified SHA-256 values and ffprobe metadata.

@@ -247,3 +247,5 @@ IDEAL/5Ws and twenty alternatives per distinct scenario: `docs/audits/2026-10-08
 - [x] View current phone/desktop field and preserve the authored Home composition.
 - [x] Enlarge waiting recruits within shared native/painted geometry, with bounded shadow and combat clearance.
 - [ ] Verify final mobile matrix, real deployment, rotation, reduced motion and full source/build.
+
+Combined-main camp/cinema acceptance:1464tests/build pass; six-size native touch/deployment/rotation matrix passes, including390px at4×CPU. Four corrected cinema exports independently decoded and visually reviewed. Incoming remote-main evolution, gate and scroll fixes preserved.
