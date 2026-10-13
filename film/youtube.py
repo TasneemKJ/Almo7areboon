@@ -16,46 +16,13 @@ for y in range(H):
 
 def scene(t,lang):
  shot=min(5,int(t//10));u=t%10/10;e=u*u*(3-2*u)
- plate=p.plates['olive' if shot in [2,3] else 'village'];zoom=[1.02,1.25,1.05,1.12,1.27,1.02][shot]+.055*e
- cw=plate.width/zoom;ch=cw*H/W;cx=plate.width*.5+(e-.5)*plate.width*(1-1/zoom)*.8
- cy=plate.height*[.40,.59,.53,.54,.38,.43][shot]+(e-.5)*32
- cy=max(ch/2,min(plate.height-ch/2,cy))
- im=plate.crop((cx-cw/2,cy-ch/2,cx+cw/2,cy+ch/2)).resize((W,H),Image.Resampling.BICUBIC).convert('RGBA')
- # Warm moving light across the illustrated village, independent of the camera.
- light=Image.new('RGBA',(W,H));ld=ImageDraw.Draw(light)
- for k in range(5):
-  x=170+k*345+e*18;y=380+(k%2)*100;r=48+5*math.sin(t*.7+k)
-  ld.ellipse((x-r,y-r,x+r,y+r),fill=(255,172,64,22))
- im.alpha_composite(light.filter(ImageFilter.GaussianBlur(35)))
- if shot==0:
-  p.actor(im,'pathkeeper',1430-e*140,870,360,int(t*5)%4)
-  p.actor(im,'thrower',1690-e*60,890,280,0)
- elif shot==1:
-  p.actor(im,'pathkeeper',630+e*35,930,850,4)
-  p.actor(im,'thrower',1380-e*40,835,330,0)
- elif shot==2:
-  for i,n in enumerate(['rider','thrower','pathkeeper']):p.actor(im,n,420+i*500+e*80,840+i*30,410+i*65,int(t*5+i)%4)
- elif shot==3:
-  for i,n in enumerate(['thrower','rider','pathkeeper']):p.actor(im,n,350+i*550+e*65,880-i*40,540-i*55,int(t*5+i)%4)
- elif shot==4:
-  p.actor(im,'pathkeeper',435+e*20,950,700,4)
- else:
-  p.actor(im,'rider',390-e*15,900,510,0);p.actor(im,'thrower',1310+e*15,900,560,0);p.actor(im,'pathkeeper',960,950,690,4)
- if shot in [1,3,5]:
-  x=[0,1040,0,1590,0,1570][shot];y=190 if shot==1 else 290;dd=ImageDraw.Draw(im)
-  dd.line((x,y-35,x,900),fill='#b69155',width=12)
-  points=[(x,y)]+[(x+q,y+14*math.sin(t*1.5+q/95)) for q in range(0,330,15)]+[(x+q,y+230+14*math.sin(t*1.5+q/95)) for q in range(315,-1,-15)]
-  dd.polygon(points,fill='#24505c');dd.line(points[1:23],fill='#d7b368',width=5);dd.ellipse((x+135,y+75,x+183,y+150),fill='#edcb7b')
+ im,project,scale=p.ground_scene(t,W,H)
+ p.ground_company(im,t,project,scale)
  d=ImageDraw.Draw(im)
  for i in range(34):
   x=(i*173+t*(5+i%4))%W;y=100+(i*197-t*(7+i%3))%780;r=2+i%3
   d.ellipse((x-r,y-r,x+r,y+r),fill=(255,199,112,65))
- fg=Image.new('RGBA',(W,H));fd=ImageDraw.Draw(fg)
- for side in [0,1]:
-  for i in range(5):
-   x=(i*30-60+math.sin(t*.22)*10) if side==0 else W-(i*30-60+math.sin(t*.22)*10)
-   fd.ellipse((x-60,660+i*70,x+80,1000+i*70),fill=(8,24,30,210))
- im.alpha_composite(fg);im.alpha_composite(grade)
+ im.alpha_composite(grade)
  if shot==5:
   im.alpha_composite(textlayer('المحاربون' if lang=='ar' else 'ALMO7AREBOON',lang,108 if lang=='ar' else 84,112,'#f0ce87'))
   im.alpha_composite(textlayer('الذين يسيرون معًا' if lang=='ar' else 'Those who walk together',lang,67 if lang=='ar' else 53,218))
@@ -65,10 +32,12 @@ def scene(t,lang):
  return im.convert('RGB')
 
 def thumbnail(lang):
- plate=p.plates['village'];im=plate.crop((0,120,plate.width,120+plate.width*9/16)).resize((W,H)).convert('RGBA')
+ im,project,scale=p.ground_scene(55,W,H)
+ for name,x,y,h,frame in [('rider',1035,920,220,0),('pathkeeper',825,975,355,4)]:
+  sx,sy=project(x,y);p.actor(im,name,sx,sy,h*scale,frame)
  shade=Image.new('RGBA',(W,H));d=ImageDraw.Draw(shade)
  for x in range(W):d.line((x,0,x,H),fill=(5,21,31,int(230*max(0,1-x/1500))))
- im.alpha_composite(shade);p.actor(im,'rider',1680,1100,590,0);p.actor(im,'pathkeeper',1390,1120,1050,4)
+ im.alpha_composite(shade)
  d=ImageDraw.Draw(im)
  lines=['المحاربون','نسير معًا'] if lang=='ar' else ['ALMO7AREBOON','WALK TOGETHER']
  for y,txt,size,color in [(330,lines[0],100 if lang=='ar' else 81,'#f0ce87'),(505,lines[1],113 if lang=='ar' else 83,'#fff0d2')]:

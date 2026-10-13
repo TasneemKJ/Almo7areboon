@@ -150,3 +150,6 @@ A first launch opens with a nine-second tale between Play and the field: three b
 
 ## Company cinema — 12 October 2026
 The optional one-minute “Those who walk together” film uses existing source-resolution company and settlement paintings, slow layered movement, original indigo standard, restrained dust and a newly composed modal score. English and Arabic exports have individually typeset captions. No persistent watermark competes with the picture. Settings adds one film action; Home remains the same quiet invitation. The established opening now lasts 12 seconds including its handover, with an explicit language selector and existing still mode for reduced motion. This localizes only the opening/film; the game remains English.
+
+### Grounded company cinema (13 October 2026)
+The optional film uses one source-coordinate camera for scenery, company and planted standard. Feet belong to the authored road; establishing/valley views carry no unsupported figures. Contact shadows preserve the original painting, and portrait/wide thumbnails share the same placement discipline. Evidence: `docs/audits/2026-10-13-grounded-cinema.md`.

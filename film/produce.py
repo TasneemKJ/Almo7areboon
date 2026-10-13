@@ -30,50 +30,87 @@ for y in range(H):
  gd.line((0,y,W,y),fill=(5,21,31,a))
 
 def actor(im,name,x,base,height,frame=0,flip=False,shadow=False):
- a=actors[name][frame%6];a=a.resize((int(height*a.width/a.height),int(height)),Image.Resampling.BICUBIC)
+ a=actors[name][frame%6]
+ # Trim transparent padding so the visible sole, rather than the sprite box, meets the ground.
+ bounds=a.getchannel('A').getbbox()
+ if bounds:a=a.crop(bounds)
+ a=a.resize((int(height*a.width/a.height),int(height)),Image.Resampling.BICUBIC)
  if flip:a=a.transpose(Image.Transpose.FLIP_LEFT_RIGHT)
  if shadow:
   dark=Image.new('RGBA',a.size,(12,27,35,255));dark.putalpha(a.getchannel('A').point(lambda v:int(v*.8)));a=dark
- d=ImageDraw.Draw(im);d.ellipse((x-a.width*.34,base-16,x+a.width*.34,base+22),fill=(5,16,25,95))
+ # Composite the shadow in RGBA before flattening: no opaque navy ellipse.
+ blur=max(2,height*.011);pad=math.ceil(blur*4)
+ sw=math.ceil(a.width*.68);sh=math.ceil(height*.033)
+ contact=Image.new('RGBA',(sw+2*pad,sh+2*pad));d=ImageDraw.Draw(contact)
+ d.ellipse((pad,pad,pad+sw,pad+sh),fill=(25,22,17,85))
+ im.alpha_composite(contact.filter(ImageFilter.GaussianBlur(blur)),(int(x-sw/2-pad),int(base-height*.014-pad)))
  im.alpha_composite(a,(int(x-a.width/2),int(base-height)))
+
+def ground_scene(t,width,height):
+ """Project scenery and all grounded objects through one source-space camera."""
+ shot=min(5,int(t//10));u=t%10/10;e=u*u*(3-2*u)
+ plate=plates['olive' if shot in [2,3] else 'village'];portrait=height>width
+ if portrait:
+  zoom=[1.02,1.28,1.04,1.10,1.48,1.02][shot]+.035*e
+  ch=plate.height/zoom;cw=ch*width/height
+  cx=plate.width*[.51,.46,.50,.50,.73,.50][shot]+(e-.5)*18
+  cy=plate.height*(.42 if shot==4 else .53)
+ else:
+  zoom=[1.02,1.10,1.02,1.05,1.20,1.02][shot]+.035*e
+  cw=plate.width/zoom;ch=cw*height/width
+  cx=plate.width*.5+(e-.5)*18;cy=plate.height*(.38 if shot==4 else .61)+(e-.5)*12
+ cx=max(cw/2,min(plate.width-cw/2,cx));cy=max(ch/2,min(plate.height-ch/2,cy))
+ left,top=cx-cw/2,cy-ch/2;scale=width/cw
+ image=plate.crop((left,top,left+cw,top+ch)).resize((width,height),Image.Resampling.BICUBIC).convert('RGBA')
+ def project(x,y):return ((x-left)*scale,(y-top)*scale)
+ return image,project,scale
+
+def ground_company(im,t,project,scale):
+ """Feet stay on the authored open road (source y=850..990), never on roof or sky."""
+ shot=min(5,int(t//10));u=t%10/10;portrait=im.height>im.width
+ placements=[]
+ if shot==1:placements=[('pathkeeper',450,960,330,4)]
+ elif shot==2:
+  placements=[('rider',350+u*18,880,185,int(t*5)%4),('thrower',570+u*18,910,210,int(t*5+1)%4),('pathkeeper',790+u*18,955,255,int(t*5+2)%4)]
+ elif shot==3:
+  placements=[('thrower',(395 if portrait else 345)+u*24,945,220,int(t*5)%4),('rider',575+u*24,890,185,int(t*5+1)%4),('pathkeeper',(765 if portrait else 790)+u*24,965,255,int(t*5+2)%4)]
+ elif shot==5:
+  placements=[('rider',380 if portrait else 280,930,240,0),('thrower',780 if portrait else 850,935,245,0),('pathkeeper',570,980,330,4)]
+ for name,x,y,h,frame in sorted(placements,key=lambda a:a[2]):
+  sx,sy=project(x,y);actor(im,name,sx,sy,h*scale,frame)
+ # One planted standard in the dedicated raising scene; its base shares the courtyard projection.
+ if shot==1:
+  x,base=project(680,960);_,top=project(680,550);d=ImageDraw.Draw(im)
+  d.line((x,top-12*scale,x,base),fill='#483b2b',width=max(4,int(7*scale)))
+  d.line((x-scale,top-12*scale,x-scale,base),fill='#b69155',width=max(2,int(3*scale)))
+  # A woven, folded standard uses the same warm/cool pigments as the painted company.
+  def wave(q):return 6*scale*math.sin(t*1.5+q/45)
+  for q in range(131):
+   light=math.sin(q/14+t*.9)*7+math.sin(q*.83)*2
+   color=(int(36+light),int(73+light),int(79+light))
+   d.line((x+q*scale,top+wave(q),x+q*scale,top+100*scale+wave(q)),fill=color,width=max(1,math.ceil(scale)))
+  edge=[(x+q*scale,top+wave(q)) for q in range(131)]
+  lower=[(x+q*scale,top+100*scale+wave(q)) for q in range(131)]
+  d.line(edge,fill='#b09a66',width=max(1,int(scale)))
+  d.line(lower,fill='#172f34',width=max(2,int(2*scale)))
+  d.line((x+130*scale,top+wave(130),x+130*scale,top+100*scale+wave(130)),fill='#172f34',width=max(2,int(2*scale)))
+  for row in range(7,99,7):
+   d.line([(x+q*scale,top+row*scale+wave(q)) for q in range(4,129)],fill='#2b5055',width=1)
+  d.ellipse((x+53*scale,top+32*scale,x+75*scale,top+68*scale),fill='#c1a264',outline='#e0c080',width=max(1,int(scale)))
+  contact=Image.new('RGBA',im.size);cd=ImageDraw.Draw(contact)
+  cd.ellipse((x-16*scale,base-3*scale,x+24*scale,base+4*scale),fill=(25,22,17,125))
+  im.alpha_composite(contact.filter(ImageFilter.GaussianBlur(2*scale)))
 
 def scene(t,lang):
  shot=min(5,int(t//10));u=(t%10)/10; ease=u*u*(3-2*u)
- p=plates['olive' if shot in [2,3] else 'village']; zoom=[1.06,1.50,1.20,1.32,1.48,1.12][shot]+.08*ease
- cropH=p.height/zoom;cropW=cropH*W/H;cx=p.width*[.51,.30,.62,.54,.73,.52][shot]+(ease-.5)*80;cy=p.height*[.50,.52,.50,.50,.42,.50][shot]
- cx=max(cropW/2,min(p.width-cropW/2,cx));cy=max(cropH/2,min(p.height-cropH/2,cy))
- im=p.crop((cx-cropW/2,cy-cropH/2,cx+cropW/2,cy+cropH/2)).resize((W,H),Image.Resampling.BICUBIC).convert('RGBA')
+ im,project,scale=ground_scene(t,W,H)
+ ground_company(im,t,project,scale)
  d=ImageDraw.Draw(im,'RGBA')
- # Separate foreground, company planes, moving light and suspended dust.
  for i in range(24):
   x=(i*173+t*(5+i%4))%W;y=360+(i*197-t*(7+i%3))%950;r=2+i%3
   d.ellipse((x-r,y-r,x+r,y+r),fill=(255,199,112,45+i%4*18))
- if shot==0:
-  actor(im,'pathkeeper',860-100*ease,1330,300,int(t*5)%4)
- elif shot==1:
-  actor(im,'pathkeeper',400+25*ease,1400,710,4)
- elif shot==2:
-  for i,n in enumerate(['rider','thrower','pathkeeper']):actor(im,n,160+i*330+u*70,1320-i*25,430+i*40,int(t*5+i)%4)
- elif shot==3:
-  for i,n in enumerate(['thrower','rider','pathkeeper']):actor(im,n,180+i*340,1370-i*45,520+i*45,0)
- elif shot==4:
-  for i in range(3):actor(im,'pathkeeper',640+i*130-u*90,875+i*15,190-i*20,int(t*4+i)%4,True,True)
-  actor(im,'pathkeeper',220,1470,680,4)
- else:
-  actor(im,'thrower',790,1360,450,0);actor(im,'rider',180,1370,430,0);actor(im,'pathkeeper',500,1410,560,4)
- if shot in [1,3,5]:
-  # Company standard: an original indigo cloth with a simple golden seed emblem.
-  pole=740 if shot==1 else 610; top=465 if shot==1 else 665
-  d=ImageDraw.Draw(im,'RGBA');d.line((pole,top-40,pole,1370),fill='#b69155',width=13)
-  points=[(pole,top)]+[(pole+q,top+12*math.sin(t*1.7+q/80)) for q in range(0,250,20)]+[(pole+q,top+190+12*math.sin(t*1.7+q/80)) for q in range(240,-1,-20)]
-  d.polygon(points,fill='#24505c');d.line(points[1:14],fill='#d7b368',width=5);d.ellipse((pole+95,top+62,pole+133,top+128),fill='#edcb7b')
- # Close foreground leaf silhouettes give a stronger depth baseline than a flat zoom.
- fg=Image.new('RGBA',(W,H));fd=ImageDraw.Draw(fg)
- for side in [0,1]:
-  for i in range(5):
-   x=(i*33-70+math.sin(t*.22)*9) if side==0 else W-(i*33-70+math.sin(t*.22)*9)
-   fd.ellipse((x-50,1160+i*93,x+60,1480+i*82),fill=(8,24,30,180))
- im.alpha_composite(fg);im.alpha_composite(grade)
+ # The authored foreground already supplies textured leaves and depth.
+ im.alpha_composite(grade)
  # Captions dissolve gently at each actual editorial cut, otherwise hold readable.
  op=min(1,max(0,(t%10-.45)/.7),max(0,(9.7-t%10)/.6));cap=caps[lang][shot].copy();cap.putalpha(cap.getchannel('A').point(lambda v:int(v*op)));im.alpha_composite(cap)
  d=ImageDraw.Draw(im);small=ImageFont.truetype(fonten,27)
