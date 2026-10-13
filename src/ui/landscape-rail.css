@@ -21,7 +21,8 @@
  :root .world { grid-column:1; grid-row:1 / -1; min-height:0; }
  :root .deployment {
   grid-column:2; grid-row:1; min-height:0; overflow-y:auto; overscroll-behavior:contain;
-  display:flex; flex-direction:column; justify-content:center; border-top:0; border-left:2px solid #b3b99b;
+  /* Center when the deck fits; never push commands above the scroll origin. */
+  display:flex; flex-direction:column; justify-content:flex-start; justify-content:safe center; border-top:0; border-left:2px solid #b3b99b;
  }
  :root .upgrades { grid-column:2; grid-row:2; border-left:2px solid #b3b99b; }
  :root .bottom-nav {
