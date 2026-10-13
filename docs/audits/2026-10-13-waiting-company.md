@@ -1,0 +1,11 @@
+# Waiting company legibility — 13 October 2026
+
+IDEAL / 5Ws: the player entering the field by touch must find the actual waiting defender named by the live cue. Current native Chromium baseline at 390×844, 320×568 and 1280×800 showed the fixed 48 CSS-pixel figure becoming a tiny accent among foreground leaves, especially on desktop. Home already presents the original painting clearly and needs no arbitrary restyle.
+
+Twenty alternatives: (1) increase authored waiting silhouette within available space; (2) share scale with native hit region; (3) retain short-landscape combat clearance; (4) scale contact shadow; (5) move instruction into a panel; (6) new arrow; (7) replace original character; (8) new card deck; (9) pulsing notification; (10) extra onboarding modal; (11) stronger existing readiness ring; (12) new permanent nameplate; (13) larger costs; (14) relocate the whole battlefield; (15) brighten the painting; (16) new gameplay reward; (17) new sound; (18) new navigation; (19) change save format; (20) replace Home. Selected 1–4; preserve 11 as-is; defer 12–13 pending evidence; reject 5–10 and 14–20 as distraction or scope growth.
+
+One bounded iteration: grow the original waiting sprites from fixed 48px to a maximum 72px, constrained by neighbouring targets and the real combat envelope. Shared `campLayout` carries the height to Phaser and native button geometry. Narrow 320px and short landscape remain smaller. Contact shadows scale with the actor; action routing, keyboard shortcuts, existing readiness and teaching, costs, economy and saves are unchanged. No design-rule exception.
+
+Source regression first failed on absent legible phone size. Updated shared geometry passed 23 relevant tests, including all-target nonoverlap, combat-envelope clearance, DPR projection and real widest-idle-frame containment. Initial landscape arithmetic landed exactly at the old 2px boundary and exposed floating-point roundoff; one extra pixel of clearance resolves it without weakening the test.
+
+Before evidence viewed: `/tmp/moh-ground/game/before-play-390.png`, `before-play-1280.png`, `before-play-320.png` and Home 390. Final browser matrix and verification pending; this document does not claim physical-device performance.

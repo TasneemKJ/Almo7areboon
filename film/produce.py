@@ -155,8 +155,8 @@ if __name__=='__main__':
  args=argparse.ArgumentParser();args.add_argument('--preview',action='store_true');args.add_argument('--lang',choices=['en','ar','both'],default='both');a=args.parse_args();OUT.mkdir(exist_ok=True)
  scene(3,'en').save(OUT/'poster.jpg',quality=90)
  if a.preview:
-  sheet=Image.new('RGB',(1080,640),'#071922')
-  for i,t in enumerate([3,15,30.9,45,57]):sheet.paste(scene(t,'en').resize((216,384)),(i*216,0));sheet.paste(scene(t,'ar').resize((216,384)).crop((0,192,216,384)),(i*216,400))
+  sheet=Image.new('RGB',(1296,784),'#071922')
+  for i,t in enumerate([3,15,25,35,45,57]):sheet.paste(scene(t,'en').resize((216,384)),(i*216,0));sheet.paste(scene(t,'ar').resize((216,384)),(i*216,400))
   sheet.save('/tmp/mohareboon-contact.jpg');scene(3,'en').save(OUT/'poster.jpg',quality=90)
  else:
   score=audio()

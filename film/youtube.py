@@ -51,8 +51,8 @@ def preview():
    start=i*10;end=start+9
    cues.append(f'{i+1}\n00:00:{start:02d},450 --> 00:00:{end:02d},700\n{line}\n')
   (OUT/f'captions-{lang}.srt').write_text('\n'.join(cues),encoding='utf-8')
- sheet=Image.new('RGB',(960,1350),'#071922')
- for i,t in enumerate([3,15,30.9,45,57]):
+ sheet=Image.new('RGB',(960,1620),'#071922')
+ for i,t in enumerate([3,15,25,35,45,57]):
   for j,lang in enumerate(['en','ar']):sheet.paste(scene(t,lang).resize((480,270)),(j*480,i*270))
  sheet.save(OUT/'contact-sheet.jpg',quality=90)
  for lang in ['en','ar']:
