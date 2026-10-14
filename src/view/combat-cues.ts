@@ -29,6 +29,7 @@ export function selectCombatCues(events:readonly GameEvent[]):readonly CombatCue
   switch(event.type){
    case 'order':if(event.order!=='hold'&&event.order!=='advance')continue;
     id=event.order==='hold'?'order-hold':'order-advance';priority=4;break;
+   case 'volley':if(skills.length<3)skills.push({id:'meteor',eventIndex:index,priority:6,critical:true,cooldown:null});continue;
    case 'skill':if(event.skill!=='freeze'&&event.skill!=='meteor'&&event.skill!=='food')continue;
     if(skills.length<3)skills.push({id:event.skill,eventIndex:index,priority:6,critical:true,cooldown:null});continue;
    case 'hit':

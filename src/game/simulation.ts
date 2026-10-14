@@ -10,7 +10,7 @@ import { resolveRoleHit, sweepTarget } from './role-traits.ts';
 import { battleStats } from './statistics.ts';
 import { advanceUnit } from './unit-movement.ts';
 import { applyPendingVictory, victoryStory } from './victory-restore.ts';
-import { ERAS, eraEconomyScale, cardBonus, foodRate } from './data.ts'; import { finaleFoodFactor } from './finale.ts'; import { knockback } from './knockback.ts';
+import { ERAS, eraEconomyScale, cardBonus, foodRate } from './data.ts'; import { finaleFoodFactor } from './finale.ts'; import { knockback } from './knockback.ts'; import { chargeVolley, fireVolley } from './volley.ts';
 import { defaultProfile, loadProfile } from './save.ts';
 import { upgradeStatusFor, waveStatusFor, type UpgradeStatus } from './status-queries.ts';
 import { claimDaily, claimQuest, claimWeekly, evolve, summonCards, syncWeek, unlockTroop, upgradeBase, type EconomyPort } from './economy-actions.ts';
@@ -119,6 +119,7 @@ export class Game implements GamePort {
     'pause': (game, action: ActionOf<'pause'>) => game.doPause(action),
     'spawn': (game, action: ActionOf<'spawn'>) => game.doSpawn(action),
     'skill': (game, action: ActionOf<'skill'>) => game.doSkill(action),
+    'volley': (game) => fireVolley(game.profile, game.state, game.chronicleHost()),
     'retry': (game, action: ActionOf<'retry'>) => game.doRetry(action),
     'next': (game, action: ActionOf<'next'>) => game.doNext(action),
     'prestige': (game, action: ActionOf<'prestige'>) => game.doPrestige(action),
@@ -160,8 +161,7 @@ export class Game implements GamePort {
 
   private doPause(action: ActionOf<'pause'>): boolean {
     if (this.state.phase !== 'running') return false;
-    this.state.paused = !this.state.paused;
-    return true;
+    this.state.paused = !this.state.paused; return true;
   }
 
   private doSpawn(action: ActionOf<'spawn'>): boolean {
@@ -178,9 +178,7 @@ export class Game implements GamePort {
     return true;
   }
 
-  private doSkill(action: ActionOf<'skill'>): boolean {
-    return this.skill(action.skill);
-  }
+  private doSkill(action: ActionOf<'skill'>): boolean { return this.skill(action.skill); }
 
   private doRetry(action: ActionOf<'retry'>): boolean {
     if (!canRetry(this.profile,this.state)) return false;
@@ -324,7 +322,7 @@ export class Game implements GamePort {
     this.state.time += dt;
     this.state.food = Math.min(99, this.state.food + foodRate(this.profile) * finaleFoodFactor(this.state) * dt);
     this.state.units = this.state.units.filter(u => u.hp > 0);
-    chronicleTick(this.profile,this.state,dt,this.chronicleHost());
+    chronicleTick(this.profile,this.state,dt,this.chronicleHost()); chargeVolley(this.state, dt);
     const deferChronicleWin=this.state.chronicle?.enabled===true&&chronicleOutcome(this.profile,this.state)==='won';
     if (this.checkEnd(deferChronicleWin)) return;
     while (this.state.wave < this.encounter.waves.length && this.state.time + 1e-9 >= this.encounter.waves[this.state.wave].time) this.state.wave++;
@@ -491,9 +489,5 @@ export class Game implements GamePort {
     return false;
   }
 
-  drainEvents(): GameEvent[] {
-    const events = this.events;
-    this.events = [];
-    return events;
-  }
+  drainEvents(): GameEvent[] { const events = this.events; this.events = []; return events; }
 }

@@ -257,7 +257,7 @@ Plan and gap analysis: `docs/research/REFERENCE-GAMES-2026-10-14.md`; ledger: `d
 - [x] 03: Harvest Moon finale (CR)
 - [x] 04: Harvest Moon sky (CR/KR)
 - [x] 05: Knockback on heavy blows (BC)
-- [ ] 06: Watchtower Volley (BC)
+- [x] 06: Watchtower Volley (BC)
 - [ ] 07: Volley charge ring and first-charge cue (BC/CR)
 - [ ] 08: Gate-crack drama (CR)
 - [ ] 09: Enemy chieftain at half gate (BC)

@@ -11,6 +11,7 @@ export function fieldControlsHtml():string{return `<div id="field-targets" class
 ${[0,1,2].map(kind=>`<button class="world-hit recruit-hit" data-field-recruit="${kind}" data-unit="${kind}" hidden><span class="troop-mark troop-mark-${kind}" aria-hidden="true"></span><span class="recruit-cost" aria-hidden="true"></span></button>`).join('')}
 <button class="world-hit gate-hit" data-field-gate="hold" data-order="hold" aria-label="Hold at your gate"><span class="world-target-name">Hold · 60 momentum</span></button>
 <button class="world-hit gate-hit" data-field-gate="advance" data-order="advance" aria-label="Advance toward the enemy gate"><span class="world-target-name">Advance · 60 momentum</span></button>
+<button id="field-volley" class="world-hit volley-hit" data-command="field-volley" aria-label="Watchtower volley" hidden><span class="world-target-name">Volley</span></button>
 <button id="field-standard" class="world-hit" data-command="story-rally" aria-label="Gather newly deployed troops at the standard" hidden><span class="world-target-name">Gather</span></button>
 <button id="field-supplies" class="world-hit" data-field-context="supplies" aria-label="Inspect supplies" hidden><span class="world-target-name">Supplies</span></button>
 <button id="field-enemy" class="world-hit enemy-hit" data-field-context="enemy" aria-label="Select enemy for a tactical skill" hidden><span class="world-target-name">Select enemy</span></button>

@@ -241,6 +241,7 @@ class Battlefield extends Phaser.Scene {
    if(e.type==='win'&&game.state.chronicle&&['escort','hold','rescue'].includes(game.state.chronicle.objective)){this.effects.floatText(225,this.layout.groundY-70,'THE COMPANY RETURNS','#e5d4ad',true);this.effects.ring(110,this.layout.groundY-12,0xd5bd89,24);return;}
    if(e.type==='win'){this.effects.emit(408,this.layout.groundY-27,40,0xffd373,false,1.25);this.effects.flare(411,this.layout.groundY-30,120,0xffd27a,1.1);if(!this.reduce){this.effects.cameraKick(100,.0015,4);this.cameras.main.flash(260,255,226,170);}}
    if(e.type==='lose')this.effects.emit(39,this.layout.groundY-10,20,0xb6a484,true,.8);
+   if(e.type==='volley'){this.effects.floatText(150,this.layout.groundY-80,'VOLLEY','#ffe0a0',true);for(const v of this.army.units.values())if(v.side==='enemy'&&v.x<=xAt(e.x??450)){this.effects.ring(v.x,v.y-14,0xffd27a,26);this.effects.emit(v.x,v.y-16,8,0xf4e6c2,true,.5,v.lane);}if(!this.reduce)this.effects.cameraKick(90,.0018,2);}
    if(e.type==='evolve')this.effects.ring(225,this.layout.groundY,0xd2f9d8,200);
    if(e.type==='skill'){
     if(e.skill==='food'){this.effects.floatText(225,this.layout.groundY-85,`+${Number((e.amount??10).toFixed(1))} FOOD`,'#fff0ae',true);this.effects.ring(119,this.layout.groundY,0xc6ef9f,55);}
