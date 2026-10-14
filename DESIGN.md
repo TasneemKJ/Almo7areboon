@@ -171,3 +171,4 @@ Forty small iterations adapt mechanisms from The Battle Cats, Clash Royale and K
 - **10 Chieftain silhouette.** The chieftain stands 1.35 times larger in a brass ring at its feet, and the herald announces it, so the threat reads from the silhouette.
 - **11 Chieftain fall impact frame.** The chieftain's fall is an impact frame: a gold shower and ring with "The chieftain falls", plus a brief freeze and warm flash in full motion only.
 - **12 Company champion hero.** A Hero button beside the volley calls the company champion: free, four times a recruit's health and twice its strike. One champion at a time; after falling it returns 25 battle seconds later. It is not a deployment, so it never spends a Small Company seal.
+- **13 Champion presentation and cue.** The champion is drawn 1.2 times larger in a pale-blue ring (the chieftain's ring is brass). New commanders see "Your champion is ready" once per battle.

@@ -55,3 +55,15 @@ test('the champion is a native field button routed through dispatch', () => {
   assert.match(fieldControlsHtml(), /<button id="field-champion" class="world-hit volley-hit champion-hit" data-command="field-champion"[^>]*hidden>/);
   assert.match(readFileSync('src/app/listeners.ts', 'utf8'), /command==='field-champion'\)\{ports\.action\(\{type:'champion'\}\)/);
 });
+
+test('the champion is drawn larger in a pale ring and introduced to new commanders', async () => {
+  const paint = readFileSync('src/view/battlefield-troop-paint.ts', 'utf8');
+  assert.match(paint, /unit\.hero\?1\.2:1/);
+  const { heraldMoments } = await import('../src/ui/field-herald.ts');
+  const game = new Game();
+  game.dispatch({ type: 'start' });
+  steps(game, CHAMPION_FIRST + 0.05);
+  assert.ok(heraldMoments(game.profile, game.state).some(line => line.key === 'champion'));
+  game.profile.wins = 5;
+  assert.ok(!heraldMoments(game.profile, game.state).some(line => line.key === 'champion'));
+});
