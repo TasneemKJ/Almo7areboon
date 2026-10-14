@@ -1,6 +1,6 @@
 # Those who walk together
 
-Original one-minute Almo7areboon company tale, in English and Arabic. The authored settlement, olive terraces and character sheets remain the source of truth. Six scenes: a lit doorway; raising the standard; gathering; crossing the hills; distant footsteps; standing together. Captions are original. No real politics, gore, stock music, narration, remote resources or credentials.
+Original one-minute Almo7areboon company tale, in English and Arabic. The authored settlement, olive terraces and character sheets remain the source of truth. Six scenes: a lit doorway; a planted standard unfurling; gathering; walking the terrace road; distant footsteps; standing together. Captions are original. No real politics, gore, stock music, narration, remote resources or credentials.
 
 ## Reproduce
 

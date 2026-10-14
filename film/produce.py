@@ -29,11 +29,33 @@ for y in range(H):
  a=int(220*max(0,(y-1230)/690)**.6) if y>1230 else int(60*max(0,1-y/500))
  gd.line((0,y,W,y),fill=(5,21,31,a))
 
-def actor(im,name,x,base,height,frame=0,flip=False,shadow=False):
- a=actors[name][frame%6]
+def gait(distance,height,leg):
+ """A planted half-cycle cancels root travel; the other foot swings clear."""
+ stride=height*.38
+ phase=(distance/stride+leg*.5)%1
+ if phase<.5:return stride*(.25-phase),0
+ q=(phase-.5)*2
+ return stride*(-.25+.5*(q*q*(3-2*q))),height*.045*math.sin(math.pi*q)
+
+def walking_sprite(name,distance,height):
+ """Deform only authored lower limbs, keeping each boot horizontal on contact."""
+ src=actors[name][0];w,h=src.size;hip=int(h*.79);split=int(w*.42)
+ pad=int(w*.3);out=Image.new('RGBA',(w+pad*2,h))
+ out.alpha_composite(src.crop((0,0,w,hip)),(pad,0))
+ for leg,(left,right) in enumerate([(0,split),(split,w)]):
+  dx,lift=gait(distance,height,leg);dx*=h/height;lift*=h/height
+  for y in range(hip,h,2):
+   # Upper cloth joins stay fixed. The boot translates as one rigid shape.
+   weight=min(1,(y-hip)/max(1,h*.1))
+   strip=src.crop((left,y,right,min(y+2,h)))
+   out.alpha_composite(strip,(pad+left+round(dx*weight),y-round(lift*weight)))
+ return out
+
+def actor(im,name,x,base,height,frame=0,flip=False,shadow=False,walk=None):
+ a=actors[name][frame%6] if walk is None else walking_sprite(name,walk,height)
  # Trim transparent padding so the visible sole, rather than the sprite box, meets the ground.
  bounds=a.getchannel('A').getbbox()
- if bounds:a=a.crop(bounds)
+ if bounds and walk is None:a=a.crop(bounds)
  a=a.resize((int(height*a.width/a.height),int(height)),Image.Resampling.BICUBIC)
  if flip:a=a.transpose(Image.Transpose.FLIP_LEFT_RIGHT)
  if shadow:
@@ -69,34 +91,51 @@ def ground_company(im,t,project,scale):
  """Feet stay on the authored open road (source y=850..990), never on roof or sky."""
  shot=min(5,int(t//10));u=t%10/10;portrait=im.height>im.width
  placements=[]
- if shot==1:placements=[('pathkeeper',450,960,330,4)]
- elif shot==2:
-  placements=[('rider',350+u*18,880,185,int(t*5)%4),('thrower',570+u*18,910,210,int(t*5+1)%4),('pathkeeper',790+u*18,955,255,int(t*5+2)%4)]
- elif shot==3:
-  placements=[('thrower',(395 if portrait else 345)+u*24,945,220,int(t*5)%4),('rider',575+u*24,890,185,int(t*5+1)%4),('pathkeeper',(765 if portrait else 790)+u*24,965,255,int(t*5+2)%4)]
+ walks={}
+ if shot==1:placements=[('pathkeeper',450,960,330,0)]
+ elif shot in [2,3]:
+  # Measured root travel drives limb phase, including a gentle stop at the meeting.
+  local=t%10
+  duration=5.4 if shot==2 else 8.8
+  q=min(1,local/duration)
+  progress=q-math.sin(2*math.pi*q)/(2*math.pi)
+  throw_distance=220*.38*(2 if shot==2 else 2.5)*progress
+  keeper_distance=0 if shot==2 else 255*.38*2.5*progress
+  placements=[('rider',550,880,185,0),
+              ('thrower',350+throw_distance,935,220,0),
+              ('pathkeeper',(750 if shot==2 else 620)+keeper_distance,965,255,0)]
+  # Freeze at a double-contact phase after arrival, never mid-air.
+  walks={'thrower':throw_distance}
+  if shot==3:walks['pathkeeper']=keeper_distance
  elif shot==5:
-  placements=[('rider',380 if portrait else 280,930,240,0),('thrower',780 if portrait else 850,935,245,0),('pathkeeper',570,980,330,4)]
+  placements=[('rider',380 if portrait else 280,930,240,0),('thrower',780 if portrait else 850,935,245,0),('pathkeeper',570,980,330,0)]
  for name,x,y,h,frame in sorted(placements,key=lambda a:a[2]):
-  sx,sy=project(x,y);actor(im,name,sx,sy,h*scale,frame)
- # One planted standard in the dedicated raising scene; its base shares the courtyard projection.
+  sx,sy=project(x,y)
+  if name in walks:actor(im,name,sx,sy,h*scale,frame,walk=walks[name]*scale)
+  else:actor(im,name,sx,sy,h*scale,frame)
+ # The planted pole holds its cloth at the top while a folded standard unfurls.
  if shot==1:
   x,base=project(680,960);_,top=project(680,550);d=ImageDraw.Draw(im)
   d.line((x,top-12*scale,x,base),fill='#483b2b',width=max(4,int(7*scale)))
   d.line((x-scale,top-12*scale,x-scale,base),fill='#b69155',width=max(2,int(3*scale)))
   # A woven, folded standard uses the same warm/cool pigments as the painted company.
-  def wave(q):return 6*scale*math.sin(t*1.5+q/45)
+  unfurl=min(1,max(0,(t%10-1)/4));unfurl=unfurl*unfurl*(3-2*unfurl)
+  cloth_height=12+88*unfurl
+  def wave(q):return unfurl*6*scale*math.sin(t*1.5+q/45)
   for q in range(131):
    light=math.sin(q/14+t*.9)*7+math.sin(q*.83)*2
    color=(int(36+light),int(73+light),int(79+light))
-   d.line((x+q*scale,top+wave(q),x+q*scale,top+100*scale+wave(q)),fill=color,width=max(1,math.ceil(scale)))
+   d.line((x+q*scale,top+wave(q),x+q*scale,top+cloth_height*scale+wave(q)),fill=color,width=max(1,math.ceil(scale)))
   edge=[(x+q*scale,top+wave(q)) for q in range(131)]
-  lower=[(x+q*scale,top+100*scale+wave(q)) for q in range(131)]
+  lower=[(x+q*scale,top+cloth_height*scale+wave(q)) for q in range(131)]
   d.line(edge,fill='#b09a66',width=max(1,int(scale)))
   d.line(lower,fill='#172f34',width=max(2,int(2*scale)))
-  d.line((x+130*scale,top+wave(130),x+130*scale,top+100*scale+wave(130)),fill='#172f34',width=max(2,int(2*scale)))
-  for row in range(7,99,7):
+  d.line((x+130*scale,top+wave(130),x+130*scale,top+cloth_height*scale+wave(130)),fill='#172f34',width=max(2,int(2*scale)))
+  for row in range(7,int(cloth_height),7):
    d.line([(x+q*scale,top+row*scale+wave(q)) for q in range(4,129)],fill='#2b5055',width=1)
-  d.ellipse((x+53*scale,top+32*scale,x+75*scale,top+68*scale),fill='#c1a264',outline='#e0c080',width=max(1,int(scale)))
+  emblem=Image.new('RGBA',(max(1,math.ceil(131*scale)),max(1,math.ceil(100*scale))))
+  ImageDraw.Draw(emblem).ellipse((53*scale,32*scale,75*scale,68*scale),fill='#c1a264',outline='#e0c080',width=max(1,int(scale)))
+  im.alpha_composite(emblem.crop((0,0,emblem.width,max(1,int(cloth_height*scale)))),(round(x),round(top)))
   contact=Image.new('RGBA',im.size);cd=ImageDraw.Draw(contact)
   cd.ellipse((x-16*scale,base-3*scale,x+24*scale,base+4*scale),fill=(25,22,17,125))
   im.alpha_composite(contact.filter(ImageFilter.GaussianBlur(2*scale)))

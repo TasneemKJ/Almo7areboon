@@ -30,6 +30,25 @@ class GroundingTests(unittest.TestCase):
     p.ground_company(im,t,project,scale)
    actor.assert_not_called()
 
+ def test_stance_foot_cancels_root_travel(self):
+  for height in [185,220,255,330]:
+   stride=height*.38
+   for phase in [.05,.15,.25,.35]:
+    distance=stride*phase
+    dx,lift=p.gait(distance,height,0)
+    next_dx,next_lift=p.gait(distance+stride*.01,height,0)
+    self.assertAlmostEqual(distance+dx,distance+stride*.01+next_dx)
+    self.assertEqual(lift,0)
+    self.assertEqual(next_lift,0)
+
+ def test_arrival_holds_both_feet_at_road_contact(self):
+  for height,cycles in [(220,2),(220,2.5),(255,2.5)]:
+   for leg in [0,1]:
+    _,lift=p.gait(height*.38*cycles,height,leg)
+    self.assertAlmostEqual(lift,0,places=8)
+  _,lift=p.gait(220*.38*.75,220,0)
+  self.assertGreater(lift,5)
+
  def test_contact_shadow_preserves_ground_color_and_visible_sole(self):
   im=Image.new('RGBA',(400,400),(210,170,110,255))
   p.actor(im,'pathkeeper',200,300,200,4)

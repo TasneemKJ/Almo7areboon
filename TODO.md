@@ -249,3 +249,9 @@ IDEAL/5Ws and twenty alternatives per distinct scenario: `docs/audits/2026-10-08
 - [ ] Verify final mobile matrix, real deployment, rotation, reduced motion and full source/build.
 
 Combined-main camp/cinema acceptance:1464tests/build pass; six-size native touch/deployment/rotation matrix passes, including390px at4×CPU. Four corrected cinema exports independently decoded and visually reviewed. Incoming remote-main evolution, gate and scroll fixes preserved.
+
+## Company action — 14 October 2026
+- [x] Replace nominal sprite cycling with planted-foot, distance-driven walk and grounded arrival.
+- [x] Give the gathering a waiting destination and unfold attached cloth on the planted standard.
+- [x] Correct the scene description and verify five renderer regressions.
+- [ ] Review standalone wide/portrait action proof, then regenerate and decode all four final exports.
