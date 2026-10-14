@@ -14,6 +14,7 @@ import {textIfChanged} from './dom-state.ts';
 import {fieldFoodReadout} from './field-controls.ts';
 import {gateChoiceLabel,gateLabelLift} from './field-gate-label.ts';
 import {storybookArt} from '../view/storybook-art.ts';
+import {createHerald} from './field-herald.ts';
 
 const placeBox=(node:HTMLElement,rect:CampTarget|{x:number;y:number;width:number;height:number})=>{
   const value=`left:${rect.x}px;top:${rect.y}px;width:${rect.width}px;height:${rect.height}px`;
@@ -57,7 +58,7 @@ function syncGates(gates:readonly HTMLButtonElement[],arena:ReturnType<typeof ar
 /** Presentation ownership only. Every mutation still goes through main's guarded dispatch. */
 export function createFieldController(root:HTMLElement){
  const find=(id:string)=>root.querySelector<HTMLElement>(`#${id}`)!;
- const world=find('world'),context=find('field-context'),cue=find('field-cue'),food=find('field-food'),announcement=find('field-announcement'),cover=find('field-cover');
+ const world=find('world'),context=find('field-context'),cue=find('field-cue'),food=find('field-food'),announcement=find('field-announcement'),cover=find('field-cover'),herald=find('field-herald'),heraldQueue=createHerald();
  const recruits=Array.from(root.querySelectorAll<HTMLButtonElement>('[data-field-recruit]'));
  const gates=Array.from(root.querySelectorAll<HTMLButtonElement>('[data-field-gate]'));
  const standard=find('field-standard') as HTMLButtonElement,supplies=find('field-supplies') as HTMLButtonElement,enemy=find('field-enemy') as HTMLButtonElement;
@@ -103,6 +104,8 @@ export function createFieldController(root:HTMLElement){
    context.hidden=selected===null;enemy.classList.toggle('selected',typeof selected==='number');
    cover.classList.toggle('selected',selected==='cover');
    context.querySelectorAll<HTMLButtonElement>('[data-skill]').forEach(button=>{const skill=button.dataset.skill as Skill;button.disabled=!game.canUseSkill(skill);const label=skillCue(p,s,skill,!button.disabled).label;button.setAttribute('aria-label',label);if(skill==='food')textIfChanged(button,label.split(' · ')[0]);});
+   const line=heraldQueue.next(p,s);herald.hidden=!line;
+   if(line&&herald.dataset.key!==line.key){herald.dataset.key=line.key;textIfChanged(herald.querySelector<HTMLElement>('strong')!,line.title);textIfChanged(herald.querySelector<HTMLElement>('small')!,line.detail);}
    const message=fieldGuidance(game);textIfChanged(cue,message);cue.hidden=!message;
    textIfChanged(announcement,fieldAnnouncement(message));
    const readout=fieldFoodReadout(s.food);food.hidden=!running;textIfChanged(food.querySelector<HTMLElement>('span')!,readout.text);

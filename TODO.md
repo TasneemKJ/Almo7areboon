@@ -252,7 +252,7 @@ Combined-main camp/cinema acceptance:1464tests/build pass; six-size native touch
 
 ## Reference games: 40 iterations (14 October 2026)
 Plan and gap analysis: `docs/research/REFERENCE-GAMES-2026-10-14.md`; ledger: `docs/research/ITERATIONS-40.md`.
-- [ ] 01: Herald banner and chapter title card (KR)
+- [x] 01: Herald banner and chapter title card (KR)
 - [ ] 02: Last-wave herald (KR)
 - [ ] 03: Harvest Moon finale (CR)
 - [ ] 04: Harvest Moon sky (CR/KR)
