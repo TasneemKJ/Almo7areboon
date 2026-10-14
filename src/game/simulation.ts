@@ -10,7 +10,7 @@ import { resolveRoleHit, sweepTarget } from './role-traits.ts';
 import { battleStats } from './statistics.ts';
 import { advanceUnit } from './unit-movement.ts';
 import { applyPendingVictory, victoryStory } from './victory-restore.ts';
-import { ERAS, eraEconomyScale, cardBonus, foodRate } from './data.ts';
+import { ERAS, eraEconomyScale, cardBonus, foodRate } from './data.ts'; import { finaleFoodFactor } from './finale.ts';
 import { defaultProfile, loadProfile } from './save.ts';
 import { upgradeStatusFor, waveStatusFor, type UpgradeStatus } from './status-queries.ts';
 import { claimDaily, claimQuest, claimWeekly, evolve, summonCards, syncWeek, unlockTroop, upgradeBase, type EconomyPort } from './economy-actions.ts';
@@ -247,7 +247,7 @@ export class Game implements GamePort {
     if (this.state.units.filter(unit => unit.side === 'player' && unit.hp > 0).length >= 60) return status('capacity');
     if (!this.findSpawnSpot('player')) return status('blocked');
     const missing = Math.max(0, ERAS[this.profile.age].units[kind].cost - this.state.food);
-    return missing > 0 ? status('food', missing, missing / foodRate(this.profile)) : status('available');
+    return missing > 0 ? status('food', missing, missing / (foodRate(this.profile) * finaleFoodFactor(this.state))) : status('available');
   }
 
   private findSpawnSpot(side: Side): { lane: number; x: number } | null {
@@ -322,7 +322,7 @@ export class Game implements GamePort {
 
   private tick(dt: number): void {
     this.state.time += dt;
-    this.state.food = Math.min(99, this.state.food + (0.8 + this.profile.foodLevel * 0.14) * this.bonuses().food * dt);
+    this.state.food = Math.min(99, this.state.food + foodRate(this.profile) * finaleFoodFactor(this.state) * dt);
     this.state.units = this.state.units.filter(u => u.hp > 0);
     chronicleTick(this.profile,this.state,dt,this.chronicleHost());
     const deferChronicleWin=this.state.chronicle?.enabled===true&&chronicleOutcome(this.profile,this.state)==='won';

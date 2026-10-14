@@ -57,5 +57,5 @@ test('the last wave is heralded once, when the final wave sets out', () => {
     if (line && seen.at(-1) !== line.key) seen.push(line.key);
     if (line?.key === 'last-wave') assert.ok(game.state.wave >= game.state.totalWaves);
   }
-  assert.deepEqual(seen, ['title', 'last-wave']);
+  assert.deepEqual(seen, ['title', 'last-wave', 'harvest-moon']);
 });

@@ -254,7 +254,7 @@ Combined-main camp/cinema acceptance:1464tests/build pass; six-size native touch
 Plan and gap analysis: `docs/research/REFERENCE-GAMES-2026-10-14.md`; ledger: `docs/research/ITERATIONS-40.md`.
 - [x] 01: Herald banner and chapter title card (KR)
 - [x] 02: Last-wave herald (KR)
-- [ ] 03: Harvest Moon finale (CR)
+- [x] 03: Harvest Moon finale (CR)
 - [ ] 04: Harvest Moon sky (CR/KR)
 - [ ] 05: Knockback on heavy blows (BC)
 - [ ] 06: Watchtower Volley (BC)

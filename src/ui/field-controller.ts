@@ -15,6 +15,7 @@ import {fieldFoodReadout} from './field-controls.ts';
 import {gateChoiceLabel,gateLabelLift} from './field-gate-label.ts';
 import {storybookArt} from '../view/storybook-art.ts';
 import {createHerald} from './field-herald.ts';
+import {harvestMoon} from '../game/finale.ts';
 
 const placeBox=(node:HTMLElement,rect:CampTarget|{x:number;y:number;width:number;height:number})=>{
   const value=`left:${rect.x}px;top:${rect.y}px;width:${rect.width}px;height:${rect.height}px`;
@@ -108,7 +109,7 @@ export function createFieldController(root:HTMLElement){
    if(line&&herald.dataset.key!==line.key){herald.dataset.key=line.key;textIfChanged(herald.querySelector<HTMLElement>('strong')!,line.title);textIfChanged(herald.querySelector<HTMLElement>('small')!,line.detail);}
    const message=fieldGuidance(game);textIfChanged(cue,message);cue.hidden=!message;
    textIfChanged(announcement,fieldAnnouncement(message));
-   const readout=fieldFoodReadout(s.food);food.hidden=!running;textIfChanged(food.querySelector<HTMLElement>('span')!,readout.text);
+   const moon=harvestMoon(s),readout=fieldFoodReadout(s.food,moon);world.dataset.finale=moon?'on':'off';food.hidden=!running;textIfChanged(food.querySelector<HTMLElement>('span')!,readout.text);
    if(food.getAttribute('aria-label')!==readout.label)food.setAttribute('aria-label',readout.label);food.classList.toggle('full',readout.full);
   },
  };

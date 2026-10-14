@@ -9,3 +9,7 @@
 @keyframes herald-stamp{0%{opacity:0;transform:translateX(-50%) scale(1.35) rotate(-2deg)}10%{opacity:1;transform:translateX(-50%) scale(.97)}16%{transform:translateX(-50%) scale(1)}80%{opacity:1}100%{opacity:0;transform:translateX(-50%) scale(1)}}
 #app[data-field-mode="camp"] .field-herald{display:none}
 @media(orientation:landscape) and (max-height:540px){.field-herald{top:30%}.field-herald strong{font-size:18px}}
+
+/* 03 Harvest Moon: the food readout wears a ×2 tag while food gathers twice as fast. */
+.world[data-finale="on"] .field-food{max-width:none;border-color:#efce81;box-shadow:0 0 12px #f0ce8766}
+.world[data-finale="on"] .field-food::after{content:"×2";margin-left:4px;padding:1px 4px;border-radius:6px;background:#f0ce87;color:#24414b;font-size:11px}

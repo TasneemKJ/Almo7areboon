@@ -1,9 +1,9 @@
 import {icon} from '../view/icons.ts';
 
 /** The food readout at the field's top-left edge: what every recruit tap spends. Food is stored up to 99. */
-export function fieldFoodReadout(food:number):{text:string;label:string;full:boolean}{
+export function fieldFoodReadout(food:number,moon=false):{text:string;label:string;full:boolean}{
  const amount=Math.max(0,Math.floor(food)),full=amount>=99;
- return {text:String(amount),label:`Food: ${amount}${full?', storage full':''}. Recruits cost food.`,full};
+ return {text:String(amount),label:`Food: ${amount}${full?', storage full':''}. Recruits cost food.${moon?' Harvest Moon: food gathers twice as fast.':''}`,full};
 }
 
 /** Native semantic targets lie over the matching painted world objects. */
