@@ -162,3 +162,4 @@ Forty small iterations adapt mechanisms from The Battle Cats, Clash Royale and K
 - **01 Herald banner and chapter title card.** A paper herald stamp names the chapter and its wave count for 2.6 battle seconds as the battle starts. It is aria-live text, never interactive, and still (no stamp motion) with reduced motion.
 - **02 Last-wave herald.** When the final wave sets out the herald stamps "The last wave comes", so the battle's closing stretch is readable.
 - **03 Harvest Moon finale.** Once the final wave has set out, the Harvest Moon rises: food gathers twice as fast (simulation, game/finale.ts) and the food readout wears a ×2 tag. The battle's last stretch changes gear, as a double-elixir finale does, without a clock or pressure.
+- **04 Harvest Moon sky.** During the Harvest Moon a painted moon rises in the upper sky and the field below warms slightly. With reduced motion the moon is simply present.

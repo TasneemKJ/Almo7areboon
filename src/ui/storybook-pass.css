@@ -13,3 +13,8 @@
 /* 03 Harvest Moon: the food readout wears a ×2 tag while food gathers twice as fast. */
 .world[data-finale="on"] .field-food{max-width:none;border-color:#efce81;box-shadow:0 0 12px #f0ce8766}
 .world[data-finale="on"] .field-food::after{content:"×2";margin-left:4px;padding:1px 4px;border-radius:6px;background:#f0ce87;color:#24414b;font-size:11px}
+
+/* 04 Harvest Moon sky: a moon rises over the painting and the field warms while the finale lasts. */
+.world[data-finale="on"]:before{background:radial-gradient(circle at 80% 14%,#fff7dc 0 15px,#ffe9a8b3 17px,#f0ce8738 46px,transparent 96px),linear-gradient(#102d459e,transparent 35%),linear-gradient(transparent 52%,#f2a04a1c)}
+:root[data-motion="full"] .world[data-finale="on"]:before{animation:moon-rise 2.4s ease-out both}
+@keyframes moon-rise{from{background-position:0 70px,0 0,0 0}to{background-position:0 0,0 0,0 0}}

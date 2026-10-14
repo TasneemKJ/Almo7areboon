@@ -44,3 +44,12 @@ test('the field heralds and labels the Harvest Moon', () => {
   assert.doesNotMatch(fieldFoodReadout(12).label, /Harvest/);
   assert.match(readFileSync('src/ui/storybook-pass.css', 'utf8'), /\[data-finale="on"\] \.field-food::after\{content:"×2"/);
 });
+
+test('the Harvest Moon rises over the field sky, still with reduced motion', () => {
+  const css = readFileSync('src/ui/storybook-pass.css', 'utf8');
+  const sky = css.match(/\.world\[data-finale="on"\]:before\{background:([^}]*)\}/)?.[1] ?? '';
+  assert.match(sky, /^radial-gradient\(circle at 80% 14%/, 'the moon is the top layer');
+  assert.match(sky, /linear-gradient\(#102d459e,transparent 35%\)/, 'the ordinary sky shade stays');
+  assert.match(css, /:root\[data-motion="full"\] \.world\[data-finale="on"\]:before\{animation:moon-rise/);
+  assert.doesNotMatch(css, /^\.world\[data-finale="on"\]:before\{[^}]*animation/m, 'the rise is motion-only');
+});
