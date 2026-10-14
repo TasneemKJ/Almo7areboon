@@ -156,3 +156,6 @@ The optional film uses one source-coordinate camera for scenery, company and pla
 
 ### Waiting company legibility (13 October 2026)
 Waiting recruits use a shared48–72 CSS-pixel height bounded by neighbour spacing and combat clearance. Authored sprite, contact shadow and native hit region scale together; small/short layouts preserve the quiet foreground and all existing actions. See `docs/audits/2026-10-13-waiting-company.md`.
+
+## Reference-game pass (14 October 2026)
+Forty small iterations adapt mechanisms from The Battle Cats, Clash Royale and Kingdom Rush into the Levantine folktale frame (plan: `docs/research/REFERENCE-GAMES-2026-10-14.md`). The battle gains a shape (title card, last-wave herald, Harvest Moon finale where food gathers twice as fast, a chieftain once the enemy gate falls below half), tactile answers (knockback, deny shake, ready pop, gate-crack callouts) and personality (troop barks, commander taunts). Seals gain lasting meaning through chapter keepsakes and a seal road. All consequences live in the simulation and go through `Game.dispatch`; presentation never pays. Every new cue keeps its meaning with reduced motion. Checked against DESIGN_RULES.md; no overrides. Subsections below record each player-facing change as it ships.
