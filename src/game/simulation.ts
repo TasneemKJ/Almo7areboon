@@ -10,7 +10,7 @@ import { resolveRoleHit, sweepTarget } from './role-traits.ts';
 import { battleStats } from './statistics.ts';
 import { advanceUnit } from './unit-movement.ts';
 import { applyPendingVictory, victoryStory } from './victory-restore.ts';
-import { ERAS, eraEconomyScale, cardBonus, foodRate } from './data.ts'; import { finaleFoodFactor } from './finale.ts'; import { knockback } from './knockback.ts'; import { chargeVolley, fireVolley } from './volley.ts'; import { bountyFactor, summonChief } from './chieftain.ts'; import { championTick, heroDamage, summonChampion } from './champion.ts';
+import { ERAS, eraEconomyScale, cardBonus, foodRate } from './data.ts'; import { finaleFoodFactor } from './finale.ts'; import { knockback } from './knockback.ts'; import { chargeVolley, fireVolley } from './volley.ts'; import { bountyFactor, summonChief } from './chieftain.ts'; import { championTick, heroDamage, summonChampion } from './champion.ts'; import { callEarly, callableSeconds, CALL_COINS_PER_SECOND } from './wave-call.ts';
 import { defaultProfile, loadProfile } from './save.ts';
 import { upgradeStatusFor, waveStatusFor, type UpgradeStatus } from './status-queries.ts';
 import { claimDaily, claimQuest, claimWeekly, evolve, summonCards, syncWeek, unlockTroop, upgradeBase, type EconomyPort } from './economy-actions.ts';
@@ -120,6 +120,7 @@ export class Game implements GamePort {
     'spawn': (game, action: ActionOf<'spawn'>) => game.doSpawn(action),
     'skill': (game, action: ActionOf<'skill'>) => game.doSkill(action),
     'volley': (game) => fireVolley(game.profile, game.state, game.chronicleHost()),
+    'call-wave': (game) => game.callWave(),
     'champion': (game) => summonChampion(game.state, () => game.spawn('player', 0) ? game.state.units[game.state.units.length - 1] : undefined),
     'retry': (game, action: ActionOf<'retry'>) => game.doRetry(action),
     'next': (game, action: ActionOf<'next'>) => game.doNext(action),
@@ -145,9 +146,7 @@ export class Game implements GamePort {
 
   private doStart(action: ActionOf<'start'>): boolean {
     if (this.state.phase !== 'ready') return false;
-    this.state.phase = 'running';
-    this.profile.played = true;
-    return true;
+    this.state.phase = 'running'; this.profile.played = true; return true;
   }
 
   private doRetreat(action: ActionOf<'retreat'>): boolean {
@@ -229,10 +228,16 @@ export class Game implements GamePort {
 
   private spend(cost: number): boolean {
     if (!Number.isFinite(cost) || cost < 0 || this.profile.coins < cost) return false;
-    this.profile.coins -= cost;
-    return true;
+    this.profile.coins -= cost; return true;
   }
 
+  /** Kingdom Rush style: bring the next wave now; every second saved pays coins through the ordinary reward path. */
+  private callWave(): boolean {
+    const call = callEarly(this.encounter, this.schedule, this.nextSpawn, this.state); if (!call) return false;
+    this.encounter = call.encounter; this.schedule = call.schedule; this.reward(Math.round(call.seconds * CALL_COINS_PER_SECOND), 860); return true;
+  }
+  /** Seconds a call would save now (0 when not callable). */
+  callableSeconds(): number { return callableSeconds(this.encounter, this.schedule, this.nextSpawn, this.state); }
   upgradeStatus(stat: 'food' | 'base'): UpgradeStatus { return upgradeStatusFor(this.profile, this.bonuses(), stat); }
 
   waveStatus(): WaveStatus { return waveStatusFor(this.encounter, this.schedule, this.nextSpawn, this.state); }

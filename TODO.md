@@ -265,7 +265,7 @@ Plan and gap analysis: `docs/research/REFERENCE-GAMES-2026-10-14.md`; ledger: `d
 - [x] 11: Chieftain fall impact frame (CR)
 - [x] 12: Company champion hero (KR)
 - [x] 13: Champion presentation and cue (KR)
-- [ ] 14: Call the next wave early (KR)
+- [x] 14: Call the next wave early (KR)
 - [ ] 15: Deny feedback (CR)
 - [ ] 16: Recruit-ready pop (CR)
 - [ ] 17: Food bar (CR)

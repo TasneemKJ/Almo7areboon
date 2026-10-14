@@ -1,5 +1,8 @@
 import {canFireVolley,volleyCharge,volleyTargets} from '../game/volley.ts';
 import {canSummonChampion,championWait} from '../game/champion.ts';
+import {CALL_COINS_PER_SECOND} from '../game/wave-call.ts';
+import {cardBonus,eraEconomyScale} from '../game/data.ts';
+import type {Profile} from '../game/types.ts';
 import type {BattleState} from '../game/types.ts';
 import {textIfChanged} from './dom-state.ts';
 
@@ -36,4 +39,16 @@ export function syncChampion(node:HTMLElement,s:Readonly<BattleState>,arena:{sca
  if(node.getAttribute('aria-label')!==view.label)node.setAttribute('aria-label',view.label);
  node.classList.toggle('volley-ready',view.ready);
  textIfChanged(node.querySelector<HTMLElement>('.world-target-name')!,view.text);
+}
+
+/** Coins a call would pay now: the simulation's base rate, scaled like every other reward. */
+export function callCoins(p:Profile,seconds:number):number{return Math.floor(Math.round(seconds*CALL_COINS_PER_SECOND)*eraEconomyScale(p.enemyAge)*cardBonus(p).coins);}
+/** A button over the road omen calls the next wave early while that is possible. */
+export function syncCall(node:HTMLElement,p:Profile,seconds:number,arena:{scale:number;groundY:number},running:boolean):void{
+ const size=48,style=`left:${Math.round(340*arena.scale-size/2)}px;top:${Math.round((arena.groundY-44)*arena.scale)}px;width:${size}px;height:${size}px`;
+ if(node.getAttribute('style')!==style)node.setAttribute('style',style);
+ node.hidden=!running||!(seconds>0);
+ const coins=callCoins(p,seconds),label=`Call the next wave now, ${Math.ceil(seconds)} seconds early, for about ${coins} coins.`;
+ if(node.getAttribute('aria-label')!==label)node.setAttribute('aria-label',label);
+ textIfChanged(node.querySelector<HTMLElement>('.world-target-name')!,`Call +${coins}`);
 }

@@ -203,6 +203,7 @@ export function installListeners(deps: ListenersDeps): void {
       if(button.dataset.journeyTab){if(ports.navState.modal==='journey'&&['cards','battle'].includes(button.dataset.journeyTab)){ports.closeModal(false);ports.switchTab(button.dataset.journeyTab);}return;}
       if(command==='field-volley'){ports.action({type:'volley'});return;}
       if(command==='field-champion'){ports.action({type:'champion'});return;}
+      if(command==='field-call'){ports.action({type:'call-wave'});return;}
       if(button.dataset.order){ports.action({type:'order',order:button.dataset.order as 'advance'|'hold'});return;}
       if(command==='chronicle'){ports.showModal('chronicle',chronicleScreenHtml(ports.sessionState.game.profile,ports.sessionState.game.state));return;}
       if(button.dataset.storyPage!==undefined){

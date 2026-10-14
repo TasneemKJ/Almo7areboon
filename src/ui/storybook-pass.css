@@ -33,3 +33,6 @@
 
 /* 12 Champion: the same round brass button, its ring always full while waiting is told in seconds. */
 .champion-hit{--charge:1}
+
+/* 14 Call the wave early: a labelled flag target over the road omen. */
+.call-hit .world-target-name{opacity:1;background:#f0ce87;color:#24414b;font-weight:800;font-size:11px;border:1px solid #6b5634}
