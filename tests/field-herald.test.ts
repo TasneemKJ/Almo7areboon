@@ -45,3 +45,17 @@ test('the herald is a non-interactive live text in the field and has a reduced-m
   assert.match(css, /:root\[data-motion="full"\] \.field-herald\{animation/);
   assert.match(readFileSync('src/main.ts', 'utf8'), /import '\.\/ui\/storybook-pass\.css';/);
 });
+
+test('the last wave is heralded once, when the final wave sets out', () => {
+  const game = new Game(), herald = createHerald();
+  game.dispatch({ type: 'start' });
+  const seen: string[] = [];
+  for (let t = 0; t < 70 && game.state.phase === 'running'; t += 0.1) {
+    game.state.playerHp = game.state.playerMaxHp; // keep the gate standing; only the schedule matters here
+    game.step(0.1);
+    const line = herald.next(game.profile, game.state);
+    if (line && seen.at(-1) !== line.key) seen.push(line.key);
+    if (line?.key === 'last-wave') assert.ok(game.state.wave >= game.state.totalWaves);
+  }
+  assert.deepEqual(seen, ['title', 'last-wave']);
+});

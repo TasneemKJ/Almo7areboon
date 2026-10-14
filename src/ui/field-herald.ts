@@ -10,6 +10,7 @@ export function heraldMoments(p:Readonly<Profile>,s:Readonly<BattleState>):Heral
  if(s.phase!=='running')return [];
  const lines:HeraldLine[]=[];
  if(s.time<1.5)lines.push({key:'title',title:chapterPresentation(p.enemyAge).title,detail:`Chapter ${p.enemyAge+1} · ${s.totalWaves} waves`});
+ if(s.totalWaves>0&&s.wave>=s.totalWaves)lines.push({key:'last-wave',title:'The last wave comes',detail:'Hold the line'});
  return lines;
 }
 
