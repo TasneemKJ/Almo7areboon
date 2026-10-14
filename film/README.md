@@ -25,3 +25,7 @@ The shipped encodes are inventoried with SHA-256 and ffprobe metadata in `manife
 `python film/youtube.py --preview` prepares a six-scene bilingual contact sheet and separately composed 1280×720 thumbnails. `python film/youtube.py` renders the native 1920×1080 English/Arabic films into `film/youtube/`. This version rearranges scenery, company planes, foreground and titles for widescreen, retaining the original score. Upload copy and credits are in `film/youtube/UPLOAD.md`. No upload or publication is performed.
 
 Final widescreen exports: English 18,191,814 bytes and Arabic 17,989,079 bytes. Both are exactly 60 seconds, 1920×1080, 24fps H.264/AAC stereo, and decoded cleanly through 1,440 frames. Both score tracks measure −15.52 LUFS / −5.36 dBTP. `film/youtube/manifest.json` records verified SHA-256 values and ffprobe metadata.
+
+## Action-corrected exports — 14 October 2026
+
+The four current films were regenerated from accepted source `081217e`, staged separately, fully decoded and reviewed in all 24 shot/language/aspect frames before replacing the prior files. All are exactly 60 seconds at 24fps, H.264/AAC stereo48kHz. Portrait EN/AR are 11,724,958 / 11,556,372 bytes; widescreen EN/AR are 14,436,266 / 14,256,493 bytes. The current manifests supersede earlier inventory sizes above. `action-verification.json` records full hashes, native dimensions and exact decoded-audio matches to the preceding films: the original score is retained, with no narration. Caption sidecars are unchanged.

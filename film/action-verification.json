@@ -1,0 +1,118 @@
+{
+  "source_checkpoint": "081217e",
+  "renderer_sha256": "27fefe6be869dd4c3eff83df7a3ec0e43fefe2174c939108f4782cae3a8e9506",
+  "reviewed_frames_seconds": [
+    3,
+    15,
+    25,
+    35,
+    45,
+    57
+  ],
+  "exports": {
+    "company-en.mp4": {
+      "sha256": "08bdaedfedd2d1ad52e97555179506667d4a68813c91852414a3e21503797796",
+      "programs": [],
+      "stream_groups": [],
+      "streams": [
+        {
+          "codec_name": "h264",
+          "width": 1080,
+          "height": 1920,
+          "r_frame_rate": "24/1"
+        },
+        {
+          "codec_name": "aac",
+          "sample_rate": "48000",
+          "channels": 2,
+          "r_frame_rate": "0/0"
+        }
+      ],
+      "format": {
+        "duration": "60.000000",
+        "size": "11724958"
+      },
+      "full_decode": true,
+      "audio_unchanged": true,
+      "audio_sha256": "SHA256=bc29f401e420d0e950501c7658cee2adea6b5b310c74b2347d0e9ea7aef29701"
+    },
+    "company-ar.mp4": {
+      "sha256": "0122a615123aa5a3997ebc17fbfce6a97cd62dcb81509444ed2b2c0c90590c6c",
+      "programs": [],
+      "stream_groups": [],
+      "streams": [
+        {
+          "codec_name": "h264",
+          "width": 1080,
+          "height": 1920,
+          "r_frame_rate": "24/1"
+        },
+        {
+          "codec_name": "aac",
+          "sample_rate": "48000",
+          "channels": 2,
+          "r_frame_rate": "0/0"
+        }
+      ],
+      "format": {
+        "duration": "60.000000",
+        "size": "11556372"
+      },
+      "full_decode": true,
+      "audio_unchanged": true,
+      "audio_sha256": "SHA256=bc29f401e420d0e950501c7658cee2adea6b5b310c74b2347d0e9ea7aef29701"
+    },
+    "company-wide-en.mp4": {
+      "sha256": "8c2f2cabf08eaff5c21242d702d1e7a6d614f7d1a542655a19f4a6321a640140",
+      "programs": [],
+      "stream_groups": [],
+      "streams": [
+        {
+          "codec_name": "h264",
+          "width": 1920,
+          "height": 1080,
+          "r_frame_rate": "24/1"
+        },
+        {
+          "codec_name": "aac",
+          "sample_rate": "48000",
+          "channels": 2,
+          "r_frame_rate": "0/0"
+        }
+      ],
+      "format": {
+        "duration": "60.000000",
+        "size": "14436266"
+      },
+      "full_decode": true,
+      "audio_unchanged": true,
+      "audio_sha256": "SHA256=1b3a2cb6bad5108922e84abd157e95c66d938a9295710a3b9377a12642239fc4"
+    },
+    "company-wide-ar.mp4": {
+      "sha256": "2194d45eeb16060e2c363d6ffee205305c34cc620b32769d3ae300fead09e133",
+      "programs": [],
+      "stream_groups": [],
+      "streams": [
+        {
+          "codec_name": "h264",
+          "width": 1920,
+          "height": 1080,
+          "r_frame_rate": "24/1"
+        },
+        {
+          "codec_name": "aac",
+          "sample_rate": "48000",
+          "channels": 2,
+          "r_frame_rate": "0/0"
+        }
+      ],
+      "format": {
+        "duration": "60.000000",
+        "size": "14256493"
+      },
+      "full_decode": true,
+      "audio_unchanged": true,
+      "audio_sha256": "SHA256=1b3a2cb6bad5108922e84abd157e95c66d938a9295710a3b9377a12642239fc4"
+    }
+  }
+}

@@ -11,3 +11,8 @@ The source now deforms only the original lower limbs. During stance, foot offset
 Validation: five renderer regressions include camera/road contact in both formats, unsupported-actor exclusion, translucent shadow behavior, stance cancellation and double-contact arrival. Small 8-second silent action proofs are generated outside the repository for review; they are production-source previews, not final movie evidence. Full encodes and final decoded review remain pending root acceptance of motion.
 
 Source checkpoint verification: all 1,464 Node tests passed with zero failures/skips/cancellations; production build passed at 498,076 bytes gzip against the 512,000-byte budget. These checks protect unchanged game behavior; they do not replace the pending motion/decoded-export review.
+
+
+Root accepted the standalone action proof and committed frozen renderer source as `081217e`. All four full native exports were subsequently rendered into staging and verified before replacement. Each decoded cleanly through the complete 60-second film at24fps. Six native frames per language/format (24total) were viewed for road contact, attached cloth, composition and caption placement. Each decoded audio SHA256 exactly matches its preceding export, preserving the original score. Manifest hashes and metadata were refreshed; both unchanged caption sidecars were checked against the bilingual renderer text. Reproducible measurements are recorded in `film/action-verification.json`.
+
+The existing live opening is a separate CSS implementation; its crop/contact audit is still waiting for the shared browser lock. This film acceptance does not claim that the live opening has corrected foot planting.

@@ -254,4 +254,4 @@ Combined-main camp/cinema acceptance:1464tests/build pass; six-size native touch
 - [x] Replace nominal sprite cycling with planted-foot, distance-driven walk and grounded arrival.
 - [x] Give the gathering a waiting destination and unfold attached cloth on the planted standard.
 - [x] Correct the scene description and verify five renderer regressions.
-- [ ] Review standalone wide/portrait action proof, then regenerate and decode all four final exports.
+- [x] Review standalone wide/portrait action proof, then regenerate and decode all four final exports.
