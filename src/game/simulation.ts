@@ -10,7 +10,7 @@ import { resolveRoleHit, sweepTarget } from './role-traits.ts';
 import { battleStats } from './statistics.ts';
 import { advanceUnit } from './unit-movement.ts';
 import { applyPendingVictory, victoryStory } from './victory-restore.ts';
-import { ERAS, eraEconomyScale, cardBonus, foodRate } from './data.ts'; import { finaleFoodFactor } from './finale.ts'; import { knockback } from './knockback.ts'; import { chargeVolley, fireVolley } from './volley.ts'; import { bountyFactor, summonChief } from './chieftain.ts';
+import { ERAS, eraEconomyScale, cardBonus, foodRate } from './data.ts'; import { finaleFoodFactor } from './finale.ts'; import { knockback } from './knockback.ts'; import { chargeVolley, fireVolley } from './volley.ts'; import { bountyFactor, summonChief } from './chieftain.ts'; import { championTick, heroDamage, summonChampion } from './champion.ts';
 import { defaultProfile, loadProfile } from './save.ts';
 import { upgradeStatusFor, waveStatusFor, type UpgradeStatus } from './status-queries.ts';
 import { claimDaily, claimQuest, claimWeekly, evolve, summonCards, syncWeek, unlockTroop, upgradeBase, type EconomyPort } from './economy-actions.ts';
@@ -120,6 +120,7 @@ export class Game implements GamePort {
     'spawn': (game, action: ActionOf<'spawn'>) => game.doSpawn(action),
     'skill': (game, action: ActionOf<'skill'>) => game.doSkill(action),
     'volley': (game) => fireVolley(game.profile, game.state, game.chronicleHost()),
+    'champion': (game) => summonChampion(game.state, () => game.spawn('player', 0) ? game.state.units[game.state.units.length - 1] : undefined),
     'retry': (game, action: ActionOf<'retry'>) => game.doRetry(action),
     'next': (game, action: ActionOf<'next'>) => game.doNext(action),
     'prestige': (game, action: ActionOf<'prestige'>) => game.doPrestige(action),
@@ -322,7 +323,7 @@ export class Game implements GamePort {
     this.state.time += dt;
     this.state.food = Math.min(99, this.state.food + foodRate(this.profile) * finaleFoodFactor(this.state) * dt);
     this.state.units = this.state.units.filter(u => u.hp > 0);
-    chronicleTick(this.profile,this.state,dt,this.chronicleHost()); chargeVolley(this.state, dt);
+    chronicleTick(this.profile,this.state,dt,this.chronicleHost()); chargeVolley(this.state, dt); championTick(this.state);
     const deferChronicleWin=this.state.chronicle?.enabled===true&&chronicleOutcome(this.profile,this.state)==='won';
     if (this.checkEnd(deferChronicleWin)) return;
     while (this.state.wave < this.encounter.waves.length && this.state.time + 1e-9 >= this.encounter.waves[this.state.wave].time) this.state.wave++;
@@ -369,7 +370,7 @@ export class Game implements GamePort {
   private strike(unit: Unit, def: { interval: number; damage: number; range: number }, target: Unit | null, baseX: number): void {
     unit.attackTimer = def.interval;
     const power = unit.side === 'player' ? this.bonuses().damage : this.timelinePower() * 0.94;
-    const damage = def.damage * power * (unit.side === 'player' && activeBattleOrder(this.state,this.state.time) === 'advance' ? ORDER_EFFECTS.advance.damage : 1);
+    const damage = def.damage * power * heroDamage(unit) * (unit.side === 'player' && activeBattleOrder(this.state,this.state.time) === 'advance' ? ORDER_EFFECTS.advance.damage : 1);
     const source = { id: unit.id, x: unit.x, lane: unit.lane, side: unit.side, age: unit.age, kind: unit.kind };
     const hit = (targetUnit: Unit, secondary = false) => {
       const resolved = resolveRoleHit(unit.kind, targetUnit.kind, damage, secondary);

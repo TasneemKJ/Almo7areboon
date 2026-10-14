@@ -202,6 +202,7 @@ export function installListeners(deps: ListenersDeps): void {
       if(command==='journey-result'){if(ports.navState.modal==='journey'&&(ports.sessionState.game.state.phase==='won'||ports.sessionState.game.state.phase==='lost'))ports.showResult();return;}
       if(button.dataset.journeyTab){if(ports.navState.modal==='journey'&&['cards','battle'].includes(button.dataset.journeyTab)){ports.closeModal(false);ports.switchTab(button.dataset.journeyTab);}return;}
       if(command==='field-volley'){ports.action({type:'volley'});return;}
+      if(command==='field-champion'){ports.action({type:'champion'});return;}
       if(button.dataset.order){ports.action({type:'order',order:button.dataset.order as 'advance'|'hold'});return;}
       if(command==='chronicle'){ports.showModal('chronicle',chronicleScreenHtml(ports.sessionState.game.profile,ports.sessionState.game.state));return;}
       if(button.dataset.storyPage!==undefined){

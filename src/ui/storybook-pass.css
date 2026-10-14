@@ -30,3 +30,6 @@
 .volley-hit.volley-ready{background:radial-gradient(circle,#2a5a47f2 0 58%,transparent 60%),conic-gradient(#f0ce87 0 360deg);box-shadow:0 0 14px #f0ce87aa}
 :root[data-motion="full"] .volley-hit.volley-ready{animation:volley-breathe 1.2s ease-in-out infinite}
 @keyframes volley-breathe{50%{box-shadow:0 0 24px #ffe2a0;transform:scale(1.06)}}
+
+/* 12 Champion: the same round brass button, its ring always full while waiting is told in seconds. */
+.champion-hit{--charge:1}

@@ -16,7 +16,7 @@ import {gateChoiceLabel,gateLabelLift} from './field-gate-label.ts';
 import {storybookArt} from '../view/storybook-art.ts';
 import {createHerald} from './field-herald.ts';
 import {harvestMoon} from '../game/finale.ts';
-import {syncVolley} from './field-volley.ts';
+import {syncChampion,syncVolley} from './field-volley.ts';
 
 const placeBox=(node:HTMLElement,rect:CampTarget|{x:number;y:number;width:number;height:number})=>{
   const value=`left:${rect.x}px;top:${rect.y}px;width:${rect.width}px;height:${rect.height}px`;
@@ -60,7 +60,7 @@ function syncGates(gates:readonly HTMLButtonElement[],arena:ReturnType<typeof ar
 /** Presentation ownership only. Every mutation still goes through main's guarded dispatch. */
 export function createFieldController(root:HTMLElement){
  const find=(id:string)=>root.querySelector<HTMLElement>(`#${id}`)!;
- const world=find('world'),context=find('field-context'),cue=find('field-cue'),food=find('field-food'),announcement=find('field-announcement'),cover=find('field-cover'),herald=find('field-herald'),heraldQueue=createHerald(),volley=find('field-volley');
+ const world=find('world'),context=find('field-context'),cue=find('field-cue'),food=find('field-food'),announcement=find('field-announcement'),cover=find('field-cover'),herald=find('field-herald'),heraldQueue=createHerald(),volley=find('field-volley'),champion=find('field-champion');
  const recruits=Array.from(root.querySelectorAll<HTMLButtonElement>('[data-field-recruit]'));
  const gates=Array.from(root.querySelectorAll<HTMLButtonElement>('[data-field-gate]'));
  const standard=find('field-standard') as HTMLButtonElement,supplies=find('field-supplies') as HTMLButtonElement,enemy=find('field-enemy') as HTMLButtonElement;
@@ -83,7 +83,7 @@ export function createFieldController(root:HTMLElement){
    const plan=campLayout(w,h),arena=arenaLayout(w,h),available=campRecruits(p),orders=orderStatus(s),running=s.phase==='running';
    syncRecruits(recruits,plan,available,game,running);
    syncGates(gates,arena,w,orders,running,{player:p.age,enemy:p.enemyAge});
-   syncVolley(volley,s,arena,running);
+   syncVolley(volley,s,arena,running);syncChampion(champion,s,arena,running);
    place(standard,plan.standard);place(supplies,plan.supplies);
    standard.hidden=!running||!s.chronicle?.enabled||s.stats.deployed===0;
    standard.setAttribute('aria-disabled',String(s.paused));standard.setAttribute('aria-pressed',String(s.chronicle?.rally??false));
