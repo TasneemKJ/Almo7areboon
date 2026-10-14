@@ -21,6 +21,7 @@ import {createBattlefieldArmy} from './battlefield-army.ts';
 import {createBattlefieldAtmosphere} from './battlefield-atmosphere.ts';
 import {paintBaseDamage,paintHealthBars,paintOrders} from './battlefield-overlays.ts';
 import {tint,xAt} from './battlefield-types.ts';
+import {createGateCracks} from './gate-crack.ts';
 import type {BattleState,GameEvent,GamePort,Side,Phase} from '../game/types';
 
 export interface SceneHost {
@@ -84,6 +85,7 @@ class Battlefield extends Phaser.Scene {
   private orderFrame:ReturnType<typeof orderPresentationFrame>=null;
   private musterFrame:ReturnType<typeof villageMusterFrame>=null;
   private waveArrival:WaveArrivalFrame|null=null;
+  private cracks?:ReturnType<typeof createGateCracks>;
   constructor(ctx:SceneHost){
    super('battlefield');
    this.ctx=ctx;
@@ -272,6 +274,7 @@ class Battlefield extends Phaser.Scene {
    if(this.lastState!==game.state){this.lastState=game.state;this.aftermath=null;delete this.game.canvas.dataset.battleAftermath;delete this.game.canvas.dataset.villageVerdict;delete this.game.canvas.dataset.villageWatchfire;delete this.game.canvas.dataset.villageOrderAnswer;delete this.game.canvas.dataset.villageMusterAnswer;this.villageMuster=createVillageMuster();this.musterFrame=null;this.marks.restartOrder();this.effects.reset();this.army.clearUnits();}
    if(reduced&&!this.reduce)this.effects.reset('motion');this.reduce=reduced;
    this.syncEra();for(const event of events)this.event(event);
+   for(const call of (this.cracks??=createGateCracks())(game.state)){const x=call.side==='enemy'?405:45;this.effects.floatText(call.side==='enemy'?330:120,this.layout.groundY-62,call.words,call.side==='enemy'?'#ffd9a0':'#bfe9ff',true);this.effects.ring(x,this.layout.groundY-24,call.side==='enemy'?0xffbb8b:0x8fe7f0,40);if(!this.reduce)this.effects.cameraKick(120,.0022,3);}
    // A hidden field (Home, the opening tale, other tabs) draws nothing: queued off-screen frames stalled the first visible one.
    const sys=this.sys as Phaser.Scenes.Systems|undefined,visible=!options.isVisible||options.isVisible();if(sys?.settings&&sys.settings.visible!==visible)sys.setVisible(visible);
    if(options.isVisible&&!options.isVisible()){onFrame();return;}

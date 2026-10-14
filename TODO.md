@@ -259,7 +259,7 @@ Plan and gap analysis: `docs/research/REFERENCE-GAMES-2026-10-14.md`; ledger: `d
 - [x] 05: Knockback on heavy blows (BC)
 - [x] 06: Watchtower Volley (BC)
 - [x] 07: Volley charge ring and first-charge cue (BC/CR)
-- [ ] 08: Gate-crack drama (CR)
+- [x] 08: Gate-crack drama (CR)
 - [ ] 09: Enemy chieftain at half gate (BC)
 - [ ] 10: Chieftain silhouette (BC)
 - [ ] 11: Chieftain fall impact frame (CR)

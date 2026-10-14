@@ -16,6 +16,7 @@ import type {GameEvent,Profile} from '../src/game/types.ts';
 import {pauseReason} from '../src/ui/pause.ts';
 import {reducedMotion,projectileForHit,traitCueForHit} from '../src/view/combat-feedback.ts';
 import {createVillageMuster,rememberVillageMuster,villageMusterFrame} from '../src/view/village-muster.ts';
+import {createGateCracks} from '../src/view/gate-crack.ts';
 import {createBattlefieldMarks} from '../src/view/battlefield-marks.ts';
 import {createBattlefieldEffects} from '../src/view/battlefield-effects.ts';
 import {compactNumber} from '../src/game/format.ts';
@@ -56,7 +57,7 @@ function harness(motion:Profile['motion']='system',webdriver=true){
  const app:any={weekId,localDay,guardAction:()=>true,root:{dataset:{fieldMode:'field'}},game:new Game({...defaultProfile(),motion}),entryEntered:true,sessionReady:true,pagePresent:true,lifetime:{disposed:false},session:{status:'active'},manualPaused:false,activeTab:'battle',modal:null,document:{hidden:false},pauseReason,stopCombatAudio(){},syncVillagePresentation(){}};
  runInApp(mainCode,app);app.game.dispatch({type:'start'});
  const port=createBattlefieldPort(()=>app.game,action=>app.game.dispatch(action),dt=>{calls.step++;app.stepPort(dt);});
- const context:any={game:port,host:{isDisposed:()=>false,motionQuery},motionQuery,paintBaseDamage:noOp,paintOrders:noOp,paintHealthBars:noOp,compactNumber,navigator:{webdriver},options:{isVisible:()=>app.isVisible(),onPresentation(){calls.presentation++;}},onFrame(){calls.frame++;},onEvents(events:GameEvent[]){calls.events.push(...events);},element:{closest(){return{dataset:{phase:app.game.state.phase}};}},reducedMotion,projectileForHit,traitCueForHit,createVillageMuster,rememberVillageMuster,villageMusterFrame,battlefieldMemoryAfterReset,battlefieldMemoryIntentForHit,orderPresentationFrame,waveArrivalForPort,villageOrderHudChanged,lanePresentation,projectileLift,arenaLayout,xAt:(x:number)=>x*.45};
+ const context:any={game:port,host:{isDisposed:()=>false,motionQuery},motionQuery,paintBaseDamage:noOp,paintOrders:noOp,paintHealthBars:noOp,compactNumber,navigator:{webdriver},options:{isVisible:()=>app.isVisible(),onPresentation(){calls.presentation++;}},onFrame(){calls.frame++;},onEvents(events:GameEvent[]){calls.events.push(...events);},element:{closest(){return{dataset:{phase:app.game.state.phase}};}},reducedMotion,projectileForHit,traitCueForHit,createGateCracks,createVillageMuster,rememberVillageMuster,villageMusterFrame,battlefieldMemoryAfterReset,battlefieldMemoryIntentForHit,orderPresentationFrame,waveArrivalForPort,villageOrderHudChanged,lanePresentation,projectileLift,arenaLayout,xAt:(x:number)=>x*.45};
  runInApp(fieldCode,context);const scene=new context.Subject();
  const graphics:any=new Proxy(function(){},{get:(_t,key)=>key===Symbol.toPrimitive?()=>0:key==='then'?undefined:graphics,apply:()=>graphics});
  const canvas=()=>scene.game.canvas,paused=()=>app.game.state.paused;
