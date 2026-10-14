@@ -99,7 +99,8 @@ test('fresh mixed timeline remains viable with common-only paid draws and honest
  assert.ok(trace.totalSeconds<=720,'competent path exceeds the approximate upper pacing target');
  assert.ok(trace.evolutionPurchases.length>=4);assert.ok(trace.evolutionPurchases.every(p=>Number(p.wins)<=1&&Number(p.losses)<=2));
  const evolves=trace.transitions.filter(t=>t.kind==='evolve');assert.ok(evolves.every(t=>t.enemyBefore===t.enemyAfter&&t.frontierBefore===t.frontierAfter));
- const first=trace.attempts[0];assert.equal(first.earned,560);assert.equal((first.settlement as {masteryCoins:number}).masteryCoins,300);
+ // 620 = 560 ordinary earnings + the chieftain's 60-coin bounty (iteration 09).
+ const first=trace.attempts[0];assert.equal(first.earned,620);assert.equal((first.settlement as {masteryCoins:number}).masteryCoins,300);
  // Optional calendar reward is claimed explicitly once; no future-day farming.
  const daily=simulateMastery('mixed',true);assert.equal(daily.completed,true);assert.equal(daily.dailyGems,30);assert.equal(daily.actions.filter(a=>a.action.type==='daily').length,1);
 });

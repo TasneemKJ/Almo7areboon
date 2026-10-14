@@ -10,7 +10,7 @@ import { resolveRoleHit, sweepTarget } from './role-traits.ts';
 import { battleStats } from './statistics.ts';
 import { advanceUnit } from './unit-movement.ts';
 import { applyPendingVictory, victoryStory } from './victory-restore.ts';
-import { ERAS, eraEconomyScale, cardBonus, foodRate } from './data.ts'; import { finaleFoodFactor } from './finale.ts'; import { knockback } from './knockback.ts'; import { chargeVolley, fireVolley } from './volley.ts';
+import { ERAS, eraEconomyScale, cardBonus, foodRate } from './data.ts'; import { finaleFoodFactor } from './finale.ts'; import { knockback } from './knockback.ts'; import { chargeVolley, fireVolley } from './volley.ts'; import { bountyFactor, summonChief } from './chieftain.ts';
 import { defaultProfile, loadProfile } from './save.ts';
 import { upgradeStatusFor, waveStatusFor, type UpgradeStatus } from './status-queries.ts';
 import { claimDaily, claimQuest, claimWeekly, evolve, summonCards, syncWeek, unlockTroop, upgradeBase, type EconomyPort } from './economy-actions.ts';
@@ -326,7 +326,7 @@ export class Game implements GamePort {
     const deferChronicleWin=this.state.chronicle?.enabled===true&&chronicleOutcome(this.profile,this.state)==='won';
     if (this.checkEnd(deferChronicleWin)) return;
     while (this.state.wave < this.encounter.waves.length && this.state.time + 1e-9 >= this.encounter.waves[this.state.wave].time) this.state.wave++;
-    this.releaseScheduledSpawns();
+    this.releaseScheduledSpawns(); summonChief(this.state, kind => this.chronicleHost().spawnEnemy(kind));
 
     // Front bodies move first so the spacing check sees their new positions.
     const actors = [...this.state.units].sort((a, b) => a.side === b.side ? ((a.side === 'player' ? b.x - a.x : a.x - b.x) || a.id - b.id) : (a.side === 'player' ? -1 : 1));
@@ -405,7 +405,7 @@ export class Game implements GamePort {
         earnMomentum(this.state,8);
         this.profile.kills++;
         this.state.stats.kills++;
-        this.reward(Math.round((12 + unit.kind * 9) * (1 + unit.age * 0.5)), unit.x);
+        this.reward(Math.round((12 + unit.kind * 9) * (1 + unit.age * 0.5)) * bountyFactor(unit), unit.x);
       }
     }
     return actual;
