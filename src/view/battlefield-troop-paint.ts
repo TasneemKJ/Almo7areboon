@@ -36,6 +36,8 @@ export function paintTroopGround(g:G,h:G,f:TroopFrame):void {
  h.fillStyle(halo.color,halo.alpha*.45);h.fillEllipse(x+halo.x,y+halo.y,halo.rx*2,halo.ry*2,12);
  h.fillStyle(halo.color,halo.alpha*.6);h.fillEllipse(x+halo.x,y+halo.y,halo.rx*1.2,halo.ry*1.1,10);
  g.fillStyle(0x2a4647,perspective.shadowAlpha*.82);g.fillEllipse(x+2,y+2,perspective.shadowWidth*.68,perspective.shadowHeight*.38);
+ // The chieftain stands in a brass ring, so the larger silhouette also reads as the leader.
+ if(unit.chief){h.lineStyle(2,0xf0ce87,.85);h.strokeEllipse(x,y+2,perspective.shadowWidth*1.5,perspective.shadowHeight*1.7);}
 }
 
 /** Poses a troop sprite (image or vector fallback) from its frame; aftermath poses override the live pose. */
@@ -88,7 +90,7 @@ export function updateTroopViews(c:TroopViewContext):void {
   ids.add(unit.id);let view=units.get(unit.id);
   const x=xAt(unit.x),y=host.yAt(unit.lane)+rankStagger(unit.id),frozen=unit.side==='enemy'&&host.game.state.freezeUntil>host.game.state.time;
   if(!view){const body=sprite(unit.age,unit.kind,unit.side);layers.armyLayer.add(body);view={body,x,y,lane:unit.lane,side:unit.side,dustAt:0};units.set(unit.id,view);}
-  const moving=Math.abs(view.x-x)>.001,perspective=lanePresentation(unit.lane,unit.kind),scale=troopScale(unit.kind,unit.lane)*(unit.storyBoss?1.35:1);
+  const moving=Math.abs(view.x-x)>.001,perspective=lanePresentation(unit.lane,unit.kind),scale=troopScale(unit.kind,unit.lane)*(unit.storyBoss||unit.chief?1.35:1);
   const direction=unit.side==='player'?1:-1;
   const pose=troopPose(host.game.state.time+unit.id*.17,moving,unit.attacking,host.reduce()||frozen);
   const gesture=characterGesture(unit.kind,host.game.state.time+unit.id*.17,moving,unit.attacking,host.reduce()||frozen);

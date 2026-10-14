@@ -49,3 +49,15 @@ test('no chieftain outside a running battle or once the gate has fallen', () => 
   live.state.enemyHp = 0;
   assert.equal(chiefDue(live.state), false);
 });
+
+test('the chieftain is larger, ringed in brass and heralded', async () => {
+  const { readFileSync } = await import('node:fs');
+  const paint = readFileSync('src/view/battlefield-troop-paint.ts', 'utf8');
+  assert.match(paint, /\(unit\.storyBoss\|\|unit\.chief\?1\.35:1\)/);
+  assert.match(paint, /if\(unit\.chief\)\{h\.lineStyle\(2,0xf0ce87/);
+  const { heraldMoments } = await import('../src/ui/field-herald.ts');
+  const game = running();
+  game.state.enemyHp = game.state.enemyMaxHp / 2;
+  game.step(1 / 60);
+  assert.ok(heraldMoments(game.profile, game.state).some(line => line.key === 'chief' && line.title === 'The chieftain marches out'));
+});

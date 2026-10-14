@@ -14,6 +14,7 @@ export function heraldMoments(p:Readonly<Profile>,s:Readonly<BattleState>):Heral
  if(s.time<1.5)lines.push({key:'title',title:chapterPresentation(p.enemyAge).title,detail:`Chapter ${p.enemyAge+1} · ${s.totalWaves} waves`});
  if(s.totalWaves>0&&s.wave>=s.totalWaves)lines.push({key:'last-wave',title:'The last wave comes',detail:'Hold the line'});
  if(p.wins<5&&canFireVolley(s))lines.push({key:'volley',title:'The watchtower is ready',detail:'Tap Volley above your gate'});
+ if(s.units.some(u=>u.chief&&u.hp>0))lines.push({key:'chief',title:'The chieftain marches out',detail:'Five times the bounty'});
  if(harvestMoon(s))lines.push({key:'harvest-moon',title:'Harvest Moon',detail:'Food gathers twice as fast'});
  return lines;
 }
