@@ -73,3 +73,15 @@ test('the volley is a native field button with a sound and its own look', () => 
   assert.match(readFileSync('src/app/listeners.ts', 'utf8'), /command==='field-volley'\)\{ports\.action\(\{type:'volley'\}\)/);
   assert.match(readFileSync('src/ui/storybook-pass.css', 'utf8'), /\.volley-hit\{border-radius:50%/);
 });
+
+test('the volley fills a brass ring, breathes when ready and is introduced to new commanders once', async () => {
+  const css = readFileSync('src/ui/storybook-pass.css', 'utf8');
+  assert.match(css, /conic-gradient\(#f0ce87 calc\(var\(--charge,0\)\*360deg\)/);
+  assert.match(css, /:root\[data-motion="full"\] \.volley-hit\.volley-ready\{animation:volley-breathe/);
+  const { heraldMoments } = await import('../src/ui/field-herald.ts');
+  const game = charged();
+  game.state.units = [enemy(80, 300)];
+  assert.ok(heraldMoments(game.profile, game.state).some(line => line.key === 'volley'));
+  game.profile.wins = 9;
+  assert.ok(!heraldMoments(game.profile, game.state).some(line => line.key === 'volley'), 'seasoned commanders are not told again');
+});

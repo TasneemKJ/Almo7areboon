@@ -24,3 +24,9 @@
 .volley-hit .world-target-name{position:static;transform:none;font-size:11px;font-weight:800;background:none;padding:0;opacity:1}
 .volley-hit[aria-disabled="true"]{opacity:.8}
 .volley-hit.volley-ready{border-color:#f0ce87;background:#244a3ef2}
+
+/* 07 Volley charge: a brass ring fills around the button; a ready volley breathes (still with reduced motion). */
+.volley-hit{background:radial-gradient(circle,#16352ef2 0 58%,transparent 60%),conic-gradient(#f0ce87 calc(var(--charge,0)*360deg),#ffffff22 0)}
+.volley-hit.volley-ready{background:radial-gradient(circle,#2a5a47f2 0 58%,transparent 60%),conic-gradient(#f0ce87 0 360deg);box-shadow:0 0 14px #f0ce87aa}
+:root[data-motion="full"] .volley-hit.volley-ready{animation:volley-breathe 1.2s ease-in-out infinite}
+@keyframes volley-breathe{50%{box-shadow:0 0 24px #ffe2a0;transform:scale(1.06)}}

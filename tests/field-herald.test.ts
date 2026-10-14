@@ -48,6 +48,7 @@ test('the herald is a non-interactive live text in the field and has a reduced-m
 
 test('the last wave is heralded once, when the final wave sets out', () => {
   const game = new Game(), herald = createHerald();
+  game.profile.wins = 5; // seasoned: no volley introduction in this sequence
   game.dispatch({ type: 'start' });
   const seen: string[] = [];
   for (let t = 0; t < 70 && game.state.phase === 'running'; t += 0.1) {
