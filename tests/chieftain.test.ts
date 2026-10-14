@@ -61,3 +61,19 @@ test('the chieftain is larger, ringed in brass and heralded', async () => {
   game.step(1 / 60);
   assert.ok(heraldMoments(game.profile, game.state).some(line => line.key === 'chief' && line.title === 'The chieftain marches out'));
 });
+
+test('the chieftain falls as an impact frame', async () => {
+  const game = running();
+  game.state.enemyHp = game.state.enemyMaxHp / 2;
+  game.step(1 / 60);
+  const chief = game.state.units.find(u => u.chief)!;
+  chief.hp = 1;
+  game.state.units.push({ id: 98, side: 'player', kind: 2, age: 0, x: chief.x - 20, lane: chief.lane, hp: 1e6, maxHp: 1e6, attackTimer: 0, attacking: false, hitFlash: 0 });
+  game.drainEvents();
+  game.step(1 / 60);
+  const deaths = game.drainEvents().filter(e => e.type === 'death');
+  assert.deepEqual(deaths.map(e => e.chief), [true]);
+  const { readFileSync } = await import('node:fs');
+  const scene = readFileSync('src/view/battlefield-scene.ts', 'utf8');
+  assert.match(scene, /if\(e\.type==='death'&&e\.chief\)\{[^\n]*'THE CHIEFTAIN FALLS'[^\n]*if\(!this\.reduce\)\{this\.effects\.hitStop\.trigger\(\);this\.cameras\.main\.flash/);
+});

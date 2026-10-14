@@ -231,6 +231,8 @@ class Battlefield extends Phaser.Scene {
     else{this.effects.impact(x,y-22,e.amount??0,e.source?.age??0,e.source?.kind??0,e.source?.side??'player');if(intent)this.marks.remember(intent);}
    }
    if(navigator.webdriver&&e.type==='death'){const c=this.game.canvas.dataset;c.lastDeath=JSON.stringify({kind:e.kind,side:e.side,n:Number(JSON.parse(c.lastDeath??'{}').n??0)+1});}
+   // The chieftain's fall is an impact frame: a short freeze, a warm flash and a shower of gold.
+   if(e.type==='death'&&e.chief){this.effects.floatText(x,y-60,'THE CHIEFTAIN FALLS','#ffe08a',true);this.effects.emit(x,y-20,26,0xffd373,false,1);this.effects.ring(x,y-8,0xf0ce87,44);if(!this.reduce){this.effects.hitStop.trigger();this.cameras.main.flash(160,255,232,170);}return;}
    if(e.type==='death'&&e.kind===2){
     // A heavy falling is the loudest thing on the field: wider dust, a second ring and a short low shake (none when reduced).
     this.effects.emit(x,y-10,18,e.side==='player'?0x82cce8:0xe6b388,true,.7,e.lane??1);this.effects.emit(x,y-16,8,0xf4e6c2,false,.45,e.lane??1);

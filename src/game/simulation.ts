@@ -400,7 +400,7 @@ export class Game implements GamePort {
     unit.hp = Math.max(0, unit.hp - actual);
     unit.hitFlash = 0.16;
     if (unit.hp === 0) {
-      this.events.push({ type: 'death', x: unit.x, lane: unit.lane, side: unit.side, kind: unit.kind });
+      this.events.push({ type: 'death', x: unit.x, lane: unit.lane, side: unit.side, kind: unit.kind, ...(unit.chief ? { chief: true as const } : {}) });
       if (unit.side === 'enemy') {
         earnMomentum(this.state,8);
         this.profile.kills++;

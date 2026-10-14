@@ -169,3 +169,4 @@ Forty small iterations adapt mechanisms from The Battle Cats, Clash Royale and K
 - **08 Gate-crack drama.** Each gate calls out the moment it drops into a lower third of its health, with a ring at the gate and a short camera kick (none with reduced motion). Healing never re-arms a callout; the fall itself belongs to the result.
 - **09 Enemy chieftain at half gate.** The first time the enemy gate falls to half health, their chieftain marches out once: a melee champion with double health whose fall pays five times the ordinary bounty. The siege gets a climax instead of a slow chip.
 - **10 Chieftain silhouette.** The chieftain stands 1.35 times larger in a brass ring at its feet, and the herald announces it, so the threat reads from the silhouette.
+- **11 Chieftain fall impact frame.** The chieftain's fall is an impact frame: a gold shower and ring with "The chieftain falls", plus a brief freeze and warm flash in full motion only.
