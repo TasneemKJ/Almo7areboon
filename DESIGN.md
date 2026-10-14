@@ -163,3 +163,4 @@ Forty small iterations adapt mechanisms from The Battle Cats, Clash Royale and K
 - **02 Last-wave herald.** When the final wave sets out the herald stamps "The last wave comes", so the battle's closing stretch is readable.
 - **03 Harvest Moon finale.** Once the final wave has set out, the Harvest Moon rises: food gathers twice as fast (simulation, game/finale.ts) and the food readout wears a ×2 tag. The battle's last stretch changes gear, as a double-elixir finale does, without a clock or pressure.
 - **04 Harvest Moon sky.** During the Harvest Moon a painted moon rises in the upper sky and the field below warms slightly. With reduced motion the moon is simply present.
+- **05 Knockback on heavy blows.** A rider's or beast's heavy blow worth a third of a target's health throws a surviving target back along the lane, with a dust puff. Ranged cannons and light troops never knock back, which keeps the role balance checked by the campaign suite.

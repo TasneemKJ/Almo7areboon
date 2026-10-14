@@ -214,6 +214,7 @@ class Battlefield extends Phaser.Scene {
    if(e.type==='spawn'){this.effects.emit(x,y,5,0xdfd4b1,true,.4,e.lane??1);this.effects.ring(x,y,0xc9e2b3,13);this.effects.flare(x,y-4,16,e.side==='enemy'?0xff8b55:0x6fd6ff,.3);}
    if(e.type==='hit'){
     if(e.source?.kind===2&&e.target==='unit'&&(e.amount??0)>0&&!this.reduce)this.effects.hitStop.trigger();
+    if(e.knock)this.effects.emit(x+(e.side==='player'?10:-10),y-4,6,0xdfd4b1,true,.35,e.lane??1);
     const trait=traitCueForHit(e);
     if(trait){this.effects.pushImpactCue({x:xAt(trait.x),y:this.yAt(trait.lane)-22,lane:trait.lane,trait:trait.trait,age:e.source?.age??0,kind:e.source?.kind??0,side:e.source?.side??'player',life:.28,max:.28});}
     if(e.source&&e.trait!=='sweep'){this.effects.pushAttackCue({x:xAt(e.source.x),y:this.yAt(e.source.lane),lane:e.source.lane,age:e.source.age,kind:e.source.kind,side:e.source.side,life:.18,max:.18});}

@@ -10,7 +10,7 @@ import { resolveRoleHit, sweepTarget } from './role-traits.ts';
 import { battleStats } from './statistics.ts';
 import { advanceUnit } from './unit-movement.ts';
 import { applyPendingVictory, victoryStory } from './victory-restore.ts';
-import { ERAS, eraEconomyScale, cardBonus, foodRate } from './data.ts'; import { finaleFoodFactor } from './finale.ts';
+import { ERAS, eraEconomyScale, cardBonus, foodRate } from './data.ts'; import { finaleFoodFactor } from './finale.ts'; import { knockback } from './knockback.ts';
 import { defaultProfile, loadProfile } from './save.ts';
 import { upgradeStatusFor, waveStatusFor, type UpgradeStatus } from './status-queries.ts';
 import { claimDaily, claimQuest, claimWeekly, evolve, summonCards, syncWeek, unlockTroop, upgradeBase, type EconomyPort } from './economy-actions.ts';
@@ -368,7 +368,7 @@ export class Game implements GamePort {
   }
 
   /** A completed attack: damage the target (and a sweep partner) or the enemy base, crediting the attacker. */
-  private strike(unit: Unit, def: { interval: number; damage: number }, target: Unit | null, baseX: number): void {
+  private strike(unit: Unit, def: { interval: number; damage: number; range: number }, target: Unit | null, baseX: number): void {
     unit.attackTimer = def.interval;
     const power = unit.side === 'player' ? this.bonuses().damage : this.timelinePower() * 0.94;
     const damage = def.damage * power * (unit.side === 'player' && activeBattleOrder(this.state,this.state.time) === 'advance' ? ORDER_EFFECTS.advance.damage : 1);
@@ -378,7 +378,7 @@ export class Game implements GamePort {
       const actual = this.hurt(targetUnit, chronicleDamage(this.profile,this.state,unit,targetUnit,resolved.damage,secondary));
       this.credit(unit,actual);
       chronicleAfterHit(this.profile,this.state,unit,targetUnit,resolved.damage,secondary,this.chronicleHost());
-      this.events.push({ type: 'hit', x: targetUnit.x, lane: targetUnit.lane, side: unit.side, amount: actual, source, target: 'unit', ...(resolved.trait ? { trait: resolved.trait } : {}) });
+      this.events.push({ type: 'hit', x: targetUnit.x, lane: targetUnit.lane, side: unit.side, amount: actual, source, target: 'unit', ...(resolved.trait ? { trait: resolved.trait } : {}), ...(knockback(targetUnit, unit.side, actual, def.range < 60 ? unit.kind : 0) ? { knock: true as const } : {}) });
     };
     if (target) {
       hit(target);

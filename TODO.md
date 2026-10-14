@@ -256,7 +256,7 @@ Plan and gap analysis: `docs/research/REFERENCE-GAMES-2026-10-14.md`; ledger: `d
 - [x] 02: Last-wave herald (KR)
 - [x] 03: Harvest Moon finale (CR)
 - [x] 04: Harvest Moon sky (CR/KR)
-- [ ] 05: Knockback on heavy blows (BC)
+- [x] 05: Knockback on heavy blows (BC)
 - [ ] 06: Watchtower Volley (BC)
 - [ ] 07: Volley charge ring and first-charge cue (BC/CR)
 - [ ] 08: Gate-crack drama (CR)
