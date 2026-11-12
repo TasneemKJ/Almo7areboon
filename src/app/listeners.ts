@@ -29,6 +29,7 @@ import { waveInspectionHtml } from '../ui/wave-inspection.ts';
 import { battleSelectionHtml, evolutionDialogHtml } from '../ui/progression-screen.ts';
 import { modalFocusables, nextFocusIndex, isEditingTarget } from '../ui/accessibility.ts';
 import { saveAtmosphere, normalizeAudioMix, saveAudioMix } from '../ui/audio-preferences.ts';
+import { saveLanguage } from '../ui/i18n.ts';
 import { textIfChanged } from '../ui/dom-state.ts';
 import type { Runtime } from './runtime.ts';
 import type { ShellApi } from './shell.ts';
@@ -257,6 +258,8 @@ export function installListeners(deps: ListenersDeps): void {
           }else if(input instanceof HTMLSelectElement){
             if(preference==='speed'&&(input.value==='1'||input.value==='2'))ports.sessionState.game.dispatch({type:'preference',preference:'speed',value:Number(input.value) as 1|2});
             else if(preference==='motion'&&(input.value==='system'||input.value==='reduced')){ports.sessionState.game.dispatch({type:'preference',preference:'motion',value:input.value});ports.syncMotion();}
+            // A new language is saved outside the profile, then the page reloads so every screen is rebuilt in it (one language per screen).
+            else if(preference==='language'&&(input.value==='en'||input.value==='ar')){ports.persist();if(saveLanguage(input.value))dom.reload();return;}
             else return;
           }else return;
           ports.persist();ports.syncPause();ports.update(true);if(ports.navState.modal==='settings')textIfChanged($('preference-status'),ports.preferenceNotice());return;

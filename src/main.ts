@@ -1,3 +1,4 @@
+import './app/language-boot.ts';
 import './ui/quest-records.css';
 import './ui/camp.css';
 import './ui/world-play.css';
