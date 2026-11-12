@@ -3,10 +3,11 @@ import StoreKitTest
 import WebKit
 import XCTest
 import TasKit
-@testable import SouqAlLayl
+@testable import Almo7areboon
 
-/// The shipped game, in a real web view served from souq://, talking to the real host and a
-/// local StoreKit session: the page is in the app, locked until bought, and opens the Port after.
+/// The shipped game (dist/ → game/), in a real web view served from almo7areboon://, talking to the real host and
+/// a local StoreKit session: it knows it is in the app, the battlefield loads offline, Full Journey is locked until
+/// bought, its card fits a 390×844 screen in both languages, and the save is copied out.
 @MainActor
 final class GamePageIntegrationTests: XCTestCase {
     private var session: SKTestSession!
@@ -16,7 +17,7 @@ final class GamePageIntegrationTests: XCTestCase {
     private var window: UIWindow!
 
     override func setUp() async throws {
-        session = try SKTestSession(configurationFileNamed: "SouqAlLayl")
+        session = try SKTestSession(configurationFileNamed: "Almo7areboon")
         session.resetToDefaultState()
         session.clearTransactions()
         session.disableDialogs = true
@@ -26,19 +27,22 @@ final class GamePageIntegrationTests: XCTestCase {
         }
         dir = FileManager.default.temporaryDirectory.appendingPathComponent(UUID().uuidString)
         let defaults = UserDefaults(suiteName: "page-\(UUID().uuidString)")!
-        host = TasGameHost(config: .souq, store: TasStore(config: .souq, defaults: defaults),
-                           vault: TasSaveVault(config: .souq, directory: dir),
-                           gameCenter: TasGameCenterReporter(config: .souq, defaults: defaults))
+        host = TasGameHost(config: .almo7areboon, store: TasStore(config: .almo7areboon, defaults: defaults),
+                           vault: TasSaveVault(config: .almo7areboon, directory: dir), gameCenter: nil)
         web = host.makeWebView()
         window = UIWindow(frame: CGRect(x: 0, y: 0, width: 390, height: 844))
         window.addSubview(web)
         web.frame = window.bounds
         window.isHidden = false
-        try await waitFor("typeof souqApp==='object'&&typeof state==='object'&&document.readyState==='complete'")
+        try await waitFor("typeof almoApp==='object'&&document.readyState==='complete'&&!!document.querySelector('[data-command=\"enter-world\"]')")
     }
 
     override func tearDown() async throws {
+        // A page left running would write over the next test's save.
+        web?.stopLoading()
+        web?.removeFromSuperview()
         window?.isHidden = true
+        web = nil
         try? FileManager.default.removeItem(at: dir)
     }
 
@@ -46,7 +50,7 @@ final class GamePageIntegrationTests: XCTestCase {
         try await web.evaluateJavaScript(source)
     }
 
-    private func waitFor(_ condition: String, seconds: Double = 20, file: StaticString = #filePath, line: UInt = #line) async throws {
+    private func waitFor(_ condition: String, seconds: Double = 25, file: StaticString = #filePath, line: UInt = #line) async throws {
         let deadline = Date().addingTimeInterval(seconds)
         while Date() < deadline {
             if (try? await js("Boolean(\(condition))")) as? Bool == true { return }
@@ -55,80 +59,80 @@ final class GamePageIntegrationTests: XCTestCase {
         XCTFail("timed out waiting for: \(condition)", file: file, line: line)
     }
 
+    private func snapshot(_ name: String) async throws {
+        let shot = try await web.takeSnapshot(configuration: nil)
+        let url = FileManager.default.temporaryDirectory.appendingPathComponent("\(name).png")
+        try shot.pngData()?.write(to: url)
+        print("SNAPSHOT \(url.path)")
+    }
+
     func testTheGameRunsInTheAppAndKnowsIt() async throws {
-        let v1 = try await js("souqApp.inApp") as? Bool
-
-        XCTAssertEqual(v1, true)
-        let v2 = try await js("location.protocol") as? String
-
-        XCTAssertEqual(v2, "souq:")
-        let v3 = try await js("typeof navigator.vibrate") as? String
-
-        XCTAssertEqual(v3, "function", "haptics reach the Taptic Engine")
-        let v4 = try await js("document.getElementById('homeFullSouq').hidden") as? Bool
-
-        XCTAssertEqual(v4, false, "Preferences offers Full Souq")
-        let v5 = try await js("souqApp.owns('fullSouq')") as? Bool
-
-        XCTAssertEqual(v5, false, "locked until bought")
-        try await waitFor("souqApp.price.length>0") // the App Store's own price reached the card
+        let inApp = try await js("almoApp.inApp") as? Bool
+        XCTAssertEqual(inApp, true)
+        let proto = try await js("location.protocol") as? String
+        XCTAssertEqual(proto, "almo7areboon:")
+        let sw = try await js("navigator.serviceWorker ? navigator.serviceWorker.controller === null : true") as? Bool
+        XCTAssertEqual(sw, true, "no service worker controls the app's page")
+        let owns = try await js("almoApp.owns('fullGame')") as? Bool
+        XCTAssertEqual(owns, false, "locked until bought")
+        try await waitFor("(almoApp.prices.fullGame||'').length>0") // the App Store's own price reached the page
     }
 
-    func testBuyingFullSouqOpensThePortWithoutGems() async throws {
-        // Not bought: the gate asks the App Store and leaves the gems alone.
-        _ = try await js("state.prestigeCount=1;state.gems=0;state.expansionUnlocked=false;true")
-        let v6 = try await js("portNeedsPurchase()") as? Bool
-
-        XCTAssertEqual(v6, true)
-
-        await host.store.buy("fullSouq")
-        XCTAssertTrue(host.store.owns("fullSouq"))
-        try await waitFor("souqApp.owns('fullSouq')===true") // Swift told the page
-
-        _ = try await js("doExpand();true")
-        let v7 = try await js("state.expansionUnlocked") as? Bool
-
-        XCTAssertEqual(v7, true)
-        // With 0 gems a charged gate returns early, so an open gate is the waiver. (The Port's own
-        // challenge then pays its usual gem reward, so the purse is not checked for 0.)
+    func testTheBattlefieldLoadsFromTheBundle() async throws {
+        _ = try await js("window.__errors=[];addEventListener('error',function(e){__errors.push(String(e.message))});addEventListener('unhandledrejection',function(e){__errors.push(String(e.reason))});true")
+        try await waitFor("document.getElementById('battlefield').dataset.renderer==='ready'", seconds: 30)
+        let canvas = try await js("!!document.querySelector('#battlefield canvas')") as? Bool
+        XCTAssertEqual(canvas, true)
+        _ = try await js("document.querySelector('[data-command=\"enter-world\"]').click();true")
+        try await Task.sleep(for: .seconds(12)) // the opening tale, then the first field
+        let errors = try await js("__errors.join(' | ')") as? String
+        XCTAssertEqual(errors, "", "the page threw while starting to play")
+        try await snapshot("almo7areboon-first-field")
     }
 
-    /// The Full Souq card in both languages: every control a 44pt target, all of it on a 390×844
-    /// screen. Snapshots go to the test's temporary folder for a person to look at.
-    func testTheFullSouqCardFitsAndEveryControlIsATapTarget() async throws {
-        try await waitFor("souqApp.price.length>0")
+    func testBuyingFullJourneyUnlocksIt() async throws {
+        await host.store.buy("fullGame")
+        XCTAssertTrue(host.store.owns("fullGame"))
+        try await waitFor("almoApp.owns('fullGame')===true") // Swift told the page
+    }
+
+    /// The Full Journey card in both languages: every control a 44pt target, all of it on a 390×844 screen.
+    func testTheFullJourneyCardFitsAndEveryControlIsATapTarget() async throws {
+        try await waitFor("(almoApp.prices.fullGame||'').length>0")
         for lang in ["en", "ar"] {
-            _ = try await js("""
-            if(gameView.uiLang!=='\(lang)')toggleLang();
-            document.getElementById('homeSettings').classList.add('hidden');
-            openFullSouqCard();true
-            """)
+            _ = try await js("window.__almoShowFullJourney&&window.__almoShowFullJourney();true")
+            try await waitFor("!!document.querySelector('[data-command=\"buy-full-journey\"]')")
             try await Task.sleep(for: .milliseconds(400))
             let report = try await js("""
-            (function(){var ids=['moExpandBtn','moExpandRestore','moExpandLater','moExpandTerms','moExpandPrivacy'],out=[];
-              ids.forEach(function(id){var r=document.getElementById(id).getBoundingClientRect();
-                if(r.height<44||r.top<0||r.bottom>innerHeight||r.left<0||r.right>innerWidth)out.push(id+':'+Math.round(r.height)+'@'+Math.round(r.top));});
-              var price=document.getElementById('moExpandCost').querySelector('bdi');
+            (function(){var out=[];
+              ['buy-full-journey','restore-purchases','open-terms','open-privacy','close'].forEach(function(c){
+                var b=document.querySelector('#modal-layer [data-command="'+c+'"]');if(!b){out.push(c+':missing');return;}
+                var r=b.getBoundingClientRect();
+                if(r.height<44||r.top<0||r.bottom>innerHeight||r.left<0||r.right>innerWidth)out.push(c+':'+Math.round(r.height)+'@'+Math.round(r.top));});
+              var price=document.querySelector('[data-command="buy-full-journey"] bdi');
               if(!price||price.dir!=='ltr'||!price.textContent.length)out.push('price');
               return out.join(',');})()
             """) as? String
             XCTAssertEqual(report, "", "\(lang): controls that miss 44pt or leave the screen")
-            let shot = try await web.takeSnapshot(configuration: nil)
-            let url = FileManager.default.temporaryDirectory.appendingPathComponent("full-souq-card-\(lang).png")
-            try shot.pngData()?.write(to: url)
-            print("SNAPSHOT \(url.path)")
-            _ = try await js("document.getElementById('moExpand').classList.add('hidden');true")
+            try await snapshot("full-journey-card-\(lang)")
+            if lang == "en" {
+                // Switch language the way a player does, then come back to the card.
+                _ = try await js("localStorage.setItem('almo7areboon.lang.v1','ar');location.reload();true")
+                try await Task.sleep(for: .seconds(1))
+                try await waitFor("typeof almoApp==='object'&&document.documentElement.lang==='ar'&&!!document.querySelector('[data-command=\"enter-world\"]')")
+            }
         }
+        _ = try await js("localStorage.removeItem('almo7areboon.lang.v1');true")
     }
 
     func testTheSaveKeysAreCopiedOutOfThePage() async throws {
-        _ = try await js("localStorage.setItem('souq_test_copy','kept');true")
+        _ = try await js("localStorage.setItem('almo7areboon.test.copy','kept');true")
         host.sync()
         let deadline = Date().addingTimeInterval(10)
-        while Date() < deadline, host.vault.load()["souq_test_copy"] == nil {
+        while Date() < deadline, host.vault.load()["almo7areboon.test.copy"] == nil {
             try await Task.sleep(for: .milliseconds(100))
         }
-        XCTAssertEqual(host.vault.load()["souq_test_copy"], "kept")
-        _ = try await js("localStorage.removeItem('souq_test_copy');true")
+        XCTAssertEqual(host.vault.load()["almo7areboon.test.copy"], "kept")
+        _ = try await js("localStorage.removeItem('almo7areboon.test.copy');true")
     }
 }
