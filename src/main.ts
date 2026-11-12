@@ -33,6 +33,7 @@ import { createIntro } from './app/intro.ts';
 import { createStoreFlow } from './app/store-flow.ts';
 import type { ShellApi } from './app/shell.ts';
 import { tr } from './ui/i18n.ts';
+import { lamplighterWalks } from './ui/app-bridge.ts';
 
 // Composition root: the DOM handles and the flow modules are wired here and nowhere else. Each module owns its state.
 // The initial render is a non-playable default. Only ownership makes a loaded Game authoritative.
@@ -62,7 +63,7 @@ let renderer:{destroy():void}|null=null,rendererClosed=false;
 $('battlefield').dataset.renderer='loading';
 void import('./view/battlefield.ts').then(({mountBattlefield})=>{
   if(rendererClosed)return;
-  renderer=mountBattlefield($('battlefield'),port,force=>ports.update(force),ports.events,{isVisible:()=>ports.navState.entryEntered&&root!.dataset.fieldMode==='field'&&ports.navState.activeTab==='battle'&&!dom.hidden(),villageMood:()=>ports.sessionState.villagePresentation!.mood,onPresentation:ports.syncVillagePresentation});
+  renderer=mountBattlefield($('battlefield'),port,force=>ports.update(force),ports.events,{lamplighter:()=>lamplighterWalks(),isVisible:()=>ports.navState.entryEntered&&root!.dataset.fieldMode==='field'&&ports.navState.activeTab==='battle'&&!dom.hidden(),villageMood:()=>ports.sessionState.villagePresentation!.mood,onPresentation:ports.syncVillagePresentation});
   $('battlefield').dataset.renderer='ready';
 }).catch(()=>{$('battlefield').dataset.renderer='failed';ports.syncEntry();ports.toast(tr('The battlefield could not load. Close the game and open it again.','تعذّر تحميل ساحة المعركة. أغلق اللعبة وافتحها من جديد.'));});
 lifetime.add(()=>{rendererClosed=true;renderer?.destroy();});

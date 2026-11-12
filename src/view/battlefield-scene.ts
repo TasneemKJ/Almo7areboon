@@ -1,4 +1,5 @@
 import Phaser from 'phaser';
+import {gateLanternPlan,paintGateLanterns} from './gate-lanterns.ts';
 import {orderPresentationFrame} from './order-presentation.ts';
 import {ChronicleView} from './chronicle-view.ts';
 import {storybookArt} from './storybook-art.ts';
@@ -29,7 +30,7 @@ export interface SceneHost {
  game:GamePort;
  onFrame:(force?:boolean)=>void;
  onEvents:(events:GameEvent[])=>void;
- options:{isVisible?:()=>boolean;villageMood?:()=>Readonly<VillageMoodSnapshot>;onPresentation?:(dt:number,events:readonly GameEvent[])=>void};
+ options:{isVisible?:()=>boolean;lamplighter?:()=>boolean;villageMood?:()=>Readonly<VillageMoodSnapshot>;onPresentation?:(dt:number,events:readonly GameEvent[])=>void};
  isDisposed():boolean;
  motionQuery:MediaQueryList;
  loading:HTMLElement;
@@ -67,6 +68,9 @@ class Battlefield extends Phaser.Scene {
   private army!:ReturnType<typeof createBattlefieldArmy>;
   private atmosphere!:ReturnType<typeof createBattlefieldAtmosphere>;
   private halos!:Phaser.GameObjects.Graphics;
+  private lanternBody!:Phaser.GameObjects.Graphics;
+  private lanternGlow!:Phaser.GameObjects.Graphics;
+  private lanternsLit=false;
   private glow!:Phaser.GameObjects.Graphics;
   private mist!:Phaser.GameObjects.Container;
   private clouds!:Phaser.GameObjects.Container;
@@ -119,6 +123,9 @@ class Battlefield extends Phaser.Scene {
    if(storybookArt(game.profile.age))this.initVillageLights();
    this.shadows=this.add.graphics();this.world.add(this.shadows);
    this.halos=this.add.graphics().setBlendMode(Phaser.BlendModes.ADD);this.world.add(this.halos);
+   // The Lamplighter's lanterns (app subscription): behind the gate and the army, never in front of a troop.
+   this.lanternGlow=this.add.graphics().setBlendMode(Phaser.BlendModes.ADD);this.world.add(this.lanternGlow);
+   this.lanternBody=this.add.graphics();this.world.add(this.lanternBody);
    this.armyLayer=this.add.container();this.world.add(this.armyLayer);
    this.arrivalSignal=this.add.graphics();this.armyLayer.add(this.arrivalSignal);
    this.campProps=this.add.graphics();this.armyLayer.add(this.campProps);
@@ -280,6 +287,8 @@ class Battlefield extends Phaser.Scene {
    this.waveArrival=waveArrivalForPort(game,this.reduce);
    const phaseHudChanged=this.villageHudPhase!==game.state.phase,orderHudChanged=villageOrderHudChanged(this.villageHudPaused,game.state.paused,!!this.orderFrame?.answer,!!this.waveArrival,!!this.musterFrame);
    if(phaseHudChanged||orderHudChanged){const world=element.closest<HTMLElement>('.world');if(world?.dataset.phase!==game.state.phase||orderHudChanged)onFrame(true);this.villageHudPhase=game.state.phase;this.cacheVillageViewport();}
+   if(options.lamplighter?.()===true){paintGateLanterns(this.lanternBody,this.lanternGlow,gateLanternPlan(this.layout.groundY,game.state.time,this.reduce));this.lanternsLit=true;}
+   else if(this.lanternsLit){this.lanternBody.clear();this.lanternGlow.clear();this.lanternsLit=false;}
    this.atmosphere.draw();paintBaseDamage(this.baseDamage,game,this.layout,this.clock,this.reduce,side=>this.effects.baseHit(side));this.army.draw();paintOrders(this.shadows,this.orderFrame,()=>this.game.canvas,this.reduce);paintHealthBars(this.bars,this.baseText,game,this.layout,lane=>this.yAt(lane));this.effects.step(game.state.paused?0:dt);onFrame();
   }
 }
