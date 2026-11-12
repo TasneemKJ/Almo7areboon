@@ -1,3 +1,5 @@
+import { tr } from './locale.ts';
+
 export type CardRarity = 'common' | 'rare' | 'epic' | 'legendary';
 
 export interface CardDef {
@@ -14,45 +16,47 @@ export interface CardDef {
 const RARITIES: CardRarity[] = ['common', 'rare', 'epic', 'legendary'];
 const COLORS: Record<CardRarity, string> = { common: '#82b975', rare: '#76a8de', epic: '#b588d6', legendary: '#e6b750' };
 
-function card(name: string, rarity: CardRarity, stat: CardDef['stat'], icon: string, secondary?: CardDef['secondary']): CardDef {
-  const description = `Multiplies unit ${stat}${secondary ? ` and ${secondary === 'base' ? 'base health' : secondary === 'food' ? 'food production' : 'coins earned'}` : ''}.`;
-  return { id: name.toLowerCase().replace(/[^a-z0-9]+/g, '-').replace(/^-|-$/g, ''), name, description, icon, color: COLORS[rarity], stat, rarity, ...(secondary ? { secondary } : {}) };
+function card(name: string, rarity: CardRarity, stat: CardDef['stat'], icon: string, secondary?: CardDef['secondary'], arabic = name): CardDef {
+  const english = `Multiplies unit ${stat}${secondary ? ` and ${secondary === 'base' ? 'base health' : secondary === 'food' ? 'food production' : 'coins earned'}` : ''}.`;
+  const arabicDescription = `تُضاعِف ${stat === 'health' ? 'صحّة' : 'ضرر'} جنودك${secondary ? ` و${secondary === 'base' ? 'صمود الحصن' : secondary === 'food' ? 'إنتاج المؤونة' : 'النقود المكتسبة'}` : ''}.`;
+  // Getters: the shown name and description follow the current language; the id stays derived from the English name.
+  return { id: name.toLowerCase().replace(/[^a-z0-9]+/g, '-').replace(/^-|-$/g, ''), get name() { return tr(name, arabic); }, get description() { return tr(english, arabicDescription); }, icon, color: COLORS[rarity], stat, rarity, ...(secondary ? { secondary } : {}) };
 }
 
 // Reference collection and progression tables:
 // https://we-are-warriors-game.fandom.com/wiki/Cards (consulted 2026-09-28).
 // This collection covers the four supported summon rarities; Ultimate is separate.
 export const CARD_DEFS: CardDef[] = [
-  card('Turtle Shell', 'common', 'health', 'shield'),
-  card('Camp Fire', 'common', 'health', 'meteor'),
-  card('Dino Ribs', 'common', 'health', 'food'),
-  card('Bandages', 'common', 'health', 'heart'),
-  card('Canned Food', 'common', 'health', 'food'),
-  card('Furnace', 'common', 'health', 'meteor'),
-  card('Crop Seeds', 'common', 'health', 'evolution'),
-  card('Ancient Emblem', 'common', 'health', 'shield'),
-  card('Combat Dummy', 'common', 'damage', 'battle'),
-  card('Target', 'common', 'damage', 'battle'),
-  card('Grind Stone', 'common', 'damage', 'gear'),
-  card('Battle Horn', 'common', 'damage', 'sound'),
-  card('War Banner', 'common', 'damage', 'flag'),
-  card('Vial of Poison', 'common', 'damage', 'skills'),
-  card('Anvil', 'common', 'damage', 'gear'),
-  card('Weights', 'common', 'damage', 'battle'),
-  card('Red Rose', 'rare', 'damage', 'heart'),
-  card('Gun Powder', 'rare', 'damage', 'meteor'),
-  card('Sabre Cat Skull', 'rare', 'damage', 'battle'),
-  card('Trojan Horse', 'rare', 'damage', 'battle'),
-  card('Fountain of Life', 'rare', 'health', 'heart'),
-  card('Kevlar Thread', 'rare', 'health', 'shield'),
-  card('STEM-C5', 'rare', 'health', 'skills'),
-  card('Pestle and Mortar', 'rare', 'health', 'food'),
-  card('UAV-3.0', 'epic', 'damage', 'battle', 'base'),
-  card('Cave Painting', 'epic', 'damage', 'flag', 'base'),
-  card('Obelisk', 'epic', 'health', 'shield', 'base'),
-  card('Military Radio', 'epic', 'health', 'sound', 'base'),
-  card('T-Rex Head', 'legendary', 'damage', 'food', 'food'),
-  card('Robot Head', 'legendary', 'health', 'gear', 'coins'),
+  card('Turtle Shell', 'common', 'health', 'shield', undefined, 'درع السلحفاة'),
+  card('Camp Fire', 'common', 'health', 'meteor', undefined, 'نار المخيّم'),
+  card('Dino Ribs', 'common', 'health', 'food', undefined, 'أضلاع الديناصور'),
+  card('Bandages', 'common', 'health', 'heart', undefined, 'الضمادات'),
+  card('Canned Food', 'common', 'health', 'food', undefined, 'المعلّبات'),
+  card('Furnace', 'common', 'health', 'meteor', undefined, 'الفرن'),
+  card('Crop Seeds', 'common', 'health', 'evolution', undefined, 'بذور الحقل'),
+  card('Ancient Emblem', 'common', 'health', 'shield', undefined, 'الشعار القديم'),
+  card('Combat Dummy', 'common', 'damage', 'battle', undefined, 'دمية التدريب'),
+  card('Target', 'common', 'damage', 'battle', undefined, 'الهدف'),
+  card('Grind Stone', 'common', 'damage', 'gear', undefined, 'حجر الشحذ'),
+  card('Battle Horn', 'common', 'damage', 'sound', undefined, 'بوق المعركة'),
+  card('War Banner', 'common', 'damage', 'flag', undefined, 'راية الحرب'),
+  card('Vial of Poison', 'common', 'damage', 'skills', undefined, 'قارورة السمّ'),
+  card('Anvil', 'common', 'damage', 'gear', undefined, 'السندان'),
+  card('Weights', 'common', 'damage', 'battle', undefined, 'الأثقال'),
+  card('Red Rose', 'rare', 'damage', 'heart', undefined, 'الوردة الحمراء'),
+  card('Gun Powder', 'rare', 'damage', 'meteor', undefined, 'البارود'),
+  card('Sabre Cat Skull', 'rare', 'damage', 'battle', undefined, 'جمجمة النمر ذي الأنياب'),
+  card('Trojan Horse', 'rare', 'damage', 'battle', undefined, 'حصان طروادة'),
+  card('Fountain of Life', 'rare', 'health', 'heart', undefined, 'ينبوع الحياة'),
+  card('Kevlar Thread', 'rare', 'health', 'shield', undefined, 'خيط الكيفلار'),
+  card('STEM-C5', 'rare', 'health', 'skills', undefined, 'مصل الخلايا 5'),
+  card('Pestle and Mortar', 'rare', 'health', 'food', undefined, 'الهاون والمدقّة'),
+  card('UAV-3.0', 'epic', 'damage', 'battle', 'base', 'الطائرة المسيّرة 3.0'),
+  card('Cave Painting', 'epic', 'damage', 'flag', 'base', 'رسم الكهف'),
+  card('Obelisk', 'epic', 'health', 'shield', 'base', 'المسلّة'),
+  card('Military Radio', 'epic', 'health', 'sound', 'base', 'المذياع العسكريّ'),
+  card('T-Rex Head', 'legendary', 'damage', 'food', 'food', 'رأس التيرانوصور'),
+  card('Robot Head', 'legendary', 'health', 'gear', 'coins', 'رأس الروبوت'),
 ];
 
 function nonnegativeInteger(value: number): number {

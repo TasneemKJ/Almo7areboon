@@ -19,7 +19,7 @@ import ts from 'typescript';
 import { Game } from '../src/game/simulation.ts';
 import { defaultProfile, decodeSave, SAVE_KEY, BACKUP_KEY } from '../src/game/save.ts';
 import { createSaveSession } from '../src/game/save-session.ts';
-import { saveSessionDialogHtml, temporarySessionNotice } from '../src/ui/save-session-screen.ts';
+import { saveSessionDialogHtml, temporarySessionNotice, temporarySessionText, savingUnavailableText } from '../src/ui/save-session-screen.ts';
 import { advanceStatus } from '../src/game/mastery.ts';
 import { battleSelectionHtml, evolutionDialogHtml } from '../src/ui/progression-screen.ts';
 import { ERAS, QUESTS, foodRate, unlockCost, dailyReward, localDay } from '../src/game/data.ts';
@@ -83,7 +83,7 @@ function harness(motion = 'full') {
     window:{cancelAnimationFrame(){}},requestAnimationFrame(){return 0;},performance: { now: () => now }, document: { documentElement: { dataset: { motion } } },
     cardPackPreview,cardsScreenHtml,summonedCardsHtml,isEditingTarget,campRootHtml,campFocusHtml,campGoalText,canOwnCamp,isCampStation,campActionFromData,fieldControls:{update(){},clear(){},select(){}},blockModalTap:createModalTapGuard(),startCountUp,welcomeBackLine,restoreBackupWithSave,startOverProfile,syncWeekly,weekId,weeklyStatus,foodIsPiling,Date:class extends Date{static now(){return 1_800_000_000_000;}},journeyScreenHtml,updateOrderBanner,entryCopy,hasPriorPlay,entrySecondary,preferencesHtml,saveRecoveryHtml,chapterLandscape,
     $: (id: string) => { if (!elements.has(id)) {const element:any=['quest-goal','card-quantity'].includes(id)?new BoundarySelect(id,id==='card-quantity'?'1':''):node();if(id==='battlefield')element.dataset={renderer:'ready'};elements.set(id,element);} return elements.get(id); },
-    chronicleScreenHtml,chronicleActionFromData,chronicleGuidance,CAPTAINS,routeDefinition,advanceStatus, battleSelectionHtml, evolutionDialogHtml, ERAS, QUESTS, foodRate, unlockCost, dailyReward, localDay, battleGuidance, baseHealthDisplay, compactNumber, waveLabel, waveAccessibleLabel, chapterPresentation, unitPresentationName, compactResultsHtml, expeditionChoiceHtml, resultsHtml,isLegacyChoice,legacyEffects,prestigePreview,prestigeDetailsHtml,prestigeDialogHtml,legacyCurrentHtml,evolutionScreenHtml,saveSessionDialogHtml,temporarySessionNotice,skillCue,troopUnlockMessage,nextGoalLabel, waveInspectionHtml,
+    chronicleScreenHtml,chronicleActionFromData,chronicleGuidance,CAPTAINS,routeDefinition,advanceStatus, battleSelectionHtml, evolutionDialogHtml, ERAS, QUESTS, foodRate, unlockCost, dailyReward, localDay, battleGuidance, baseHealthDisplay, compactNumber, waveLabel, waveAccessibleLabel, chapterPresentation, unitPresentationName, compactResultsHtml, expeditionChoiceHtml, resultsHtml,isLegacyChoice,legacyEffects,prestigePreview,prestigeDetailsHtml,prestigeDialogHtml,legacyCurrentHtml,evolutionScreenHtml,saveSessionDialogHtml,temporarySessionNotice,temporarySessionText,savingUnavailableText,skillCue,troopUnlockMessage,nextGoalLabel, waveInspectionHtml,
     earlierChapter,storybookArt: () => false, money: String, coin: String, icon:()=>'',textIfChanged(target:any,value:string){target.textContent=value;},htmlIfChanged(target:any,value:string){target.innerHTML=value;},unlockAudio() {}, suspendAudio() {}, playIntro() { return false; }, watchIntro() {}, playSummonAudio() {}, saveAtmosphere() {}, syncMarks() {}, syncPause() {}, rebuildArmy() {}, syncMotion() {}, isolateModal(){}, toast() {},
     closeModal() { context.modal=null; }, showModal: (id: string,html:string,focusCommand?:string) => {context.modal=id;context.dialogHtml=html;context.focusCommand=focusCommand;dialogs.push(id);},
     session: {
@@ -546,10 +546,10 @@ test('explicit field Resume releases a manual pause without restarting the battl
  assert.equal(c.manualPaused,false);assert.equal(c.modal,null);assert.equal(JSON.stringify([c.game.profile,c.game.state]),before);
 });
 
-test('Preferences is seven native fields and five direct actions, with no nested catalogue',()=>{
+test('Preferences is eight native fields (Language first) and five direct actions, with no nested catalogue',()=>{
  const h=harness(),c=h.context;h.click('settings');
- assert.equal((c.dialogHtml.match(/<button\b/g)||[]).length,5);
- assert.equal((c.dialogHtml.match(/<input\b|<select\b/g)||[]).length,7);
+ assert.equal((c.dialogHtml.match(/<button\b/g)||[]).length,5,'off the app there is nothing to buy, so no store entries');
+ assert.equal((c.dialogHtml.match(/<input\b|<select\b/g)||[]).length,8);
  for(const label of ['Sound','Atmosphere','Effects','Battle speed','Motion','Troop shapes','Watch intro','Watch film','Save &amp; recovery','Start over','Done'])assert.match(c.dialogHtml,new RegExp(label));
  assert.doesNotMatch(c.dialogHtml,/<details|data-command="retreat"|data-command="export"|data-command="import"/);
 });

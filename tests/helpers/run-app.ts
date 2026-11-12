@@ -1,5 +1,7 @@
 import { runInNewContext } from 'node:vm';
 import { createDomPort, type DomEnv } from '../../src/app/dom-port.ts';
+import { STORE_COMMANDS } from '../../src/app/store-flow.ts';
+import { n, tr } from '../../src/ui/i18n.ts';
 
 /**
  * Runs extracted shell code in a stub context. Each app factory owns a state object (sessionState, navState,
@@ -8,6 +10,14 @@ import { createDomPort, type DomEnv } from '../../src/app/dom-port.ts';
  */
 export function runInApp(code: string, context: Record<string, unknown>): unknown {
   for (const name of ['sessionState', 'navState', 'questState', 'inputState', 'ports']) context[name] ??= context;
+  // The store flow (src/app/store-flow.ts, tested in tests/store-flow.test.ts) as it behaves off the app: nothing is
+  // gated and no store command is its own, so every other flow runs exactly as on the web.
+  context.gateEvolution ??= () => false;
+  context.handleStoreCommand ??= () => false;
+  context.STORE_COMMANDS ??= STORE_COMMANDS;
+  // The shell's own text goes through the language pair helpers (English in tests).
+  context.tr ??= tr;
+  context.n ??= n;
   // The page port runs over the same stubbed window, document and performance the harness provides.
   context.dom ??= createDomPort(stubEnv(context));
   return runInNewContext(code, context);

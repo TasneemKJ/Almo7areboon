@@ -1,9 +1,11 @@
+import {tr} from './i18n.ts';
+
 /** Short native labels for painted gate interaction targets.
  * Simulation/charge and order admission remain owned by game/orderStatus. */
 export function gateChoiceLabel(kind:'hold'|'advance',ready:boolean,active:boolean):string {
- if(active)return kind==='hold'?'Holding':'Advancing';
- if(ready)return kind==='hold'?'Hold':'Advance';
- return kind==='hold'?'Hold · 60 momentum':'Advance · 60 momentum';
+ if(active)return kind==='hold'?tr('Holding','ثابتون'):tr('Advancing','متقدّمون');
+ if(ready)return kind==='hold'?tr('Hold','اثبُت'):tr('Advance','تقدّم');
+ return kind==='hold'?tr('Hold · 60 momentum','اثبُت · 60 من الزخم'):tr('Advance · 60 momentum','تقدّم · 60 من الزخم');
 }
 
 /**

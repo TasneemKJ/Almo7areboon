@@ -8,7 +8,7 @@ import { resolve, join, relative } from 'node:path';
 import { fileURLToPath, pathToFileURL } from 'node:url';
 import { gzipSync } from 'node:zlib';
 
-export const JS_BUDGET_GZIP_BYTES = 500 * 1024;
+export const JS_BUDGET_GZIP_BYTES = 540 * 1024; // 500 KiB until 2026-11-13; +40 KiB for the Arabic half of every string (docs/performance-budgets.md)
 
 function filesUnder(directory) {
   return readdirSync(directory, { withFileTypes: true }).sort((a, b) => a.name.localeCompare(b.name)).flatMap((entry) => {
@@ -62,7 +62,7 @@ if (process.argv[1] && import.meta.url === pathToFileURL(resolve(process.argv[1]
   try {
     const directory = process.argv[2] ? resolve(process.argv[2]) : fileURLToPath(new URL('../dist/', import.meta.url));
     const report = measureJavaScript(directory);
-    const line = `total JavaScript ${report.bytes} bytes (${(report.bytes / 1024).toFixed(1)} KiB) gzip; budget ${JS_BUDGET_GZIP_BYTES} bytes (500 KiB); scope: JS files + inline script blocks`;
+    const line = `total JavaScript ${report.bytes} bytes (${(report.bytes / 1024).toFixed(1)} KiB) gzip; budget ${JS_BUDGET_GZIP_BYTES} bytes (540 KiB); scope: JS files + inline script blocks`;
     for (const entry of report.entries) console.log(`check-size: ${entry.path}: ${entry.bytes} bytes gzip`);
     if (report.overBudget) { console.error(`check-size: over budget, ${line}`); process.exit(1); }
     console.log(`check-size: ${line}`);

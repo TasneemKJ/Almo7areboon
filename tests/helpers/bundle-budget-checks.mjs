@@ -31,7 +31,7 @@ function check(files) {
 function passesWithBytes(result, expected) {
   assert.equal(result.status, 0, result.output);
   assert.match(result.output, new RegExp(`total JavaScript ${expected} bytes`));
-  assert.match(result.output, /budget 512000 bytes \(500 KiB\)/);
+  assert.match(result.output, /budget 552960 bytes \(540 KiB\)/);
 }
 
 test('uses the common 500 KiB limit for a distribution above the old main-chunk limits', () => {
@@ -59,7 +59,7 @@ test('duplicate bytes at different shipped paths are not discounted', () => {
 
 test('fails when combined small chunks exceed the common limit', () => {
   const code = `/*${noise}*/`;
-  assert.ok(gzipBytes(code) < 500 * 1024 && gzipBytes(code) * 3 > 500 * 1024);
+  assert.ok(gzipBytes(code) < 540 * 1024 && gzipBytes(code) * 3 > 540 * 1024);
   const result = check({ 'assets/index-main.js': code, 'assets/vendor.js': code, 'assets/lazy.js': code });
   assert.equal(result.status, 1, result.output);
   assert.match(result.output, /over budget/);

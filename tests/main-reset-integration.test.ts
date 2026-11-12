@@ -16,7 +16,7 @@ import { createSaveSession, type SaveSessionLocks } from '../src/game/save-sessi
 import { restoreBackup, restoreBackupWithSave } from '../src/game/backup.ts';
 import { startOverProfile } from '../src/game/reset.ts';
 import type { Profile } from '../src/game/types.ts';
-import { saveSessionDialogHtml, temporarySessionNotice } from '../src/ui/save-session-screen.ts';
+import { saveSessionDialogHtml, temporarySessionNotice, temporarySessionText, savingUnavailableText } from '../src/ui/save-session-screen.ts';
 import { createModalTapGuard } from '../src/ui/modal-tap-guard.ts';
 
 // Run the actual UI handler and ownership presentation with the real guarded writer.
@@ -58,7 +58,7 @@ async function harness(mode = 'active') {
     lifetime: { disposed: false, listen: (_root: unknown, _event: string, handler: Function) => { context.click = handler; } },
     $: node, textIfChanged() {}, syncPause() {}, isolateModal() {}, icon: () => '', unlockAudio() {},
     blockModalTap:createModalTapGuard(),performance:{now:()=>100},
-    saveSessionDialogHtml, temporarySessionNotice, preferencesHtml,saveRecoveryHtml,hasPriorPlay,restoreBackup, restoreBackupWithSave, startOverProfile,
+    saveSessionDialogHtml, temporarySessionNotice, temporarySessionText, savingUnavailableText, preferencesHtml,saveRecoveryHtml,hasPriorPlay,restoreBackup, restoreBackupWithSave, startOverProfile,
     toast: (message: string) => messages.push(message), showModal: (id: string, html: string) => { context.modal = id; context.html = html; dialogs.push(id); },
     closeModal: () => { context.modal = null; }, rebuildArmy() {}, syncMotion() {}, switchTab: (tab: string) => { context.activeTab = tab; },
   };

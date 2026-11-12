@@ -14,6 +14,7 @@ import './ui/skill-cues.css';
 import './ui/battle-banner.css';
 import './ui/simple-entry.css';
 import './ui/preferences.css';
+import './ui/store.css';
 import './ui/intro.css';
 import './ui/company-film.css';
 import './ui/landscape-rail.css';
@@ -29,7 +30,9 @@ import { createNavigation } from './app/navigation.ts';
 import { createQuests } from './app/quests.ts';
 import { installListeners } from './app/listeners.ts';
 import { createIntro } from './app/intro.ts';
+import { createStoreFlow } from './app/store-flow.ts';
 import type { ShellApi } from './app/shell.ts';
+import { tr } from './ui/i18n.ts';
 
 // Composition root: the DOM handles and the flow modules are wired here and nowhere else. Each module owns its state.
 // The initial render is a non-playable default. Only ownership makes a loaded Game authoritative.
@@ -39,6 +42,7 @@ const { $, root, lifetime, isolateModal } = dom;
 const ports = {} as ShellApi;
 const wiring = { dom, ports };
 Object.assign(ports, createLifecycle({ ...wiring, initialGame }), createNavigation(wiring), createQuests(wiring), createIntro(wiring));
+Object.assign(ports, createStoreFlow(wiring));
 installListeners(wiring);
 updateAudioMix(ports.sessionState.audioMix);
 const port=createBattlefieldPort(()=>ports.sessionState.game,ports.action,dt=>{
@@ -60,7 +64,7 @@ void import('./view/battlefield.ts').then(({mountBattlefield})=>{
   if(rendererClosed)return;
   renderer=mountBattlefield($('battlefield'),port,force=>ports.update(force),ports.events,{isVisible:()=>ports.navState.entryEntered&&root!.dataset.fieldMode==='field'&&ports.navState.activeTab==='battle'&&!dom.hidden(),villageMood:()=>ports.sessionState.villagePresentation!.mood,onPresentation:ports.syncVillagePresentation});
   $('battlefield').dataset.renderer='ready';
-}).catch(()=>{$('battlefield').dataset.renderer='failed';ports.syncEntry();ports.toast('The battlefield could not load. Check your connection and reload.');});
+}).catch(()=>{$('battlefield').dataset.renderer='failed';ports.syncEntry();ports.toast(tr('The battlefield could not load. Close the game and open it again.','تعذّر تحميل ساحة المعركة. أغلق اللعبة وافتحها من جديد.'));});
 lifetime.add(()=>{rendererClosed=true;renderer?.destroy();});
 lifetime.add(disposeAudio);
 lifetime.add(()=>{dom.clearTimer(ports.sessionState.toastTimer);dom.cancelFrame(ports.navState.focusFrame);isolateModal(false);});

@@ -14,7 +14,7 @@ import { chronicleScreenHtml, chronicleActionFromData } from '../ui/chronicle-sc
 import { CAPTAINS } from '../game/chronicle.ts';
 import { advanceStatus } from '../game/mastery.ts';
 import { isLegacyChoice, legacyEffects, prestigePreview } from '../game/prestige.ts';
-import { temporarySessionNotice } from '../ui/save-session-screen.ts';
+import { temporarySessionText } from '../ui/save-session-screen.ts';
 import type { UnitKind } from '../game/types.ts';
 import { chapterLandscape } from '../ui/chapter-presentation.ts';
 import { entryCopy, hasPriorPlay, entrySecondary } from '../ui/entry-screen.ts';
@@ -28,6 +28,7 @@ import { legacyCurrentHtml, prestigeDetailsHtml, prestigeDialogHtml } from '../u
 import { compactNumber } from '../ui/battle-hud.ts';
 import { battleSelectionHtml } from '../ui/progression-screen.ts';
 import { modalFocusables } from '../ui/accessibility.ts';
+import { tr } from '../ui/i18n.ts';
 import { textIfChanged, htmlIfChanged } from '../ui/dom-state.ts';
 import type { Runtime } from './runtime.ts';
 import type { ShellApi } from './shell.ts';
@@ -93,12 +94,12 @@ export function createNavigation(deps: NavigationDeps) {
     textIfChanged($('entry-play'),failed?'Reload':entryReady()?copy.action:'Loading…');
     $('entry-play').dataset.command=failed?'reload-world':'enter-world';
     textIfChanged($('entry-chapter'),copy.chapter);
-    textIfChanged($('entry-subtitle'),failed?'The battlefield could not load. Reload to try again; your saved progress is kept.':navState.entryWelcome??copy.subtitle);
+    textIfChanged($('entry-subtitle'),failed?tr('The battlefield could not load. Close the game and open it again; your saved progress is kept.','تعذّر تحميل ساحة المعركة. أغلق اللعبة وافتحها من جديد، وتقدّمك المحفوظ باقٍ.'):navState.entryWelcome??copy.subtitle);
     const art=$('entry-art'),source=chapterLandscape(ports.sessionState.game.profile.enemyAge);
     if(art.dataset.source!==source){art.setAttribute('src',source);art.dataset.source=source;}
     const secondary=entrySecondary(ports.sessionState.game.profile,ports.sessionState.game.state),extra=$('entry-secondary');
     extra.hidden=failed||secondary===null;extra.dataset.command=secondary==='leave'?'leave-battle':'home-camp';
-    textIfChanged(extra,secondary==='leave'?'Leave battle…':'Camp');extra.toggleAttribute('disabled',!entryReady());
+    textIfChanged(extra,secondary==='leave'?tr('Leave battle…','غادر المعركة…'):tr('Camp','المخيّم'));extra.toggleAttribute('disabled',!entryReady());
     $('entry-play').toggleAttribute('disabled',!ports.playable()||(!failed&&!entryReady()));$('entry-settings').toggleAttribute('disabled',!ports.playable());
   }
   function enterWorld(){
@@ -134,9 +135,9 @@ export function createNavigation(deps: NavigationDeps) {
       html=cardsScreenHtml(p,navState.cardQuantity);
     }else if(navState.activeTab==='skills'){
       const captain=p.chronicle?.enabled&&p.chronicle.captain!=='none'?CAPTAINS.find(c=>c.id===p.chronicle!.captain):undefined;
-      html=`<div class="screen-heading"><span class="eyebrow">TURN THE TIDE</span><h2 id="secondary-title" tabindex="-1">Battle skills</h2><p>The right move can change everything.</p></div><div class="skill-list">${[{id:'freeze',name:'Freeze',tag:'CONTROL',copy:`Freeze every enemy for ${legacyEffects(p.legacy).freezeSeconds} seconds. Give your army time to strike.`,color:'#73bbdb'},{id:'meteor',name:'Meteor',tag:'DAMAGE',copy:'Hit every enemy on the battlefield. Best saved for a big wave.',color:'#de805d'},{id:'food',name:captain?.skill??'Food Drop',tag:captain?'CAPTAIN':'SUPPORT',copy:captain?.description??'Gain up to 10 food instantly, limited by 99-food storage. Deploy reinforcements when you need them.',color:'#97bc6a'}].map(s=>`<article class="skill-detail"><div class="skill-art" style="background:${s.color}">${icon(s.id)}</div><div><small>${s.tag}</small><h3>${s.name}</h3><p>${s.copy}</p><span class="skill-rule">ONCE PER BATTLE</span></div></article>`).join('')}</div><div class="skill-note">${icon('battle')}<p>Select an enemy in battle for Freeze or Meteor. Inspect the supplies after deploying a troop for your support skill. Each skill refreshes when a new battle begins.</p></div><button class="big-button green" data-tab="battle">BACK TO BATTLE ${icon('arrow')}</button>`;
+      html=`<div class="screen-heading"><span class="eyebrow">${tr('TURN THE TIDE','اقلب الموازين')}</span><h2 id="secondary-title" tabindex="-1">${tr('Battle skills','مهارات المعركة')}</h2><p>${tr('The right move can change everything.','الحركة الصائبة تغيّر كلّ شيء.')}</p></div><div class="skill-list">${[{id:'freeze',name:tr('Freeze','التجميد'),tag:tr('CONTROL','سيطرة'),copy:tr(`Freeze every enemy for ${legacyEffects(p.legacy).freezeSeconds} seconds. Give your army time to strike.`,`جمّد كلّ الأعداء ${legacyEffects(p.legacy).freezeSeconds} ثوانٍ، وامنح جيشك وقتاً ليضرب.`),color:'#73bbdb'},{id:'meteor',name:tr('Meteor','النيزك'),tag:tr('DAMAGE','ضرر'),copy:tr('Hit every enemy on the battlefield. Best saved for a big wave.','يضرب كلّ عدوّ في الساحة. احفظه لموجة كبيرة.'),color:'#de805d'},{id:'food',name:captain?.skill??tr('Food Drop','إمداد المؤونة'),tag:captain?tr('CAPTAIN','قائد'):tr('SUPPORT','دعم'),copy:captain?.description??tr('Gain up to 10 food instantly, limited by 99-food storage. Deploy reinforcements when you need them.','تحصل فوراً على مؤونة حتى 10، وحدّ المخزن 99. أرسل المدد حين تحتاجه.'),color:'#97bc6a'}].map(s=>`<article class="skill-detail"><div class="skill-art" style="background:${s.color}">${icon(s.id)}</div><div><small>${s.tag}</small><h3>${s.name}</h3><p>${s.copy}</p><span class="skill-rule">${tr('ONCE PER BATTLE','مرّة في كلّ معركة')}</span></div></article>`).join('')}</div><div class="skill-note">${icon('battle')}<p>${tr('Select an enemy in battle for Freeze or Meteor. Inspect the supplies after deploying a troop for your support skill. Each skill refreshes when a new battle begins.','اختر عدوّاً في المعركة لتستعمل التجميد أو النيزك، وافحص المؤونة بعد إرسال جنديّ لتستعمل مهارة الدعم. تتجدّد كلّ مهارة مع بداية معركة جديدة.')}</p></div><button class="big-button green" data-tab="battle">${tr('BACK TO BATTLE','عُد إلى المعركة')} ${icon('arrow')}</button>`;
     }
-    if(navState.activeTab!=='battle')htmlIfChanged($('secondary-screen'),`${navState.campOwner?.kind==='advanced'?'<button class="big-button secondary camp-advanced-return" data-command="camp-return">Back to Camp</button>':''}${html}`);
+    if(navState.activeTab!=='battle')htmlIfChanged($('secondary-screen'),`${navState.campOwner?.kind==='advanced'?`<button class="big-button secondary camp-advanced-return" data-command="camp-return">${tr('Back to Camp','عُد إلى المخيّم')}</button>`:''}${html}`);
   }
   function showModal(id:string,html:string,focusCommand?:string){
     if(id!=='session'&&!ports.playable())return;
@@ -148,7 +149,7 @@ export function createNavigation(deps: NavigationDeps) {
     const layer=$('modal-layer'),previousScroll=sameModal?layer.querySelector<HTMLElement>('.dialog')?.scrollTop:null;
     if(!replacing)navState.focusBefore=dom.activeElement() as HTMLElement;
     navState.modal=id;navState.modalVersion++;const version=navState.modalVersion;
-    const dismissButton=`<button class="close-button" data-command="close" aria-label="Close">${icon('close')}</button>`;
+    const dismissButton=`<button class="close-button" data-command="close" aria-label="${tr('Close','إغلاق')}">${icon('close')}</button>`;
     const dismissMarkup=['film','quests','camp-focus','field-pause','settings','save-recovery','reset','import','leave-battle','result','result-expedition','session'].includes(id)?'':id==='chronicle'?dismissButton:`<div class="dialog-dismiss">${dismissButton}</div>`;
     layer.hidden=false;layer.innerHTML=`<section class="dialog ${(id==='result'||id==='result-expedition')?'result-dialog':id==='session'?'session-dialog':id==='camp-focus'?'camp-dialog':id==='film'?'film-dialog':id==='settings'?'preferences-dialog':id==='quests'?'quest-record-dialog':id==='prestige'?'prestige-dialog':id==='chronicle'?'chronicle-dialog':''}" role="dialog" tabindex="-1" aria-modal="true" aria-labelledby="dialog-title">${dismissMarkup}${html}</section>`;
     isolateModal(true);ports.syncPause();dom.cancelFrame(navState.focusFrame);
@@ -192,7 +193,7 @@ export function createNavigation(deps: NavigationDeps) {
   function showResultDetails(focusCommand='result-back'){
     if(!ports.guardAction()||(navState.modal!=='result'&&!(navState.modal==='prestige'&&navState.resultDetailsOpen)))return;
     navState.resultDetailsOpen=true;
-    showModal('result',`<button class="big-button secondary result-back" data-command="result-back">Back to result</button>${resultsHtml(ports.sessionState.game.profile,ports.sessionState.game.state)}`,focusCommand);
+    showModal('result',`<button class="big-button secondary result-back" data-command="result-back">${tr('Back to result','عُد إلى النتيجة')}</button>${resultsHtml(ports.sessionState.game.profile,ports.sessionState.game.state)}`,focusCommand);
   }
   function showHome(){
     const fromCamp=navState.entryEntered&&root!.dataset.fieldMode==='camp'&&navState.modal===null;
@@ -219,7 +220,7 @@ export function createNavigation(deps: NavigationDeps) {
     root!.querySelectorAll<HTMLElement>('.resources,.bottom-nav').forEach(node=>{node.inert=true;});
     root!.dataset.campOwner=navState.campOwner.kind;
     const notice=$('session-notice');notice.hidden=ports.sessionState.session.status!=='temporary'&&!ports.sessionState.savedWarning;
-    const message=ports.sessionState.session.status==='temporary'?temporarySessionNotice:ports.sessionState.savedWarning?'Saving is unavailable. Return Home, then open Settings to export a backup before closing.':'';
+    const message=ports.sessionState.session.status==='temporary'?temporarySessionText():ports.sessionState.savedWarning?tr('Saving is unavailable. Return Home, then open Settings to export a backup before closing.','الحفظ غير متاح الآن. عُد إلى الرئيسية وافتح الإعدادات لتصدّر نسخة احتياطية قبل الإغلاق.'):'';
     textIfChanged(notice,message);
     // A later autosave/background failure must also reach the isolated active focus.
     // Update this stable node only: no modal replacement, refocus or scroll change.
@@ -232,7 +233,7 @@ export function createNavigation(deps: NavigationDeps) {
     if(!navState.campOwner||!ports.guardAction()||!canOwnCamp(ports.sessionState.game.profile,ports.sessionState.game.state)||navState.modal==='session')return;
     const returnTarget=typeof focus==='object'?'company':focus;
     navState.campOwner={kind:'focus',focus,returnTarget};
-    showModal('camp-focus',campFocusHtml(ports.sessionState.game,focus,ports.sessionState.session.status==='temporary'?temporarySessionNotice:ports.sessionState.savedWarning?'Saving is unavailable. Return Home, then open Settings to export a backup before closing.':''),focusCommand);syncCamp();
+    showModal('camp-focus',campFocusHtml(ports.sessionState.game,focus,ports.sessionState.session.status==='temporary'?temporarySessionText():ports.sessionState.savedWarning?tr('Saving is unavailable. Return Home, then open Settings to export a backup before closing.','الحفظ غير متاح الآن. عُد إلى الرئيسية وافتح الإعدادات لتصدّر نسخة احتياطية قبل الإغلاق.'):''),focusCommand);syncCamp();
   }
   function returnToCamp(){
     if(!navState.campOwner||!ports.guardAction()||!canOwnCamp(ports.sessionState.game.profile,ports.sessionState.game.state)||navState.modal==='session')return;
@@ -277,11 +278,11 @@ export function createNavigation(deps: NavigationDeps) {
   }
   function showFieldPause(focusCommand?:string){
     if(!navState.entryEntered||!ports.guardAction()||ports.sessionState.game.state.phase!=='running')return;
-    fieldControls.clear();showModal('field-pause','<h2 id="dialog-title">A moment by the fire</h2><button class="big-button green" data-command="field-resume">Resume</button><button class="big-button secondary" data-command="settings">Settings</button><button class="big-button secondary" data-command="home">Home</button>',focusCommand);
+    fieldControls.clear();showModal('field-pause',`<h2 id="dialog-title">${tr('A moment by the fire','استراحةٌ عند النار')}</h2><button class="big-button green" data-command="field-resume">${tr('Resume','متابعة')}</button><button class="big-button secondary" data-command="settings">${tr('Settings','الإعدادات')}</button><button class="big-button secondary" data-command="home">${tr('Home','الرئيسية')}</button>`,focusCommand);
   }
   function showLeaveBattle(){
     if(navState.entryEntered||navState.modal||!ports.guardAction()||entrySecondary(ports.sessionState.game.profile,ports.sessionState.game.state)!=='leave')return;
-    showModal('leave-battle','<h2 id="dialog-title">Leave this battle?</h2><p>Leaving counts as a loss. Coins you already earned are kept. Your current troops and battle progress end before you return to Camp.</p><button class="big-button danger" data-command="confirm-leave-battle">Leave for Camp</button><button class="big-button secondary" data-command="close">Keep this battle</button>','close');
+    showModal('leave-battle',`<h2 id="dialog-title">${tr('Leave this battle?','تغادر هذه المعركة؟')}</h2><p>${tr('Leaving counts as a loss. Coins you already earned are kept. Your current troops and battle progress end before you return to Camp.','المغادرة تُحسب هزيمة. النقود التي كسبتها تبقى لك، أمّا جنودك الحاليّون وتقدّم المعركة فينتهون قبل عودتك إلى المخيّم.')}</p><button class="big-button danger" data-command="confirm-leave-battle">${tr('Leave for Camp','عُد إلى المخيّم')}</button><button class="big-button secondary" data-command="close">${tr('Keep this battle','أكمل المعركة')}</button>`,'close');
   }
   function leaveBattle(){
     if(navState.entryEntered||navState.modal!=='leave-battle'||!ports.guardAction()||ports.sessionState.game.state.phase!=='running'||ports.sessionState.game.profile.pendingVictory)return;
@@ -311,7 +312,7 @@ export function createNavigation(deps: NavigationDeps) {
     if(preview&&preview.expectedTimeline===navState.prestigeExpectedTimeline){
       htmlIfChanged($('prestige-preview-values'),prestigeDetailsHtml(ports.sessionState.game.profile,preview));
     }else{
-      showModal('prestige','<h2 id="dialog-title">This preview is no longer current</h2><p>Keep exploring, then open the next timeline preview again before you begin.</p><button class="big-button secondary" data-command="close">Keep exploring this timeline</button>');
+      showModal('prestige',`<h2 id="dialog-title">${tr('This preview is no longer current','هذه المعاينة لم تعد صالحة')}</h2><p>${tr('Keep exploring, then open the next timeline preview again before you begin.','تابع الاستكشاف، ثم افتح معاينة الخطّ الزمني التالي من جديد قبل أن تبدأ.')}</p><button class="big-button secondary" data-command="close">${tr('Keep exploring this timeline','تابع استكشاف هذا الخطّ الزمني')}</button>`);
     }
   }
   function returnFromPrestige(){
@@ -346,7 +347,7 @@ export function createNavigation(deps: NavigationDeps) {
     if(navState.modal==='evolve'&&navState.evolutionFromResult){navState.evolutionFromResult=false;showResult();return;}
     navState.evolutionFromResult=false;closeModal();
   }
-  function preferenceNotice(){return ports.sessionState.session.status==='temporary'?temporarySessionNotice:ports.sessionState.savedWarning?'Saving is unavailable. Export a backup before closing.':`Progress saves in this browser. Export keeps a separate copy.${ports.sessionState.lastSavedAt?` Last saved ${new Date(ports.sessionState.lastSavedAt).toLocaleTimeString([],{hour:'numeric',minute:'2-digit'})}.`:''}`;}
+  function preferenceNotice(){return ports.sessionState.session.status==='temporary'?temporarySessionText():ports.sessionState.savedWarning?tr('Saving is unavailable. Export a backup before closing.','الحفظ غير متاح الآن. صدّر نسخة احتياطية قبل الإغلاق.'):`${tr('Progress saves on this device. Export keeps a separate copy.','يُحفظ تقدّمك على هذا الجهاز، والتصدير يحتفظ بنسخة منفصلة.')}${ports.sessionState.lastSavedAt?` ${tr('Last saved','آخر حفظ')} ${new Date(ports.sessionState.lastSavedAt).toLocaleTimeString('en-US',{hour:'numeric',minute:'2-digit'})}.`:''}`;}
   function showSettings(focusCommand?:string){
     if(!['film','settings','save-recovery','reset','import'].includes(navState.modal??''))navState.settingsOrigin=navState.modal==='field-pause'?'field-pause':null;
     showModal('settings',preferencesHtml(ports.sessionState.game.profile,ports.sessionState.atmosphereEnabled,ports.sessionState.audioMix,ports.sessionState.session.status==='active',preferenceNotice()),focusCommand);

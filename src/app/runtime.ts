@@ -9,6 +9,7 @@ import { createLifetime } from '../ui/lifetime.ts';
 import { createModalTapGuard } from '../ui/modal-tap-guard.ts';
 import type { Profile } from '../game/types.ts';
 import { createDomPort } from './dom-port.ts';
+import { documentTitle } from '../ui/entry-screen.ts';
 
 /** Builds the shell DOM and the handles every module shares (mount, lifetime, lookup, formatting, controllers). */
 export function createRuntime(profile: Profile) {
@@ -21,6 +22,7 @@ export function createRuntime(profile: Profile) {
   const money=(value:number)=>value>=10000?compactNumber(value):Math.floor(value).toLocaleString('en-US');
   const coin=(value:number)=>`${icon('coin')}<span>${money(value)}</span>`;
   root.innerHTML = appShellHtml(profile);
+  document.title = documentTitle();
   const $=<T extends HTMLElement=HTMLElement>(id:string)=>document.getElementById(id) as T;
   const updateArmy=createArmyUpdater({units:$('unit-cards'),skills:$('battle-skills'),stages:$('stage-progress')},unitPortrait,money);
   const isolateModal=createModalIsolation($('modal-layer'));

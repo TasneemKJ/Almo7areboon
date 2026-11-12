@@ -14,6 +14,8 @@ test('the card offers the price, Restore, Terms and Privacy together, and every 
   assert.doesNotMatch(fullJourneyHtml(store(true), 'x'), /buy-full-journey/);
   for (const status of ['buying', 'pending', 'failed', 'unavailable', 'nothing']) assert.ok(fullJourneyStatus(store(false, status)).length > 10, status);
   assert.match(fullJourneyHtml(store(false, '', ''), 'x'), />Continue the journey</, 'no price yet still offers the purchase');
+  assert.doesNotMatch(html, /nothing else to buy/i, 'the Lamplighter subscription exists, so the card must not say there is nothing else');
+  assert.match(html, /yours to keep/i, 'says it is a one-time purchase');
 });
 
 test('in Arabic the card is all Arabic but the price', () => {

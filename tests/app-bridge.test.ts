@@ -55,3 +55,24 @@ test('the app can flush the save through one guarded hook', () => {
   assert.doesNotThrow(() => (globalThis as unknown as { __almoFlushSave: () => void }).__almoFlushSave());
   assert.equal(flushed, 1);
 });
+
+test('the Lamplighter walks only while a plan is live in the app, and never on the web', async () => {
+  const { lamplighterWalks, lamplighterPlan, manageSubscriptions } = await import('../src/ui/app-bridge.ts');
+  assert.equal(lamplighterWalks(), false, 'the web never shows him: nothing is sold there');
+  const { win, posted } = fakeApp();
+  const bridge = createAppBridge(win);
+  assert.equal(lamplighterWalks(bridge), false);
+  bridge.update({ owned: { fullGame: true } });
+  assert.equal(lamplighterWalks(bridge), false, 'Full Journey does not bring him');
+  bridge.update({ owned: { lamplighterMonthly: true } });
+  assert.equal(lamplighterWalks(bridge), true);
+  assert.equal(lamplighterPlan(bridge), 'lamplighterMonthly');
+  assert.equal(ownsFullJourney(bridge), false, 'the subscription opens no chapter');
+  assert.equal(evolutionNeedsFullJourney(1, bridge), true);
+  bridge.update({ owned: { lamplighterMonthly: true, lamplighterYearly: true } });
+  assert.equal(lamplighterPlan(bridge), 'lamplighterYearly');
+  bridge.update({ owned: {} });
+  assert.equal(lamplighterWalks(bridge), false, 'expired: he leaves');
+  manageSubscriptions(bridge);
+  assert.deepEqual(posted.at(-1), { type: 'manageSubscriptions', data: null });
+});

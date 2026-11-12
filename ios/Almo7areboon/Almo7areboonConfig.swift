@@ -1,6 +1,6 @@
 //
 //  Almo7areboonConfig.swift
-//  Everything the shared iOS shell (TasKit, ../../tas-engine/ios) needs to know about المحاربون.
+//  Everything the shared iOS shell (TasKit, ../../tas-engine/ios, built against 040aa0e) needs to know about المحاربون.
 //  The names below are persisted on players' phones (the almo7areboon:// origin holds the save,
 //  the UserDefaults keys hold the cached purchase): never rename them after release.
 //
@@ -23,8 +23,13 @@ enum Catalog {
     /// The whole journey: every chapter after the second, and the harder timeline.
     static let fullGame = TasCatalogItem(key: "fullGame", productID: "Tas.Almo7areboon.fullGame", kind: .nonConsumable)
 
+    /// The Lamplighter (مُشعِل القناديل): a row of lanterns lit at your gate in every battle, only while
+    /// the subscription is live. Pure light: no hitbox, no stats, no food, coins or speed. Yearly is level 1.
+    static let lamplighterMonthly = TasCatalogItem(key: "lamplighterMonthly", productID: "Tas.Almo7areboon.lamplighter.monthly", kind: .subscription)
+    static let lamplighterYearly = TasCatalogItem(key: "lamplighterYearly", productID: "Tas.Almo7areboon.lamplighter.yearly", kind: .subscription)
+
     /// What is on sale in this version.
-    static let all: [TasCatalogItem] = [fullGame]
+    static let all: [TasCatalogItem] = [fullGame, lamplighterMonthly, lamplighterYearly]
     static var productIDs: [String] { all.map(\.productID) }
 }
 
@@ -46,7 +51,8 @@ extension TasGameConfig {
         ownedDefaultsKey: "store.owned",
         pricesDefaultsKey: "store.prices",
         gameCenter: nil,
-        legalPages: ["terms": appleStandardEULA, "privacy": SiteLinks.privacy, "support": SiteLinks.support],
+        legalPages: ["terms": appleStandardEULA, "privacy": SiteLinks.privacy, "support": SiteLinks.support,
+                     "subscriptions": URL(string: "https://apps.apple.com/account/subscriptions")!],
         launchColor: UIColor(named: "LaunchBackground") ?? UIColor(red: 0.07, green: 0.11, blue: 0.16, alpha: 1),
         ambientAudio: true, // the silent switch silences the game
         shareDownloadedPNGs: true,

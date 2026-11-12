@@ -15,7 +15,7 @@
     {
       "displayPrice": "4.99",
       "familyShareable": true,
-      "internalID": "6790700001",
+      "internalID": "6790710001",
       "localizations": [
         {
           "description": "كل الفصول بعد الثاني، والخط الزمني الأصعب",
@@ -39,7 +39,80 @@
     "_storefront": "USA",
     "_storeKitErrors": []
   },
-  "subscriptionGroups": [],
+  "subscriptionGroups": [
+    {
+      "id": "6790710100",
+      "localizations": [
+        {
+          "description": "",
+          "displayName": "مُشعِل القناديل",
+          "locale": "ar"
+        },
+        {
+          "description": "",
+          "displayName": "The Lamplighter",
+          "locale": "en_US"
+        }
+      ],
+      "name": "The Lamplighter",
+      "subscriptions": [
+        {
+          "adHocOffers": [],
+          "codeOffers": [],
+          "displayPrice": "14.99",
+          "familyShareable": false,
+          "groupNumber": 1,
+          "internalID": "6790710102",
+          "introductoryOffer": null,
+          "localizations": [
+            {
+              "description": "قناديل مضاءة عند بوّابتك في كلّ معركة",
+              "displayName": "مُشعِل القناديل سنوياً",
+              "locale": "ar"
+            },
+            {
+              "description": "Lanterns lit at your gate in every battle",
+              "displayName": "The Lamplighter Yearly",
+              "locale": "en_US"
+            }
+          ],
+          "productID": "Tas.Almo7areboon.lamplighter.yearly",
+          "recurringSubscriptionPeriod": "P1Y",
+          "referenceName": "The Lamplighter Yearly",
+          "subscriptionGroupID": "6790710100",
+          "type": "RecurringSubscription",
+          "winbackOffers": []
+        },
+        {
+          "adHocOffers": [],
+          "codeOffers": [],
+          "displayPrice": "1.99",
+          "familyShareable": false,
+          "groupNumber": 2,
+          "internalID": "6790710101",
+          "introductoryOffer": null,
+          "localizations": [
+            {
+              "description": "قناديل مضاءة عند بوّابتك في كلّ معركة",
+              "displayName": "مُشعِل القناديل شهرياً",
+              "locale": "ar"
+            },
+            {
+              "description": "Lanterns lit at your gate in every battle",
+              "displayName": "The Lamplighter Monthly",
+              "locale": "en_US"
+            }
+          ],
+          "productID": "Tas.Almo7areboon.lamplighter.monthly",
+          "recurringSubscriptionPeriod": "P1M",
+          "referenceName": "The Lamplighter Monthly",
+          "subscriptionGroupID": "6790710100",
+          "type": "RecurringSubscription",
+          "winbackOffers": []
+        }
+      ]
+    }
+  ],
   "version": {
     "major": 4,
     "minor": 0

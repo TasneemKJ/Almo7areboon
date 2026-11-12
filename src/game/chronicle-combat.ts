@@ -1,4 +1,5 @@
 import { BATTLE_TIME_EPSILON } from './battle-time.ts';
+import { tr } from './locale.ts';
 import { createChronicle, routeDefinition, timelineVariant, veteranName, type MissionObjective, type RouteId } from './chronicle.ts';
 import type { Profile, BattleState, Unit, GameEvent, Skill } from './types.ts';
 
@@ -226,24 +227,32 @@ export function chronicleGuidance(p:Profile,s:BattleState):string {
   const c=s.chronicle;if(!c?.enabled)return '';
   if(s.phase==='ready')return routeDefinition(c.route).rule;
   const landmark=chronicleLandmarkStatus(p,s),landmarkName=landmark?.kind==='lantern'?'lantern':landmark?.kind==='supply'?'supplies':'road shelter';
+  const arabicName=landmark?.kind==='lantern'?'القنديل':landmark?.kind==='supply'?'المؤونة':'ملجأ الطريق';
+  // Arabic counted noun after a written number: 3-10 take the plural, everything else the singular.
+  const seconds=(value:number)=>Number.isInteger(value)&&value>=3&&value<=10?'ثوانٍ':'ثانية';
   if(landmark&&landmark.phase!=='broken'){
-    if(landmark.phase==='contested')return `${landmarkName[0]!.toUpperCase()+landmarkName.slice(1)} contested · clear nearby enemies to keep claiming`;
-    if(landmark.phase==='claiming-player'&&landmark.owner!=='player')return `${landmark.owner==='enemy'?'Reclaiming':'Claiming'} ${landmarkName} · ${Math.max(0,landmark.threshold-landmark.capture).toFixed(1)} seconds left`;
-    if(landmark.phase==='claiming-enemy')return `Enemy claiming ${landmarkName} · ${Math.max(0,landmark.threshold+landmark.capture).toFixed(1)} seconds to take it · contest the ground`;
+    if(landmark.phase==='contested')return tr(`${landmarkName[0]!.toUpperCase()+landmarkName.slice(1)} contested · clear nearby enemies to keep claiming`,`نزاعٌ على ${arabicName} · أبعِد الأعداء القريبين لتكمل الاستيلاء`);
+    if(landmark.phase==='claiming-player'&&landmark.owner!=='player'){const left=Math.max(0,landmark.threshold-landmark.capture).toFixed(1);return tr(`${landmark.owner==='enemy'?'Reclaiming':'Claiming'} ${landmarkName} · ${left} seconds left`,`${landmark.owner==='enemy'?'استعادة':'الاستيلاء على'} ${arabicName} · بقي ${left} ثانية`);}
+    if(landmark.phase==='claiming-enemy'){const left=Math.max(0,landmark.threshold+landmark.capture).toFixed(1);return tr(`Enemy claiming ${landmarkName} · ${left} seconds to take it · contest the ground`,`العدوّ يستولي على ${arabicName} · ${left} ثانية ويتمّ له ذلك · زاحِمه على الأرض`);}
     if(landmark.owner!=='player'&&c.objective==='light'){
-      const remaining=Math.max(0,landmark.threshold-landmark.capture),seconds=Number.isInteger(remaining)?String(remaining):remaining.toFixed(1);
-      return `${landmark.owner==='enemy'?'Reclaim':'Claim'} the lantern · stand beside it uncontested for ${seconds} ${remaining===1?'second':'seconds'}`;
+      const remaining=Math.max(0,landmark.threshold-landmark.capture),count=Number.isInteger(remaining)?String(remaining):remaining.toFixed(1);
+      return tr(`${landmark.owner==='enemy'?'Reclaim':'Claim'} the lantern · stand beside it uncontested for ${count} ${remaining===1?'second':'seconds'}`,`${landmark.owner==='enemy'?'استعِد':'استولِ على'} القنديل · قف بجانبه دون منازع ${count} ${seconds(remaining)}`);
     }
   }
-  if(c.objective==='escort')return `Flour cart ${Math.round((c.cart.x-210)/580*100)}% · ${Math.ceil(c.cart.hp)}/${Math.ceil(c.cart.maxHp)} health`;
-  if(c.objective==='hold')return `Keep the courtyard safe · ${Math.max(0,Math.ceil(75-s.time-BATTLE_TIME_EPSILON))} seconds left`;
-  if(c.objective==='rescue')return c.rescued?`Scout returning home · ${Math.round((620-c.cart.x)/470*100)}%`:`Free the scout · ${c.rescueProgress.toFixed(1)}/4 seconds beside the cage`;
-  if(c.objective==='light')return `Lantern ${Math.floor(c.lightSeconds+BATTLE_TIME_EPSILON)}/18 seconds · then break the gate`;
-  if(c.objective==='boss')return c.boss.windupUntil>s.time?`Bell ringing in ${Math.ceil(c.boss.windupUntil-s.time)}s · interrupt with a heavy strike`:`Bell Keeper · ${c.boss.interrupts} interrupted ${c.boss.interrupts===1?'ring':'rings'}`;
-  if((s.stats.deployedByKind[0]??0)===0)return 'Deploy a defender before ranged troops; defenders protect them.';
-  if((s.stats.deployedByKind[1]??0)===0)return 'Send a ranged troop behind a defender; the defender protects it.';
-  if(c.rally)return `Gathering ${c.gathered.length}/6 · release when your company is ready`;
-  if(progress(p).tutorial<4&&!s.skillsUsed.includes('freeze'))return 'Freeze a gathering, then let a heavy warrior shatter it.';
+  if(c.objective==='escort'){const percent=Math.round((c.cart.x-210)/580*100),health=`${Math.ceil(c.cart.hp)}/${Math.ceil(c.cart.maxHp)}`;return tr(`Flour cart ${percent}% · ${health} health`,`عربة الطحين ${percent}% · صمودها ${health}`);}
+  if(c.objective==='hold'){const left=Math.max(0,Math.ceil(75-s.time-BATTLE_TIME_EPSILON));return tr(`Keep the courtyard safe · ${left} seconds left`,`احمِ الساحة · بقي ${left} ${seconds(left)}`);}
+  if(c.objective==='rescue'){const home=Math.round((620-c.cart.x)/470*100),held=c.rescueProgress.toFixed(1);return c.rescued?tr(`Scout returning home · ${home}%`,`الكشّاف عائدٌ إلى البيت · ${home}%`):tr(`Free the scout · ${held}/4 seconds beside the cage`,`حرّر الكشّاف · ${held}/4 ثوانٍ بجانب القفص`);}
+  if(c.objective==='light'){const lit=Math.floor(c.lightSeconds+BATTLE_TIME_EPSILON);return tr(`Lantern ${lit}/18 seconds · then break the gate`,`القنديل ${lit}/18 ثانية · ثم حطّم البوّابة`);}
+  if(c.objective==='boss'){
+    if(c.boss.windupUntil>s.time){const left=Math.ceil(c.boss.windupUntil-s.time);return tr(`Bell ringing in ${left}s · interrupt with a heavy strike`,`الجرس يرنّ بعد ${left} ث · اقطعه بضربةٍ ثقيلة`);}
+    return tr(`Bell Keeper · ${c.boss.interrupts} interrupted ${c.boss.interrupts===1?'ring':'rings'}`,`حارس الجرس · رنّاتٌ قُطعت: ${c.boss.interrupts}`);
+  }
+  if((s.stats.deployedByKind[0]??0)===0)return tr('Deploy a defender before ranged troops; defenders protect them.','أرسِل مدافعاً قبل الرماة، فالمدافعون يحمونهم.');
+  if((s.stats.deployedByKind[1]??0)===0)return tr('Send a ranged troop behind a defender; the defender protects it.','أرسِل رامياً خلف مدافع، فالمدافع يحميه.');
+  if(c.rally)return tr(`Gathering ${c.gathered.length}/6 · release when your company is ready`,`التجمّع ${c.gathered.length}/6 · أطلقهم حين تجهز سريّتك`);
+  if(progress(p).tutorial<4&&!s.skillsUsed.includes('freeze'))return tr('Freeze a gathering, then let a heavy warrior shatter it.','جمّد الأعداء المتجمّعين، ثم دع محارباً ثقيلاً يحطّمهم.');
   const role=s.units.find(u=>u.side==='player'&&u.storyVeteran!==undefined);
-  return role?`${veteranName(role.storyVeteran!,progress(p).veterans[role.storyVeteran!])} keeps watch. Choose the moment to rally.`:'Gather, protect, and choose the moment to push.';
+  if(!role)return tr('Gather, protect, and choose the moment to push.','اجمع، واحمِ، واختر لحظة الهجوم.');
+  const veteran=veteranName(role.storyVeteran!,progress(p).veterans[role.storyVeteran!]);
+  return tr(`${veteran} keeps watch. Choose the moment to rally.`,`${veteran} في نوبة الحراسة. اختر لحظة التجمّع.`);
 }

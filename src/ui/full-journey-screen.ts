@@ -29,7 +29,7 @@ export function fullJourneyHtml(bridge: Pick<TasBridge, 'status' | 'owns' | 'pri
     tr(`${chapterName} and the three chapters after it`, `${chapterName} والفصول الثلاثة التي تليه`),
     tr('Twelve new troops in new wardrobes', 'اثنا عشر جندياً جديداً بأزياء جديدة'),
     tr('The harder timeline after the last chapter', 'الخطّ الزمني الأصعب بعد الفصل الأخير'),
-    tr('Bought once. No ads, no timers, nothing else to buy.', 'تشتريها مرّة واحدة. بلا إعلانات ولا انتظار، ولا شيء آخر للشراء.'),
+    tr('Bought once and yours to keep. No ads, no timers.', 'تشتريها مرّة واحدة وتبقى لك. بلا إعلانات ولا انتظار.'),
   ];
   return `<span class="eyebrow">${tr('FULL JOURNEY', 'الرحلة كاملة')}</span><h2 id="dialog-title">${owned ? tr('The road is open', 'الطريق مفتوح') : tr('The road goes on', 'الطريق يمتدّ')}</h2>
  <p>${tr('Your company has held the first two chapters. Full Journey opens the rest of the tale.', 'صمدت سريّتك في الفصلين الأوّلين. الرحلة كاملة تفتح بقيّة الحكاية.')}</p>

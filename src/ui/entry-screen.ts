@@ -1,5 +1,9 @@
 import type { Profile, BattleState } from '../game/types.ts';
 import { chapterLandscape, chapterPresentation } from './chapter-presentation.ts';
+import { tr } from './i18n.ts';
+
+/** The page title in the current language (index.html carries the English one until boot). */
+export function documentTitle():string { return tr('Almo7areboon — Through the Ages','المحاربون — عبر العصور'); }
 
 /** A settings-only save is not evidence of play; older saves retain their real history. */
 export function hasPriorPlay(profile:Profile):boolean {
@@ -12,7 +16,7 @@ export function entrySecondary(profile:Profile,state:BattleState):'camp'|'leave'
 }
 export function entryCopy(profile:Profile,hasSavedProgress:boolean):{action:string;chapter:string;subtitle:string} {
  const chapter=chapterPresentation(profile.enemyAge);
- return {action:hasSavedProgress?'Continue':'Play',chapter:chapter.title,subtitle:chapter.subtitle};
+ return {action:hasSavedProgress?tr('Continue','تابع'):tr('Play','العب'),chapter:chapter.title,subtitle:chapter.subtitle};
 }
 
 /** The entry is a quiet invitation, never an alternate progression or save owner. */
@@ -20,7 +24,7 @@ export function entryScreenHtml(profile:Profile):string {
  const copy=entryCopy(profile,false);
  return `<section id="entry-screen" class="entry-screen" aria-labelledby="entry-title">
  <img id="entry-art" class="entry-art" src="${chapterLandscape(profile.enemyAge)}" alt=""/>
- <div class="entry-copy"><p class="entry-kicker">A LEVANTINE FOLKTALE</p><h1 id="entry-title">ALMO7AREBOON</h1><p id="entry-chapter">${copy.chapter}</p><p id="entry-subtitle">${copy.subtitle}</p></div>
- <div class="entry-actions"><button id="entry-play" class="big-button green" data-command="enter-world" disabled>Play</button><button id="entry-secondary" class="entry-settings" data-command="home-camp" hidden disabled>Camp</button><button id="entry-settings" class="entry-settings" data-command="settings" disabled>Settings</button></div>
+ <div class="entry-copy"><p class="entry-kicker">${tr('A LEVANTINE FOLKTALE','حكاية من بلاد الشام')}</p><h1 id="entry-title">${tr('ALMO7AREBOON','المحاربون')}</h1><p id="entry-chapter">${copy.chapter}</p><p id="entry-subtitle">${copy.subtitle}</p></div>
+ <div class="entry-actions"><button id="entry-play" class="big-button green" data-command="enter-world" disabled>${tr('Play','العب')}</button><button id="entry-secondary" class="entry-settings" data-command="home-camp" hidden disabled>${tr('Camp','المخيّم')}</button><button id="entry-settings" class="entry-settings" data-command="settings" disabled>${tr('Settings','الإعدادات')}</button></div>
  </section>`;
 }

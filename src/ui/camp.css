@@ -31,7 +31,7 @@
 @media(orientation:landscape) and (max-height:540px) and (min-width:600px){#camp-view{grid-template-columns:minmax(0,1fr) 170px;grid-template-rows:minmax(0,1fr)}.camp-ground{min-height:20rem}.camp-heading{padding-top:12px}.camp-heading h1{font-size:1.3rem}.camp-places{inset:auto 2% 3%;height:62%;max-height:none;min-height:10rem;grid-template-columns:repeat(4,1fr);grid-template-rows:1fr;gap:1%}.camp-place{height:100%;width:100%}.camp-place-storehouse{grid-area:1/1}.camp-place-gate{grid-area:1/2}.camp-place-company{grid-area:1/3}.camp-place-journal{grid-area:1/4;width:100%;height:82%}.camp-footer{border-top:0;border-left:1px solid #b6986677;display:flex;flex-direction:column;justify-content:end;padding-bottom:max(16px,env(safe-area-inset-bottom))}.camp-footer>div{grid-template-columns:1fr}.camp-footer>p{font-size:.75rem}.dialog.camp-dialog{max-width:590px}.camp-focus-art{width:105px;height:90px}}
 @media(prefers-reduced-motion:reduce){#camp-view *,.camp-dialog *{animation:none!important;transition:none!important}}
 
-.camp-focus>.camp-saving-note{padding:8px 10px;border-left:3px solid var(--brass);background:#e6d8ad;font-size:.75rem;line-height:1.4}
+.camp-focus>.camp-saving-note{padding:8px 10px;border-inline-start:3px solid var(--brass);background:#e6d8ad;font-size:.75rem;line-height:1.4}
 
 .camp-storehouse{display:block;position:relative;width:100%;height:100%}.camp-storehouse-image{display:block;width:100%;height:100%;object-fit:contain;object-position:center bottom}.camp-stock-food{position:absolute;right:17%;bottom:4%;width:24%;height:24%;object-fit:contain;filter:drop-shadow(0 2px 2px #102a2966)}
 /* Next journal goal (read-only) under the destination, on the same dark plate as the place names so both read over any painted ground. */

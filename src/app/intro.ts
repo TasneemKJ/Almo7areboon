@@ -3,6 +3,7 @@ import { BEAT_FRAMES, beatFrame, cameraSettled, createCamera, plateTransform, re
 import { beginIntroScore, endIntroScore, introScoreBeat } from '../view/audio.ts';
 import type { Runtime } from './runtime.ts';
 import type { ShellApi } from './shell.ts';
+import { lang } from '../game/locale.ts';
 
 /** State owned by the intro module. Siblings see only whether it is playing. */
 export interface IntroState {
@@ -39,7 +40,8 @@ export function createIntro(deps: IntroDeps) {
   const { ports, dom } = deps;
   const { root, lifetime } = dom;
   const introState: IntroState = { playing: false, beat: 0, replay: false, wasPaused: false, timers: [], layer: null, camera: null, frame: 0, lastTick: 0 };
-  let language:'en'|'ar'='en';
+  // The tale opens in the game's language; its own Story picker can switch it for this session.
+  let language:'en'|'ar'='en',picked=false;
   const reduced = () => dom.rootElement().dataset.motion === 'reduced';
   const schedule = (ms: number, run: () => void) => { introState.timers.push(dom.setTimer(run, ms)); };
   const shell = () => root.querySelector<HTMLElement>('.game-shell');
@@ -85,6 +87,7 @@ export function createIntro(deps: IntroDeps) {
   }
   function start(replay: boolean) {
     stopCamera();
+    if (!picked) language = lang();
     const layer = dom.createElement('div');
     layer.id = 'intro-layer'; layer.className = 'intro-layer';layer.lang=language;
     layer.setAttribute('role', 'dialog'); layer.setAttribute('aria-modal', 'true'); layer.setAttribute('aria-label', language==='ar'?'الحكاية الافتتاحية':'Opening tale');
@@ -97,7 +100,7 @@ export function createIntro(deps: IntroDeps) {
       if (target) { event.preventDefault(); finish(true); }
     });
     layer.querySelector('select')?.addEventListener('change',event=>{
-      language=(event.target as HTMLSelectElement).value==='ar'?'ar':'en';layer.lang=language;
+      language=(event.target as HTMLSelectElement).value==='ar'?'ar':'en';picked=true;layer.lang=language;(event.target as HTMLSelectElement).setAttribute('aria-label',language==='ar'?'لغة الحكاية':'Opening language');
       layer.setAttribute('aria-label',language==='ar'?'الحكاية الافتتاحية':'Opening tale');
       const kicker=layer.querySelector<HTMLElement>('.intro-kicker');if(kicker){kicker.textContent=language==='ar'?'حكاية من بلاد الشام':'A LEVANTINE FOLKTALE';kicker.lang=language;}
       layer.querySelectorAll<HTMLElement>('.intro-line').forEach((line,index)=>{line.textContent=INTRO_BEATS[index][language];line.lang=language;line.dir=language==='ar'?'rtl':'ltr';});

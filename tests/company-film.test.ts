@@ -9,7 +9,7 @@ test('optional movie offers both local languages without fetching before deliber
  assert.equal(COMPANY_FILMS.ar,'./film/company-ar.mp4');assert.equal(COMPANY_FILMS.en,'./film/company-en.mp4');assert.match(html,/Game English/);assert.match(html,/data-command="close"/);
 });
 test('cinema opening preserves local art and offers explicit Arabic with a bounded 12 seconds',()=>{
- assert.equal(introLength(),12000);const html=introHtml(0,'ar');assert.match(html,/lang="ar" dir="rtl"/);assert.match(html,/تخطّ/);assert.match(html,/Opening language/);assert.doesNotMatch(html,/<video|\.mp4/);
+ assert.equal(introLength(),12000);const html=introHtml(0,'ar');assert.match(html,/lang="ar" dir="rtl"/);assert.match(html,/تخطّ/);assert.match(html,/aria-label="لغة الحكاية"/);assert.match(introHtml(0,'en'),/aria-label="Opening language"/);assert.doesNotMatch(html,/<video|\.mp4/);
 });
 test('optional movie is excluded from service-worker caching and range interception',()=>{
  const worker=readFileSync(new URL('../public/sw.js',import.meta.url),'utf8');assert.match(worker,/request\.headers\?\.has\('range'\)/);assert.match(worker,/mp4\|wav/);

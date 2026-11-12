@@ -1,4 +1,5 @@
 /** Bounded, serializable folktale progression. No clock, renderer or storage ownership here. */
+import { tr } from './locale.ts';
 export type RouteId = 'road' | 'escort' | 'watch' | 'scout' | 'lantern' | 'bell' | 'whisper';
 export type CaptainId = 'none' | 'gatekeeper' | 'lantern';
 export type TaleId = 'none' | 'empty-bowl' | 'borrowed-bell' | 'olive-thread';
@@ -16,30 +17,31 @@ export interface ChronicleProgress {
 export interface ChronicleContext { timeline: number; enemyAge: number; furthestBattle: number; }
 export interface ChronicleVictory { deployedByKind: readonly number[]; survivingRoles: readonly boolean[]; food?: number; }
 export interface RouteDefinition { id: RouteId; name: string; objective: MissionObjective; rule: string; reward: string; duration: number; }
+// Display text is read through getters, so each access speaks the current language (ids stay English).
 export const ROUTES: readonly RouteDefinition[] = Object.freeze([
-  { id:'road', name:'The old road', objective:'siege', rule:'Break the opposing gate. Gather your company before a coordinated push.', reward:'A chapter seal and a place in the tale.', duration:0 },
-  { id:'escort', name:'The flour cart', objective:'escort', rule:'Escort the cart to the far courtyard. It moves with nearby friends and stops under threat.', reward:'The first rescued cart supplies later battles in this chapter.', duration:0 },
-  { id:'watch', name:'The last watch', objective:'hold', rule:'Keep your gate standing for 75 seconds while the courtyard empties.', reward:'A victory for the people who got away.', duration:75 },
-  { id:'scout', name:'The crooked alley', objective:'rescue', rule:'Hold the scout’s cage for four seconds, then escort the scout home.', reward:'The first rescued scout reveals the Bell Keeper’s preparations.', duration:0 },
-  { id:'lantern', name:'The unlit path', objective:'light', rule:'Hold the lantern for 18 seconds in total, then break the enemy gate. Its light weakens shadow troops.', reward:'An optional night tale, never required to advance.', duration:18 },
-  { id:'bell', name:'The Bell Keeper', objective:'boss', rule:'A heavy strike interrupts the bell’s wind-up. Defeat its keeper and break the gate.', reward:'A chapter finale with an interruptible, visible rule.', duration:0 },
-  { id:'whisper', name:'The missing page', objective:'rescue', rule:'Follow the cat to the forgotten courtyard. Free the neighbour who was left behind and bring them home.', reward:'The three discoveries become a playable epilogue.', duration:0 },
+  { id:'road', get name(){return tr('The old road','الطريق القديم');}, objective:'siege', get rule(){return tr('Break the opposing gate. Gather your company before a coordinated push.','حطّم بوّابة العدوّ. اجمع سريّتك قبل أن تندفعوا معاً.');}, get reward(){return tr('A chapter seal and a place in the tale.','ختمُ الفصل، ومكانٌ في الحكاية.');}, duration:0 },
+  { id:'escort', get name(){return tr('The flour cart','عربة الطحين');}, objective:'escort', get rule(){return tr('Escort the cart to the far courtyard. It moves with nearby friends and stops under threat.','رافِق العربة إلى الساحة البعيدة. تسير حين يكون رفاقها قربها، وتقف إذا داهمها الخطر.');}, get reward(){return tr('The first rescued cart supplies later battles in this chapter.','أوّل عربة تنقذها تمدّ معارك هذا الفصل اللاحقة بالمؤونة.');}, duration:0 },
+  { id:'watch', get name(){return tr('The last watch','الحراسة الأخيرة');}, objective:'hold', get rule(){return tr('Keep your gate standing for 75 seconds while the courtyard empties.','أبقِ بوّابتك صامدة 75 ثانية ريثما تخلو الساحة.');}, get reward(){return tr('A victory for the people who got away.','نصرٌ لمن نجوا بأرواحهم.');}, duration:75 },
+  { id:'scout', get name(){return tr('The crooked alley','الزقاق الأعوج');}, objective:'rescue', get rule(){return tr('Hold the scout’s cage for four seconds, then escort the scout home.','اثبُت عند قفص الكشّاف أربع ثوانٍ، ثم رافِقه إلى البيت.');}, get reward(){return tr('The first rescued scout reveals the Bell Keeper’s preparations.','أوّل كشّاف تنقذه يكشف لك ما يُعدّه حارس الجرس.');}, duration:0 },
+  { id:'lantern', get name(){return tr('The unlit path','الدرب المعتم');}, objective:'light', get rule(){return tr('Hold the lantern for 18 seconds in total, then break the enemy gate. Its light weakens shadow troops.','احرس القنديل 18 ثانية في المجموع، ثم حطّم بوّابة العدوّ. نوره يُضعف جنود الظلّ.');}, get reward(){return tr('An optional night tale, never required to advance.','حكايةٌ ليلية اختيارية، لا تحتاجها لتتقدّم.');}, duration:18 },
+  { id:'bell', get name(){return tr('The Bell Keeper','حارس الجرس');}, objective:'boss', get rule(){return tr('A heavy strike interrupts the bell’s wind-up. Defeat its keeper and break the gate.','ضربةٌ ثقيلة تقطع على الجرس استعداده للرنين. اهزم حارسه وحطّم البوّابة.');}, get reward(){return tr('A chapter finale with an interruptible, visible rule.','خاتمةٌ للفصل، بقاعدةٍ واضحة يمكنك أن تقطعها.');}, duration:0 },
+  { id:'whisper', get name(){return tr('The missing page','الصفحة الضائعة');}, objective:'rescue', get rule(){return tr('Follow the cat to the forgotten courtyard. Free the neighbour who was left behind and bring them home.','اتبع القطّة إلى الساحة المنسيّة. حرّر الجار الذي بقي وراءنا وأعِده إلى البيت.');}, get reward(){return tr('The three discoveries become a playable epilogue.','تصير الاكتشافات الثلاثة خاتمةً تلعبها.');}, duration:0 },
 ]);
 export const CAPTAINS = Object.freeze([
-  { id:'none' as const, name:'The whole company', skill:'Food Drop', description:'Keep the original ten-food reinforcement skill.' },
-  { id:'gatekeeper' as const, name:'Sitt Salma, gatekeeper', skill:'Stand together', description:'Replace Food Drop: protect the company and gate for six seconds.' },
-  { id:'lantern' as const, name:'Younes, lantern-mender', skill:'Borrowed dawn', description:'Replace Food Drop: reveal shadows and still the bell for six seconds.' },
+  { id:'none' as const, get name(){return tr('The whole company','السريّة كلّها');}, get skill(){return tr('Food Drop','إمداد المؤونة');}, get description(){return tr('Keep the original ten-food reinforcement skill.','احتفظ بمهارة الإمداد الأصلية: عشرٌ من المؤونة.');} },
+  { id:'gatekeeper' as const, get name(){return tr('Sitt Salma, gatekeeper','ستّ سلمى، حارسة البوّابة');}, get skill(){return tr('Stand together','كتفاً إلى كتف');}, get description(){return tr('Replace Food Drop: protect the company and gate for six seconds.','بدل إمداد المؤونة: احمِ السريّة والبوّابة ستّ ثوانٍ.');} },
+  { id:'lantern' as const, get name(){return tr('Younes, lantern-mender','يونس، مُصلح القناديل');}, get skill(){return tr('Borrowed dawn','فجرٌ مستعار');}, get description(){return tr('Replace Food Drop: reveal shadows and still the bell for six seconds.','بدل إمداد المؤونة: اكشف الظلال وأسكِت الجرس ستّ ثوانٍ.');} },
 ]);
 export const TALES = Object.freeze([
-  { id:'none' as const, name:'An unwritten page', description:'No featured tale. Your collected cards still apply.' },
-  { id:'empty-bowl' as const, name:'The Empty Bowl', description:'Spending your last food shields your company for two seconds.' },
-  { id:'borrowed-bell' as const, name:'The Borrowed Bell', description:'Released rally troops deal a stronger first strike, once each.' },
-  { id:'olive-thread' as const, name:'The Olive Thread', description:'While friends hold a landmark, the cart and the gate mend slowly.' },
+  { id:'none' as const, get name(){return tr('An unwritten page','صفحةٌ لم تُكتب');}, get description(){return tr('No featured tale. Your collected cards still apply.','لا حكاية مختارة. بطاقاتك المجموعة تبقى فعّالة.');} },
+  { id:'empty-bowl' as const, get name(){return tr('The Empty Bowl','الصحن الفارغ');}, get description(){return tr('Spending your last food shields your company for two seconds.','حين تنفق آخر مؤونتك، تُحمى سريّتك ثانيتين.');} },
+  { id:'borrowed-bell' as const, get name(){return tr('The Borrowed Bell','الجرس المستعار');}, get description(){return tr('Released rally troops deal a stronger first strike, once each.','الجنود الذين تطلقهم بعد التجمّع يضربون ضربتهم الأولى أقوى، مرّةً لكلّ واحد.');} },
+  { id:'olive-thread' as const, get name(){return tr('The Olive Thread','خيط الزيتون');}, get description(){return tr('While friends hold a landmark, the cart and the gate mend slowly.','ما دام رفاقك يمسكون موضعاً، تُرمَّم العربة والبوّابة على مهل.');} },
 ]);
 export const DISCOVERIES = Object.freeze([
-  { id:'door' as const, bit:1, name:'The mark on the door', text:'Someone has drawn a bell with no tongue. Under it: “A loud thing can still be lonely.”' },
-  { id:'roof' as const, bit:2, name:'The crooked roof tile', text:'A strip of olive cloth is tucked beneath the tile. The same stitch holds Salma’s old buckler together.' },
-  { id:'cat' as const, bit:4, name:'The cat who waited', text:'The cat finally moves. Beneath its paws is the missing page: the bell was meant to bring everyone home.' },
+  { id:'door' as const, bit:1, get name(){return tr('The mark on the door','العلامة على الباب');}, get text(){return tr('Someone has drawn a bell with no tongue. Under it: “A loud thing can still be lonely.”','رسم أحدهم جرساً بلا لسان، وكتب تحته: «قد يكون العالي الصوت وحيداً.»');} },
+  { id:'roof' as const, bit:2, get name(){return tr('The crooked roof tile','القرميدة المائلة');}, get text(){return tr('A strip of olive cloth is tucked beneath the tile. The same stitch holds Salma’s old buckler together.','تحت القرميدة شريطٌ من قماشٍ زيتونيّ، بالغرزة نفسها التي تمسك ترس سلمى القديم.');} },
+  { id:'cat' as const, bit:4, get name(){return tr('The cat who waited','القطّة التي انتظرت');}, get text(){return tr('The cat finally moves. Beneath its paws is the missing page: the bell was meant to bring everyone home.','أخيراً تتحرّك القطّة. تحت مخالبها الصفحة الضائعة: كان الجرس يُقرَع ليعود الجميع إلى البيت.');} },
 ]);
 export type DiscoveryId = typeof DISCOVERIES[number]['id'];
 const routeIds = ROUTES.map(route=>route.id);
@@ -134,18 +136,18 @@ export function continueExpedition(c: ChronicleProgress, won: boolean): Chronicl
 export function abandonExpedition(c: ChronicleProgress): ChronicleProgress { return {...copy(c),route:'road',expedition:null}; }
 export function timelineVariant(timeline: number): {id:'hearth'|'unlit'|'overgrown'|'ally';name:string;description:string} {
   const variants=[
-    {id:'hearth' as const,name:'The first telling',description:'A warm courtyard, a crooked road, and a bell that will not sleep.'},
-    {id:'unlit' as const,name:'The lamps were never lit',description:'Lanterns take longer to claim; the Bell Keeper begins its warning sooner.'},
-    {id:'overgrown' as const,name:'The olive roots remember',description:'Supply cover is stronger, and heavy enemy processions arrive later.'},
-    {id:'ally' as const,name:'An unlikely neighbour',description:'A former rival shares provisions; ranged commanders send fewer opening troops.'},
+    {id:'hearth' as const,name:tr('The first telling','الحكاية الأولى'),description:tr('A warm courtyard, a crooked road, and a bell that will not sleep.','ساحةٌ دافئة، ودربٌ أعوج، وجرسٌ لا ينام.')},
+    {id:'unlit' as const,name:tr('The lamps were never lit','القناديل لم تُضأ قطّ'),description:tr('Lanterns take longer to claim; the Bell Keeper begins its warning sooner.','الاستيلاء على القناديل يطول، وحارس الجرس يُنذر أبكر.')},
+    {id:'overgrown' as const,name:tr('The olive roots remember','جذور الزيتون تتذكّر'),description:tr('Supply cover is stronger, and heavy enemy processions arrive later.','غطاء المؤونة أمتن، ومواكب العدوّ الثقيلة تتأخّر.')},
+    {id:'ally' as const,name:tr('An unlikely neighbour','جارٌ لم يكن في الحسبان'),description:tr('A former rival shares provisions; ranged commanders send fewer opening troops.','خصمٌ قديم يقاسمك المؤونة، وقادة الرماية يرسلون جنوداً أقلّ في البداية.')},
   ];
   const n=finite(timeline,1,1,1000);return variants[n===1?0:1+(n-2)%3];
 }
 export function commanderFor(c: ChronicleProgress, chapter: number): {id:CommanderId;name:string;description:string} {
   const records=[
-    {id:'rush' as const,name:'Abu Firas, the impatient',description:'Quick, staggered charges. A held formation outlasts his first rush.'},
-    {id:'volley' as const,name:'The meticulous aunt',description:'A defender screens her ranged company. Break the screen before it gathers.'},
-    {id:'bulwark' as const,name:'The slow procession',description:'A heavy front with ranged support. Save a brittle strike for the gathering.'},
+    {id:'rush' as const,name:tr('Abu Firas, the impatient','أبو فراس، قليل الصبر'),description:tr('Quick, staggered charges. A held formation outlasts his first rush.','هجماتٌ سريعة متتابعة. الصفّ الثابت يصمد بعد اندفاعته الأولى.')},
+    {id:'volley' as const,name:tr('The meticulous aunt','الخالة الدقيقة'),description:tr('A defender screens her ranged company. Break the screen before it gathers.','مدافعٌ يستر رُماتها. اخترق الستار قبل أن يتجمّعوا.')},
+    {id:'bulwark' as const,name:tr('The slow procession','الموكب البطيء'),description:tr('A heavy front with ranged support. Save a brittle strike for the gathering.','مقدّمةٌ ثقيلة يسندها الرماة. احتفظ بالتجميد وضربةٍ تكسره حين يتجمّعون.')},
   ];
   const index=c.route==='watch'?0:c.route==='scout'?1:c.route==='bell'?2:finite(chapter,0,0,5)%3;
   return records[index];
@@ -167,8 +169,8 @@ export function chronicleEncounter<T extends {readonly age:number;readonly waves
   return {age:base.age,waves};
 }
 export function veteranName(role: number, victories: number): string {
-  if(role===0)return victories>=3?'Rima of the Patched Buckler':'Rima, the steady hand';
-  return victories>=3?'Nabil of the Counting Stones':'Nabil, the nervous thrower';
+  if(role===0)return victories>=3?tr('Rima of the Patched Buckler','ريما صاحبة الترس المرقّع'):tr('Rima, the steady hand','ريما، اليد الثابتة');
+  return victories>=3?tr('Nabil of the Counting Stones','نبيل صاحب حصى العدّ'):tr('Nabil, the nervous thrower','نبيل، الرامي القلِق');
 }
 export type ChronicleAction =
   | {type:'rally'}

@@ -14,6 +14,8 @@ import {textIfChanged} from './dom-state.ts';
 import {fieldFoodReadout} from './field-controls.ts';
 import {gateChoiceLabel,gateLabelLift} from './field-gate-label.ts';
 import {storybookArt} from '../view/storybook-art.ts';
+import {secondsShort} from './battle-hud.ts';
+import {tr} from './i18n.ts';
 
 const placeBox=(node:HTMLElement,rect:CampTarget|{x:number;y:number;width:number;height:number})=>{
   const value=`left:${rect.x}px;top:${rect.y}px;width:${rect.width}px;height:${rect.height}px`;
@@ -30,8 +32,8 @@ function syncRecruits(recruits:readonly HTMLButtonElement[],plan:ReturnType<type
   node.disabled=false;node.setAttribute('aria-disabled',String(!status.allowed));
   node.setAttribute('aria-label',troopControlLabel(p,kind,status));node.title=troopControlLabel(p,kind,status);
   const cost=node.querySelector<HTMLElement>('.recruit-cost')!;
-  const wait=status.reason==='food'?` · ${Math.ceil(status.waitSeconds)}s`:['blocked','capacity'].includes(status.reason)?' · wait':'';
-  textIfChanged(cost,`${ERAS[p.age].units[kind].cost} food${wait}`);
+  const wait=status.reason==='food'?` · ${secondsShort(Math.ceil(status.waitSeconds))}`:['blocked','capacity'].includes(status.reason)?tr(' · wait',' · انتظر'):'';
+  textIfChanged(cost,`${ERAS[p.age].units[kind].cost}${tr(' food',' مؤونة')}${wait}`);
   node.classList.toggle('recruit-ready',status.allowed);
   node.classList.toggle('teach',kind===0&&status.allowed&&((p.wins===0&&running&&!s.paused&&s.stats.deployed===0)||foodIsPiling(p,s)));
  }
@@ -47,7 +49,7 @@ function syncGates(gates:readonly HTMLButtonElement[],arena:ReturnType<typeof ar
   const value=`left:${Math.max(0,Math.min(w-size,x-size/2))}px;top:${Math.max(0,arena.groundY*arena.scale-48*arena.scale)}px;width:${size}px;height:${Math.max(44,Math.min(90,65*arena.scale))}px;--gate-label-lift:${lift}px`;
   if(node.getAttribute('style')!==value)node.setAttribute('style',value);
   node.hidden=!running;node.setAttribute('aria-disabled',String(!orders.canCast));node.setAttribute('aria-pressed',String(orders.active===node.dataset.fieldGate));
-  node.setAttribute('aria-label',`${hold?'Hold: protect troops and your gate':'Advance: stronger strikes and faster movement'}. Costs 60 momentum, lasts 10 seconds. ${orders.label}`);
+  node.setAttribute('aria-label',`${hold?tr('Hold: protect troops and your gate','اثبُت: احمِ جندك وبوّابتك'):tr('Advance: stronger strikes and faster movement','تقدّم: ضربات أقوى وحركة أسرع')}. ${tr('Costs 60 momentum, lasts 10 seconds.','يكلّف 60 من الزخم ويدوم 10 ثوانٍ.')} ${orders.label}`);
   node.classList.toggle('order-ready',orders.canCast);
   const label=node.querySelector<HTMLElement>('.world-target-name');
   if(label)textIfChanged(label,gateChoiceLabel(hold?'hold':'advance',orders.canCast,orders.active===node.dataset.fieldGate));
@@ -83,8 +85,8 @@ export function createFieldController(root:HTMLElement){
    place(standard,plan.standard);place(supplies,plan.supplies);
    standard.hidden=!running||!s.chronicle?.enabled||s.stats.deployed===0;
    standard.setAttribute('aria-disabled',String(s.paused));standard.setAttribute('aria-pressed',String(s.chronicle?.rally??false));
-   const rally=s.chronicle?.rally?`Release ${s.chronicle.gathered.length} gathered troops`:'Gather newly deployed troops at the standard';
-   standard.setAttribute('aria-label',rally);textIfChanged(standard.querySelector<HTMLElement>('span')!,s.chronicle?.rally?'Release':'Gather');
+   const rally=s.chronicle?.rally?tr(`Release ${s.chronicle.gathered.length} gathered troops`,`أطلق الجند المجتمعين (${s.chronicle.gathered.length})`):tr('Gather newly deployed troops at the standard','اجمع الجند الجدد عند الراية');
+   standard.setAttribute('aria-label',rally);textIfChanged(standard.querySelector<HTMLElement>('span')!,s.chronicle?.rally?tr('Release','أطلق'):tr('Gather','اجمع'));
    supplies.hidden=!running||s.stats.deployed===0;supplies.setAttribute('aria-label',skillCue(p,s,'food',game.canUseSkill('food')).label);
    const coverTarget=fieldCoverTarget(game,w,h);hideFieldTarget(cover,!coverTarget,pause);
    if(coverTarget)place(cover,coverTarget);
@@ -98,7 +100,8 @@ export function createFieldController(root:HTMLElement){
    const nextKey=selected===null?'':typeof selected==='string'?selected:'enemy';
    if(nextKey!==contextKey){
     contextKey=nextKey;
-    context.innerHTML=nextKey==='enemy'?'<button data-skill="freeze">Freeze</button><button data-skill="meteor">Meteor</button>':nextKey==='supplies'?'<button data-skill="food"></button><button data-command="field-dismiss">Back</button>':nextKey==='cover'?'<button data-skill="meteor">Meteor</button><button data-command="field-dismiss">Back</button>':'';
+    const freeze=`<button data-skill="freeze">${tr('Freeze','التجميد')}</button>`,meteor=`<button data-skill="meteor">${tr('Meteor','النيزك')}</button>`,back=`<button data-command="field-dismiss">${tr('Back','رجوع')}</button>`;
+    context.innerHTML=nextKey==='enemy'?freeze+meteor:nextKey==='supplies'?'<button data-skill="food"></button>'+back:nextKey==='cover'?meteor+back:'';
    }
    context.hidden=selected===null;enemy.classList.toggle('selected',typeof selected==='number');
    cover.classList.toggle('selected',selected==='cover');

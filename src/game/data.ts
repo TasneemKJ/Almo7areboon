@@ -1,4 +1,5 @@
 import { cardBonuses } from './cards.ts';
+import { tr } from './locale.ts';
 import type { Era, Profile, UnitDef, UnitKind } from './types.ts';
 
 // Public reference material does not expose the original game's balance tables.
@@ -15,9 +16,9 @@ const names = [
 function troops(age: number): [UnitDef, UnitDef, UnitDef] {
   const power = 1.65 ** age;
   return [
-    { name: names[age][0], role: 'Melee', cost: 3, hp: Math.round(26 * power), damage: Math.round(6 * power), speed: 31, range: 27, interval: 0.95 },
-    { name: names[age][1], role: 'Ranged', cost: 5, hp: age === 0 ? 26 / 3 : Math.round(18 * power), damage: age === 0 ? 6 : Math.round(9 * power), speed: 29, range: 128, interval: 1.35 },
-    { name: names[age][2], role: 'Heavy', cost: age === 0 ? 7 : 9, hp: age === 0 ? 130 : Math.round(105 * power), damage: age === 0 ? 12 : Math.round(17 * power), speed: 25, range: age >= 3 ? 105 : 32, interval: 1.25 },
+    { name: names[age][0], get role() { return tr('Melee', 'قتال قريب'); }, cost: 3, hp: Math.round(26 * power), damage: Math.round(6 * power), speed: 31, range: 27, interval: 0.95 },
+    { name: names[age][1], get role() { return tr('Ranged', 'رماية'); }, cost: 5, hp: age === 0 ? 26 / 3 : Math.round(18 * power), damage: age === 0 ? 6 : Math.round(9 * power), speed: 29, range: 128, interval: 1.35 },
+    { name: names[age][2], get role() { return tr('Heavy', 'ثقيل'); }, cost: age === 0 ? 7 : 9, hp: age === 0 ? 130 : Math.round(105 * power), damage: age === 0 ? 12 : Math.round(17 * power), speed: 25, range: age >= 3 ? 105 : 32, interval: 1.25 },
   ];
 }
 
@@ -48,19 +49,20 @@ export function cardBonus(profile: Profile): ReturnType<typeof cardBonuses> {
   return cardBonuses(profile.cards);
 }
 
+/** Quest titles are getters, so each read speaks the current language. */
 export const QUESTS: { id: string; title: string; target: number; reward: number; stat: 'kills' | 'wins' | 'deployed' }[] = [
-  { id: 'first-blood', title: 'Defeat 10 enemies', target: 10, reward: 50, stat: 'kills' },
-  { id: 'commander', title: 'Deploy 25 warriors', target: 25, reward: 50, stat: 'deployed' },
-  { id: 'conqueror', title: 'Win 3 battles', target: 3, reward: 100, stat: 'wins' },
+  { id: 'first-blood', get title() { return tr('Defeat 10 enemies', 'اهزم 10 أعداء'); }, target: 10, reward: 50, stat: 'kills' },
+  { id: 'commander', get title() { return tr('Deploy 25 warriors', 'أرسِل 25 محارباً'); }, target: 25, reward: 50, stat: 'deployed' },
+  { id: 'conqueror', get title() { return tr('Win 3 battles', 'انتصر في 3 معارك'); }, target: 3, reward: 100, stat: 'wins' },
   // Longer milestone ladders give returning players something to work toward
   // after the first three; rewards stay modest next to a 100-gem single summon.
-  { id: 'veteran', title: 'Defeat 100 enemies', target: 100, reward: 100, stat: 'kills' },
-  { id: 'battalion', title: 'Deploy 150 warriors', target: 150, reward: 100, stat: 'deployed' },
-  { id: 'champion', title: 'Win 10 battles', target: 10, reward: 150, stat: 'wins' },
-  { id: 'legion', title: 'Defeat 500 enemies', target: 500, reward: 200, stat: 'kills' },
-  { id: 'general', title: 'Deploy 750 warriors', target: 750, reward: 200, stat: 'deployed' },
-  { id: 'warlord', title: 'Win 30 battles', target: 30, reward: 300, stat: 'wins' },
-  { id: 'annihilator', title: 'Defeat 2,500 enemies', target: 2500, reward: 400, stat: 'kills' },
+  { id: 'veteran', get title() { return tr('Defeat 100 enemies', 'اهزم 100 عدوّ'); }, target: 100, reward: 100, stat: 'kills' },
+  { id: 'battalion', get title() { return tr('Deploy 150 warriors', 'أرسِل 150 محارباً'); }, target: 150, reward: 100, stat: 'deployed' },
+  { id: 'champion', get title() { return tr('Win 10 battles', 'انتصر في 10 معارك'); }, target: 10, reward: 150, stat: 'wins' },
+  { id: 'legion', get title() { return tr('Defeat 500 enemies', 'اهزم 500 عدوّ'); }, target: 500, reward: 200, stat: 'kills' },
+  { id: 'general', get title() { return tr('Deploy 750 warriors', 'أرسِل 750 محارباً'); }, target: 750, reward: 200, stat: 'deployed' },
+  { id: 'warlord', get title() { return tr('Win 30 battles', 'انتصر في 30 معركة'); }, target: 30, reward: 300, stat: 'wins' },
+  { id: 'annihilator', get title() { return tr('Defeat 2,500 enemies', 'اهزم 2,500 عدوّ'); }, target: 2500, reward: 400, stat: 'kills' },
 ];
 
 /** Whole local calendar days since 1970-01-01, so a reward resets at the player's midnight. */

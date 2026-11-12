@@ -156,3 +156,23 @@ The optional film uses one source-coordinate camera for scenery, company and pla
 
 ### Waiting company legibility (13 October 2026)
 Waiting recruits use a shared48–72 CSS-pixel height bounded by neighbour spacing and combat clearance. Authored sprite, contact shadow and native hit region scale together; small/short layouts preserve the quiet foreground and all existing actions. See `docs/audits/2026-10-13-waiting-company.md`.
+
+## iPhone app: Full Journey and the Lamplighter — owner override (2026-11-13)
+
+Owner override (2026-11-13): the iPhone app (ios/, TasKit) sells two things; the web build sells nothing and stays fully open.
+
+- **Full Journey** (`Tas.Almo7areboon.fullGame`, non-consumable, US$4.99) opens more game, never power: chapters 3 to 6
+  and the harder timeline. Chapters 1 and 2 are the free arc. The gate is asked of StoreKit at the moment of use
+  (`src/app/store-flow.ts` `gateEvolution`): choosing Evolve at the end of chapter 2 opens the Full Journey card instead
+  of the evolution dialog. Ownership is never written to the save; a web save already past chapter 2 keeps playing
+  where it is and only its next evolution asks. The card also opens from Settings → Full Journey.
+- **The Lamplighter** (مُشعِل القناديل), one auto-renewing group: `Tas.Almo7areboon.lamplighter.monthly` (US$1.99) and
+  `.yearly` (US$14.99, level 1, ranks above monthly). Its one benefit is light, a presence and not power: while a plan is
+  live, an old lamplighter lights a row of three hanging lanterns behind the player's gate at the start of every battle
+  (`src/view/gate-lanterns.ts`, the scenery's own lantern motif and lamp halo). They have no hitbox and change no number:
+  no food, coins, gems, speed or strength. Chosen because Almo7areboon has no offline earning to extend (Souq's Night
+  Keeper, Al-ejar's long rounds); the brief allows a gentle presence in that case. Off the app he never appears.
+- Both cards say what they open or bring before paying, show the App Store's own price isolated left to right, carry
+  Restore purchases, Terms of Use (Apple's standard EULA) and Privacy; the Lamplighter card states both lengths, the
+  auto-renew and cancel line, and offers Manage subscription (Apple's sheet) while subscribed. Both languages.
+- Copy that said "nothing else to buy" now says "Bought once and yours to keep".

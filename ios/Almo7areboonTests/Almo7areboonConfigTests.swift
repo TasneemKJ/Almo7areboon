@@ -18,12 +18,16 @@ final class Almo7areboonConfigTests: XCTestCase {
         XCTAssertEqual([config.ownedDefaultsKey, config.pricesDefaultsKey], ["store.owned", "store.prices"])
         XCTAssertEqual(config.primaryProductKey, "fullGame")
         XCTAssertEqual(Catalog.fullGame.productID, "Tas.Almo7areboon.fullGame")
+        XCTAssertEqual(Catalog.lamplighterMonthly.productID, "Tas.Almo7areboon.lamplighter.monthly")
+        XCTAssertEqual(Catalog.lamplighterYearly.productID, "Tas.Almo7areboon.lamplighter.yearly")
         XCTAssertNil(config.gameCenter)
         XCTAssertEqual(config.webRoot, "game")
     }
 
     func testTheGamesOwnMessagesParse() {
         XCTAssertEqual(TasBridgeMessage.parse(["type": "buy", "data": ["id": "fullGame"]], config: config), .buy("fullGame"))
+        XCTAssertEqual(TasBridgeMessage.parse(["type": "buy", "data": ["id": "lamplighterYearly"]], config: config), .buy("lamplighterYearly"))
+        XCTAssertEqual(TasBridgeMessage.parse(["type": "manageSubscriptions"], config: config), .manageSubscriptions)
         for page in ["terms", "privacy", "support"] {
             XCTAssertEqual(TasBridgeMessage.parse(["type": "openURL", "data": ["page": page]], config: config), .openURL(page))
         }
@@ -66,5 +70,6 @@ final class Almo7areboonConfigTests: XCTestCase {
         XCTAssertEqual(config.legalPages["terms"], appleStandardEULA)
         XCTAssertEqual(config.legalPages["privacy"]?.absoluteString, "https://tas-games.vercel.app/almo7areboon/privacy.html")
         XCTAssertEqual(config.legalPages["support"]?.absoluteString, "https://tas-games.vercel.app/almo7areboon/support.html")
+        XCTAssertEqual(config.legalPages["subscriptions"]?.absoluteString, "https://apps.apple.com/account/subscriptions")
     }
 }

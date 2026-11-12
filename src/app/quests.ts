@@ -7,7 +7,7 @@
 
 import {questClaimCheck,questRecords,selectedQuestRecord,questRecordAction,questRecordLabel,questRecordsHtml,questRecordDetailHtml} from '../ui/quest-records.ts';
 import { localDay } from '../game/data.ts';
-import { temporarySessionNotice } from '../ui/save-session-screen.ts';
+import { savingUnavailableText, temporarySessionText } from '../ui/save-session-screen.ts';
 import { weekId } from '../game/weekly.ts';
 import { textIfChanged, htmlIfChanged } from '../ui/dom-state.ts';
 import type { Runtime } from './runtime.ts';
@@ -32,7 +32,7 @@ export function createQuests(deps: QuestsDeps) {
     questSelection: null,
     questCalendarDay: null,
   };
-  function questSaveNotice(){return ports.sessionState.session.status==='temporary'?temporarySessionNotice:ports.sessionState.savedWarning?'Saving is unavailable. Return Home, then open Settings to export a backup before closing.':'';}
+  function questSaveNotice(){return ports.sessionState.session.status==='temporary'?temporarySessionText():ports.sessionState.savedWarning?savingUnavailableText():'';}
   function refreshQuestRecord(focus=false){
     if(ports.navState.modal!=='quests'||!ports.guardAction()||ports.navState.modal!=='quests')return;
     const day=localDay(),records=questRecords(ports.sessionState.game.profile,day),selected=selectedQuestRecord(records,questState.questSelection);

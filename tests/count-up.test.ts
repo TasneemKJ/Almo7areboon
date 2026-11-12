@@ -18,7 +18,8 @@ test('count-up is safe for zero, negative and non-finite values', () => {
 });
 test('the result keeps the true total in an aria-label and skips the animation under reduced motion', () => {
   const results = readFileSync(new URL('../src/ui/results-screen.ts', import.meta.url), 'utf8');
-  assert.match(results, /<strong aria-label="\$\{amount\(state\.earned\)\} coins">/);
+  assert.match(results, /<strong aria-label="\$\{coinsLabel\(state\.earned\)\}">/);
+  assert.match(results, /const coinsLabel=\(value:number\)=>tr\(`\$\{amount\(value\)\} coins`,/);
   const main = mainSource();
   assert.match(main, /startCountUp\(\$\('modal-layer'\),compactNumber,dom\.rootElement\(\)\.dataset\.motion==='reduced'\)/);
 });

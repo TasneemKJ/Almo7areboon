@@ -1,19 +1,21 @@
 import { BATTLE_TIME_EPSILON } from './battle-time.ts';
 import { eraEconomyScale } from './data.ts';
+import { tr } from './locale.ts';
 import type { BattleState, ChapterMasteryRecord, MasteryProgress, Profile } from './types.ts';
 
 export interface MasteryAward { record: ChapterMasteryRecord; eligibleMask: number; newMask: number; coins: number; gems: number; }
 export interface ChapterMasteryView { record: ChapterMasteryRecord; thirdTitle: string; thirdRequirement: string; remainingCoins: number; remainingGems: number; }
 export interface ObjectiveProgress { value: number; target: number; comparison: 'at-most' | 'at-least'; unit: 'seconds' | 'roles' | 'skills' | 'enemies' | 'deployments'; }
 export interface AdvanceStatus { allowed: boolean; reason: 'available' | 'running' | 'uncleared' | 'complete' | 'invalid'; target: 'battle' | 'timeline' | 'none'; nextBattle: number | null; }
-const definitions = [
-  ['Before the Embers Fade', 'Win within 1:15.'],
-  ['Every Hand', 'Win after deploying all three troop roles.'],
-  ['A Steady Watch', 'Win using at most one skill.'],
-  ['A Moment of Stillness', 'Freeze at least three living enemies together, then win.'],
-  ['Break the Gathering', 'Defeat at least three enemies with one meteor, then win.'],
-  ['A Small Company', 'Win with no more than eighteen deployments.'],
-] as const;
+/** The third seal of each chapter, picked in the current language when read. */
+const definitions = (): readonly (readonly [string, string])[] => [
+  [tr('Before the Embers Fade', 'قبل أن يخبو الجمر'), tr('Win within 1:15.', 'انتصر خلال 1:15.')],
+  [tr('Every Hand', 'كلّ الأيدي'), tr('Win after deploying all three troop roles.', 'انتصر بعد أن ترسل الأنواع الثلاثة من الجنود.')],
+  [tr('A Steady Watch', 'حراسةٌ ثابتة'), tr('Win using at most one skill.', 'انتصر بمهارةٍ واحدة على الأكثر.')],
+  [tr('A Moment of Stillness', 'لحظة سكون'), tr('Freeze at least three living enemies together, then win.', 'جمّد ثلاثة أعداء أحياء معاً على الأقلّ، ثم انتصر.')],
+  [tr('Break the Gathering', 'فرِّق الجمع'), tr('Defeat at least three enemies with one meteor, then win.', 'اهزم ثلاثة أعداء على الأقلّ بنيزكٍ واحد، ثم انتصر.')],
+  [tr('A Small Company', 'سريّةٌ صغيرة'), tr('Win with no more than eighteen deployments.', 'انتصر بثمانية عشر إرسالاً على الأكثر.')],
+];
 const validChapter = (chapter: number) => Number.isInteger(chapter) && chapter >= 0 && chapter < 6;
 const validTimeline = (timeline: number) => Number.isInteger(timeline) && timeline >= 1 && timeline <= 1000;
 const validMask = (mask: unknown): mask is number => typeof mask === 'number' && Number.isInteger(mask) && mask >= 0 && mask <= 7;
@@ -72,7 +74,7 @@ export function masteryAward(profile: Profile, state: BattleState): MasteryAward
   return {record,eligibleMask,newMask,coins:Math.min(reward.coins,Math.max(0,1e9-profile.coins)),gems:Math.min(reward.gems,Math.max(0,1e7-profile.gems))};
 }
 export function chapterMastery(profile: Profile, chapter: number): ChapterMasteryView {
-  const record = recordFor(profile,chapter), remaining = masteryReward(chapter,7 & ~record.earnedMask), definition = definitions[chapter];
+  const record = recordFor(profile,chapter), remaining = masteryReward(chapter,7 & ~record.earnedMask), definition = definitions()[chapter];
   return {record,thirdTitle:definition?.[0] ?? '',thirdRequirement:definition?.[1] ?? '',remainingCoins:remaining.coins,remainingGems:remaining.gems};
 }
 export function advanceStatus(profile: Profile, state: Pick<BattleState,'phase'>): AdvanceStatus {

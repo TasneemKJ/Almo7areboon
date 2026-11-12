@@ -1,9 +1,11 @@
 import type {Profile} from '../game/types.ts';
 import type {AudioMix} from './audio-preferences.ts';
 import {lang,n,tr} from './i18n.ts';
+import {almoApp} from './app-bridge.ts';
 
 /** Seven independent preference fields; navigation/destruction are separate actions. */
-export function preferencesHtml(p:Profile,atmosphere:boolean,mix:AudioMix,canWrite:boolean,notice:string):string {
+/** `store.inApp`: the iPhone app sells Full Journey and the Lamplighter; their cards open from here. Off the app nothing is sold. */
+export function preferencesHtml(p:Profile,atmosphere:boolean,mix:AudioMix,canWrite:boolean,notice:string,store:{inApp:boolean}=almoApp):string {
  const check=(id:string,label:string,checked:boolean,description='')=>`<label class="preference-check" for="preference-${id}"><input id="preference-${id}" data-preference="${id}" type="checkbox" ${checked?'checked':''}${description?` aria-describedby="${id}-description"`:''}><span>${label}</span></label>`;
  const range=(id:string,label:string,value:number)=>`<div class="audio-volume"><div class="audio-volume-label"><label for="${id}-volume">${label}</label><output id="${id}-volume-value" for="${id}-volume">${n(`${value}%`)}</output></div><input id="${id}-volume" type="range" min="0" max="100" step="5" value="${value}" aria-valuetext="${value}%"></div>`;
  return `<h2 id="dialog-title">${tr('Preferences','الإعدادات')}</h2>
@@ -16,6 +18,7 @@ export function preferencesHtml(p:Profile,atmosphere:boolean,mix:AudioMix,canWri
  ${check('marks',tr('Troop shapes','أشكال الجند'),p.marks===true,'roles')}<p id="marks-description" class="preference-note">${tr('Circle: melee · triangle: ranged · square: heavy.','الدائرة: قتال قريب · المثلث: رماية · المربّع: ثقيل.')}</p></div>
  <p class="preference-note">${tr('Tap a waiting defender to recruit; tap the standard to gather or release. Select an enemy for tactical powers.','المس مدافعاً ينتظر لتجنّده، والمس الراية لتجمع السريّة أو تطلقها. اختر عدوّاً لتستعمل القدرات التكتيكية.')} ${tr('<kbd>Tab</kbd> then <kbd>Enter</kbd> selects objects; <kbd>1–3</kbd> recruits; <kbd>Q/W/E</kbd> uses Freeze, Meteor or Food when available. <kbd>Esc</kbd> closes a dialog or clears selection.','<kbd dir="ltr">Tab</kbd> ثم <kbd dir="ltr">Enter</kbd> يختار العناصر، و<kbd dir="ltr">1–3</kbd> للتجنيد، و<kbd dir="ltr">Q/W/E</kbd> للتجميد والنيزك والمؤونة حين تتاح. <kbd dir="ltr">Esc</kbd> يغلق النافذة أو يلغي الاختيار.')}</p>
  <p id="preference-status" class="save-note" role="status">${notice}</p>
+ ${store.inApp?`<div class="preferences-store"><button class="big-button secondary" data-command="full-journey">${tr('Full Journey','الرحلة كاملة')}</button><button class="big-button secondary" data-command="lamplighter">${tr('The Lamplighter','مُشعِل القناديل')}</button></div>`:''}
  <div class="preferences-actions"><button class="big-button secondary" data-command="watch-intro">${tr('Watch intro','شاهد المقدّمة')}</button><button class="big-button secondary" data-command="watch-film">${tr('Watch film','شاهد الفيلم')}</button><button class="big-button secondary" data-command="save-recovery">${tr('Save &amp; recovery','الحفظ والاستعادة')}</button><button class="big-button secondary" data-command="reset" ${canWrite?'':'disabled'}>${tr('Start over…','ابدأ من جديد…')}</button><button class="big-button green" data-command="close">${tr('Done','تمّ')}</button></div>`;
 }
 export function saveRecoveryHtml(canWrite:boolean,notice:string):string {

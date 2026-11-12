@@ -11,6 +11,7 @@ import {htmlIfChanged,textIfChanged} from './dom-state.ts';
 import {nextGoalLabel} from './next-goal.ts';
 import {skillCue} from './skill-cues.ts';
 import {troopControlLabel} from './army-screen.ts';
+import {tr} from './i18n.ts';
 
 export interface HudView {
  root:HTMLElement;
@@ -28,34 +29,36 @@ function syncEconomy({root,$,game,money,coin,manualPaused}:HudView):void {
  const artStyle=storybookArt(p.age)?'storybook':'legacy';
  if(root.dataset.artStyle!==artStyle)root.dataset.artStyle=artStyle;
   textIfChanged($('coins'),money(p.coins));textIfChanged($('gems'),money(p.gems));
-  textIfChanged($('timeline'),`TIMELINE ${p.timeline} · BATTLE ${p.enemyAge+1}`);textIfChanged($('age-title'),chapterPresentation(p.age).title);
+  textIfChanged($('timeline'),tr(`TIMELINE ${p.timeline} · BATTLE ${p.enemyAge+1}`,`الخطّ الزمني ${p.timeline} · المعركة ${p.enemyAge+1}`));textIfChanged($('age-title'),chapterPresentation(p.age).title);
   textIfChanged($('scene-name'),chapterPresentation(p.age).subtitle);
   textIfChanged($('food-count'),Math.floor(s.food).toString());$('food-fill').style.width=`${s.food>=99?100:(s.food%1)*100}%`;
-  textIfChanged($('production'),`${foodRate(p).toFixed(2)}/sec`);
+  textIfChanged($('production'),`${foodRate(p).toFixed(2)}${tr('/sec','/ث')}`);
   const food=game.upgradeStatus('food'),base=game.upgradeStatus('base');
-  textIfChanged($('food-level'),`${foodRate(p).toFixed(2)} food/sec${food.nextValue===null?' · MAX':` → ${food.nextValue.toFixed(2)}`}`);
-  textIfChanged($('base-level'),`${compactNumber(s.playerMaxHp)} health${base.nextValue===null?' · MAX':` → ${compactNumber(base.nextValue)}`}`);
-  htmlIfChanged($('food-upgrade'),food.cost===null?'MAX':coin(food.cost));htmlIfChanged($('base-upgrade'),base.cost===null?'MAX':coin(base.cost));
-  $('food-upgrade').setAttribute('aria-label',food.cost===null?'Food production fully upgraded':`Upgrade food production for ${food.cost} coins`);
-  $('base-upgrade').setAttribute('aria-label',base.cost===null?'Base health fully upgraded':`Upgrade base health for ${base.cost} coins`);
+  // Arabic reads right to left, so the "becomes" arrow points left.
+  const max=tr(' · MAX',' · الأقصى'),arrow=tr(' → ',' ← ');
+  textIfChanged($('food-level'),`${foodRate(p).toFixed(2)}${tr(' food/sec',' مؤونة/ث')}${food.nextValue===null?max:`${arrow}${food.nextValue.toFixed(2)}`}`);
+  textIfChanged($('base-level'),`${tr('','الصمود ')}${compactNumber(s.playerMaxHp)}${tr(' health','')}${base.nextValue===null?max:`${arrow}${compactNumber(base.nextValue)}`}`);
+  htmlIfChanged($('food-upgrade'),food.cost===null?tr('MAX','الأقصى'):coin(food.cost));htmlIfChanged($('base-upgrade'),base.cost===null?tr('MAX','الأقصى'):coin(base.cost));
+  $('food-upgrade').setAttribute('aria-label',food.cost===null?tr('Food production fully upgraded','إنتاج المؤونة مطوَّر بالكامل'):tr(`Upgrade food production for ${food.cost} coins`,`طوّر إنتاج المؤونة مقابل ${food.cost} من النقود`));
+  $('base-upgrade').setAttribute('aria-label',base.cost===null?tr('Base health fully upgraded','صمود الحصن مطوَّر بالكامل'):tr(`Upgrade base health for ${base.cost} coins`,`طوّر صمود الحصن مقابل ${base.cost} من النقود`));
   $('food-upgrade').toggleAttribute('disabled',!food.allowed);$('base-upgrade').toggleAttribute('disabled',!base.allowed);
   $('ready').hidden=s.phase!=='ready';$('pause-banner').hidden=!(manualPaused&&s.phase==='running');
-  textIfChanged($('pause'),manualPaused?'▶':'Ⅱ');$('pause').setAttribute('aria-label',manualPaused?'Resume battle':'Pause battle');
+  textIfChanged($('pause'),manualPaused?'▶':'Ⅱ');$('pause').setAttribute('aria-label',manualPaused?tr('Resume battle','تابع المعركة'):tr('Pause battle','أوقف المعركة مؤقّتاً'));
   $('pause').setAttribute('aria-pressed',String(manualPaused));$('pause').toggleAttribute('disabled',s.phase!=='running');
-  textIfChanged($('speed'),`${p.speed}×`);$('speed').setAttribute('aria-label',`Battle speed ${p.speed} times. Change speed.`);
+  textIfChanged($('speed'),`${p.speed}×`);$('speed').setAttribute('aria-label',tr(`Battle speed ${p.speed} times. Change speed.`,`سرعة المعركة ${p.speed}×. غيّر السرعة.`));
   $('battle-select').toggleAttribute('disabled',s.phase!=='ready');
 }
 function syncBattleStatus({$,game,manualPaused}:HudView):void {
  const p=game.profile,s=game.state;
   const wave=game.waveStatus();
-  textIfChanged($('wave-label'),s.phase==='running'?waveLabel(wave,s.chronicle?.enabled?s.chronicle.objective:undefined):s.phase==='ready'?'CHOOSE YOUR ARMY':'BATTLE COMPLETE');
-  $('wave-label').setAttribute('aria-label',s.phase==='running'?`Inspect wave. ${waveAccessibleLabel(wave,s.chronicle?.enabled?s.chronicle.objective:undefined)}`:$('wave-label').textContent??'');
+  textIfChanged($('wave-label'),s.phase==='running'?waveLabel(wave,s.chronicle?.enabled?s.chronicle.objective:undefined):s.phase==='ready'?tr('CHOOSE YOUR ARMY','اختر جيشك'):tr('BATTLE COMPLETE','انتهت المعركة'));
+  $('wave-label').setAttribute('aria-label',s.phase==='running'?`${tr('Inspect wave.','افحص الموجة.')} ${waveAccessibleLabel(wave,s.chronicle?.enabled?s.chronicle.objective:undefined)}`:$('wave-label').textContent??'');
   $('wave-label').toggleAttribute('disabled',s.phase!=='running');
   textIfChanged($('deploy-hint'),battleGuidance(p,s,wave.preview,game.deploymentStatus(0)));
   const health=baseHealthDisplay(s.playerHp,s.playerMaxHp);
   $('world').classList.toggle('base-danger',s.phase==='running'&&health.danger);
-  textIfChanged($('base-status'),`Your base: ${health.label}. Enemy base: ${baseHealthDisplay(s.enemyHp,s.enemyMaxHp).label}.`);
-  textIfChanged($('game-status'),s.phase==='running'?(s.paused?'Battle paused.':health.danger?'Your base is in danger.':'Battle running.'):s.phase==='ready'?'Ready. Start a battle.':s.phase==='won'?'Victory.':'Defeat. Your coins are safe.');
+  textIfChanged($('base-status'),tr(`Your base: ${health.label}. Enemy base: ${baseHealthDisplay(s.enemyHp,s.enemyMaxHp).label}.`,`حصنك: ${health.label}. حصن العدوّ: ${baseHealthDisplay(s.enemyHp,s.enemyMaxHp).label}.`));
+  textIfChanged($('game-status'),s.phase==='running'?(s.paused?tr('Battle paused.','المعركة متوقّفة.'):health.danger?tr('Your base is in danger.','حصنك في خطر.'):tr('Battle running.','المعركة جارية.')):s.phase==='ready'?tr('Ready. Start a battle.','جاهز. ابدأ معركة.'):s.phase==='won'?tr('Victory.','نصر.'):tr('Defeat. Your coins are safe.','هزيمة. نقودك في أمان.'));
 }
 function syncTroopButtons({root,game}:HudView):void {
  const p=game.profile,s=game.state;
@@ -91,11 +94,11 @@ function syncGoals({$,game}:HudView):void {
   $('story-rally').hidden=!story?.enabled;
   $('story-rally').toggleAttribute('disabled',s.phase!=='running'||s.paused);
   $('story-rally').setAttribute('aria-pressed',String(story?.rally??false));
-  textIfChanged($('story-rally'),story?.rally?`Release ${story.gathered.length}/6`:'Gather');
+  textIfChanged($('story-rally'),story?.rally?tr(`Release ${story.gathered.length}/6`,`أطلق ${story.gathered.length}/6`):tr('Gather','اجمع'));
   if(story?.enabled){
     const instruction=chronicleGuidance(p,s);
     if(s.phase==='running'&&!s.paused&&(!health.danger)&&(story.route!=='road'||story.rally||p.unlocked[1]))textIfChanged($('deploy-hint'),instruction);
-    textIfChanged($('story-ready-rule'),p.wins===0&&story.route==='road'?'Rima waits at the gate. Tap Battle, then send a defender. The company fights together.':routeDefinition(story.route).rule);
+    textIfChanged($('story-ready-rule'),p.wins===0&&story.route==='road'?tr('Rima waits at the gate. Tap Battle, then send a defender. The company fights together.','ريما تنتظر عند البوّابة. المس «المعركة»، ثم أرسل مدافعاً. السريّة تقاتل معاً.'):routeDefinition(story.route).rule);
 
   }
 }

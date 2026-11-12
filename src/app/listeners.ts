@@ -29,8 +29,9 @@ import { waveInspectionHtml } from '../ui/wave-inspection.ts';
 import { battleSelectionHtml, evolutionDialogHtml } from '../ui/progression-screen.ts';
 import { modalFocusables, nextFocusIndex, isEditingTarget } from '../ui/accessibility.ts';
 import { saveAtmosphere, normalizeAudioMix, saveAudioMix } from '../ui/audio-preferences.ts';
-import { saveLanguage } from '../ui/i18n.ts';
+import { n, saveLanguage, tr } from '../ui/i18n.ts';
 import { textIfChanged } from '../ui/dom-state.ts';
+import { STORE_COMMANDS } from './store-flow.ts';
 import type { Runtime } from './runtime.ts';
 import type { ShellApi } from './shell.ts';
 
@@ -44,7 +45,7 @@ export interface InputState {
 /** What the listeners module needs: its slice of state, DOM handles and sibling operations. */
 export interface ListenersDeps {
   dom: Pick<Runtime, '$' | 'blockModalTap' | 'fieldControls' | 'lifetime' | 'money' | 'motionQuery' | 'root' | 'activeElement' | 'hidden' | 'now' | 'pageEvents' | 'reload' | 'viewEvents'>;
-  ports: Pick<ShellApi, 'acquireSession' | 'action' | 'adoptRestoredGame' | 'claimQuestRecord' | 'clearPrestigeContext' | 'closeModal' | 'continueWithProvision' | 'dismissModal' | 'enterCamp' | 'enterWorld' | 'exportSave' | 'guardAction' | 'handleCampInput' | 'leaveBattle' | 'navState' | 'openPrestige' | 'persist' | 'playable' | 'playIntro' | 'watchIntro' | 'preferenceNotice' | 'questState' | 'rebuildArmy' | 'refreshPrestige' | 'refreshQuestRecord' | 'renderScreen' | 'returnToCamp' | 'returnToChapters' | 'sessionState' | 'showFieldPause' | 'showHome' | 'showLeaveBattle' | 'showModal' | 'showQuests' | 'showResult' | 'showResultDetails' | 'showSaveRecovery' | 'showSettings' | 'showStoryFollowUp' | 'suspendSession' | 'switchTab' | 'syncMarks' | 'syncMotion' | 'syncPause' | 'syncWeek' | 'toast' | 'update'>;
+  ports: Pick<ShellApi, 'acquireSession' | 'action' | 'gateEvolution' | 'handleStoreCommand' | 'adoptRestoredGame' | 'claimQuestRecord' | 'clearPrestigeContext' | 'closeModal' | 'continueWithProvision' | 'dismissModal' | 'enterCamp' | 'enterWorld' | 'exportSave' | 'guardAction' | 'handleCampInput' | 'leaveBattle' | 'navState' | 'openPrestige' | 'persist' | 'playable' | 'playIntro' | 'watchIntro' | 'preferenceNotice' | 'questState' | 'rebuildArmy' | 'refreshPrestige' | 'refreshQuestRecord' | 'renderScreen' | 'returnToCamp' | 'returnToChapters' | 'sessionState' | 'showFieldPause' | 'showHome' | 'showLeaveBattle' | 'showModal' | 'showQuests' | 'showResult' | 'showResultDetails' | 'showSaveRecovery' | 'showSettings' | 'showStoryFollowUp' | 'suspendSession' | 'switchTab' | 'syncMarks' | 'syncMotion' | 'syncPause' | 'syncWeek' | 'toast' | 'update'>;
 }
 
 export function installListeners(deps: ListenersDeps): void {
@@ -61,15 +62,16 @@ export function installListeners(deps: ListenersDeps): void {
     'upgrade-base':()=>{ports.action({type:'upgrade',stat:'base'});},
     'battles':()=>{ports.showModal('battles',battleSelectionHtml(ports.sessionState.game.profile,ports.sessionState.game.state));},
     'wave-help':()=>{if(ports.sessionState.game.state.phase==='running')ports.showModal('wave-help',waveInspectionHtml(ports.sessionState.game.waveStatus(),ports.sessionState.game.state.chronicle?.enabled?ports.sessionState.game.state.chronicle.objective:undefined));},
-    'evolve':()=>{const html=evolutionDialogHtml(ports.sessionState.game.profile,ports.sessionState.game.state);if(html){ports.navState.evolutionFromResult=ports.navState.modal==='result';ports.showModal('evolve',html);};},
+    'evolve':()=>{if(ports.gateEvolution())return;const html=evolutionDialogHtml(ports.sessionState.game.profile,ports.sessionState.game.state);if(html){ports.navState.evolutionFromResult=ports.navState.modal==='result';ports.showModal('evolve',html);};},
     'confirm-evolve':()=>{
+      if(ports.gateEvolution())return;
       const returnToResult=ports.navState.evolutionFromResult,ok=ports.action({type:'evolve'});
       if(!ports.playable()||ports.navState.modal==='session')return;
       if(ok){
         ports.navState.evolutionFromResult=false;
         {const deck=$('unit-cards');deck.dataset.evolveReveal=deck.dataset.evolveReveal==='a'?'b':'a';}
         if(returnToResult)ports.showResult();else{ports.closeModal(false);ports.switchTab('battle');}
-        if(!ports.sessionState.savedWarning)ports.toast(`Entering ${chapterPresentation(ports.sessionState.game.profile.age).title}.`);
+        if(!ports.sessionState.savedWarning)ports.toast(tr(`Entering ${chapterPresentation(ports.sessionState.game.profile.age).title}.`,`إلى ${chapterPresentation(ports.sessionState.game.profile.age).title}.`));
       }else{
         const html=evolutionDialogHtml(ports.sessionState.game.profile,ports.sessionState.game.state);
         if(html)ports.showModal('evolve',html);else ports.dismissModal();
@@ -105,19 +107,20 @@ export function installListeners(deps: ListenersDeps): void {
     'quests':()=>{ports.showQuests();},
     'save-recovery':()=>{ports.showSaveRecovery();},
     'import':()=>{if(ports.navState.modal==='save-recovery'&&ports.sessionState.session.status==='active')$('import-save')?.click();},
-    'reset':()=>{if(ports.navState.modal!=='settings'||ports.sessionState.session.status!=='active')return;ports.showModal('reset',`<h2 id="dialog-title">Start over?</h2><p>This deletes your progress on this browser: your age, coins, upgrades, unlocked battles, every card and all gems, quests and records.</p><p>Your sound, speed, motion and troop-shape choices stay. Export a save first if you might want this progress back.</p><button class="big-button blue" data-command="export">EXPORT SAVE FIRST</button><button class="big-button danger" data-command="confirm-reset">DELETE PROGRESS AND START OVER</button><button class="big-button secondary" data-command="close">KEEP MY PROGRESS</button>`,'close');},
+    'reset':()=>{if(ports.navState.modal!=='settings'||ports.sessionState.session.status!=='active')return;ports.showModal('reset',`<h2 id="dialog-title">${tr('Start over?','تبدأ من جديد؟')}</h2><p>${tr('This deletes your progress on this device: your age, coins, upgrades, unlocked battles, every card and all gems, quests and records.','هذا يمحو تقدّمك على هذا الجهاز: عصرك ونقودك وتطويراتك ومعاركك المفتوحة، وكلّ بطاقة وكلّ جوهرة، والمهمّات والسجلّات.')}</p><p>${tr('Your sound, speed, motion and troop-shape choices stay. Export a save first if you might want this progress back.','اختياراتك للصوت والسرعة والحركة وأشكال الجند تبقى. صدّر نسخة أوّلاً إن كنت قد تريد هذا التقدّم لاحقاً.')}</p><button class="big-button blue" data-command="export">${tr('EXPORT SAVE FIRST','صدّر نسخة أوّلاً')}</button><button class="big-button danger" data-command="confirm-reset">${tr('DELETE PROGRESS AND START OVER','امحُ التقدّم وابدأ من جديد')}</button><button class="big-button secondary" data-command="close">${tr('KEEP MY PROGRESS','أبقِ تقدّمي')}</button>`,'close');},
     'confirm-reset':()=>{
       if(ports.navState.modal!=='reset'||ports.sessionState.session.status!=='active')return;
       const restored=restoreBackupWithSave(ports.sessionState.game,startOverProfile(ports.sessionState.game.profile),profile=>{syncWeekly(profile,weekId(localDay()));return ports.sessionState.session.save(profile).ok;});
-      if(!restored.ok){ports.toast('The new game could not be saved. Your current progress was not deleted.');return;}
-      ports.adoptRestoredGame(restored.game);ports.toast('Started a new game.');
+      if(!restored.ok){ports.toast(tr('The new game could not be saved. Your current progress was not deleted.','تعذّر حفظ اللعبة الجديدة، ولم يُمحَ تقدّمك الحالي.'));return;}
+      ports.adoptRestoredGame(restored.game);ports.toast(tr('Started a new game.','بدأت لعبة جديدة.'));
     },
     'confirm-import':()=>{
       if(ports.navState.modal!=='import'||!ports.navState.pendingImport||ports.sessionState.session.status!=='active')return;const restored=restoreBackupWithSave(ports.sessionState.game,ports.navState.pendingImport,profile=>{syncWeekly(profile,weekId(localDay()));return ports.sessionState.session.save(profile).ok;});
-      if(!restored.ok){ports.toast('The save could not be written. Your current game was not replaced.');return;}
-      ports.adoptRestoredGame(restored.game);ports.toast('Save restored.');
+      if(!restored.ok){ports.toast(tr('The save could not be written. Your current game was not replaced.','تعذّرت كتابة الحفظ، ولم تُستبدل لعبتك الحالية.'));return;}
+      ports.adoptRestoredGame(restored.game);ports.toast(tr('Save restored.','استُعيد الحفظ.'));
     },
-    'close':()=>{ports.dismissModal();},
+    ...Object.fromEntries(STORE_COMMANDS.map(command=>[command,()=>{ports.handleStoreCommand(command);}])),
+    'close':()=>{if(!ports.handleStoreCommand('close'))ports.dismissModal();},
   };
   function routeDataAction(button:HTMLButtonElement,command:string|undefined):boolean {
     if(button.dataset.unit!==undefined){const kind=Number(button.dataset.unit) as UnitKind;if(!ports.sessionState.game.profile.unlocked[kind]){if(ports.action({type:'unlock',kind})&&ports.playable()&&!ports.sessionState.savedWarning)ports.toast(troopUnlockMessage(ports.sessionState.game.profile,ports.sessionState.game.state.phase,kind,ports.sessionState.game.deploymentStatus(kind)),7000);}else ports.action({type:'spawn',kind});return true;}
@@ -138,7 +141,7 @@ export function installListeners(deps: ListenersDeps): void {
       const accepted=ports.action({type:'summon',count});
       if(!ports.playable()||(ports.navState.modal as string|null)==='session')return true;
       if(accepted)ports.showModal('summon',summonedCardsHtml(before,ports.sessionState.game.profile));
-      else ports.toast('This pack is unavailable. Your gems were not spent.');return true;
+      else ports.toast(tr('This pack is unavailable. Your gems were not spent.','هذه الحزمة غير متاحة، ولم تُصرف جواهرك.'));return true;
     }
     return false;
   }
@@ -282,17 +285,17 @@ export function installListeners(deps: ListenersDeps): void {
       const request=++inputState.importRequest;
       if(ports.sessionState.session.status!=='active'||!ports.guardAction())return;
       const file=input.files?.[0],version=ports.navState.modalVersion;if(!file)return;
-      if(file.size>MAX_SAVE_CHARS){ports.toast('Choose a save file smaller than 100 KB.');input.value='';return;}
+      if(file.size>MAX_SAVE_CHARS){ports.toast(tr('Choose a save file smaller than 100 KB.','اختر ملفّ حفظ أصغر من 100 كيلوبايت.'));input.value='';return;}
       try{
         const decoded=importBackup(await file.text());
         if(request!==inputState.importRequest||lifetime.disposed||version!==ports.navState.modalVersion||ports.navState.modal!=='save-recovery'||ports.sessionState.session.status!=='active'||!ports.guardAction())return;
         if(!decoded.ok){ports.toast(decoded.error);input.value='';return;}
         ports.navState.pendingImport=decoded.profile;
-        ports.showModal('import',`<h2 id="dialog-title">Replace this save?</h2><p>Import timeline ${ports.navState.pendingImport.timeline}, ${chapterPresentation(ports.navState.pendingImport.age).title}, with ${money(ports.navState.pendingImport.coins)} coins.</p><p>Your current progress in this browser will be replaced. Export it first to keep a separate copy.</p><button class="big-button blue" data-command="confirm-import">REPLACE WITH THIS SAVE</button><button class="big-button secondary" data-command="close">CANCEL</button>`,'close');
+        ports.showModal('import',`<h2 id="dialog-title">${tr('Replace this save?','تستبدل هذا الحفظ؟')}</h2><p>${tr(`Import timeline ${ports.navState.pendingImport.timeline}, ${chapterPresentation(ports.navState.pendingImport.age).title}, with ${money(ports.navState.pendingImport.coins)} coins.`,`استيراد الخطّ الزمني ${n(ports.navState.pendingImport.timeline)}، ${chapterPresentation(ports.navState.pendingImport.age).title}، ومعه ${n(money(ports.navState.pendingImport.coins))} من النقود.`)}</p><p>${tr('Your current progress on this device will be replaced. Export it first to keep a separate copy.','سيُستبدل تقدّمك الحالي على هذا الجهاز. صدّره أوّلاً لتحتفظ بنسخة منفصلة.')}</p><button class="big-button blue" data-command="confirm-import">${tr('REPLACE WITH THIS SAVE','استبدل بهذا الحفظ')}</button><button class="big-button secondary" data-command="close">${tr('CANCEL','إلغاء')}</button>`,'close');
       }catch{
         if(request!==inputState.importRequest||lifetime.disposed||version!==ports.navState.modalVersion||ports.navState.modal!=='save-recovery'||ports.sessionState.session.status!=='active'||!ports.guardAction())return;
         input.value='';
-        ports.toast('The selected file could not be read. Your current game was not changed.');
+        ports.toast(tr('The selected file could not be read. Your current game was not changed.','تعذّرت قراءة الملفّ المختار، ولم تتغيّر لعبتك الحالية.'));
       }
     });
   }
@@ -319,7 +322,7 @@ export function installListeners(deps: ListenersDeps): void {
     });
   }
   function listenPage():void {
-    lifetime.listen(root,'visual-fallback',()=>ports.toast('Some artwork could not load. The simplified battlefield is active.'));
+    lifetime.listen(root,'visual-fallback',()=>ports.toast(tr('Some artwork could not load. The simplified battlefield is active.','تعذّر تحميل بعض الرسوم، فالساحة المبسّطة تعمل الآن.')));
     lifetime.listen<StorageEvent>(dom.viewEvents(),'storage',event=>{
       if(event.key===SAVE_KEY||event.key===BACKUP_KEY||event.key===null)ports.sessionState.session.check();
     });

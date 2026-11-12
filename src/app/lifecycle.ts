@@ -8,7 +8,8 @@ import { syncBattleHud } from '../ui/hud-sync.ts';
 import { Game } from '../game/simulation.ts';
 import { localDay } from '../game/data.ts';
 import type { SaveSessionStatus } from '../game/save-session.ts';
-import { saveSessionDialogHtml, temporarySessionNotice } from '../ui/save-session-screen.ts';
+import { saveSessionDialogHtml, temporarySessionText } from '../ui/save-session-screen.ts';
+import { tr } from '../ui/i18n.ts';
 import { exportBackup } from '../game/backup.ts';
 import type { Action, GameEvent } from '../game/types.ts';
 import { advanceVillagePresentation } from '../view/village-mood.ts';
@@ -86,7 +87,7 @@ export function createLifecycle(deps: LifecycleDeps) {
     root!.dataset.saveSession=status;
     const notice=$('session-notice');
     notice.hidden=status!=='starting'&&status!=='temporary';
-    textIfChanged(notice,status==='temporary'?temporarySessionNotice:'Opening your saved game…');
+    textIfChanged(notice,status==='temporary'?temporarySessionText():tr('Opening your saved game…','نفتح لعبتك المحفوظة…'));
     if(status!=='active'&&status!=='temporary'){sessionState.sessionReady=false;ports.navState.campOwner=null;ports.navState.entryWelcome=null;ports.clearPrestigeContext();}
     if(status==='active'||status==='temporary')sessionState.retriedSession=false;
     const html=saveSessionDialogHtml(status,sessionState.retriedSession);
@@ -110,8 +111,8 @@ export function createLifecycle(deps: LifecycleDeps) {
         ports.navState.entryWelcome=loaded.loadStatus==='recovered'||loaded.loadStatus==='corrupt'?null:welcomeBackLine(loaded.profile.lastSeen,Date.now(),loaded.profile.wins);
         if(guardAction())ports.syncWeek();
         ports.closeModal(false);rebuildArmy();syncMotion();ports.switchTab('battle');
-        if(loaded.loadStatus==='recovered')toast('Recovered your progress from the backup save.');
-        else if(loaded.loadStatus==='corrupt')toast('The stored save could not be recovered. A new game has started.');
+        if(loaded.loadStatus==='recovered')toast(tr('Recovered your progress from the backup save.','استعدنا تقدّمك من النسخة الاحتياطية.'));
+        else if(loaded.loadStatus==='corrupt')toast(tr('The stored save could not be recovered. A new game has started.','تعذّرت استعادة الحفظ المخزّن، فبدأت لعبة جديدة.'));
       }else if(!sessionState.hasPlayed&&loaded.profile){
         // Safe preview for explicit temporary play only; never replace conflicted work.
         ports.navState.entryWelcome=null;sessionState.game=new Game(loaded.profile);sessionState.lastPhase=sessionState.game.state.phase;sessionState.resultDue=0;rebuildArmy();syncMotion();update(true);
@@ -128,7 +129,7 @@ export function createLifecycle(deps: LifecycleDeps) {
     if(!playable()||sessionState.session.status==='temporary')return false;
     // lastSeen rides on the saved copy only, so the live profile (and every "unchanged progress" check) is untouched.
     const result=sessionState.session.save({...sessionState.game.profile,lastSeen:Math.floor(Date.now()/60000)*60000}),ok=result.ok;sessionState.lastSave=dom.now();
-    if(result.reason==='write-failed'&&!sessionState.savedWarning){sessionState.savedWarning=true;toast('Progress could not be saved. Export a backup from Settings before closing this tab.');}
+    if(result.reason==='write-failed'&&!sessionState.savedWarning){sessionState.savedWarning=true;toast(tr('Progress could not be saved. Export a backup from Settings before closing this tab.','تعذّر حفظ التقدّم. صدّر نسخة احتياطية من الإعدادات قبل أن تغلق هذا التبويب.'));}
     if(ok){sessionState.savedWarning=false;sessionState.lastSavedAt=Date.now();}
     if(playable()&&(ports.navState.modal==='settings'||ports.navState.modal==='save-recovery')){
       const notice=$(ports.navState.modal==='settings'?'preference-status':'recovery-status');
@@ -182,8 +183,8 @@ export function createLifecycle(deps: LifecycleDeps) {
   function exportSave(){
     try{
       lifetime.add(dom.downloadText(exportBackup(sessionState.game.profile),'application/json','almo7areboon-save.json'));
-      toast('Save backup exported.');
-    }catch{toast('The backup could not be exported. Your current progress was not changed.');}
+      toast(tr('Save backup exported.','صُدّرت النسخة الاحتياطية.'));
+    }catch{toast(tr('The backup could not be exported. Your current progress was not changed.','تعذّر تصدير النسخة الاحتياطية، ولم يتغيّر تقدّمك الحاليّ.'));}
   }
   function adoptRestoredGame(restored:Game){
     sessionState.game=restored;ports.navState.entryWelcome=null;ports.navState.entryEntered=false;ports.navState.entrySaved=hasPriorPlay(sessionState.game.profile);ports.navState.settingsOrigin=null;root!.dataset.fieldMode='field';sessionState.lastPhase=sessionState.game.state.phase;sessionState.resultDue=0;sessionState.manualPaused=false;sessionState.resultShown='';sessionState.savedWarning=false;ports.clearPrestigeContext();rebuildArmy();syncMotion();ports.closeModal(false);ports.switchTab('battle');

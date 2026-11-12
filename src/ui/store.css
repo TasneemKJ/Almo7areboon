@@ -1,0 +1,10 @@
+/* The app's two store cards (Full Journey, the Lamplighter) and their entries in Settings. Paper panel, the game's buttons. */
+.full-journey-list{margin:10px 0 4px;padding-inline-start:20px;text-align:start;font-size:14px;line-height:1.45}
+.full-journey-list li{margin:4px 0}
+.full-journey-actions{display:grid;gap:10px;margin-top:12px}
+.full-journey-actions .big-button{min-height:44px;width:100%;white-space:normal}
+.full-journey-renewal{margin:12px 0 0;font-size:11px;line-height:1.45;text-align:start;color:var(--muted,#5f583e)}
+.full-journey-legal{margin:10px 0 0;text-align:center;font-size:13px}
+.full-journey-legal .link-button{min-height:44px;min-width:44px;padding:0 8px;border:0;background:none;color:var(--blue,#2d5f86);font:inherit;text-decoration:underline;cursor:pointer}
+.preferences-store{display:grid;grid-template-columns:repeat(2,minmax(0,1fr));gap:10px;margin-top:12px}
+.preferences-store .big-button{min-height:44px;min-width:0;padding:9px 8px;font-size:13px;letter-spacing:0;white-space:normal}
