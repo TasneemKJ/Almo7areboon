@@ -1,0 +1,464 @@
+// !$*UTF8*$!
+{
+	archiveVersion = 1;
+	classes = {
+	};
+	objectVersion = 77;
+	objects = {
+
+/* Begin PBXBuildFile section */
+		5A0C00000000000000000060 /* TasKit in Frameworks */ = {isa = PBXBuildFile; productRef = 5A0C00000000000000000062 /* TasKit */; };
+/* End PBXBuildFile section */
+
+/* Begin PBXContainerItemProxy section */
+		5A0C00000000000000000025 /* PBXContainerItemProxy */ = {
+			isa = PBXContainerItemProxy;
+			containerPortal = 5A0C00000000000000000030 /* Project object */;
+			proxyType = 1;
+			remoteGlobalIDString = 5A0C00000000000000000010;
+			remoteInfo = Almo7areboon;
+		};
+/* End PBXContainerItemProxy section */
+
+/* Begin PBXFileReference section */
+		5A0C00000000000000000001 /* Almo7areboon.app */ = {isa = PBXFileReference; explicitFileType = wrapper.application; includeInIndex = 0; path = Almo7areboon.app; sourceTree = BUILT_PRODUCTS_DIR; };
+		5A0C00000000000000000002 /* Almo7areboonTests.xctest */ = {isa = PBXFileReference; explicitFileType = wrapper.cfbundle; includeInIndex = 0; path = Almo7areboonTests.xctest; sourceTree = BUILT_PRODUCTS_DIR; };
+/* End PBXFileReference section */
+
+/* Begin PBXFileSystemSynchronizedBuildFileExceptionSet section */
+		5A0C00000000000000000005 /* Exceptions for "Almo7areboon" folder in "Almo7areboon" target */ = {
+			isa = PBXFileSystemSynchronizedBuildFileExceptionSet;
+			membershipExceptions = (
+				Info.plist,
+			);
+			target = 5A0C00000000000000000010 /* Almo7areboon */;
+		};
+/* End PBXFileSystemSynchronizedBuildFileExceptionSet section */
+
+/* Begin PBXFileSystemSynchronizedRootGroup section */
+		5A0C00000000000000000003 /* Almo7areboon */ = {
+			isa = PBXFileSystemSynchronizedRootGroup;
+			exceptions = (
+				5A0C00000000000000000005 /* Exceptions for "Almo7areboon" folder in "Almo7areboon" target */,
+			);
+			path = Almo7areboon;
+			sourceTree = "<group>";
+		};
+		5A0C00000000000000000004 /* Almo7areboonTests */ = {
+			isa = PBXFileSystemSynchronizedRootGroup;
+			path = Almo7areboonTests;
+			sourceTree = "<group>";
+		};
+/* End PBXFileSystemSynchronizedRootGroup section */
+
+/* Begin PBXFrameworksBuildPhase section */
+		5A0C00000000000000000012 /* Frameworks */ = {
+			isa = PBXFrameworksBuildPhase;
+			buildActionMask = 2147483647;
+			files = (
+				5A0C00000000000000000060 /* TasKit in Frameworks */,
+			);
+			runOnlyForDeploymentPostprocessing = 0;
+		};
+		5A0C00000000000000000022 /* Frameworks */ = {
+			isa = PBXFrameworksBuildPhase;
+			buildActionMask = 2147483647;
+			files = (
+			);
+			runOnlyForDeploymentPostprocessing = 0;
+		};
+/* End PBXFrameworksBuildPhase section */
+
+/* Begin PBXGroup section */
+		5A0C00000000000000000006 = {
+			isa = PBXGroup;
+			children = (
+				5A0C00000000000000000003 /* Almo7areboon */,
+				5A0C00000000000000000004 /* Almo7areboonTests */,
+				5A0C00000000000000000007 /* Products */,
+			);
+			sourceTree = "<group>";
+		};
+		5A0C00000000000000000007 /* Products */ = {
+			isa = PBXGroup;
+			children = (
+				5A0C00000000000000000001 /* Almo7areboon.app */,
+				5A0C00000000000000000002 /* Almo7areboonTests.xctest */,
+			);
+			name = Products;
+			sourceTree = "<group>";
+		};
+/* End PBXGroup section */
+
+/* Begin PBXNativeTarget section */
+		5A0C00000000000000000010 /* Almo7areboon */ = {
+			isa = PBXNativeTarget;
+			buildConfigurationList = 5A0C00000000000000000040 /* Build configuration list for PBXNativeTarget "Almo7areboon" */;
+			buildPhases = (
+				5A0C00000000000000000011 /* Sources */,
+				5A0C00000000000000000012 /* Frameworks */,
+				5A0C00000000000000000013 /* Resources */,
+				5A0C00000000000000000014 /* Copy the game */,
+			);
+			buildRules = (
+			);
+			dependencies = (
+			);
+			fileSystemSynchronizedGroups = (
+				5A0C00000000000000000003 /* Almo7areboon */,
+			);
+			name = Almo7areboon;
+			packageProductDependencies = (
+				5A0C00000000000000000062 /* TasKit */,
+			);
+			productName = Almo7areboon;
+			productReference = 5A0C00000000000000000001 /* Almo7areboon.app */;
+			productType = "com.apple.product-type.application";
+		};
+		5A0C00000000000000000020 /* Almo7areboonTests */ = {
+			isa = PBXNativeTarget;
+			buildConfigurationList = 5A0C00000000000000000050 /* Build configuration list for PBXNativeTarget "Almo7areboonTests" */;
+			buildPhases = (
+				5A0C00000000000000000021 /* Sources */,
+				5A0C00000000000000000022 /* Frameworks */,
+				5A0C00000000000000000023 /* Resources */,
+			);
+			buildRules = (
+			);
+			dependencies = (
+				5A0C00000000000000000024 /* PBXTargetDependency */,
+			);
+			fileSystemSynchronizedGroups = (
+				5A0C00000000000000000004 /* Almo7areboonTests */,
+			);
+			name = Almo7areboonTests;
+			packageProductDependencies = (
+			);
+			productName = Almo7areboonTests;
+			productReference = 5A0C00000000000000000002 /* Almo7areboonTests.xctest */;
+			productType = "com.apple.product-type.bundle.unit-test";
+		};
+/* End PBXNativeTarget section */
+
+/* Begin PBXProject section */
+		5A0C00000000000000000030 /* Project object */ = {
+			isa = PBXProject;
+			attributes = {
+				BuildIndependentTargetsInParallel = 1;
+				LastSwiftUpdateCheck = 2720;
+				LastUpgradeCheck = 2720;
+				TargetAttributes = {
+					5A0C00000000000000000010 = {
+						CreatedOnToolsVersion = 27.2;
+					};
+					5A0C00000000000000000020 = {
+						CreatedOnToolsVersion = 27.2;
+						TestTargetID = 5A0C00000000000000000010;
+					};
+				};
+			};
+			buildConfigurationList = 5A0C00000000000000000031 /* Build configuration list for PBXProject "Almo7areboon" */;
+			developmentRegion = en;
+			hasScannedForEncodings = 0;
+			knownRegions = (
+				en,
+				ar,
+				Base,
+			);
+			mainGroup = 5A0C00000000000000000006;
+			minimizedProjectReferenceProxies = 1;
+			packageReferences = (
+				5A0C00000000000000000061 /* XCLocalSwiftPackageReference "../../tas-engine/ios" */,
+			);
+			preferredProjectObjectVersion = 77;
+			productRefGroup = 5A0C00000000000000000007 /* Products */;
+			projectDirPath = "";
+			projectRoot = "";
+			targets = (
+				5A0C00000000000000000010 /* Almo7areboon */,
+				5A0C00000000000000000020 /* Almo7areboonTests */,
+			);
+		};
+/* End PBXProject section */
+
+/* Begin PBXResourcesBuildPhase section */
+		5A0C00000000000000000013 /* Resources */ = {
+			isa = PBXResourcesBuildPhase;
+			buildActionMask = 2147483647;
+			files = (
+			);
+			runOnlyForDeploymentPostprocessing = 0;
+		};
+		5A0C00000000000000000023 /* Resources */ = {
+			isa = PBXResourcesBuildPhase;
+			buildActionMask = 2147483647;
+			files = (
+			);
+			runOnlyForDeploymentPostprocessing = 0;
+		};
+/* End PBXResourcesBuildPhase section */
+
+/* Begin PBXShellScriptBuildPhase section */
+		5A0C00000000000000000014 /* Copy the game */ = {
+			isa = PBXShellScriptBuildPhase;
+			buildActionMask = 2147483647;
+			files = (
+			);
+			inputFileListPaths = (
+			);
+			inputPaths = (
+				"$(SRCROOT)/../dist/index.html",
+			);
+			name = "Copy the game";
+			outputFileListPaths = (
+			);
+			outputPaths = (
+				"$(TARGET_BUILD_DIR)/$(UNLOCALIZED_RESOURCES_FOLDER_PATH)/game/index.html",
+			);
+			runOnlyForDeploymentPostprocessing = 0;
+			shellPath = /bin/sh;
+			shellScript = "# The app ships the site the web build produced (dist/), as the bundle folder \"game/\",\n# served by TasKit folder mode at almo7areboon://app/. The web-only files stay out.\nset -e\nDIST=\"${SRCROOT}/../dist\"\nif [ ! -f \"${DIST}/index.html\" ]; then\n  echo \"error: ${DIST}/index.html is missing. Run 'npm run build' at the repo root first.\"\n  exit 1\nfi\nDEST=\"${TARGET_BUILD_DIR}/${UNLOCALIZED_RESOURCES_FOLDER_PATH}/game\"\nrm -rf \"${DEST}\"\nmkdir -p \"${DEST}\"\nrsync -a --delete --exclude 'sw.js' --exclude 'manifest.webmanifest' --exclude 'og-image.jpg' --exclude 'icon-*.png' --exclude '.*' \"${DIST}/\" \"${DEST}/\"\n";
+		};
+/* End PBXShellScriptBuildPhase section */
+
+/* Begin PBXSourcesBuildPhase section */
+		5A0C00000000000000000011 /* Sources */ = {
+			isa = PBXSourcesBuildPhase;
+			buildActionMask = 2147483647;
+			files = (
+			);
+			runOnlyForDeploymentPostprocessing = 0;
+		};
+		5A0C00000000000000000021 /* Sources */ = {
+			isa = PBXSourcesBuildPhase;
+			buildActionMask = 2147483647;
+			files = (
+			);
+			runOnlyForDeploymentPostprocessing = 0;
+		};
+/* End PBXSourcesBuildPhase section */
+
+/* Begin PBXTargetDependency section */
+		5A0C00000000000000000024 /* PBXTargetDependency */ = {
+			isa = PBXTargetDependency;
+			target = 5A0C00000000000000000010 /* Almo7areboon */;
+			targetProxy = 5A0C00000000000000000025 /* PBXContainerItemProxy */;
+		};
+/* End PBXTargetDependency section */
+
+/* Begin XCBuildConfiguration section */
+		5A0C00000000000000000032 /* Debug */ = {
+			isa = XCBuildConfiguration;
+			buildSettings = {
+				ALWAYS_SEARCH_USER_PATHS = NO;
+				ASSETCATALOG_COMPILER_GENERATE_SWIFT_ASSET_SYMBOL_EXTENSIONS = YES;
+				CLANG_ANALYZER_NONNULL = YES;
+				CLANG_CXX_LANGUAGE_STANDARD = "gnu++20";
+				CLANG_ENABLE_MODULES = YES;
+				CLANG_ENABLE_OBJC_ARC = YES;
+				CLANG_WARN_DOCUMENTATION_COMMENTS = YES;
+				CLANG_WARN_UNGUARDED_AVAILABILITY = YES_AGGRESSIVE;
+				COPY_PHASE_STRIP = NO;
+				DEBUG_INFORMATION_FORMAT = dwarf;
+				DEVELOPMENT_TEAM = FJ3FMYPK3P;
+				ENABLE_STRICT_OBJC_MSGSEND = YES;
+				ENABLE_TESTABILITY = YES;
+				ENABLE_USER_SCRIPT_SANDBOXING = NO;
+				GCC_C_LANGUAGE_STANDARD = gnu17;
+				GCC_DYNAMIC_NO_PIC = NO;
+				GCC_NO_COMMON_BLOCKS = YES;
+				GCC_OPTIMIZATION_LEVEL = 0;
+				GCC_PREPROCESSOR_DEFINITIONS = (
+					"DEBUG=1",
+					"$(inherited)",
+				);
+				IPHONEOS_DEPLOYMENT_TARGET = 17.0;
+				LOCALIZATION_PREFERS_STRING_CATALOGS = YES;
+				MTL_ENABLE_DEBUG_INFO = INCLUDE_SOURCE;
+				ONLY_ACTIVE_ARCH = YES;
+				SDKROOT = iphoneos;
+				SWIFT_ACTIVE_COMPILATION_CONDITIONS = "DEBUG $(inherited)";
+				SWIFT_OPTIMIZATION_LEVEL = "-Onone";
+			};
+			name = Debug;
+		};
+		5A0C00000000000000000033 /* Release */ = {
+			isa = XCBuildConfiguration;
+			buildSettings = {
+				ALWAYS_SEARCH_USER_PATHS = NO;
+				ASSETCATALOG_COMPILER_GENERATE_SWIFT_ASSET_SYMBOL_EXTENSIONS = YES;
+				CLANG_ANALYZER_NONNULL = YES;
+				CLANG_CXX_LANGUAGE_STANDARD = "gnu++20";
+				CLANG_ENABLE_MODULES = YES;
+				CLANG_ENABLE_OBJC_ARC = YES;
+				CLANG_WARN_DOCUMENTATION_COMMENTS = YES;
+				CLANG_WARN_UNGUARDED_AVAILABILITY = YES_AGGRESSIVE;
+				COPY_PHASE_STRIP = NO;
+				DEBUG_INFORMATION_FORMAT = "dwarf-with-dsym";
+				DEVELOPMENT_TEAM = FJ3FMYPK3P;
+				ENABLE_NS_ASSERTIONS = NO;
+				ENABLE_STRICT_OBJC_MSGSEND = YES;
+				ENABLE_USER_SCRIPT_SANDBOXING = NO;
+				GCC_C_LANGUAGE_STANDARD = gnu17;
+				GCC_NO_COMMON_BLOCKS = YES;
+				IPHONEOS_DEPLOYMENT_TARGET = 17.0;
+				LOCALIZATION_PREFERS_STRING_CATALOGS = YES;
+				MTL_ENABLE_DEBUG_INFO = NO;
+				SDKROOT = iphoneos;
+				SWIFT_COMPILATION_MODE = wholemodule;
+				VALIDATE_PRODUCT = YES;
+			};
+			name = Release;
+		};
+		5A0C00000000000000000041 /* Debug */ = {
+			isa = XCBuildConfiguration;
+			buildSettings = {
+				ASSETCATALOG_COMPILER_APPICON_NAME = AppIcon;
+				ASSETCATALOG_COMPILER_GLOBAL_ACCENT_COLOR_NAME = AccentColor;
+				CODE_SIGN_ENTITLEMENTS = Almo7areboon/Almo7areboon.entitlements;
+				CODE_SIGN_STYLE = Automatic;
+				CURRENT_PROJECT_VERSION = 1;
+				DEVELOPMENT_TEAM = FJ3FMYPK3P;
+				ENABLE_PREVIEWS = YES;
+				GENERATE_INFOPLIST_FILE = YES;
+				INFOPLIST_FILE = Almo7areboon/Info.plist;
+				INFOPLIST_KEY_CFBundleDisplayName = Almo7areboon;
+				INFOPLIST_KEY_ITSAppUsesNonExemptEncryption = NO;
+				INFOPLIST_KEY_NSPhotoLibraryAddUsageDescription = "Save your battle keepsakes to Photos.";
+				INFOPLIST_KEY_LSApplicationCategoryType = "public.app-category.strategy-games";
+				INFOPLIST_KEY_UIApplicationSceneManifest_Generation = YES;
+				INFOPLIST_KEY_UIRequiresFullScreen = YES;
+				INFOPLIST_KEY_UIStatusBarHidden = YES;
+				INFOPLIST_KEY_UISupportedInterfaceOrientations_iPhone = UIInterfaceOrientationPortrait;
+				INFOPLIST_KEY_UIViewControllerBasedStatusBarAppearance = NO;
+				LD_RUNPATH_SEARCH_PATHS = (
+					"$(inherited)",
+					"@executable_path/Frameworks",
+				);
+				MARKETING_VERSION = 1.0;
+				PRODUCT_BUNDLE_IDENTIFIER = Tas.Almo7areboon;
+				PRODUCT_NAME = "$(TARGET_NAME)";
+				SWIFT_EMIT_LOC_STRINGS = YES;
+				SWIFT_VERSION = 5.0;
+				TARGETED_DEVICE_FAMILY = 1;
+			};
+			name = Debug;
+		};
+		5A0C00000000000000000042 /* Release */ = {
+			isa = XCBuildConfiguration;
+			buildSettings = {
+				ASSETCATALOG_COMPILER_APPICON_NAME = AppIcon;
+				ASSETCATALOG_COMPILER_GLOBAL_ACCENT_COLOR_NAME = AccentColor;
+				CODE_SIGN_ENTITLEMENTS = Almo7areboon/Almo7areboon.entitlements;
+				CODE_SIGN_STYLE = Automatic;
+				CURRENT_PROJECT_VERSION = 1;
+				DEVELOPMENT_TEAM = FJ3FMYPK3P;
+				ENABLE_PREVIEWS = YES;
+				GENERATE_INFOPLIST_FILE = YES;
+				INFOPLIST_FILE = Almo7areboon/Info.plist;
+				INFOPLIST_KEY_CFBundleDisplayName = Almo7areboon;
+				INFOPLIST_KEY_ITSAppUsesNonExemptEncryption = NO;
+				INFOPLIST_KEY_NSPhotoLibraryAddUsageDescription = "Save your battle keepsakes to Photos.";
+				INFOPLIST_KEY_LSApplicationCategoryType = "public.app-category.strategy-games";
+				INFOPLIST_KEY_UIApplicationSceneManifest_Generation = YES;
+				INFOPLIST_KEY_UIRequiresFullScreen = YES;
+				INFOPLIST_KEY_UIStatusBarHidden = YES;
+				INFOPLIST_KEY_UISupportedInterfaceOrientations_iPhone = UIInterfaceOrientationPortrait;
+				INFOPLIST_KEY_UIViewControllerBasedStatusBarAppearance = NO;
+				LD_RUNPATH_SEARCH_PATHS = (
+					"$(inherited)",
+					"@executable_path/Frameworks",
+				);
+				MARKETING_VERSION = 1.0;
+				PRODUCT_BUNDLE_IDENTIFIER = Tas.Almo7areboon;
+				PRODUCT_NAME = "$(TARGET_NAME)";
+				SWIFT_EMIT_LOC_STRINGS = YES;
+				SWIFT_VERSION = 5.0;
+				TARGETED_DEVICE_FAMILY = 1;
+			};
+			name = Release;
+		};
+		5A0C00000000000000000051 /* Debug */ = {
+			isa = XCBuildConfiguration;
+			buildSettings = {
+				BUNDLE_LOADER = "$(TEST_HOST)";
+				CODE_SIGN_STYLE = Automatic;
+				CURRENT_PROJECT_VERSION = 1;
+				DEVELOPMENT_TEAM = FJ3FMYPK3P;
+				GENERATE_INFOPLIST_FILE = YES;
+				MARKETING_VERSION = 1.0;
+				PRODUCT_BUNDLE_IDENTIFIER = Tas.Almo7areboonTests;
+				PRODUCT_NAME = "$(TARGET_NAME)";
+				SWIFT_EMIT_LOC_STRINGS = NO;
+				SWIFT_VERSION = 5.0;
+				TARGETED_DEVICE_FAMILY = 1;
+				TEST_HOST = "$(BUILT_PRODUCTS_DIR)/Almo7areboon.app/$(BUNDLE_EXECUTABLE_FOLDER_PATH)/Almo7areboon";
+			};
+			name = Debug;
+		};
+		5A0C00000000000000000052 /* Release */ = {
+			isa = XCBuildConfiguration;
+			buildSettings = {
+				BUNDLE_LOADER = "$(TEST_HOST)";
+				CODE_SIGN_STYLE = Automatic;
+				CURRENT_PROJECT_VERSION = 1;
+				DEVELOPMENT_TEAM = FJ3FMYPK3P;
+				GENERATE_INFOPLIST_FILE = YES;
+				MARKETING_VERSION = 1.0;
+				PRODUCT_BUNDLE_IDENTIFIER = Tas.Almo7areboonTests;
+				PRODUCT_NAME = "$(TARGET_NAME)";
+				SWIFT_EMIT_LOC_STRINGS = NO;
+				SWIFT_VERSION = 5.0;
+				TARGETED_DEVICE_FAMILY = 1;
+				TEST_HOST = "$(BUILT_PRODUCTS_DIR)/Almo7areboon.app/$(BUNDLE_EXECUTABLE_FOLDER_PATH)/Almo7areboon";
+			};
+			name = Release;
+		};
+/* End XCBuildConfiguration section */
+
+/* Begin XCConfigurationList section */
+		5A0C00000000000000000031 /* Build configuration list for PBXProject "Almo7areboon" */ = {
+			isa = XCConfigurationList;
+			buildConfigurations = (
+				5A0C00000000000000000032 /* Debug */,
+				5A0C00000000000000000033 /* Release */,
+			);
+			defaultConfigurationIsVisible = 0;
+			defaultConfigurationName = Release;
+		};
+		5A0C00000000000000000040 /* Build configuration list for PBXNativeTarget "Almo7areboon" */ = {
+			isa = XCConfigurationList;
+			buildConfigurations = (
+				5A0C00000000000000000041 /* Debug */,
+				5A0C00000000000000000042 /* Release */,
+			);
+			defaultConfigurationIsVisible = 0;
+			defaultConfigurationName = Release;
+		};
+		5A0C00000000000000000050 /* Build configuration list for PBXNativeTarget "Almo7areboonTests" */ = {
+			isa = XCConfigurationList;
+			buildConfigurations = (
+				5A0C00000000000000000051 /* Debug */,
+				5A0C00000000000000000052 /* Release */,
+			);
+			defaultConfigurationIsVisible = 0;
+			defaultConfigurationName = Release;
+		};
+/* End XCConfigurationList section */
+
+/* Begin XCLocalSwiftPackageReference section */
+		5A0C00000000000000000061 /* XCLocalSwiftPackageReference "../../tas-engine/ios" */ = {
+			isa = XCLocalSwiftPackageReference;
+			relativePath = ../../tas-engine/ios;
+		};
+/* End XCLocalSwiftPackageReference section */
+
+/* Begin XCSwiftPackageProductDependency section */
+		5A0C00000000000000000062 /* TasKit */ = {
+			isa = XCSwiftPackageProductDependency;
+			productName = TasKit;
+		};
+/* End XCSwiftPackageProductDependency section */
+	};
+	rootObject = 5A0C00000000000000000030 /* Project object */;
+}

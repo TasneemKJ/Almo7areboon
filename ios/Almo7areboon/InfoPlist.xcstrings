@@ -1,0 +1,54 @@
+{
+  "sourceLanguage": "en",
+  "strings": {
+    "NSPhotoLibraryAddUsageDescription": {
+      "comment": "Asked when the player saves an image to Photos",
+      "extractionState": "manual",
+      "localizations": {
+        "ar": {
+          "stringUnit": {
+            "state": "translated",
+            "value": "لحفظ صور معاركك في الصور."
+          }
+        },
+        "en": {
+          "stringUnit": {
+            "state": "translated",
+            "value": "Save your battle keepsakes to Photos."
+          }
+        }
+      }
+    },
+    "CFBundleDisplayName": {
+      "comment": "The name under the icon",
+      "extractionState": "manual",
+      "localizations": {
+        "ar": {
+          "stringUnit": {
+            "state": "translated",
+            "value": "المحاربون"
+          }
+        },
+        "en": {
+          "stringUnit": {
+            "state": "translated",
+            "value": "Almo7areboon"
+          }
+        }
+      }
+    },
+    "CFBundleName": {
+      "comment": "Bundle name",
+      "extractionState": "extracted_with_value",
+      "localizations": {
+        "en": {
+          "stringUnit": {
+            "state": "new",
+            "value": "Almo7areboon"
+          }
+        }
+      }
+    }
+  },
+  "version": "1.0"
+}

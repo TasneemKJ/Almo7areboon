@@ -1,0 +1,47 @@
+{
+  "appPolicies": {
+    "eula": "",
+    "policies": [
+      {
+        "locale": "en_US",
+        "policyText": "",
+        "policyURL": ""
+      }
+    ]
+  },
+  "identifier": "A7A70001",
+  "nonRenewingSubscriptions": [],
+  "products": [
+    {
+      "displayPrice": "4.99",
+      "familyShareable": true,
+      "internalID": "6790700001",
+      "localizations": [
+        {
+          "description": "كل الفصول بعد الثاني، والخط الزمني الأصعب",
+          "displayName": "الرحلة كاملة",
+          "locale": "ar"
+        },
+        {
+          "description": "Every chapter after the second, and the harder timeline",
+          "displayName": "Full Journey",
+          "locale": "en_US"
+        }
+      ],
+      "productID": "Tas.Almo7areboon.fullGame",
+      "referenceName": "Full Journey",
+      "type": "NonConsumable"
+    }
+  ],
+  "settings": {
+    "_failTransactionsEnabled": false,
+    "_locale": "en_US",
+    "_storefront": "USA",
+    "_storeKitErrors": []
+  },
+  "subscriptionGroups": [],
+  "version": {
+    "major": 4,
+    "minor": 0
+  }
+}
