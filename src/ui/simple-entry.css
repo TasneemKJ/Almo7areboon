@@ -50,3 +50,12 @@ html:has(#modal-layer:not([hidden])),body:has(#modal-layer:not([hidden])),
  .result-dialog .compact-result h2{font-size:30px;margin:6px 0 10px}
  .compact-result-next{margin:10px 0 0}
 }
+/* The journey path under the chapter name: six lamps, the current one lit; a locked stretch is dimmed and opens Full Journey. */
+#entry-path{display:flex;flex-direction:column;align-items:center;gap:4px;margin-top:10px}
+.entry-path{display:flex;gap:8px;margin:0;padding:0;list-style:none}
+.entry-path li{width:10px;height:10px;border-radius:50%;border:1.5px solid #ffe9ad;background:transparent;box-shadow:0 0 6px #061b1b}
+.entry-path .path-done{background:#d9b27e;border-color:#d9b27e}
+.entry-path .path-here{background:#ffdc92;border-color:#fff1c8;box-shadow:0 0 10px #ffd18a}
+.entry-path .path-locked{border-style:dashed;opacity:.55}
+.entry-path-note{font:inherit;font-size:11px;color:#f3e3bb;background:none;border:0;padding:0 6px;min-height:28px}
+button.entry-path-note{min-height:44px;text-decoration:underline;text-underline-offset:3px;cursor:pointer}

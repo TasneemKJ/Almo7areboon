@@ -2,6 +2,7 @@ import { runInNewContext } from 'node:vm';
 import { createDomPort, type DomEnv } from '../../src/app/dom-port.ts';
 import { STORE_COMMANDS } from '../../src/app/store-flow.ts';
 import { n, tr } from '../../src/ui/i18n.ts';
+import { journeyPathHtml } from '../../src/ui/entry-screen.ts';
 
 /**
  * Runs extracted shell code in a stub context. Each app factory owns a state object (sessionState, navState,
@@ -18,6 +19,10 @@ export function runInApp(code: string, context: Record<string, unknown>): unknow
   // The shell's own text goes through the language pair helpers (English in tests).
   context.tr ??= tr;
   context.n ??= n;
+  // The entry's journey path, as on the web: everything owned, nothing locked.
+  context.journeyPathHtml ??= journeyPathHtml;
+  context.ownsFullJourney ??= () => true;
+  context.pressFeedback ??= () => {};
   // The page port runs over the same stubbed window, document and performance the harness provides.
   context.dom ??= createDomPort(stubEnv(context));
   return runInNewContext(code, context);

@@ -74,6 +74,8 @@ type Point=readonly [seconds:number,value:number];
 interface CueDefinition {readonly wave:OscillatorType;readonly duration:number;readonly frequency:readonly Point[];readonly envelope:readonly Point[]}
 // Original short contours; these initial levels await perceptual/device review.
 const definitions:Readonly<Record<CombatCueId,CueDefinition>>={
+ // A press: a soft, dry wooden tick, quieter than any combat cue.
+ press:{wave:'triangle',duration:.06,frequency:[[0,520],[.06,380]],envelope:[[.002,.014],[.02,.004],[.06,0]]},
  // A dry gate tap / muted brass rise, softened by a short cloth-like tail.
  'order-hold':{wave:'triangle',duration:.24,frequency:[[0,180],[.035,90],[.09,150],[.24,110]],envelope:[[.003,.026],[.035,.004],[.075,.012],[.12,.006],[.16,.009],[.24,0]]},
  'order-advance':{wave:'triangle',duration:.30,frequency:[[0,165],[.035,120],[.08,262],[.19,349],[.30,392]],envelope:[[.003,.022],[.04,.004],[.085,.024],[.15,.011],[.21,.018],[.30,0]]},
@@ -146,6 +148,9 @@ function playSelectedCues(cues:readonly CombatCue[],enabled:boolean):void {
 /** Drained summon metadata is recognized but only the direct accepted action plays it. */
 export function playCombatEvents(events:readonly GameEvent[],enabled:boolean):void {
  playSelectedCues(selectCombatCues(events).filter(cue=>cue.id!=='summon'),enabled);
+}
+export function playPressAudio(enabled:boolean):void {
+ playSelectedCues([{id:'press',eventIndex:0,priority:0,critical:false,cooldown:null}],enabled);
 }
 export function playSummonAudio(enabled:boolean):void {
  playSelectedCues([{id:'summon',eventIndex:0,priority:1,critical:false,cooldown:null}],enabled);

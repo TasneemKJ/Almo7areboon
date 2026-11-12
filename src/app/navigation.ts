@@ -17,7 +17,8 @@ import { isLegacyChoice, legacyEffects, prestigePreview } from '../game/prestige
 import { temporarySessionText } from '../ui/save-session-screen.ts';
 import type { UnitKind } from '../game/types.ts';
 import { chapterLandscape } from '../ui/chapter-presentation.ts';
-import { entryCopy, hasPriorPlay, entrySecondary } from '../ui/entry-screen.ts';
+import { entryCopy, hasPriorPlay, entrySecondary, journeyPathHtml } from '../ui/entry-screen.ts';
+import { ownsFullJourney } from '../ui/app-bridge.ts';
 import { preferencesHtml, saveRecoveryHtml } from '../ui/preferences-screen.ts';
 import { evolutionScreenHtml } from '../ui/evolution-screen.ts';
 import { icon } from '../view/icons.ts';
@@ -91,7 +92,8 @@ export function createNavigation(deps: NavigationDeps) {
     if($('entry-screen').hidden!==navState.entryEntered)$('entry-screen').hidden=navState.entryEntered;
     if(navState.entryEntered)return;
     const copy=entryCopy(ports.sessionState.game.profile,navState.entrySaved||hasPriorPlay(ports.sessionState.game.profile)),failed=$('battlefield').dataset.renderer==='failed';
-    textIfChanged($('entry-play'),failed?'Reload':entryReady()?copy.action:'Loading…');
+    textIfChanged($('entry-play'),failed?tr('Try again','حاول مجدّداً'):entryReady()?copy.action:tr('Loading…','جارٍ التحميل…'));
+    htmlIfChanged($('entry-path'),journeyPathHtml(ports.sessionState.game.profile.enemyAge,!ownsFullJourney()));
     $('entry-play').dataset.command=failed?'reload-world':'enter-world';
     textIfChanged($('entry-chapter'),copy.chapter);
     textIfChanged($('entry-subtitle'),failed?tr('The battlefield could not load. Close the game and open it again; your saved progress is kept.','تعذّر تحميل ساحة المعركة. أغلق اللعبة وافتحها من جديد، وتقدّمك المحفوظ باقٍ.'):navState.entryWelcome??copy.subtitle);

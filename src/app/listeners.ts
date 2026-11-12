@@ -32,6 +32,7 @@ import { saveAtmosphere, normalizeAudioMix, saveAudioMix } from '../ui/audio-pre
 import { n, saveLanguage, tr } from '../ui/i18n.ts';
 import { textIfChanged } from '../ui/dom-state.ts';
 import { STORE_COMMANDS } from './store-flow.ts';
+import { pressFeedback } from '../ui/press-feedback.ts';
 import type { Runtime } from './runtime.ts';
 import type { ShellApi } from './shell.ts';
 
@@ -184,9 +185,9 @@ export function installListeners(deps: ListenersDeps): void {
       // Also protects direct preference mutations and synthetic clicks on isolated controls.
       if(!ports.guardAction())return;
       if(ports.navState.modal&&!button.closest('#modal-layer'))return;
-      if(!ports.navState.entryEntered&&!ports.navState.modal&&command!=='enter-world'&&command!=='reload-world'&&command!=='settings'&&command!=='home-camp'&&command!=='leave-battle')return;
+      if(!ports.navState.entryEntered&&!ports.navState.modal&&command!=='enter-world'&&command!=='reload-world'&&command!=='settings'&&command!=='full-journey'&&command!=='home-camp'&&command!=='leave-battle')return;
       if(ports.handleCampInput(button))return;
-      unlockAudio(ports.sessionState.game.profile.sound);
+      unlockAudio(ports.sessionState.game.profile.sound);pressFeedback({sound:ports.sessionState.game.profile.sound,kind:button.dataset.unit!==undefined?'deploy':'press'});
       if(command==='reload-world'){if(!ports.navState.entryEntered&&!ports.navState.modal&&$('battlefield').dataset.renderer==='failed')dom.reload();return;}
       if(command==='enter-world'){if(!ports.playIntro())ports.enterWorld();return;}
       if(command==='home'){ports.showHome();return;}

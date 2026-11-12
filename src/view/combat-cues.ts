@@ -1,5 +1,5 @@
 import type {GameEvent} from '../game/types.ts';
-export type CombatCueId='order-hold'|'order-advance'|'story-rally'|'story-bell'|'story-shatter'|'story-protect'|'story-cover'|'story-breach'|'story-landmark'|'story-rescue'|'deploy'|'hit-neutral'|'hit-blunt'|'hit-flick'|'hit-hollow'|'base-player'|'base-enemy'|'coin'|'freeze'|'meteor'|'food'|'upgrade'|'evolve'|'win'|'lose'|'death'|'summon';
+export type CombatCueId='press'|'order-hold'|'order-advance'|'story-rally'|'story-bell'|'story-shatter'|'story-protect'|'story-cover'|'story-breach'|'story-landmark'|'story-rescue'|'deploy'|'hit-neutral'|'hit-blunt'|'hit-flick'|'hit-hollow'|'base-player'|'base-enemy'|'coin'|'freeze'|'meteor'|'food'|'upgrade'|'evolve'|'win'|'lose'|'death'|'summon';
 export type CueCooldown='deployment'|'unit-hit'|'base-hit'|'coin'|'death';
 export interface CombatCue {
  readonly id:CombatCueId;readonly eventIndex:number;readonly priority:number;

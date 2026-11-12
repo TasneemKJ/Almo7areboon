@@ -514,7 +514,7 @@ test('expedition choice cancellation and foreign ownership preserve the held rec
 });
 test('a failed renderer keeps a durable Home explanation and reuses the primary control for Reload',()=>{
  const h=harness(),c=h.context;c.entryEntered=false;c.$('battlefield').dataset.renderer='failed';c.api.update(true);
- assert.equal(c.$('entry-play').textContent,'Reload');assert.equal(c.$('entry-play').dataset.command,'reload-world');
+ assert.equal(c.$('entry-play').textContent,'Try again');assert.equal(c.$('entry-play').dataset.command,'reload-world');
  assert.match(c.$('entry-subtitle').textContent,/could not load.*saved progress/i);
  let reloads=0;c.window={location:{reload(){reloads++;}}};const before=JSON.stringify(c.game.profile);
  h.click('reload-world');assert.equal(reloads,1);assert.equal(JSON.stringify(c.game.profile),before);assert.equal(c.entryEntered,false);

@@ -85,3 +85,9 @@ test('Settings offers Full Journey and the Lamplighter in the app only', async (
   assert.match(app, /data-command="full-journey"/);
   assert.match(app, /data-command="lamplighter"/);
 });
+
+test('the entry screen lets the locked stretch of the path open Full Journey before entering the world', async () => {
+  const { readFileSync } = await import('node:fs');
+  const listeners = readFileSync(new URL('../src/app/listeners.ts', import.meta.url), 'utf8');
+  assert.match(listeners, /!ports\.navState\.entryEntered&&!ports\.navState\.modal&&[^\n]*command!=='full-journey'/);
+});
