@@ -16,6 +16,6 @@ struct Almo7areboonApp: App {
         WindowGroup {
             TasGameScreen(host: host)
         }
-        .onChange(of: scenePhase) { _, phase in host.scenePhaseChanged(phase) }
+        .onChange(of: scenePhase) { phase in host.scenePhaseChanged(phase) }
     }
 }
