@@ -248,7 +248,7 @@ for(const legacy of [false,true])test(`actual result evolution click/cancel and 
  h.click('evolve');h.click('confirm-evolve');assert.equal(c.modal,'result');assert.equal(c.game.state.phase,'won');
  assert.equal(c.game.profile.age,1);assert.equal(c.game.profile.coins,0);
  for(const field of ['enemyAge','furthestBattle','mastery','pendingVictory','wins','gems'])assert.deepEqual(c.game.profile[field],before[field]);
- const html=resultsHtml(c.game.profile,c.game.state);assert.match(html,new RegExp(`Evolve · ${ERAS[1].evolveCost.toLocaleString('en-US')} coins`));assert.match(html,/data-command="evolve" disabled/);
+ const html=resultsHtml(c.game.profile,c.game.state);assert.match(html,new RegExp(`Move camp · ${ERAS[1].evolveCost.toLocaleString('en-US')} coins`));assert.match(html,/data-command="evolve" disabled/);
  // Synthetic activation reaches the same rejected action path; affordability refreshes without losing Return.
  h.click('evolve');h.click('confirm-evolve');assert.equal(c.modal,'evolve');assert.match(evolutionDialogHtml(c.game.profile,c.game.state)!,/confirm-evolve" disabled/);
  c.api.dismissModal();assert.equal(c.modal,'result');

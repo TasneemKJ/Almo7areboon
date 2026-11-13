@@ -10,7 +10,7 @@ for(const copies of [0,1,2])test(`paid summon teaches ${copies===0?'discovery':c
  const game=new Game(profile),before=[...game.profile.cards];assert.equal(game.dispatch({type:'summon',count:1}),true);
  const changed=game.profile.cards.findIndex((n,i)=>n>before[i]);assert.ok(changed>=0);assert.equal(CARD_DEFS[changed].rarity,'common');
  const snapshot=JSON.stringify(game.profile),html=summonedCardsHtml(before,game.profile);
- assert.match(html,/Bonuses apply automatically.*evolution and new timelines/);assert.match(html,/data-command="close"/);assert.equal(game.profile.gems,0);assert.equal(JSON.stringify(game.profile),snapshot);
+ assert.match(html,/Bonuses apply automatically.*when you move camp and in new timelines/);assert.match(html,/data-command="close"/);assert.equal(game.profile.gems,0);assert.equal(JSON.stringify(game.profile),snapshot);
  if(copies===0){assert.match(html,/1\.00 → ×1\.03/);assert.match(html,/NEW/);}
  if(copies===1){assert.match(html,/Next level: 1 \/ 2 copies/);assert.doesNotMatch(html,/→/);}
  if(copies===2){assert.match(html,/1\.03 → ×1\.08/);assert.doesNotMatch(html,/NEW/);}

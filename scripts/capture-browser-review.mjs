@@ -281,7 +281,7 @@ try {
  await page.waitForTimeout(6500);await page.screenshot({path:`${output}/05-skirmish-390.png`});
  for(const [width,height] of [[320,640],[390,844]]){await resizeField(page,width,height);await assertPhysicalLayout(page);await page.screenshot({path:`${output}/04-physical-${width}.png`});}
  await context.close();
- const chapters=[['',['Pathkeeper','Thrower','Dino Rider']],['olive',['Fieldhand','Slinger','Harvester']],['harbor',['Quay Guard','Archer','Rider']],['lantern',['Gatekeeper','Musketeer','Cannon']],['hillside',['Sentinel','Scout','Tank']],['courtyards',['Light Guard','Trooper','Sky Skimmer']]];
+ const chapters=[['',['Pathkeeper','Thrower','Lizard Rider']],['olive',['Fieldhand','Slinger','Harvester']],['harbor',['Quay Guard','Archer','Rider']],['lantern',['Gatekeeper','Musketeer','Cannon']],['hillside',['Sentinel','Scout','Tank']],['courtyards',['Light Guard','Trooper','Sky Skimmer']]];
  for(const [age,[,names]] of chapters.entries()){
   console.log(`BROWSER_STAGE chapter-${age}`);
   const {context,page}=await tacticalSession(browser,errors,assetFailures,{age,enemyAge:age,furthestBattle:age,deployed:1});
@@ -298,7 +298,7 @@ try {
   console.log(`BROWSER_STAGE evolution-${age+1}`);
   const {context,page}=await tacticalSession(browser,errors,assetFailures,{age,enemyAge:age,furthestBattle:age,coins,deployed:1});
   try{
-   await enterCamp(page);await company(page);await page.getByRole('button',{name:'Evolution',exact:true}).click();
+   await enterCamp(page);await company(page);await page.getByRole('button',{name:'The Road',exact:true}).click();
    assert.equal(await page.locator('.era-landscape').nth(age+1).getAttribute('src'),`/art/storybook/${chapters[age+1][0]}/village.webp`);
    await page.locator('[data-command="evolve"]').click();await page.locator('[data-command="confirm-evolve"]').click();
    await page.waitForFunction(age=>document.querySelector('.game-shell').dataset.era===String(age),age+1);

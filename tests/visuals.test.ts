@@ -126,5 +126,5 @@ test('troop accessible labels retain deployment and unlock prices and explain sp
  const html=targets.units.innerHTML;
  assert.match(html,/aria-label="Deploy Pathkeeper, 3 food\. Takes less damage from ranged enemies\./);
  assert.match(html,/aria-label="Unlock Thrower, 150 coins\. Deals extra damage to heavy enemies\./);
- assert.match(html,/aria-label="Unlock Dino Rider, 400 coins\. Hits a second nearby enemy\./);
+ assert.match(html,/aria-label="Unlock Lizard Rider, 400 coins\. Hits a second nearby enemy\./);
 });

@@ -71,7 +71,7 @@ test('All six chapters keep canonical locked recruit coins and separate future f
 test('Company and journal keep new focus limits and identify unresolved legacy destinations specifically',()=>{
  assert.ok(camp);const game=gameAt(0),html=camp.campFocusHtml(game,'company'),all=buttons(html);
  assert.equal(all.filter(b=>b.includes('data-camp-recruit')).length,3);assert.equal(all.filter(b=>!b.includes('data-camp-recruit')).length,3);
- assert.match(html,/Evolution/);assert.match(html,/Storybook decisions/);assert.match(html,/Freeze/);assert.match(html,/Meteor/);assert.match(html,/Food Drop/);
+ assert.match(html,/The Road/);assert.match(html,/Storybook decisions/);assert.match(html,/Freeze/);assert.match(html,/Meteor/);assert.match(html,/Food Drop/);
  assert.doesNotMatch(html,/three skill buttons above/);
  const journal=camp.campFocusHtml(game,'journal');assert.equal(buttons(journal).length,3);assert.match(journal,/Choose battle/);assert.match(journal,/Company journal/);
 });

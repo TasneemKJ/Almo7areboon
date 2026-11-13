@@ -30,9 +30,9 @@ test('Evolution removes the shortfall at the exact price and leaves the action e
 
 test('battle and opponent gates still explain why Evolution is blocked',()=>{
  const battle=gameAt(0,ERAS[0].evolveCost);battle.dispatch({type:'start'});
- assert.match(evolutionScreenHtml(battle.profile,battle.state),/Finish the current battle to evolve\./);
+ assert.match(evolutionScreenHtml(battle.profile,battle.state),/Finish the current battle to move camp\./);
  const behind=gameAt(1,ERAS[1].evolveCost,0);
- assert.match(evolutionScreenHtml(behind.profile,behind.state),/Defeat the enemy to continue evolving\./);
+ assert.match(evolutionScreenHtml(behind.profile,behind.state),/Defeat the enemy before you move camp again\./);
 });
 
 test('the Camp sticky return paints its gutter without widening the scroll area',()=>{

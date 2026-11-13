@@ -22,7 +22,7 @@ test('prepared historical rank and masks are explained without combining old tim
  assert.equal(currentSealCount(game.profile),12);
  assert.match(html,/This timeline: 12 \/ 18 seals/);
  assert.match(html,/Your earned rank never goes down/);
- assert.match(html,/Coins, age upgrades, troop unlocks and this timeline's seals reset/);
+ assert.match(html,/Coins, camp upgrades, troop unlocks and this timeline's seals reset/);
  assert.equal((html.match(/type="radio"/g)??[]).length,3,'existing selection group remains the only choices');
  assert.equal(JSON.stringify(game),before);
 });

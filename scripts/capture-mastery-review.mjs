@@ -315,7 +315,7 @@ try {
       assert.equal(await command(page, 'confirm-evolve').count(), 0); assert.deepEqual(ledger(await saved(source)), before);
       await inspect(page, `insufficient-result-${width}`, true); await command(page, 'next').click(); await ready(page);
       // The confirmation's own disabled affordability is reachable on Evolution.
-      await page.getByRole('button', { name: 'Evolution', exact: true }).click();
+      await page.getByRole('button', { name: 'The Road', exact: true }).click();
       assert.equal(await page.locator('[data-command="evolve"]').isDisabled(), true);
       return before;
     });

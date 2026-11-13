@@ -71,7 +71,7 @@ test('the original prices and troop action IDs survive every presentation-name s
 test('evolution title changes do not weaken the spending, active battle or final-era gates',async()=>{
  const m=await presentation(),g=new Game();
  let html=evolutionDialogHtml(g.profile,g.state)!;
- assert.ok(html.includes(`Evolve to ${m.chapterPresentation(1).title}?`));
+ assert.ok(html.includes(`Move camp to ${m.chapterPresentation(1).title}?`));
  assert.match(html,/confirm-evolve" disabled/);
  g.profile.coins=ERAS[0].evolveCost;
  html=evolutionDialogHtml(g.profile,g.state)!;assert.doesNotMatch(html,/confirm-evolve" disabled/);
@@ -79,7 +79,7 @@ test('evolution title changes do not weaken the spending, active battle or final
  g.dispatch({type:'start'});assert.equal(evolutionDialogHtml(g.profile,g.state),null);
  g.state.paused=true;assert.equal(evolutionDialogHtml(g.profile,g.state),null);
  g.profile.age=5;g.state.phase='ready';assert.equal(evolutionDialogHtml(g.profile,g.state),null);
- assert.match(evolutionScreenHtml(g.profile,g.state),/FINAL AGE/);
+ assert.match(evolutionScreenHtml(g.profile,g.state),/THE LAST CAMP/);
 });
 
 test('results show the next opponent chapter, not the player army or a fictional reward',async()=>{

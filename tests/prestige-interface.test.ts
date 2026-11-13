@@ -32,7 +32,7 @@ test('preview renders exact producer outputs and separates current from next eff
 });
 test('reset table discloses every discarded field and permanent retained field',async()=>{
   const ui=await presentation(),g=prepared(),html=ui.prestigeDialogHtml(g.profile,prestigePreview(g.profile,g.state,'hearth')!);
-  for(const text of ['Coins: 4,321 → 0','Army: first age','Selected chapter: 1','Unlocked chapters: chapter 1 only','Food upgrade: level 4 → 0','Base upgrade: level 2 → 0','Ranged and heavy troops: locked','Six chapter records: seals and both bests cleared','Cards, copies and card bonuses','Gems and permanent legacy rank','Claimed quests and lifetime totals','Summon count and seed','Daily claim and streak','Sound, speed and motion preferences'])assert.ok(html.includes(text),text);
+  for(const text of ['Coins: 4,321 → 0','Army: first camp','Selected chapter: 1','Unlocked chapters: chapter 1 only','Food upgrade: level 4 → 0','Base upgrade: level 2 → 0','Ranged and heavy troops: locked','Six chapter records: seals and both bests cleared','Cards, copies and card bonuses','Gems and permanent legacy rank','Claimed quests and lifetime totals','Summon count and seed','Daily claim and streak','Sound, speed and motion preferences'])assert.ok(html.includes(text),text);
 });
 test('preview has one native labeled choice group with associated effect descriptions',async()=>{
   const ui=await presentation(),g=prepared(),html=ui.prestigeDialogHtml(g.profile,prestigePreview(g.profile,g.state,'watch')!);

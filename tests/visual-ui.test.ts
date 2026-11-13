@@ -29,7 +29,7 @@ test('era journey shows all six landscapes and preserves the actual evolution ga
 test('journey reuses immutable landscape illustrations and handles final age without invalid content',async()=>{
  const m=await evolution();const g=new Game({...defaultProfile(),age:5});
  const html=m.evolutionScreenHtml(g.profile,g.state);
- assert.match(html,/FINAL AGE/);assert.doesNotMatch(html,/undefined|NaN/);
+ assert.match(html,/THE LAST CAMP/);assert.doesNotMatch(html,/undefined|NaN/);
  assert.equal(m.evolutionScreenHtml(g.profile,g.state),html);
 });
 test('visual UI source contract: shared illustrated assets are not stretched or greyed out',()=>{

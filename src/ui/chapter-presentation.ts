@@ -13,7 +13,7 @@ interface ChapterPresentation {
 /** Fictional presentation only: indices, prices, progression and saves stay in game/. One frozen table per language. */
 const freeze=(list:ChapterPresentation[]):readonly ChapterPresentation[]=>Object.freeze(list.map(chapter=>Object.freeze({...chapter,units:Object.freeze(chapter.units) as readonly [string,string,string]})));
 const chaptersEn=freeze([
- {title:'First Fires',subtitle:'A warm threshold. A silent valley.',period:'EARLY SETTLEMENTS',units:['Pathkeeper','Thrower','Dino Rider']},
+ {title:'First Fires',subtitle:'A warm threshold. A silent valley.',period:'EARLY SETTLEMENTS',units:['Pathkeeper','Thrower','Lizard Rider']},
  {title:'Olive Terraces',subtitle:'The last lamps above the fields.',period:'FARMING COMMUNITIES',units:['Fieldhand','Slinger','Harvester']},
  {title:'Harbor Watch',subtitle:'Quiet quays after the ships depart.',period:'COASTAL ANTIQUITY',units:['Quay Guard','Archer','Rider']},
  {title:'Lantern Quarter',subtitle:'Shutters close around the courtyard.',period:'HISTORIC CRAFT TOWNS',units:['Gatekeeper','Musketeer','Cannon']},
@@ -21,7 +21,7 @@ const chaptersEn=freeze([
  {title:'Courtyards Beyond',subtitle:'Old thresholds beneath unfamiliar stars.',period:'AN IMAGINED FUTURE',units:['Light Guard','Trooper','Sky Skimmer']},
 ]);
 const chaptersAr=freeze([
- {title:'النيران الأولى',subtitle:'عتبةٌ دافئة، ووادٍ صامت.',period:'المستوطنات الأولى',units:['حارس الدرب','الرامي','فارس الديناصور']},
+ {title:'النيران الأولى',subtitle:'عتبةٌ دافئة، ووادٍ صامت.',period:'المستوطنات الأولى',units:['حارس الدرب','الرامي','فارس الضبّ']},
  {title:'مدرّجات الزيتون',subtitle:'آخر القناديل فوق الحقول.',period:'مجتمعات الزراعة',units:['عامل الحقل','المِقلاع','الحصّاد']},
  {title:'حراسة الميناء',subtitle:'أرصفةٌ هادئة بعد رحيل السفن.',period:'الساحل القديم',units:['حارس الرصيف','النبّال','الفارس']},
  {title:'حيّ الفوانيس',subtitle:'تُغلَق النوافذ حول الساحة.',period:'مدن الحِرَف القديمة',units:['حارس البوّابة','حامل البندقية','المدفع']},

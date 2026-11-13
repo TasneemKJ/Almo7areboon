@@ -243,3 +243,33 @@ card: Continue opens Full Journey, Close returns to the same Continue (TODO).
 **Paywall.** Unchanged in this pass: Full Journey still first appears after a real win at the end of chapter 2. With the
 wall gone, a cold player now reaches it as a reward moment (Kingdom Rush's model: the offer follows a win, never a
 loss) instead of after a string of defeats.
+
+## 1.1: names that belong to this tale (2026-11-13)
+
+An outside audit read the battle screen as a copy of a well-known era-evolution lane battler; the loudest tells were a
+unit called "Dino Rider" and the borrowed vocabulary of ages and evolving. Names and copy only changed: no mechanic,
+number, command id, save field or art.
+
+- **Lizard Rider / فارس الضبّ** (was Dino Rider / فارس الديناصور). The First Fires heavy is painted as a man on a green,
+  spotted lizard. The Levant's own desert lizard is the dabb (الضبّ, the spiny-tailed lizard), drawn storybook-large as
+  folk tales draw their beasts; no dinosaur belongs to a valley of first fires and olive terraces.
+- **Move camp / انقل المخيّم** (was Evolve / ارتقِ). The company does not evolve through the ages of mankind; it breaks
+  camp and walks on to the next place of the tale. It also explains the rule the old word could not: a new camp starts
+  from nothing (coins, storehouse, gate and troop unlocks reset) while what the company carries (cards, gems, seals) comes
+  along. The confirm button reads "MOVE CAMP TO <PLACE>", the decline "STAY IN THIS CAMP".
+- **The Road / الطريق** (was the Evolution page). The page already showed the six places in order under "Through the
+  Levant", and the store card already said "The road goes on".
+- **Camp** replaces "age"/"era" wherever the player's own stage was meant ("camp upgrades", "first camp", "THE LAST
+  CAMP", "YOUR COMPANY. YOUR ROAD." for "YOUR ARMY. YOUR ERA."). Chapters were already named for places (First Fires …
+  Courtyards Beyond) and stay.
+- **Kept on purpose:** the other troop names (Pathkeeper, Fieldhand, Quay Guard, Gatekeeper …) are the game's own; the
+  internal tables (`src/game/data.ts` era and unit keys, `visual-theme.ts`) never reach the screen and keep save and test
+  compatibility. "Timeline" (the harder replay) is unchanged.
+- **Open, reported to the owner:** the card names in `src/game/cards.ts` (Dino Ribs, T-Rex Head, Trojan Horse, UAV-3.0 …)
+  follow the reference game's card list and each has its own illustration, so renaming them is an art decision, not a
+  copy pass; the store description promises "the Olive Wood Shield … the Golden Sickle", which the game does not have.
+
+**The lock on Move camp (same release).** In the app, while the next chapter is behind Full Journey, the control shows a
+lock and the App Store's price instead of a coin cost, is never disabled, and opens the existing card (declinable; it
+returns to where it was opened and never reopens by itself). The line under it says both costs plainly: Full Journey
+once, then the coins. Owners, the free first move and the web see the coin cost as before.

@@ -63,7 +63,7 @@ test('final continuation explains fresh seals and terminal cap offers return wit
 });
 test('result evolution and existing evolution copy use current cost, prerequisite and retained access',()=>{
  const p=defaultProfile();p.coins=0;const g=new Game(p);g.state.phase='won';let html=resultsHtml(g.profile,g.state);
- assert.match(html,/data-command="evolve" disabled/);assert.match(html,new RegExp(`Evolve · ${ERAS[0].evolveCost.toLocaleString('en-US')} coins`));
+ assert.match(html,/data-command="evolve" disabled/);assert.match(html,new RegExp(`Move camp · ${ERAS[0].evolveCost.toLocaleString('en-US')} coins`));
  g.profile.coins=ERAS[0].evolveCost;assert.doesNotMatch(resultsHtml(g.profile,g.state),/data-command="evolve" disabled/);
  for(const copy of [evolutionDialogHtml(g.profile,g.state)!,evolutionScreenHtml(g.profile,g.state)]){assert.match(copy,/selected opponent/);assert.match(copy,/unlocked battles stay/);assert.doesNotMatch(copy,/return to battle 1|unlocked battles reset/);}
  g.profile.age=1;assert.doesNotMatch(resultsHtml(g.profile,g.state),/data-command="evolve"/);

@@ -22,12 +22,12 @@ test('a free player at the end of chapter 2 sees a lock and the store price on E
     const game = gameAt(1, coins), button = evolveButton(evolutionScreenHtml(game.profile, game.state, appBridge()));
     assert.match(button, /data-locked="full-journey"/);
     assert.match(button, /<bdi dir="ltr">\$4\.99<\/bdi>/, 'the App Store price, isolated left to right like the card');
-    assert.match(button, /aria-label="EVOLVE\. Locked\. Opens with Full Journey, \$4\.99"/);
+    assert.match(button, /aria-label="MOVE CAMP\. Locked\. Opens with Full Journey, \$4\.99"/);
     assert.doesNotMatch(button, /20k|disabled/, 'no coin cost, and it can always be tapped to open the card');
   }
   const game = gameAt(1, 5), html = evolutionScreenHtml(game.profile, game.state, appBridge());
   assert.doesNotMatch(html, /camp-shortfall|Needs [\d,]+ more/, 'no coin shortfall toward a wall');
-  assert.match(html, /This chapter opens with Full Journey, bought once\. Evolving then costs 20,000 coins\./, 'both costs are said plainly');
+  assert.match(html, /This chapter opens with Full Journey, bought once\. Moving camp then costs 20,000 coins\./, 'both costs are said plainly');
 });
 
 test('before the store has answered the lock names Full Journey instead of a price', () => {
@@ -51,9 +51,9 @@ test('the result details and the regroup advice stop pointing coins at the locke
   const game = gameAt(1, ERAS[1].evolveCost); game.state.phase = 'won';
   const locked = evolveButton(resultsHtml(game.profile, game.state, appBridge()));
   assert.match(locked, /data-locked="full-journey"/); assert.match(locked, /\$4\.99/); assert.doesNotMatch(locked, /coins|disabled/);
-  assert.match(evolveButton(resultsHtml(game.profile, game.state, appBridge({ fullGame: true }))), /Evolve · 20,000 coins/);
+  assert.match(evolveButton(resultsHtml(game.profile, game.state, appBridge({ fullGame: true }))), /Move camp · 20,000 coins/);
   game.state.phase = 'lost';
-  assert.match(regroupLearningHtml(game.profile, game.state), /Evolution is affordable: 20,000 coins/, 'the web keeps the advice');
+  assert.match(regroupLearningHtml(game.profile, game.state), /Moving camp is affordable: 20,000 coins/, 'the web keeps the advice');
 });
 
 test('tapping the locked control opens the store card once; declining closes it and nothing reopens it', () => {
