@@ -109,7 +109,12 @@ async function closeAll(page) {
   await step('lanterns battle', async () => {
     await closeAll(page);
     await page.evaluate(() => window.almoApp.update({owned: {lamplighterYearly: true}}));
-    await tap(page, '[data-command=camp-battle]'); await page.waitForTimeout(2500); await snap(page, 'battle-lanterns-start');
+    await tap(page, '[data-command=camp-battle]'); await page.waitForTimeout(900);
+    // 1.1: this profile's chosen battle is a paid chapter. Without Full Journey the save is held and the card opens
+    // instead of the battle; "Play the free chapters" steps back to chapter 2, where the battle starts.
+    const free = page.locator('#modal-layer:not([hidden]) [data-command=free-chapters]');
+    if (await free.count()) { await snap(page, 'held-save-card'); await free.tap(); await page.waitForTimeout(900); await tap(page, '[data-command=camp-battle]'); }
+    await page.waitForTimeout(2500); await snap(page, 'battle-lanterns-start');
     await deployLoop(page, async () => false, 15000); await snap(page, 'battle-lanterns-mid');
   });
   await step('lose', async () => {
