@@ -65,7 +65,7 @@ export function createStoreFlow(deps: StoreFlowDeps, bridge: TasBridge = almoApp
   /** Handles a store command; false when the command is not the store's. */
   function handleStoreCommand(command: string | undefined): boolean {
     switch (command) {
-      case 'full-journey': showFullJourney(ports.navState.modal === 'settings' ? 'settings' : 'other'); return true;
+      case 'full-journey': showFullJourney(ports.navState.modal === 'settings' ? 'settings' : ports.navState.modal === 'result' ? 'evolve-result' : 'other'); return true;
       case 'lamplighter': showLamplighter(ports.navState.modal === 'settings' ? 'settings' : 'other'); return true;
       case 'buy-full-journey': ports.persist(); bridge.buy(FULL_JOURNEY); return true;
       case 'buy-lamplighter-monthly': ports.persist(); bridge.buy(LAMPLIGHTER_MONTHLY); return true;

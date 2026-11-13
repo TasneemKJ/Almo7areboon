@@ -102,6 +102,8 @@ export function installListeners(deps: ListenersDeps): void {
       if(ports.action({type:'next'})&&ports.playable()&&ports.navState.modal!=='session'){ports.navState.evolutionFromResult=false;ports.closeModal(false);ports.sessionState.manualPaused=false;ports.switchTab('battle');}
     },
     'result-counsel':(button)=>{openCounsel(ports,button.dataset.counsel??'');},
+    // After the last free chapter: back to ready Camp (replay, records, daily). Only from a won result.
+    'result-camp':()=>{if(ports.navState.modal==='result'&&ports.sessionState.game.state.phase==='won'&&ports.action({type:'retry'})&&ports.playable()&&(ports.navState.modal as string|null)!=='session'){ports.navState.evolutionFromResult=false;ports.closeModal(false);ports.sessionState.manualPaused=false;ports.switchTab('battle');}},
     'retry':()=>{if(ports.action({type:'retry'})&&ports.playable()&&ports.navState.modal!=='session'){ports.navState.evolutionFromResult=false;ports.closeModal(false);ports.sessionState.manualPaused=false;ports.switchTab('battle');};},
     'confirm-prestige':()=>{
       if(ports.navState.modal!=='prestige'||!ports.navState.prestigeOrigin||ports.navState.prestigeExpectedTimeline===null||!isLegacyChoice(ports.navState.prestigeDraft))return;

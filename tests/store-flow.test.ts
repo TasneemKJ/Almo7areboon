@@ -127,3 +127,10 @@ test('the next-battle and choose-battle routes ask the gate before acting', asyn
   assert.match(listeners, /advancement\.target==='battle'&&advancement\.nextBattle!==null&&ports\.gateBattle\(advancement\.nextBattle\)/);
   assert.match(listeners, /if\(ports\.gateBattle\(Number\(button\.dataset\.battle\)\)\)return true;/);
 });
+
+test('Full Journey opened on purpose from a result closes back to that result, never to an empty field', () => {
+  const s = setup(1); s.navState.modal = 'result';
+  assert.equal(s.flow.handleStoreCommand('full-journey'), true); assert.equal(s.navState.modal, 'full-journey');
+  s.flow.handleStoreCommand('close');
+  assert.equal(s.navState.modal, 'result'); assert.ok(s.calls.includes('result')); s.dispose();
+});

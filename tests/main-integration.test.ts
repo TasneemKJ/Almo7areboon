@@ -982,3 +982,11 @@ test('defeat counsel retries into Camp and opens the lit place without spending;
  const k=harness(),d=k.context;d.entryEntered=true;Object.assign(d.game.profile,{enemyAge:1,furthestBattle:1,coins:560});d.game.dispatch({type:'start'});d.game.dispatch({type:'retreat'});d.modal='result';
  k.clickData({command:'result-counsel',counsel:'company-1'});assert.equal(d.modal,'camp-focus');assert.equal(JSON.stringify(d.campOwner.focus),JSON.stringify({recruit:1}));
 });
+test('after the chapter 2 win, To Camp reaches ready Camp and chapter 1 can be replayed without the sheet',()=>{
+ const h=harness(),c=h.context;c.entryEntered=true;Object.assign(c.game.profile,{enemyAge:1,furthestBattle:1,played:true});
+ let gated=0;c.gateBattle=(battle:number)=>{if(battle>=2){gated++;return true;}return false;};
+ c.game.dispatch({type:'start'});c.game.state.enemyHp=0;c.game.step(1/60);c.game.drainEvents();assert.equal(c.game.state.phase,'won');c.modal='result';
+ h.click('result-camp');
+ assert.equal(c.game.state.phase,'ready');assert.equal(c.modal,null);assert.equal(c.campOwner?.kind,'root');assert.equal(c.game.profile.enemyAge,1);
+ h.clickData({campStation:'journal'});h.click('camp-chapters');assert.equal(c.modal,'battles');h.clickData({battle:'0'});assert.equal(c.game.profile.enemyAge,0);assert.equal(gated,0);assert.notEqual(c.modal,'full-journey');
+});

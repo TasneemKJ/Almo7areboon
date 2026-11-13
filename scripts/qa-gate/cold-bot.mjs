@@ -29,6 +29,7 @@ async function inspect(tag) {
   for (const t of await webSpeak(page).catch(() => [])) findings.web.add(`${tag}: ${t}`);
 }
 
+const recent = [], loopFlagged = new Set();
 async function tap(c, why) {
   await page.waitForTimeout(400);
   try { const how = await tapControl(page, c); if (how === 'scrolled') m.scrollTaps = (m.scrollTaps || 0) + 1; } catch (e) { note(`tap failed ${e.message}`); return false; }
@@ -37,6 +38,10 @@ async function tap(c, why) {
   repeat = key === lastTapKey ? repeat + 1 : 0; lastTapKey = key;
   if (repeat === 12 && !/deploy|order|rally/.test(why)) { m.stuck.push({at: T(), kind: 'tap has no effect', control: c.text.slice(0, 60), cmd: c.cmd, screen: screens.get(lastSig)}); note(`NO-EFFECT x12: ${c.text.slice(0, 40)}`); await shot(page, `bot-${lang}-noeffect-${m.stuck.length}`); }
   note(`TAP ${why}: "${c.text.slice(0, 60)}" cmd=${c.cmd} ${JSON.stringify(c.data)}`);
+  // A two-step loop (e.g. Continue -> paywall -> Close -> Continue) is a state the player cannot leave by following
+  // the screen: 4 cycles of the same two commands, nothing else, is a stuck finding.
+  recent.push(c.cmd || why); if (recent.length > 8) recent.shift();
+  if (recent.length === 8 && new Set(recent).size === 2 && recent.every((k, i) => k === recent[i % 2]) && !/deploy|order|rally/.test(recent.join(' ')) && !loopFlagged.has(recent.slice(0, 2).join('>'))) { loopFlagged.add(recent.slice(0, 2).join('>')); m.stuck.push({at: T(), kind: 'two-step loop', control: recent.slice(0, 2).join(' > '), screen: screens.get(lastSig)}); note(`LOOP: ${recent.slice(0, 2).join(' > ')}`); }
   return true;
 }
 
