@@ -260,7 +260,7 @@ Combined-main camp/cinema acceptance:1464tests/build pass; six-size native touch
 - [ ] A mid-battle reload drops the battle without a word; say so on the title ("Your last battle ended when the game closed").
 - [ ] The result card draws a focus ring around the Victory heading.
 - [ ] Battle and Camp titles name the army's era, not the opponent's chapter (title screen and battle can disagree).
-- [ ] After the chapter 2 win a free player who closes Full Journey is shown the same Continue, which reopens it (cold bot looped 10+ min in both b5c0443 and 1.1). Offer the free path (replay a chapter / Camp) as the primary after Close.
+- [x] (56f0b89: "To Camp" primary, the sheet on purpose) After the chapter 2 win a free player who closes Full Journey is shown the same Continue, which reopens it (cold bot looped 10+ min in both b5c0443 and 1.1). Offer the free path (replay a chapter / Camp) as the primary after Close.
 - [ ] Postcard share: verified in WebKit (Playwright) only; check once in the simulator that the canvas exports under the app scheme.
 - [ ] Settings: Done is below the fold on 844-tall screens; add a close button at the top.
 
