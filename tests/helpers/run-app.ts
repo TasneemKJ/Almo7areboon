@@ -1,7 +1,7 @@
 import { runInNewContext } from 'node:vm';
 import { createDomPort, type DomEnv } from '../../src/app/dom-port.ts';
 import { STORE_COMMANDS } from '../../src/app/store-flow.ts';
-import { n, tr } from '../../src/ui/i18n.ts';
+import { clockTime, n, tr } from '../../src/ui/i18n.ts';
 import { journeyPathHtml } from '../../src/ui/entry-screen.ts';
 
 /**
@@ -19,6 +19,7 @@ export function runInApp(code: string, context: Record<string, unknown>): unknow
   // The shell's own text goes through the language pair helpers (English in tests).
   context.tr ??= tr;
   context.n ??= n;
+  context.clockTime ??= clockTime;
   // The entry's journey path, as on the web: everything owned, nothing locked.
   context.journeyPathHtml ??= journeyPathHtml;
   context.ownsFullJourney ??= () => true;

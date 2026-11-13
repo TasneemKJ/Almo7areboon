@@ -19,3 +19,8 @@ export function langAttrs(): string {
 export function saveLanguage(next: Lang, storage?: Pick<Storage, 'setItem'>): boolean {
   try { const target = storage ?? globalThis.localStorage; if (!target) return false; target.setItem(LANGUAGE_KEY, next === 'ar' ? 'ar' : 'en'); return true; } catch { return false; }
 }
+
+/** A clock time ("2:57 PM" / "2:57 م") in the page language, Western digits as on Levantine phones. */
+export function clockTime(ms: number): string {
+  return new Date(ms).toLocaleTimeString(isArabic() ? 'ar-u-nu-latn' : 'en-US', { hour: 'numeric', minute: '2-digit' });
+}

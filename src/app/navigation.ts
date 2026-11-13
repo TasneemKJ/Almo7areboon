@@ -29,7 +29,7 @@ import { legacyCurrentHtml, prestigeDetailsHtml, prestigeDialogHtml } from '../u
 import { compactNumber } from '../ui/battle-hud.ts';
 import { battleSelectionHtml } from '../ui/progression-screen.ts';
 import { modalFocusables } from '../ui/accessibility.ts';
-import { tr } from '../ui/i18n.ts';
+import { clockTime, tr } from '../ui/i18n.ts';
 import { textIfChanged, htmlIfChanged } from '../ui/dom-state.ts';
 import type { Runtime } from './runtime.ts';
 import type { ShellApi } from './shell.ts';
@@ -349,7 +349,7 @@ export function createNavigation(deps: NavigationDeps) {
     if(navState.modal==='evolve'&&navState.evolutionFromResult){navState.evolutionFromResult=false;showResult();return;}
     navState.evolutionFromResult=false;closeModal();
   }
-  function preferenceNotice(){return ports.sessionState.session.status==='temporary'?temporarySessionText():ports.sessionState.savedWarning?tr('Saving is unavailable. Export a backup before closing.','الحفظ غير متاح الآن. صدّر نسخة احتياطية قبل الإغلاق.'):`${tr('Progress saves on this device. Export keeps a separate copy.','يُحفظ تقدّمك على هذا الجهاز، والتصدير يحتفظ بنسخة منفصلة.')}${ports.sessionState.lastSavedAt?` ${tr('Last saved','آخر حفظ')} ${new Date(ports.sessionState.lastSavedAt).toLocaleTimeString('en-US',{hour:'numeric',minute:'2-digit'})}.`:''}`;}
+  function preferenceNotice(){return ports.sessionState.session.status==='temporary'?temporarySessionText():ports.sessionState.savedWarning?tr('Saving is unavailable. Export a backup before closing.','الحفظ غير متاح الآن. صدّر نسخة احتياطية قبل الإغلاق.'):`${tr('Progress saves on this device. Export keeps a separate copy.','يُحفظ تقدّمك على هذا الجهاز، والتصدير يحتفظ بنسخة منفصلة.')}${ports.sessionState.lastSavedAt?` ${tr('Last saved','آخر حفظ')} ${clockTime(ports.sessionState.lastSavedAt)}.`:''}`;}
   function showSettings(focusCommand?:string){
     if(!['film','settings','save-recovery','reset','import'].includes(navState.modal??''))navState.settingsOrigin=navState.modal==='field-pause'?'field-pause':null;
     showModal('settings',preferencesHtml(ports.sessionState.game.profile,ports.sessionState.atmosphereEnabled,ports.sessionState.audioMix,ports.sessionState.session.status==='active',preferenceNotice()),focusCommand);
