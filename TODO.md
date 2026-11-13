@@ -273,3 +273,14 @@ Combined-main camp/cinema acceptance:1464tests/build pass; six-size native touch
 - [ ] More languages (French, Turkish, Urdu, Indonesian).
 - [ ] Seasonal beats (Ramadan, harvest, Eid) from the game's own world.
 - [x] (1.1: postcard home after a victory, Arabic first, TasKit share) A share moment (a result card from the game's own art through the iOS share sheet).
+
+## 1.1 audit items (2026-11-13)
+- [x] (b24a60b) An imported save past the free chapters could start paid chapters without Full Journey: every battle start now asks the store; the save is held, never rewritten.
+- [x] (2658fcd) EVOLVE showed a coin cost for a chapter behind Full Journey: a lock and the store price, opening the card.
+- [x] (165a7e6) Borrowed names: Dino Rider, Evolve/Evolution, age/era wording (DESIGN.md, docs/NATIVE-REVIEW.md).
+- [ ] Card names in `src/game/cards.ts` (Dino Ribs, T-Rex Head, Trojan Horse, UAV-3.0 …) follow the reference game's list and each has its own illustration: rename with the art, not as a copy pass. The store description promises "the Olive Wood Shield … the Golden Sickle", which the game does not have: make one of the two true.
+- [ ] "Timeline" (the harder replay) is also the reference game's word; decide whether it gets the tale's own name.
+- [ ] A held save whose own army or timeline is paid has no free battle to offer (only Full Journey, Restore or Start over); decide whether it should.
+- [ ] Native read of the new Arabic (docs/NATIVE-REVIEW.md), including «فارس الضبّ».
+- [ ] Device check of the held-save card and the locked Move camp control on an iPhone with a StoreKit sandbox account.
+

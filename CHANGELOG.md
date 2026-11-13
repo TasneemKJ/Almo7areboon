@@ -2,6 +2,12 @@
 
 Semantic versioning. Each merged batch adds an entry; `package.json` and the top heading carry the same version (a test checks). Git tags are cut by the maintainer at release time (only `v0.2.0` exists).
 
+## 1.1.0 - 2026-11-13
+- Store honesty (app): a save past the free chapters (imported or from the web) is held until Full Journey is owned. Starting a battle asks StoreKit, the save is never clamped or rewritten, and a late answer or Restore opens it as it was. The import dialog warns first; the card offers the way back to a free chapter.
+- The control that moves camp past chapter 2 shows a lock and the App Store price instead of a coin cost for a free player, and opens the Full Journey card; owners see the coin cost.
+- Names that belong to the tale, both languages: Lizard Rider (was Dino Rider), Move camp (was Evolve), The Road (was Evolution), camp for age/era. Copy only.
+- Arabic checked as fusha throughout; one everyday word changed. New Arabic strings are listed in `docs/NATIVE-REVIEW.md` for a native read.
+
 ## 1.0.0 - 2026-11-13
 - The iPhone app (ios/, TasKit): Full Journey (chapters 3-6 and the harder timeline) asked for at the end of chapter 2 and from Settings; the Lamplighter subscription (monthly or yearly), whose only gift is lit lanterns behind your gate. The web build sells nothing and stays open.
 - The whole game in Arabic as well as English, one language per screen; joined Arabic letters (no tracking), Arabic clock times and compact numbers.
