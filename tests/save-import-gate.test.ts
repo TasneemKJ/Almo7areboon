@@ -143,3 +143,12 @@ test('every battle start in the shell passes the gate, and the import dialog say
   assert.match(read('../src/app/listeners.ts'), /journeyHeld\(ports\.navState\.pendingImport\)\?`<p class="save-note">\$\{tr\('This save is past the free chapters\./);
   assert.doesNotMatch(read('../src/game/save.ts') + read('../src/game/backup.ts'), /fullGame|owns|app-bridge/, 'the save layer knows nothing of ownership');
 });
+
+// Found in WebKit (qa-gate, simulated app): Play on a held save opens the card and then Camp mounts under it; as Camp's
+// root it swallowed every button on the card (Buy, Restore, Not now were dead).
+test('a card that is already open when Camp mounts keeps its own buttons', () => {
+  const nav = readFileSync(new URL('../src/app/navigation.ts', import.meta.url), 'utf8');
+  assert.match(nav, /navState\.campOwner\?\?=navState\.modal&&navState\.modal!=='camp-focus'&&navState\.modal!=='session'\?\{kind:'advanced',returnTarget:'journal'\}:\{kind:'root'\};/);
+  assert.match(nav, /if\(navState\.campOwner\.kind==='advanced'\)return !navState\.modal&&!button\.closest\('#secondary-screen'\);/, 'an advanced owner lets dialog buttons through');
+  assert.match(nav, /if\(navState\.campOwner\.kind==='advanced'&&!navState\.modal&&navState\.activeTab==='battle'\)navState\.campOwner=\{kind:'root'\};/, 'and Camp takes its root back when the dialog closes');
+});

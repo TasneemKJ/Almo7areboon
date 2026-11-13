@@ -213,7 +213,9 @@ export function createNavigation(deps: NavigationDeps) {
   function syncCamp(){
     const visible=navState.entryEntered&&root!.dataset.fieldMode==='camp'&&ports.playable()&&canOwnCamp(ports.sessionState.game.profile,ports.sessionState.game.state);
     if(!visible){navState.campOwner=null;$('camp-view').hidden=true;if(!canOwnCamp(ports.sessionState.game.profile,ports.sessionState.game.state))root!.dataset.fieldMode='field';return;}
-    navState.campOwner??={kind:'root'};
+    // Camp can mount under a dialog that is already open (a held save's Full Journey card opens when Play is pressed):
+    // that dialog owns its own buttons, exactly as when a dialog opens over Camp (showModal).
+    navState.campOwner??=navState.modal&&navState.modal!=='camp-focus'&&navState.modal!=='session'?{kind:'advanced',returnTarget:'journal'}:{kind:'root'};
     if(navState.campOwner.kind==='advanced'&&!navState.modal&&navState.activeTab==='battle')navState.campOwner={kind:'root'};
     const p=ports.sessionState.game.profile,day=localDay(),key=JSON.stringify([p.age,p.enemyAge,p.foodLevel,p.baseLevel,p.unlocked,p.chronicle?.route,campGoalText(p,day),p.coins]);
     if(key!==navState.campRenderKey){navState.campRenderKey=key;htmlIfChanged($('camp-view'),campRootHtml(p,day));}
