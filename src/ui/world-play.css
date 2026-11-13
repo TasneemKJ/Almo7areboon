@@ -74,3 +74,5 @@
  .gate-hit.order-ready .world-target-name,.gate-hit[aria-pressed="true"] .world-target-name{
   background:Canvas;color:CanvasText;border:1px solid Highlight}
 }
+/* Earlier recruits sit above later ones: a cost label under the next recruit's hit circle still taps its own troop (geometry gate, 375x667). */
+.recruit-hit[data-field-recruit="0"]{z-index:3}.recruit-hit[data-field-recruit="1"]{z-index:2}.recruit-hit[data-field-recruit="2"]{z-index:1}
