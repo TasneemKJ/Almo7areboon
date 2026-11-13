@@ -1,3 +1,8 @@
 /* Arabic is a joined script: tracking pulls its letters apart (WebKit draws them as isolated forms). The English
    eyebrows and kickers keep their tracking; on an Arabic page every element sets it back to zero. */
 :root[lang="ar"] *,:root[lang="ar"] *::before,:root[lang="ar"] *::after{letter-spacing:0 !important}
+/* The game's Arabic text face, bundled with the game (works offline): Noto Sans Arabic, SIL OFL 1.1 (fonts/OFL.txt). */
+@font-face{font-family:"Almo Arabic";src:url("./fonts/noto-sans-arabic.woff2") format("woff2");font-weight:100 900;font-display:swap;unicode-range:U+0600-06FF,U+0750-077F,U+08A0-08FF,U+FB50-FDFF,U+FE70-FEFF,U+200C-200F,U+060C,U+061B,U+061F,U+0640,U+066A-066D}
+:root[lang="ar"] body,:root[lang="ar"] button,:root[lang="ar"] input,:root[lang="ar"] select,:root[lang="ar"] textarea{font-family:"Almo Arabic","Trebuchet MS",Arial,sans-serif}
+:root[lang="ar"] h1,:root[lang="ar"] h2,:root[lang="ar"] h3,:root[lang="ar"] .entry-copy h1,:root[lang="ar"] .eyebrow{font-family:"Almo Arabic",Georgia,serif}
+:root[lang="ar"] *{font-family:"Almo Arabic","Trebuchet MS",Arial,sans-serif!important}

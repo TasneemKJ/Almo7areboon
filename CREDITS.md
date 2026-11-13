@@ -2,9 +2,9 @@
 
 - **Game code, vector art, storybook plates, icons, characters, factions and story text:** original to this project (`src/`, `public/art/`, `art-source/`, `public/icon*`). Fictional Levantine settings, not exact historical reconstructions. Licence for the project's own content: not yet stated by the owner (all rights reserved until declared).
 - **Audio:** synthesized at runtime by the game's own code (`src/view/audio.ts` and the soundscape worker); no sampled third-party audio.
-- **Fonts:** none are bundled or loaded remotely; text uses system stacks (Trebuchet MS, Arial, Georgia).
+- **Fonts:** Noto Sans Arabic (Copyright 2022 The Noto Project Authors, https://github.com/notofonts/arabic), SIL Open Font License 1.1, bundled locally for Arabic text (`src/ui/fonts/noto-sans-arabic.woff2`, licence in `src/ui/fonts/OFL.txt`). Latin text uses system stacks (Trebuchet MS, Arial, Georgia). Nothing is loaded remotely.
 - **Libraries:** [Phaser 3](https://phaser.io) (MIT), bundled in the build. Build and test tooling (Vite, TypeScript, Playwright, `@types/node`) are development dependencies (MIT or Apache-2.0) and are not shipped.
-- **Reference:** the loop is inspired by *We Are Warriors!* on Google Play; no assets or code from it are used.
+- **Genre:** a lane battler (food recruits troops who push a rival line); the world, story, art and code are this project's own.
 
 Flag for the owner: the AI-assisted origin of the storybook art and the project's own licence should be stated explicitly before a public release; `art-source/storybook/README.md` describes the source art.
 
