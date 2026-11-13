@@ -251,15 +251,17 @@ IDEAL/5Ws and twenty alternatives per distinct scenario: `docs/audits/2026-10-08
 Combined-main camp/cinema acceptance:1464tests/build pass; six-size native touch/deployment/rotation matrix passes, including390px at4×CPU. Four corrected cinema exports independently decoded and visually reviewed. Incoming remote-main evolution, gate and scroll fixes preserved.
 
 ## iPhone 1.0 gate (2026-11-13): open items from the QA gate (ios/store/GATE.md)
-- [ ] Chapter 2 (Olive Terraces) is a wall for a slow tapper: the cold bot (0.75 taps/s) lost it 11 times in a row; a quick player beats it on the second try. Tune its waves or coach after the first defeat (point at the next unlock, offer Replay First Fires). A one-line hint does not fix it: the field guide already says "food is piling up, tap a troop" (`battleGuidance`, `foodIsPiling`), and the bot that reads it still loses on wave timing at 0.75 taps/s.
+- [x] (1.1, counsel: defeat card names the storehouse, Camp lights it; sim 0% -> 100% by try 2 at 0.75 taps/s; DESIGN.md) Chapter 2 (Olive Terraces) is a wall for a slow tapper: the cold bot (0.75 taps/s) lost it 11 times in a row; a quick player beats it on the second try. Tune its waves or coach after the first defeat (point at the next unlock, offer Replay First Fires). A one-line hint does not fix it: the field guide already says "food is piling up, tap a troop" (`battleGuidance`, `foodIsPiling`), and the bot that reads it still loses on wave timing at 0.75 taps/s.
 - [ ] First damage to the enemy gate lands at about 35-48 s; the owner's band is about 20 s.
 - [ ] Days 3-7 are nearly empty for a free player (no new chapter, seals frozen, coins pile up with nothing to buy). Find an honest bounded beat from the game's own content.
 - [ ] Coins become meaningless for a free player stuck at the paywall (millions by day 7).
-- [ ] Camp's first visit has four stations and a daily-reward detour; put it on rails (one highlighted action).
+- [x] (1.1: the counselled place carries the village lantern, others step back, daily line waits) Camp's first visit has four stations and a daily-reward detour; put it on rails (one highlighted action).
 - [ ] Art: Cards (flat vector icons, native select), Settings (stock form), the store cards and pause sheet (flat cream cards) do not belong to the painted world yet. The Lamplighter's lanterns are small at phone size; one sits behind the gate's health plate.
 - [ ] A mid-battle reload drops the battle without a word; say so on the title ("Your last battle ended when the game closed").
 - [ ] The result card draws a focus ring around the Victory heading.
 - [ ] Battle and Camp titles name the army's era, not the opponent's chapter (title screen and battle can disagree).
+- [ ] After the chapter 2 win a free player who closes Full Journey is shown the same Continue, which reopens it (cold bot looped 10+ min in both b5c0443 and 1.1). Offer the free path (replay a chapter / Camp) as the primary after Close.
+- [ ] Postcard share: verified in WebKit (Playwright) only; check once in the simulator that the canvas exports under the app scheme.
 - [ ] Settings: Done is below the fold on 844-tall screens; add a close button at the top.
 
 ## After 1.0 (studio bar, section B "first update"; do not build before 1.0)
@@ -270,4 +272,4 @@ Combined-main camp/cinema acceptance:1464tests/build pass; six-size native touch
 - [ ] iPad layout, landscape in the app, controller support.
 - [ ] More languages (French, Turkish, Urdu, Indonesian).
 - [ ] Seasonal beats (Ramadan, harvest, Eid) from the game's own world.
-- [ ] A share moment (a result card from the game's own art through the iOS share sheet).
+- [x] (1.1: postcard home after a victory, Arabic first, TasKit share) A share moment (a result card from the game's own art through the iOS share sheet).

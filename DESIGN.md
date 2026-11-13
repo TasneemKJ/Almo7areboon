@@ -187,3 +187,53 @@ Owner override (2026-11-13): the iPhone app (ios/, TasKit) sells two things; the
   by the game at 44px with the caret on the end side; clock times in the page language with Western digits.
 - **Settings** names the version and the studio and, in the app, links Support and Privacy (Terms sit on each card).
 - **Age rating:** honest 9+ (mild cartoon/fantasy violence), not 4+; see ios/store/listing.json.
+
+## 1.1: counsel after defeat, a lit place in Camp, a postcard home (2026-11-13)
+
+Studied, not copied: Kingdom Rush (a defeat sends you back to the upgrade tree, so a loss reads as "spend, then
+return"), Kingdom Two Crowns (no tutorial text; the world shows where coins go), Bad North (a short, quiet meta between
+fights), Rush Royale (lane pacing: losses come from income falling behind wave tempo, not from tap speed). What we took
+is the timing of each lesson; how it looks and speaks comes from this game.
+
+**Why chapter 2 was a wall (measured, `scripts/qa-gate/chapter2-sim.ts`, 40 seeded players per row).** A cold player
+who only presses Retry: 0.75 taps/s wins chapter 2 0% within 6 tries; 1.5 and 3 taps/s win on try 1. Spending the
+~560 coins from chapter 1: on food, wins on try 2 (0.75 taps/s); on troop unlocks or the gate alone, 0% in 6 tries.
+So the wall is food income against wave tempo; the money to fix it is already in the player's purse, and the old advice
+(unlock ranged first) pointed at the one purchase that does not help. No wave or balance number was changed.
+
+**Counsel (`src/game/counsel.ts`).** One read-only answer to "where should I go in Camp now": four levels of bread, two
+of gate, then a waiting troop, then food up to three ahead of the gate. Following it: chapter 2 is won on try 1 at
+0.75/1.5/3 taps/s (40/40 each); following it only after the first defeat, on try 2 (40/40). The Details advice uses the
+same order.
+
+**Defeat card.** When counsel exists, the primary button is the place, not Retry: "To the storehouse" / «إلى المخزن»,
+under one line in the village's voice, «لم تنقصك الشجاعة، نقصك الخبز: جاءت موجاتهم أسرع من مؤونتك» ("Courage was not
+short; bread was"). It retries into ready Camp with that place open; it never buys. Unique to us: the reason is said in
+the journey's own nouns (bread, the home gate, a troop waiting by the fire), Arabic first.
+
+**Camp first visit.** The counselled place carries the village's Levantine lantern (the same motif and colours as the
+scenery's lanterns: ink hanger, brass #c7a773, warm glass #ffdc92), its name plate turns brass; the other places step
+back (still tappable) and the journal's daily line waits until nothing is worth doing. One obvious action; the rest is
+revealed as it becomes relevant. It is the village's lamp, deliberately not the Lamplighter (he is paid presence and
+must never carry teaching).
+
+**Postcard home.** In the app, a won result offers "Send a postcard home" / «أرسل بطاقةً إلى الديار»: a 1080x1350
+PNG of the chapter's own painted plate, the lantern, «المحاربون», «نصرٌ في …» and the chapter's line («آخر القناديل
+فوق الحقول.»), English beneath, through TasKit `share(dataURL)`. A letter from the road, written Arabic first: no
+It is a quiet line, not a fourth big choice; hidden on the web.
+
+**Scope (after review).** No counsel while evolution is affordable (it would wipe what the lantern points at). The
+lantern only in the free chapters; a ready daily reward is never hidden. The defeat card names a cause only where it
+was measured (chapter 2, gate fallen); elsewhere it only points. Inside the lit storehouse a line keeps the lamp lit
+while another level is worth it, so one visit buys enough bread (the sim needs 3+ levels; 1 level wins 0% by try 2).
+
+**Browser bot (`cold-bot.mjs`, WebKit 390x844, 15 min).** At b5c0443 the bot no longer deployed at all (the tray cards
+carry only `data-unit`); fixed in bed9458. With that fix the exploring bot taps every control in Camp, buys four food
+levels on its own and wins chapter 2 on the first try in both the old build (b5c0443: wins at 50 s and 172 s) and the
+new one (en 50 s / 187 s, ar 50 s / 201 s; 0 stuck states). So the bot cannot tell the builds apart; the discriminating
+evidence is the rules sim above (counsel-following slow tapper 0/40 -> 40/40). Both builds then loop on the won chapter 2
+card: Continue opens Full Journey, Close returns to the same Continue (TODO).
+
+**Paywall.** Unchanged in this pass: Full Journey still first appears after a real win at the end of chapter 2. With the
+wall gone, a cold player now reaches it as a reward moment (Kingdom Rush's model: the offer follows a win, never a
+loss) instead of after a string of defeats.
