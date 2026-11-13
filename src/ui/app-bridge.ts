@@ -74,10 +74,31 @@ export function manageSubscriptions(bridge: TasBridge = almoApp): boolean { retu
 
 /**
  * Chapters 1 and 2 (ages 0-1) are free. Evolving into chapter 3 or beyond, and so every later chapter and the harder
- * timeline, needs Full Journey. A player who is already past chapter 2 (a save from the web) keeps playing where they
- * are; only the next evolution asks.
+ * timeline, needs Full Journey. A save that is already past chapter 2 (imported, or from the web) is held: it stays
+ * exactly as it is on disk and no battle starts from it until StoreKit says Full Journey is owned (1.1; in 1.0 such a
+ * save kept playing, which let an import walk around the purchase).
  */
 export const FREE_AGES = 2;
+type JourneyProgress = { readonly timeline: number; readonly age: number; readonly enemyAge: number; readonly furthestBattle: number };
+/** Past the free arc: a paid chapter is the chosen battle, the army wears a paid chapter, or it is a later timeline. */
+export function pastFreeArc(p: Pick<JourneyProgress, 'timeline' | 'age' | 'enemyAge'>): boolean {
+  return p.timeline > 1 || p.age >= FREE_AGES || p.enemyAge >= FREE_AGES;
+}
+/**
+ * True while a save past the free arc waits for Full Journey. Asked at the moment of use and only of the bridge
+ * (StoreKit): nothing in the save can answer it, and the save is never changed by it, so the answer arriving late
+ * (or a Restore) opens the same untouched progress.
+ */
+export function journeyHeld(p: Pick<JourneyProgress, 'timeline' | 'age' | 'enemyAge'>, bridge: Pick<TasBridge, 'owns'> = almoApp): boolean {
+  return pastFreeArc(p) && !bridge.owns(FULL_JOURNEY);
+}
+/**
+ * The free chapter a held save can still play, when only its chosen battle is past the free arc (the furthest battle
+ * reached stays on record). Null when its own army or timeline is paid: nothing in that save is free to play.
+ */
+export function freeChapterFor(p: JourneyProgress): number | null {
+  return p.timeline === 1 && p.age < FREE_AGES && p.enemyAge >= FREE_AGES ? Math.min(FREE_AGES - 1, p.furthestBattle) : null;
+}
 export function evolutionNeedsFullJourney(currentAge: number, bridge: TasBridge = almoApp): boolean {
   return currentAge + 1 >= FREE_AGES && !ownsFullJourney(bridge);
 }

@@ -52,7 +52,7 @@ export interface SessionState {
 export interface LifecycleDeps {
   initialGame: Game;
   dom: Pick<Runtime, '$' | 'coin' | 'fieldControls' | 'isolateModal' | 'lifetime' | 'money' | 'motionQuery' | 'root' | 'updateArmy' | 'automated' | 'clearTimer' | 'downloadText' | 'hidden' | 'now' | 'query' | 'rootElement' | 'setTimer' | 'locks' | 'storage'>;
-  ports: Pick<ShellApi, 'clearPrestigeContext' | 'closeModal' | 'navState' | 'preferenceNotice' | 'questSaveNotice' | 'questState' | 'refreshQuestRecord' | 'renderScreen' | 'showModal' | 'showResult' | 'switchTab' | 'syncCamp' | 'syncEntry' | 'syncWeek'>;
+  ports: Pick<ShellApi, 'clearPrestigeContext' | 'closeModal' | 'gateStart' | 'navState' | 'preferenceNotice' | 'questSaveNotice' | 'questState' | 'refreshQuestRecord' | 'renderScreen' | 'showModal' | 'showResult' | 'switchTab' | 'syncCamp' | 'syncEntry' | 'syncWeek'>;
 }
 
 export function createLifecycle(deps: LifecycleDeps) {
@@ -156,6 +156,8 @@ export function createLifecycle(deps: LifecycleDeps) {
   function syncMotion(){dom.rootElement().dataset.motion=sessionState.game.profile.motion==='reduced'||motionQuery.matches?'reduced':'full';syncMarks();}
   function action(a:Action):boolean{
     if(!guardAction())return false;
+    // The one way into a battle: a save past the free chapters waits here for Full Journey (store-flow gateStart).
+    if(a.type==='start'&&ports.gateStart())return false;
     unlockAudio(sessionState.game.profile.sound);const ok=sessionState.game.dispatch(a);
     if(ok){
       if(a.type==='prestige'||sessionState.game.profile.weekly?.week!==weekId(localDay()))sessionState.game.dispatch({type:'weekly-sync',week:weekId(localDay())});

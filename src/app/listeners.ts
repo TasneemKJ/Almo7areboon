@@ -32,6 +32,7 @@ import { saveAtmosphere, normalizeAudioMix, saveAudioMix } from '../ui/audio-pre
 import { n, saveLanguage, tr } from '../ui/i18n.ts';
 import { textIfChanged } from '../ui/dom-state.ts';
 import { STORE_COMMANDS } from './store-flow.ts';
+import { journeyHeld } from '../ui/app-bridge.ts';
 import { pressFeedback } from '../ui/press-feedback.ts';
 import type { Runtime } from './runtime.ts';
 import type { ShellApi } from './shell.ts';
@@ -305,7 +306,7 @@ export function installListeners(deps: ListenersDeps): void {
         if(request!==inputState.importRequest||lifetime.disposed||version!==ports.navState.modalVersion||ports.navState.modal!=='save-recovery'||ports.sessionState.session.status!=='active'||!ports.guardAction())return;
         if(!decoded.ok){ports.toast(decoded.error);input.value='';return;}
         ports.navState.pendingImport=decoded.profile;
-        ports.showModal('import',`<h2 id="dialog-title">${tr('Replace this save?','تستبدل هذا الحفظ؟')}</h2><p>${tr(`Import timeline ${ports.navState.pendingImport.timeline}, ${chapterPresentation(ports.navState.pendingImport.age).title}, with ${money(ports.navState.pendingImport.coins)} coins.`,`استيراد الخطّ الزمني ${n(ports.navState.pendingImport.timeline)}، ${chapterPresentation(ports.navState.pendingImport.age).title}، ومعه ${n(money(ports.navState.pendingImport.coins))} من النقود.`)}</p><p>${tr('Your current progress on this device will be replaced. Export it first to keep a separate copy.','سيُستبدل تقدّمك الحالي على هذا الجهاز. صدّره أوّلاً لتحتفظ بنسخة منفصلة.')}</p><button class="big-button blue" data-command="confirm-import">${tr('REPLACE WITH THIS SAVE','استبدل بهذا الحفظ')}</button><button class="big-button secondary" data-command="close">${tr('CANCEL','إلغاء')}</button>`,'close');
+        ports.showModal('import',`<h2 id="dialog-title">${tr('Replace this save?','تستبدل هذا الحفظ؟')}</h2><p>${tr(`Import timeline ${ports.navState.pendingImport.timeline}, ${chapterPresentation(ports.navState.pendingImport.age).title}, with ${money(ports.navState.pendingImport.coins)} coins.`,`استيراد الخطّ الزمني ${n(ports.navState.pendingImport.timeline)}، ${chapterPresentation(ports.navState.pendingImport.age).title}، ومعه ${n(money(ports.navState.pendingImport.coins))} من النقود.`)}</p>${journeyHeld(ports.navState.pendingImport)?`<p class="save-note">${tr('This save is past the free chapters. It will be kept as it is, but it cannot be played until Full Journey is yours.','هذا الحفظ تجاوز الفصول المجّانية. سيبقى كما هو، لكن لا يمكن اللعب به قبل أن تصير «الرحلة كاملة» لك.')}</p>`:''}<p>${tr('Your current progress on this device will be replaced. Export it first to keep a separate copy.','سيُستبدل تقدّمك الحالي على هذا الجهاز. صدّره أوّلاً لتحتفظ بنسخة منفصلة.')}</p><button class="big-button blue" data-command="confirm-import">${tr('REPLACE WITH THIS SAVE','استبدل بهذا الحفظ')}</button><button class="big-button secondary" data-command="close">${tr('CANCEL','إلغاء')}</button>`,'close');
       }catch{
         if(request!==inputState.importRequest||lifetime.disposed||version!==ports.navState.modalVersion||ports.navState.modal!=='save-recovery'||ports.sessionState.session.status!=='active'||!ports.guardAction())return;
         input.value='';

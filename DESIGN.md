@@ -164,8 +164,14 @@ Owner override (2026-11-13): the iPhone app (ios/, TasKit) sells two things; the
 - **Full Journey** (`Tas.Almo7areboon.fullGame`, non-consumable, US$4.99) opens more game, never power: chapters 3 to 6
   and the harder timeline. Chapters 1 and 2 are the free arc. The gate is asked of StoreKit at the moment of use
   (`src/app/store-flow.ts` `gateEvolution`): choosing Evolve at the end of chapter 2 opens the Full Journey card instead
-  of the evolution dialog. Ownership is never written to the save; a web save already past chapter 2 keeps playing
-  where it is and only its next evolution asks. The card also opens from Settings → Full Journey.
+  of the evolution dialog. Ownership is never written to the save. The card also opens from Settings → Full Journey.
+  **1.1 (2026-11-13):** a save already past chapter 2 (imported, pasted or from the web) no longer keeps playing where
+  it is; that let an import walk around the purchase. It is *held*: `gateStart` (asked in `lifecycle.ts` `action`, the
+  one way into a battle) opens the card instead of starting while the chosen battle, the army's chapter or the timeline
+  is past the free arc and StoreKit has not said Full Journey is owned. The save is never clamped or rewritten, in
+  memory or on disk, so a late StoreKit answer, a Restore or a purchase opens exactly what was imported. The card says
+  so, can be declined, and offers "Play the free chapters" (a battle choice back to chapter 2) when the save's own army
+  is still a free one; the import dialog warns before a playable save is replaced by a held one.
 - **The Lamplighter** (مُشعِل القناديل), one auto-renewing group: `Tas.Almo7areboon.lamplighter.monthly` (US$1.99) and
   `.yearly` (US$14.99, level 1, ranks above monthly). Its one benefit is light, a presence and not power: while a plan is
   live, an old lamplighter lights a row of three hanging lanterns behind the player's gate at the start of every battle

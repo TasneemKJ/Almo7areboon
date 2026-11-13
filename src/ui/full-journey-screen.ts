@@ -19,9 +19,16 @@ export function fullJourneyStatus(bridge: Pick<TasBridge, 'status' | 'owns'>): s
  * Full Journey: chapters 3 to 6 and the harder timeline after them, bought once. Shown when a player who does not own
  * it chooses to evolve past chapter 2, and from Settings. Restore, Terms and Privacy sit on the same card (App Review).
  */
-export function fullJourneyHtml(bridge: Pick<TasBridge, 'status' | 'owns' | 'prices' | 'price'>, chapterName: string, heldTwo = true): string {
+/** The App Store's own price text for Full Journey ('' until the store has answered). */
+export function fullJourneyPrice(bridge: Pick<TasBridge, 'prices' | 'price'>): string { return bridge.prices[FULL_JOURNEY] || bridge.price || ''; }
+
+/**
+ * `held` is set when the card was opened by a save that is past the free chapters (an import): it says the save is
+ * kept as it is, and `held.freeChapter` adds the way back to a free chapter so declining never leaves a dead end.
+ */
+export function fullJourneyHtml(bridge: Pick<TasBridge, 'status' | 'owns' | 'prices' | 'price'>, chapterName: string, heldTwo = true, held: { freeChapter: boolean } | null = null): string {
   const owned = bridge.owns(FULL_JOURNEY);
-  const price = bridge.prices[FULL_JOURNEY] || bridge.price || '';
+  const price = fullJourneyPrice(bridge);
   const busy = bridge.status === 'buying';
   const buyLabel = price ? tr(`Continue the journey · ${n(price)}`, `تابع الرحلة · ${n(price)}`) : tr('Continue the journey', 'تابع الرحلة');
   const buyAria = price ? tr(`Buy Full Journey for ${price}`, `اشترِ الرحلة كاملة بسعر ${price}`) : tr('Buy Full Journey', 'اشترِ الرحلة كاملة');
@@ -32,13 +39,14 @@ export function fullJourneyHtml(bridge: Pick<TasBridge, 'status' | 'owns' | 'pri
     tr('Bought once and yours to keep. No ads, no timers.', 'تشتريها مرّة واحدة وتبقى لك. بلا إعلانات ولا انتظار.'),
   ];
   return `<span class="eyebrow">${tr('FULL JOURNEY', 'الرحلة كاملة')}</span><h2 id="dialog-title">${owned ? tr('The road is open', 'الطريق مفتوح') : tr('The road goes on', 'الطريق يمتدّ')}</h2>
- <p>${heldTwo ? tr('Your company has held the first two chapters. Full Journey opens the rest of the tale.', 'صمدت سريّتك في الفصلين الأوّلين. الرحلة كاملة تفتح بقيّة الحكاية.') : tr('The first two chapters are free. Full Journey opens the rest of the tale.', 'الفصلان الأوّلان مجّانيّان. الرحلة كاملة تفتح بقيّة الحكاية.')}</p>
+ <p>${held && !owned ? tr('This save is past the free chapters. It is kept exactly as it is, and Full Journey opens it.', 'هذا الحفظ تجاوز الفصول المجّانية. يبقى محفوظاً كما هو، و«الرحلة كاملة» تفتحه.') : heldTwo ? tr('Your company has held the first two chapters. Full Journey opens the rest of the tale.', 'صمدت سريّتك في الفصلين الأوّلين. الرحلة كاملة تفتح بقيّة الحكاية.') : tr('The first two chapters are free. Full Journey opens the rest of the tale.', 'الفصلان الأوّلان مجّانيّان. الرحلة كاملة تفتح بقيّة الحكاية.')}</p>
  <ul class="full-journey-list">${items.map(item => `<li>${item}</li>`).join('')}</ul>
  <p id="full-journey-status" class="save-note" role="status">${fullJourneyStatus(bridge)}</p>
  <div class="full-journey-actions">${owned
     ? `<button class="big-button green" data-command="close">${tr('Onward', 'إلى الأمام')}</button>`
     : `<button class="big-button green" data-command="buy-full-journey" aria-label="${buyAria}" ${busy ? 'disabled' : ''}>${buyLabel}</button>
  <button class="big-button secondary" data-command="restore-purchases" ${busy ? 'disabled' : ''}>${tr('Restore purchases', 'استعادة المشتريات')}</button>
+ ${held?.freeChapter ? `<button class="big-button secondary" data-command="free-chapters">${tr('Play the free chapters', 'العب الفصول المجّانية')}</button>` : ''}
  <button class="big-button secondary" data-command="close">${tr('Not now', 'ليس الآن')}</button>`}</div>
  <p class="full-journey-legal"><button class="link-button" data-command="open-terms">${tr('Terms of Use', 'شروط الاستخدام')}</button> · <button class="link-button" data-command="open-privacy">${tr('Privacy', 'الخصوصية')}</button></p>`;
 }

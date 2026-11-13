@@ -1,5 +1,5 @@
 import { sharePostcard } from '../ui/victory-postcard.ts';
-import { almoApp, evolutionNeedsFullJourney, FREE_AGES, FULL_JOURNEY, ownsFullJourney, installSaveFlush, LAMPLIGHTER_MONTHLY, LAMPLIGHTER_YEARLY, manageSubscriptions, onStoreChange, type TasBridge } from '../ui/app-bridge.ts';
+import { almoApp, evolutionNeedsFullJourney, FREE_AGES, freeChapterFor, journeyHeld, FULL_JOURNEY, ownsFullJourney, installSaveFlush, LAMPLIGHTER_MONTHLY, LAMPLIGHTER_YEARLY, manageSubscriptions, onStoreChange, type TasBridge } from '../ui/app-bridge.ts';
 import { fullJourneyHtml } from '../ui/full-journey-screen.ts';
 import { lamplighterHtml } from '../ui/lamplighter-screen.ts';
 import { chapterPresentation } from '../ui/chapter-presentation.ts';
@@ -11,11 +11,11 @@ import type { ShellApi } from './shell.ts';
 export type StoreOrigin = 'settings' | 'evolve' | 'evolve-result' | 'other';
 export const STORE_MODALS = ['full-journey', 'lamplighter'] as const;
 /** The buttons whose commands the store flow handles (listeners.ts routes them here). */
-export const STORE_COMMANDS = ['full-journey', 'lamplighter', 'buy-full-journey', 'buy-lamplighter-monthly', 'buy-lamplighter-yearly', 'restore-purchases', 'manage-subscriptions', 'open-terms', 'open-privacy', 'open-support', 'share-postcard'] as const;
+export const STORE_COMMANDS = ['full-journey', 'lamplighter', 'buy-full-journey', 'buy-lamplighter-monthly', 'buy-lamplighter-yearly', 'restore-purchases', 'manage-subscriptions', 'open-terms', 'open-privacy', 'open-support', 'share-postcard', 'free-chapters'] as const;
 
 export interface StoreFlowDeps {
   dom: Pick<Runtime, 'lifetime'>;
-  ports: Pick<ShellApi, 'closeModal' | 'navState' | 'persist' | 'playable' | 'sessionState' | 'showModal' | 'showResult' | 'showSettings' | 'toast'>;
+  ports: Pick<ShellApi, 'action' | 'closeModal' | 'navState' | 'persist' | 'playable' | 'sessionState' | 'showModal' | 'showResult' | 'showSettings' | 'toast'>;
 }
 
 /**
@@ -28,15 +28,21 @@ export function createStoreFlow(deps: StoreFlowDeps, bridge: TasBridge = almoApp
   let origin: StoreOrigin = 'other';
   const open = () => STORE_MODALS.includes(ports.navState.modal as typeof STORE_MODALS[number]);
 
+  /** The Full Journey card for the save as it is now; a held save (past the free chapters, not owned) says so. */
+  function cardHtml(): string {
+    const profile = ports.sessionState.game.profile;
+    const held = journeyHeld(profile, bridge) ? { freeChapter: freeChapterFor(profile) !== null } : null;
+    return fullJourneyHtml(bridge, chapterPresentation(Math.min(5, Math.max(2, profile.age + 1))).title, profile.furthestBattle >= 1 && profile.wins > 0, held);
+  }
   function render(): void {
-    if (ports.navState.modal === 'full-journey') ports.showModal('full-journey', fullJourneyHtml(bridge, chapterPresentation(Math.min(5, Math.max(2, ports.sessionState.game.profile.age + 1))).title, ports.sessionState.game.profile.furthestBattle >= 1 && ports.sessionState.game.profile.wins > 0));
+    if (ports.navState.modal === 'full-journey') ports.showModal('full-journey', cardHtml());
     else if (ports.navState.modal === 'lamplighter') ports.showModal('lamplighter', lamplighterHtml(bridge));
   }
   function showFullJourney(from: StoreOrigin = 'other'): void {
     if (!ports.playable()) return;
     origin = from;
     bridge.refresh(); // fresh prices and ownership whenever a card opens
-    ports.showModal('full-journey', fullJourneyHtml(bridge, chapterPresentation(Math.min(5, Math.max(2, ports.sessionState.game.profile.age + 1))).title, ports.sessionState.game.profile.furthestBattle >= 1 && ports.sessionState.game.profile.wins > 0));
+    ports.showModal('full-journey', cardHtml());
   }
   function showLamplighter(from: StoreOrigin = 'other'): void {
     if (!ports.playable()) return;
@@ -54,6 +60,16 @@ export function createStoreFlow(deps: StoreFlowDeps, bridge: TasBridge = almoApp
   function gateBattle(battle: number): boolean {
     if (!bridge.inApp || battle < FREE_AGES || ownsFullJourney(bridge)) return false;
     showFullJourney(ports.navState.modal === 'result' ? 'evolve-result' : 'other');
+    return true;
+  }
+  /**
+   * True when a battle was stopped before it began: the save is past the free chapters and Full Journey is not owned
+   * (an imported or web save). Every way into a battle passes here (lifecycle `action`), so import, load, reset and a
+   * late or lapsed entitlement are all one rule. The save itself is left alone; owning opens it as it was.
+   */
+  function gateStart(): boolean {
+    if (!bridge.inApp || !journeyHeld(ports.sessionState.game.profile, bridge)) return false;
+    showFullJourney('other');
     return true;
   }
   function leave(): void {
@@ -75,6 +91,15 @@ export function createStoreFlow(deps: StoreFlowDeps, bridge: TasBridge = almoApp
       case 'open-terms': bridge.openPage('terms'); return true;
       case 'open-privacy': bridge.openPage('privacy'); return true;
       case 'open-support': bridge.openPage('support'); return true;
+      // Declining a held save: step back to the last free chapter (a choice of battle, as in the battle list; the
+      // furthest battle reached stays on record and opens again with Full Journey).
+      case 'free-chapters': {
+        const chapter = freeChapterFor(ports.sessionState.game.profile);
+        if (ports.navState.modal !== 'full-journey' || chapter === null) return true;
+        origin = 'other';
+        if (ports.action({ type: 'select-battle', battle: chapter }) && ports.playable() && ports.navState.modal === 'full-journey') ports.closeModal();
+        return true;
+      }
       case 'close': if (!open()) return false; leave(); return true;
       // A postcard home after a victory: the iPhone share sheet takes it; nothing is saved or spent.
       case 'share-postcard': {
@@ -95,5 +120,5 @@ export function createStoreFlow(deps: StoreFlowDeps, bridge: TasBridge = almoApp
   // Test and screenshot hooks for the app's integration tests (ios/Almo7areboonTests).
   Object.assign(globalThis, { __almoShowFullJourney: () => showFullJourney(), __almoShowLamplighter: () => showLamplighter() });
   bridge.refresh(); // prices sent before the page loaded are lost: ask again now that the bridge exists
-  return { showFullJourney, showLamplighter, gateEvolution, gateBattle, handleStoreCommand };
+  return { showFullJourney, showLamplighter, gateEvolution, gateBattle, gateStart, handleStoreCommand };
 }
