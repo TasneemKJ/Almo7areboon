@@ -1,3 +1,4 @@
+import { sharePostcard } from '../ui/victory-postcard.ts';
 import { almoApp, evolutionNeedsFullJourney, FREE_AGES, FULL_JOURNEY, ownsFullJourney, installSaveFlush, LAMPLIGHTER_MONTHLY, LAMPLIGHTER_YEARLY, manageSubscriptions, onStoreChange, type TasBridge } from '../ui/app-bridge.ts';
 import { fullJourneyHtml } from '../ui/full-journey-screen.ts';
 import { lamplighterHtml } from '../ui/lamplighter-screen.ts';
@@ -10,7 +11,7 @@ import type { ShellApi } from './shell.ts';
 export type StoreOrigin = 'settings' | 'evolve' | 'evolve-result' | 'other';
 export const STORE_MODALS = ['full-journey', 'lamplighter'] as const;
 /** The buttons whose commands the store flow handles (listeners.ts routes them here). */
-export const STORE_COMMANDS = ['full-journey', 'lamplighter', 'buy-full-journey', 'buy-lamplighter-monthly', 'buy-lamplighter-yearly', 'restore-purchases', 'manage-subscriptions', 'open-terms', 'open-privacy', 'open-support'] as const;
+export const STORE_COMMANDS = ['full-journey', 'lamplighter', 'buy-full-journey', 'buy-lamplighter-monthly', 'buy-lamplighter-yearly', 'restore-purchases', 'manage-subscriptions', 'open-terms', 'open-privacy', 'open-support', 'share-postcard'] as const;
 
 export interface StoreFlowDeps {
   dom: Pick<Runtime, 'lifetime'>;
@@ -75,6 +76,13 @@ export function createStoreFlow(deps: StoreFlowDeps, bridge: TasBridge = almoApp
       case 'open-privacy': bridge.openPage('privacy'); return true;
       case 'open-support': bridge.openPage('support'); return true;
       case 'close': if (!open()) return false; leave(); return true;
+      // A postcard home after a victory: the iPhone share sheet takes it; nothing is saved or spent.
+      case 'share-postcard': {
+        const { profile, state } = ports.sessionState.game;
+        if (ports.navState.modal !== 'result' || state.phase !== 'won') return true;
+        void sharePostcard(profile, state, bridge).then(sent => { if (!sent && bridge.inApp) ports.toast(tr('The postcard could not be made this time.', 'تعذّر صنع البطاقة هذه المرّة.')); });
+        return true;
+      }
       default: return false;
     }
   }

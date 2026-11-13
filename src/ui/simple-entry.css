@@ -59,3 +59,6 @@ html:has(#modal-layer:not([hidden])),body:has(#modal-layer:not([hidden])),
 .entry-path .path-locked{border-style:dashed;opacity:.55}
 .entry-path-note{font:inherit;font-size:11px;color:#f3e3bb;background:none;border:0;padding:0 6px;min-height:28px}
 button.entry-path-note{min-height:44px;text-decoration:underline;text-underline-offset:3px;cursor:pointer}
+/* The postcard home: a quiet brass-edged line under the result, not a fourth big choice. */
+.result-postcard{display:block;margin:2px auto 10px;min-height:44px;padding:8px 18px;border:1px solid #c7a773;border-radius:22px;background:#c7a7731f;color:inherit;font:inherit;font-size:.9rem;font-weight:700;cursor:pointer;touch-action:manipulation}
+.result-postcard::before{content:"";display:inline-block;width:.55em;height:.8em;margin-inline-end:.5em;vertical-align:-.05em;border-radius:2px 2px 3px 3px;background:#ffdc92;box-shadow:0 0 8px #ffd18a,0 0 0 2px #c7a773}

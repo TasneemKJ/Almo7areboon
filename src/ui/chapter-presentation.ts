@@ -29,6 +29,8 @@ const chaptersAr=freeze([
  {title:'ساحاتٌ وراء الأفق',subtitle:'عتباتٌ قديمة تحت نجومٍ غريبة.',period:'مستقبلٌ متخيَّل',units:['حارس النور','الجنديّ','زورق السماء']},
 ]);
 const chapterIndex=(age:number)=>Number.isInteger(age)&&age>=0&&age<chaptersEn.length?age:0;
+/** Both languages at once (the victory postcard is written Arabic first, English under it). */
+export function chapterInBothLanguages(age:number):{ar:ChapterPresentation;en:ChapterPresentation} {return {ar:chaptersAr[chapterIndex(age)],en:chaptersEn[chapterIndex(age)]};}
 export function chapterPresentation(age:number):ChapterPresentation {return (isArabic()?chaptersAr:chaptersEn)[chapterIndex(age)];}
 export function unitPresentationName(age:number,kind:UnitKind):string {
  return chapterPresentation(age).units[[0,1,2].includes(kind)?kind:0];
