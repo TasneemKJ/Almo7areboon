@@ -46,7 +46,16 @@ export interface InputState {
 /** What the listeners module needs: its slice of state, DOM handles and sibling operations. */
 export interface ListenersDeps {
   dom: Pick<Runtime, '$' | 'blockModalTap' | 'fieldControls' | 'lifetime' | 'money' | 'motionQuery' | 'root' | 'activeElement' | 'hidden' | 'now' | 'pageEvents' | 'reload' | 'viewEvents'>;
-  ports: Pick<ShellApi, 'acquireSession' | 'action' | 'gateBattle' | 'gateEvolution' | 'handleStoreCommand' | 'adoptRestoredGame' | 'claimQuestRecord' | 'clearPrestigeContext' | 'closeModal' | 'continueWithProvision' | 'dismissModal' | 'enterCamp' | 'enterWorld' | 'exportSave' | 'guardAction' | 'handleCampInput' | 'leaveBattle' | 'navState' | 'openPrestige' | 'persist' | 'playable' | 'playIntro' | 'watchIntro' | 'preferenceNotice' | 'questState' | 'rebuildArmy' | 'refreshPrestige' | 'refreshQuestRecord' | 'renderScreen' | 'returnToCamp' | 'returnToChapters' | 'sessionState' | 'showFieldPause' | 'showHome' | 'showLeaveBattle' | 'showModal' | 'showQuests' | 'showResult' | 'showResultDetails' | 'showSaveRecovery' | 'showSettings' | 'showStoryFollowUp' | 'suspendSession' | 'switchTab' | 'syncMarks' | 'syncMotion' | 'syncPause' | 'syncWeek' | 'toast' | 'update'>;
+  ports: Pick<ShellApi, 'acquireSession' | 'action' | 'gateBattle' | 'gateEvolution' | 'handleStoreCommand' | 'adoptRestoredGame' | 'claimQuestRecord' | 'clearPrestigeContext' | 'closeModal' | 'continueWithProvision' | 'dismissModal' | 'enterCamp' | 'enterWorld' | 'exportSave' | 'guardAction' | 'handleCampInput' | 'leaveBattle' | 'navState' | 'openPrestige' | 'persist' | 'playable' | 'playIntro' | 'watchIntro' | 'preferenceNotice' | 'questState' | 'rebuildArmy' | 'refreshPrestige' | 'refreshQuestRecord' | 'renderScreen' | 'returnToCamp' | 'returnToChapters' | 'syncCamp' | 'showCampFocus' | 'sessionState' | 'showFieldPause' | 'showHome' | 'showLeaveBattle' | 'showModal' | 'showQuests' | 'showResult' | 'showResultDetails' | 'showSaveRecovery' | 'showSettings' | 'showStoryFollowUp' | 'suspendSession' | 'switchTab' | 'syncMarks' | 'syncMotion' | 'syncPause' | 'syncWeek' | 'toast' | 'update'>;
+}
+
+/** Defeat counsel: back to ready Camp with the lit place already open. It retries like Retry and spends nothing. */
+function openCounsel(ports:Pick<ShellApi,'action'|'closeModal'|'navState'|'playable'|'sessionState'|'switchTab'|'syncCamp'|'showCampFocus'>,target:string):void {
+  const recruit=/^company-([12])$/.exec(target);
+  if(ports.navState.modal!=='result'||ports.sessionState.game.state.phase!=='lost'||!(recruit||target==='storehouse'||target==='gate'))return;
+  if(!ports.action({type:'retry'})||!ports.playable()||(ports.navState.modal as string|null)==='session')return;
+  ports.navState.evolutionFromResult=false;ports.closeModal(false);ports.sessionState.manualPaused=false;ports.switchTab('battle');ports.syncCamp();
+  ports.showCampFocus(recruit?{recruit:Number(recruit[1]) as UnitKind}:target as 'storehouse'|'gate');
 }
 
 export function installListeners(deps: ListenersDeps): void {
@@ -92,6 +101,7 @@ export function installListeners(deps: ListenersDeps): void {
       if(advancement.allowed&&advancement.target==='battle'&&advancement.nextBattle!==null&&ports.gateBattle(advancement.nextBattle))return;
       if(ports.action({type:'next'})&&ports.playable()&&ports.navState.modal!=='session'){ports.navState.evolutionFromResult=false;ports.closeModal(false);ports.sessionState.manualPaused=false;ports.switchTab('battle');}
     },
+    'result-counsel':(button)=>{openCounsel(ports,button.dataset.counsel??'');},
     'retry':()=>{if(ports.action({type:'retry'})&&ports.playable()&&ports.navState.modal!=='session'){ports.navState.evolutionFromResult=false;ports.closeModal(false);ports.sessionState.manualPaused=false;ports.switchTab('battle');};},
     'confirm-prestige':()=>{
       if(ports.navState.modal!=='prestige'||!ports.navState.prestigeOrigin||ports.navState.prestigeExpectedTimeline===null||!isLegacyChoice(ports.navState.prestigeDraft))return;

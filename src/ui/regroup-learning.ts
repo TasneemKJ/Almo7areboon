@@ -1,6 +1,7 @@
 import { ERAS, foodUpgradeCost, baseUpgradeCost, unlockCost } from '../game/data.ts';
 import { availableSummonOdds, cardPackCost } from '../game/cards.ts';
 import { advanceStatus } from '../game/mastery.ts';
+import { campCounsel } from '../game/counsel.ts';
 import type { Profile, BattleState } from '../game/types.ts';
 import { n, tr } from './i18n.ts';
 
@@ -15,16 +16,18 @@ export function earlierChapter(profile:Readonly<Profile>):number|null {
 /** Reviewable preparation choices; displaying help never dispatches a purchase. */
 export function regroupLearningHtml(profile:Readonly<Profile>,state:Readonly<BattleState>):string {
  if(state.phase!=='lost')return '';
+ // Same order as the lit Camp place (game/counsel.ts): food first, then the gate, then a waiting troop.
+ const counsel=campCounsel(profile);
  let funded=tr('Try one change at a time. Your coins already earned are kept.','جرّب تغييراً واحداً في كلّ مرّة. النقود التي كسبتها تبقى معك.');
  if(profile.age<5&&profile.age<=profile.enemyAge&&profile.coins>=ERAS[profile.age].evolveCost)
   funded=tr(`Evolution is affordable: ${number(ERAS[profile.age].evolveCost)} coins. It resets coins, age upgrades and troop unlocks; review Evolution before confirming.`,`تستطيع الآن الارتقاء: ${num(ERAS[profile.age].evolveCost)} من النقود. الارتقاء يعيد النقود وتطويرات العصر وفتح الجند إلى البداية؛ راجع «الارتقاء» قبل أن تؤكّد.`);
- else if(!profile.unlocked[1]&&profile.coins>=unlockCost(1,profile))
+ else if(counsel?.station==='company'&&counsel.kind===1)
   funded=tr(`Unlock ranged troops for ${number(unlockCost(1,profile))} coins, then protect them with a melee front line.`,`افتح الرماة مقابل ${num(unlockCost(1,profile))} من النقود، ثم احمِهم بخطّ أماميّ للقتال القريب.`);
- else if(!profile.unlocked[2]&&profile.coins>=unlockCost(2,profile))
+ else if(counsel?.station==='company')
   funded=tr(`Unlock heavy troops for ${number(unlockCost(2,profile))} coins. Their sweep can hit a second nearby enemy.`,`افتح الجند الثقال مقابل ${num(unlockCost(2,profile))} من النقود. ضربتهم الواسعة تصيب عدوّاً ثانياً قريباً.`);
- else if(profile.foodLevel<100&&profile.coins>=foodUpgradeCost(profile))
+ else if(counsel?.station==='storehouse')
   funded=tr(`Food production can be upgraded for ${number(foodUpgradeCost(profile))} coins. Faster food lets you deploy more often.`,`تستطيع تطوير إنتاج المؤونة مقابل ${num(foodUpgradeCost(profile))} من النقود. مؤونة أسرع تعني جنداً أكثر في الميدان.`);
- else if(profile.baseLevel<100&&profile.coins>=baseUpgradeCost(profile))
+ else if(counsel?.station==='gate')
   funded=tr(`Base health can be upgraded for ${number(baseUpgradeCost(profile))} coins. A stronger gate gives your army more time.`,`تستطيع تطوير صمود الحصن مقابل ${num(baseUpgradeCost(profile))} من النقود. البوّابة الأقوى تمنح جيشك وقتاً أطول.`);
  else if(profile.gems>=cardPackCost(1)&&availableSummonOdds(profile.summonCount,profile.cards).some(weight=>weight>0))
   funded=tr(`You have enough for a single summon costing ${number(cardPackCost(1))} gems; review its odds and your collection in Cards before spending.`,`معك ما يكفي لاستدعاء واحد كلفته ${num(cardPackCost(1))} من الجواهر؛ راجع فرصه ومجموعتك في «البطاقات» قبل أن تنفق.`);

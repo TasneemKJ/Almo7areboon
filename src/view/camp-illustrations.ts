@@ -13,3 +13,12 @@ export function journalIllustration():string {
 export function campGateImage(age:number):string {
  const art=storybookArt(age);return art?`${art.folder}/shelter.webp`:dataSvg(baseSvg(age,'player'));
 }
+
+/**
+ * The village lantern from the Levantine scenery (levantine-scenery.ts `lantern`: ink hanger, brass body #c7a773, warm
+ * glass #ffdc92, soft lamp halo), hung over the one Camp place worth a visit. The village's own lamp, not the
+ * Lamplighter's: it appears for every player and never depends on a purchase.
+ */
+export function campLampIllustration(): string {
+  return `<svg class="camp-lamp" viewBox="-32 -40 64 80" aria-hidden="true" focusable="false"><defs><radialGradient id="camp-lamp-glow"><stop stop-color="#ffd18a" stop-opacity=".9"/><stop offset="1" stop-color="#ffc58a" stop-opacity="0"/></radialGradient></defs><ellipse cx="0" cy="0" rx="30" ry="37" fill="url(#camp-lamp-glow)"/><path d="M0-40V-13" stroke="#243e4a" stroke-width="2" fill="none"/><path d="M-6-9L0-15 6-9 5 9-5 9Z" fill="#c7a773" stroke="#243e4a" stroke-width="1.5"/><rect x="-3" y="-7" width="6" height="13" rx="1" fill="#ffdc92"/><path d="M-6-8H6M-5 8H5" stroke="#243e4a" stroke-width="1.4"/></svg>`;
+}

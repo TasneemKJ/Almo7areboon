@@ -215,7 +215,7 @@ export function createNavigation(deps: NavigationDeps) {
     if(!visible){navState.campOwner=null;$('camp-view').hidden=true;if(!canOwnCamp(ports.sessionState.game.profile,ports.sessionState.game.state))root!.dataset.fieldMode='field';return;}
     navState.campOwner??={kind:'root'};
     if(navState.campOwner.kind==='advanced'&&!navState.modal&&navState.activeTab==='battle')navState.campOwner={kind:'root'};
-    const p=ports.sessionState.game.profile,day=localDay(),key=JSON.stringify([p.age,p.enemyAge,p.foodLevel,p.baseLevel,p.unlocked,p.chronicle?.route,campGoalText(p,day)]);
+    const p=ports.sessionState.game.profile,day=localDay(),key=JSON.stringify([p.age,p.enemyAge,p.foodLevel,p.baseLevel,p.unlocked,p.chronicle?.route,campGoalText(p,day),p.coins]);
     if(key!==navState.campRenderKey){navState.campRenderKey=key;htmlIfChanged($('camp-view'),campRootHtml(p,day));}
     $('camp-view').hidden=navState.activeTab!=='battle';$('camp-view').inert=navState.modal!==null||navState.activeTab!=='battle';
     $('battle-view').inert=true;

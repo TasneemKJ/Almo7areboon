@@ -25,6 +25,8 @@ export const SIZES = [
   { name: 'max', w: 440, h: 956, top: 59, bottom: 34 },
 ];
 const SAVE = 'almo7areboon.save.v1';
+// Chapter 2 after the first win, coins unspent: Camp lights the storehouse; a defeat card sends the player there.
+const chapter2 = { version: 2, timeline: 1, age: 0, enemyAge: 1, coins: 560, cards: [], unlocked: [true, false, false], sound: false, deployed: 12, kills: 9, wins: 1, played: true, furthestBattle: 1 };
 const played = { version: 2, timeline: 1, age: 0, enemyAge: 0, coins: 120, cards: [], unlocked: [true, true, false], sound: false, deployed: 12, kills: 9, wins: 1, played: true, furthestBattle: 1 };
 
 /** Deliberate exceptions, each with its reason (GATE.md lists them). Matched on "screen|selector|kind". */
@@ -116,6 +118,8 @@ const SCREENS = [
   { id: 'full-journey', seed: played, go: async p => { await tap(p, '#entry-settings'); await tap(p, '#modal-layer [data-command=full-journey]'); return true; } },
   { id: 'lamplighter', seed: played, go: async p => { await tap(p, '#entry-settings'); await tap(p, '#modal-layer [data-command=lamplighter]'); return true; } },
   { id: 'camp', seed: played, go: async p => { await tap(p, '#entry-secondary'); return true; } },
+  { id: 'camp-counsel', seed: chapter2, go: async p => { await tap(p, '#entry-secondary'); return true; } },
+  { id: 'defeat-counsel', seed: chapter2, go: async p => { await tap(p, '#entry-play'); await p.waitForSelector('[data-command=result-counsel]', { timeout: 120000 }); return true; } },
   { id: 'camp-company', seed: played, go: async p => { await tap(p, '#entry-secondary'); await tap(p, '[data-camp-station=company]'); return true; } },
   { id: 'leave-battle', seed: played, go: async p => { await tap(p, '#entry-play'); await p.waitForTimeout(1500); await tap(p, '[data-command=field-pause]'); await tap(p, '#modal-layer [data-command=home]'); await tap(p, '#entry-secondary'); return true; } },
 ];
@@ -124,7 +128,7 @@ const results = [];
 const browser = await webkit.launch();
 for (const size of SIZES.filter(s => !only || only.split(',').includes(s.name))) {
   for (const lang of ['en', 'ar']) {
-    for (const screen of SCREENS) {
+    for (const screen of SCREENS.filter(x => !process.env.SCREENS || process.env.SCREENS.split(',').includes(x.id))) {
       const context = await browser.newContext({ viewport: { width: size.w, height: size.h }, deviceScaleFactor: 2, hasTouch: true, isMobile: true, locale: lang === 'ar' ? 'ar-JO' : 'en-US' });
       await context.addInitScript(...inject(lang, true));
       if (screen.seed) await context.addInitScript(([k, v]) => { if (!localStorage.getItem(k)) localStorage.setItem(k, v); }, [SAVE, JSON.stringify(screen.seed)]);

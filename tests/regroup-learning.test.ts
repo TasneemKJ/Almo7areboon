@@ -38,10 +38,12 @@ test('real loss adds optional preparation teaching without writing progress or b
 });
 test('funded option uses exact current prices and respects evolution prerequisites',()=>{
  const g=loss();g.profile.gems=0;g.profile.coins=unlockCost(1,g.profile);
+ assert.match(regroupLearningHtml(g.profile,g.state),new RegExp(`Food production.*${foodUpgradeCost(g.profile)} coins`),'food first, as the lit Camp place');
+ Object.assign(g.profile,{foodLevel:4,baseLevel:2,coins:unlockCost(1,g.profile)});
  assert.match(regroupLearningHtml(g.profile,g.state),/Unlock ranged.*150 coins/);
  g.profile.coins=unlockCost(1,g.profile)-1;
  assert.doesNotMatch(regroupLearningHtml(g.profile,g.state),/Unlock ranged/);
- assert.match(regroupLearningHtml(g.profile,g.state),new RegExp(`Food production.*${foodUpgradeCost(g.profile)} coins`));
+ Object.assign(g.profile,{foodLevel:0,baseLevel:0});
  g.profile.coins=ERAS[0].evolveCost;
  assert.match(regroupLearningHtml(g.profile,g.state),/Evolution.*2,500 coins.*resets/);
  g.profile.age=1;g.profile.enemyAge=0;g.profile.coins=ERAS[1].evolveCost;

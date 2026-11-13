@@ -46,7 +46,7 @@ import { createModalTapGuard } from '../src/ui/modal-tap-guard.ts';
 // Execute the app's actual functions with a clock and minimal DOM boundary; no browser/debug hooks.
 const source = mainSource();
 const ast = ts.createSourceFile('main.ts', source, ts.ScriptTarget.Latest, true, ts.ScriptKind.TS);
-const names = new Set(['switchTab','showModal','syncCamp','showCampFocus','returnToCamp','handleCampInput','playable', 'guardAction', 'action', 'persist', 'update', 'renderScreen', 'sessionPresentation', 'showResult', 'acquireSession', 'dismissModal', 'returnToChapters', 'clearPrestigeContext', 'openPrestige', 'refreshPrestige', 'returnFromPrestige', 'questSaveNotice', 'refreshQuestRecord', 'claimQuestRecord', 'showQuests', 'showSettings', 'showSaveRecovery', 'preferenceNotice', 'showFieldPause', 'showLeaveBattle', 'leaveBattle', 'enterCamp', 'entryReady', 'syncEntry', 'enterWorld', 'showResultDetails', 'showHome', 'continueWithProvision', 'adoptRestoredGame', 'syncWeek', 'showStoryFollowUp', 'claimQuestRecord', 'routeDataAction']);
+const names = new Set(['openCounsel','switchTab','showModal','syncCamp','showCampFocus','returnToCamp','handleCampInput','playable', 'guardAction', 'action', 'persist', 'update', 'renderScreen', 'sessionPresentation', 'showResult', 'acquireSession', 'dismissModal', 'returnToChapters', 'clearPrestigeContext', 'openPrestige', 'refreshPrestige', 'returnFromPrestige', 'questSaveNotice', 'refreshQuestRecord', 'claimQuestRecord', 'showQuests', 'showSettings', 'showSaveRecovery', 'preferenceNotice', 'showFieldPause', 'showLeaveBattle', 'leaveBattle', 'enterCamp', 'entryReady', 'syncEntry', 'enterWorld', 'showResultDetails', 'showHome', 'continueWithProvision', 'adoptRestoredGame', 'syncWeek', 'showStoryFollowUp', 'claimQuestRecord', 'routeDataAction']);
 const functions = flatStatements(ast).filter(node => ts.isFunctionDeclaration(node) && node.name && names.has(node.name.text));
 assert.equal(functions.length, names.size);
 const click=flatStatements(ast).find(node=>ts.isExpressionStatement(node)&&ts.isCallExpression(node.expression)&&node.expression.expression.getText(ast)==='lifetime.listen'&&node.expression.arguments[0]?.getText(ast)==='root'&&node.expression.arguments[1]?.getText(ast)==="'click'") as ts.ExpressionStatement;
@@ -971,4 +971,14 @@ test('late quest saving warnings keep the current picker focus without an explic
  const h=harness(),c=h.context;h.click('quests');const input=h.questSelect('annihilator');let focusCalls=0;
  input.focus=()=>{focusCalls++;c.document.activeElement=input;};c.session.save=()=>({ok:false,reason:'write-failed'});c.persist();c.update(true);
  assert.equal(focusCalls,0);assert.equal(c.document.activeElement,input);assert.match(c.$('quest-save-status').textContent,/Saving is unavailable/);
+});
+test('defeat counsel retries into Camp and opens the lit place without spending; a stale or wrong-phase tap is ignored',()=>{
+ const h=harness(),c=h.context;c.entryEntered=true;Object.assign(c.game.profile,{enemyAge:1,furthestBattle:1,coins:560,played:true});
+ c.game.dispatch({type:'start'});c.game.dispatch({type:'retreat'});c.modal='result';c.manualPaused=true;
+ const coins=c.game.profile.coins;h.clickData({command:'result-counsel',counsel:'storehouse'});
+ assert.equal(c.game.state.phase,'ready');assert.equal(c.modal,'camp-focus');assert.equal(c.campOwner?.kind,'focus');assert.equal(c.campOwner.focus,'storehouse');
+ assert.equal(c.manualPaused,false);assert.equal(c.game.profile.coins,coins,'the player buys, the counsel never does');
+ const again=JSON.stringify([c.game.profile,c.game.state]);h.clickData({command:'result-counsel',counsel:'storehouse'});assert.equal(JSON.stringify([c.game.profile,c.game.state]),again);
+ const k=harness(),d=k.context;d.entryEntered=true;Object.assign(d.game.profile,{enemyAge:1,furthestBattle:1,coins:560});d.game.dispatch({type:'start'});d.game.dispatch({type:'retreat'});d.modal='result';
+ k.clickData({command:'result-counsel',counsel:'company-1'});assert.equal(d.modal,'camp-focus');assert.equal(JSON.stringify(d.campOwner.focus),JSON.stringify({recruit:1}));
 });

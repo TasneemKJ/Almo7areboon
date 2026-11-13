@@ -37,3 +37,9 @@
 /* Next journal goal (read-only) under the destination, on the same dark plate as the place names so both read over any painted ground. */
 .camp-heading>p:not(.eyebrow){font-size:.75rem;line-height:1.45;margin:0}
 .camp-heading>.camp-goal{display:inline-block;margin-top:6px;padding:3px 10px;border-radius:999px;background:#102c29c7;color:#ffe6a6;font-weight:700}
+/* Counsel: the one place worth a visit carries the village lantern; the other places step back but stay tappable. */
+.camp-places[data-counsel] .camp-place:not(.camp-place-counsel){opacity:.6;filter:saturate(.7)}
+.camp-place-counsel .camp-place-art{filter:drop-shadow(0 3px 3px #102f2b80) drop-shadow(0 0 16px #ffd18ab3)}
+.camp-place-counsel .camp-place-name{background:#3a2a12e6;color:#ffdc92;box-shadow:0 0 0 1.5px #c7a773,0 0 12px #ffd18a73}
+.camp-lamp{position:absolute;z-index:2;top:-10%;inset-inline-end:4%;width:40%;max-width:64px;height:auto;pointer-events:none;transform-origin:50% 0;animation:camp-lamp-sway 3.6s ease-in-out infinite}
+@keyframes camp-lamp-sway{0%,100%{transform:rotate(-3deg)}50%{transform:rotate(3deg)}}
