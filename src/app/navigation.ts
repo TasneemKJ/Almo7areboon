@@ -93,7 +93,7 @@ export function createNavigation(deps: NavigationDeps) {
     if(navState.entryEntered)return;
     const copy=entryCopy(ports.sessionState.game.profile,navState.entrySaved||hasPriorPlay(ports.sessionState.game.profile)),failed=$('battlefield').dataset.renderer==='failed';
     textIfChanged($('entry-play'),failed?tr('Try again','حاول مجدّداً'):entryReady()?copy.action:tr('Loading…','جارٍ التحميل…'));
-    htmlIfChanged($('entry-path'),journeyPathHtml(ports.sessionState.game.profile.enemyAge,!ownsFullJourney()));
+    htmlIfChanged($('entry-path'),journeyPathHtml(ports.sessionState.game.profile.enemyAge,ports.sessionState.game.profile.wins>0&&!ownsFullJourney()));
     $('entry-play').dataset.command=failed?'reload-world':'enter-world';
     textIfChanged($('entry-chapter'),copy.chapter);
     textIfChanged($('entry-subtitle'),failed?tr('The battlefield could not load. Close the game and open it again; your saved progress is kept.','تعذّر تحميل ساحة المعركة. أغلق اللعبة وافتحها من جديد، وتقدّمك المحفوظ باقٍ.'):navState.entryWelcome??copy.subtitle);

@@ -176,3 +176,14 @@ Owner override (2026-11-13): the iPhone app (ios/, TasKit) sells two things; the
   Restore purchases, Terms of Use (Apple's standard EULA) and Privacy; the Lamplighter card states both lengths, the
   auto-renew and cancel line, and offers Manage subscription (Apple's sheet) while subscribed. Both languages.
 - Copy that said "nothing else to buy" now says "Bought once and yours to keep".
+- **Journey path (council, 2026-11-13):** the entry shows six lamps under the chapter name (where you are of six). In
+  the app, once the player has won a battle and while Full Journey is not owned, chapters 3-6 are a dashed stretch with
+  "Chapters 1–2 free · 3–6 with Full Journey", which opens the card. Never before the first win, so the store is not
+  the first thing a new player sees.
+- **Touch and sound on every press (studio gate):** a short Taptic tap (navigator.vibrate, mapped to the Taptic Engine
+  by TasKit; iOS's system haptics setting governs it) and a soft wooden tick when sound is on; recruits a firmer tap
+  and their own deployment cue.
+- **Arabic typography:** no letter-spacing on an Arabic page (it breaks the joined script in WebKit); selects are drawn
+  by the game at 44px with the caret on the end side; clock times in the page language with Western digits.
+- **Settings** names the version and the studio and, in the app, links Support and Privacy (Terms sit on each card).
+- **Age rating:** honest 9+ (mild cartoon/fantasy violence), not 4+; see ios/store/listing.json.

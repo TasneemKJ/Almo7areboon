@@ -103,3 +103,9 @@ test('Settings names the version and the studio, and in the app links Support an
   const { STORE_COMMANDS } = await import('../src/app/store-flow.ts');
   assert.ok((STORE_COMMANDS as readonly string[]).includes('open-support'));
 });
+
+test('the paid stretch of the journey path appears only after a first win, never at first launch', async () => {
+  const { readFileSync } = await import('node:fs');
+  const nav = readFileSync(new URL('../src/app/navigation.ts', import.meta.url), 'utf8');
+  assert.match(nav, /journeyPathHtml\(ports\.sessionState\.game\.profile\.enemyAge,ports\.sessionState\.game\.profile\.wins>0&&!ownsFullJourney\(\)\)/);
+});
