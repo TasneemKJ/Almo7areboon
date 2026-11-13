@@ -15,8 +15,8 @@ test('counsel names the storehouse first: food is what wins the early chapters',
 });
 
 test('counsel moves on once food leads the gate, and never names what is already owned', () => {
-  assert.deepEqual(campCounsel(profileWith({ coins: 10_000, foodLevel: 4, baseLevel: 0 })), { station: 'gate' }, 'the gate follows the first bread');
-  const ahead = profileWith({ coins: 10_000, foodLevel: 4, baseLevel: 2 });
+  assert.deepEqual(campCounsel(profileWith({ coins: 2_000, foodLevel: 4, baseLevel: 0 })), { station: 'gate' }, 'the gate follows the first bread');
+  const ahead = profileWith({ coins: 2_000, foodLevel: 4, baseLevel: 2 });
   assert.deepEqual(campCounsel(ahead), { station: 'company', kind: 1 });
   ahead.unlocked = [true, true, true];
   assert.deepEqual(campCounsel(ahead), { station: 'storehouse' });
@@ -65,4 +65,10 @@ test('a slow cold tapper who follows the counsel wins chapter 2 within two tries
     }
     assert.ok(won, `seed ${seed}`);
   }
+});
+
+test('with evolution affordable, counsel lights nothing: evolution would reset what the lantern points at', () => {
+  assert.equal(campCounsel(profileWith({ coins: 2_500, enemyAge: 1, furthestBattle: 1 })), null);
+  assert.equal(campCounsel(profileWith({ age: 1, enemyAge: 1, furthestBattle: 2, coins: 20_000 })), null);
+  assert.deepEqual(campCounsel(profileWith({ age: 1, enemyAge: 0, furthestBattle: 2, coins: 20_000 })), { station: 'storehouse' }, 'evolution needs the rival chapter first');
 });

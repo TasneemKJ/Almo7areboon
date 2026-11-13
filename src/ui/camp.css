@@ -43,3 +43,4 @@
 .camp-place-counsel .camp-place-name{background:#3a2a12e6;color:#ffdc92;box-shadow:0 0 0 1.5px #c7a773,0 0 12px #ffd18a73}
 .camp-lamp{position:absolute;z-index:2;top:-10%;inset-inline-end:4%;width:40%;max-width:64px;height:auto;pointer-events:none;transform-origin:50% 0;animation:camp-lamp-sway 3.6s ease-in-out infinite}
 @keyframes camp-lamp-sway{0%,100%{transform:rotate(-3deg)}50%{transform:rotate(3deg)}}
+.camp-counsel-note{margin:0 0 4px;font-size:.9rem;color:#5a4318}.camp-counsel-note::before{content:"";display:inline-block;width:.55em;height:.8em;margin-inline-end:.45em;vertical-align:-.05em;border-radius:2px 2px 3px 3px;background:#ffdc92;box-shadow:0 0 8px #ffd18a,0 0 0 2px #c7a773}

@@ -1,4 +1,4 @@
-import { baseUpgradeCost, foodUpgradeCost, unlockCost } from './data.ts';
+import { ERAS, baseUpgradeCost, foodUpgradeCost, unlockCost } from './data.ts';
 import type { Game } from './simulation.ts';
 import type { Profile } from './types.ts';
 
@@ -14,6 +14,8 @@ export type CampCounsel = { readonly station: 'storehouse' } | { readonly statio
 const FIRST_BREAD = 4, FIRST_BRACE = 2, FOOD_LEAD = 3, MAX_LEVEL = 100;
 
 export function campCounsel(p: Readonly<Profile>): CampCounsel | null {
+  // Evolution resets coins, upgrades and unlocks: when it is affordable, no lantern should send coins into what it wipes.
+  if (p.age < ERAS.length - 1 && p.age <= p.enemyAge && p.coins >= ERAS[p.age].evolveCost) return null;
   const food = p.foodLevel < MAX_LEVEL && p.coins >= foodUpgradeCost(p as Profile);
   const gate = p.baseLevel < MAX_LEVEL && p.coins >= baseUpgradeCost(p as Profile);
   if (food && p.foodLevel < FIRST_BREAD) return { station: 'storehouse' };

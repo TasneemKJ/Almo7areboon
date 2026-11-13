@@ -125,7 +125,7 @@ while (Date.now() < deadline) {
   // Choose an action.
   let act = null, why = '';
   const modalOpen = !!s.modal || s.secondary;
-  const recruits = ctl.filter(c => c.data.fieldRecruit != null);
+  const recruits = ctl.filter(c => c.data.fieldRecruit != null || c.data.unit != null); // tray cards (4258fd0) carry only data-unit
   const orders = ctl.filter(c => c.data.order);
   const named = ctl.filter(c => c.cmd && !AVOID.has(c.cmd));
   const now = Date.now();

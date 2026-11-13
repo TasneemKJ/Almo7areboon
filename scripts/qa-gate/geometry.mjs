@@ -119,6 +119,7 @@ const SCREENS = [
   { id: 'lamplighter', seed: played, go: async p => { await tap(p, '#entry-settings'); await tap(p, '#modal-layer [data-command=lamplighter]'); return true; } },
   { id: 'camp', seed: played, go: async p => { await tap(p, '#entry-secondary'); return true; } },
   { id: 'camp-counsel', seed: chapter2, go: async p => { await tap(p, '#entry-secondary'); return true; } },
+  { id: 'camp-counsel-company', seed: { ...chapter2, foodLevel: 4, baseLevel: 2, coins: 200 }, go: async p => { await tap(p, '#entry-secondary'); return true; } },
   { id: 'defeat-counsel', seed: chapter2, go: async p => { await tap(p, '#entry-play'); await p.waitForSelector('[data-command=result-counsel]', { timeout: 120000 }); return true; } },
   { id: 'victory-postcard', seed: { ...played, foodLevel: 6, unlocked: [true, true, true], enemyAge: 0 }, go: async p => { await tap(p, '#entry-play'); for (let i = 0; i < 400 && !(await p.locator('[data-command=share-postcard]').isVisible().catch(() => false)); i++) { const card = p.locator('[data-unit]:visible:not([disabled])').first(); if (await card.count()) await card.tap({ timeout: 1000 }).catch(() => {}); await p.waitForTimeout(250); } await p.waitForSelector('[data-command=share-postcard]', { timeout: 5000 }); return true; } },
   { id: 'camp-company', seed: played, go: async p => { await tap(p, '#entry-secondary'); await tap(p, '[data-camp-station=company]'); return true; } },
