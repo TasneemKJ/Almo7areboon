@@ -251,7 +251,7 @@ IDEAL/5Ws and twenty alternatives per distinct scenario: `docs/audits/2026-10-08
 Combined-main camp/cinema acceptance:1464tests/build pass; six-size native touch/deployment/rotation matrix passes, including390px at4×CPU. Four corrected cinema exports independently decoded and visually reviewed. Incoming remote-main evolution, gate and scroll fixes preserved.
 
 ## iPhone 1.0 gate (2026-11-13): open items from the QA gate (ios/store/GATE.md)
-- [ ] Chapter 2 (Olive Terraces) is a wall for a slow tapper: the cold bot (0.75 taps/s) lost it 11 times in a row; a quick player beats it on the second try. Tune its waves or coach after the first defeat (point at the next unlock, offer Replay First Fires).
+- [ ] Chapter 2 (Olive Terraces) is a wall for a slow tapper: the cold bot (0.75 taps/s) lost it 11 times in a row; a quick player beats it on the second try. Tune its waves or coach after the first defeat (point at the next unlock, offer Replay First Fires). A one-line hint does not fix it: the field guide already says "food is piling up, tap a troop" (`battleGuidance`, `foodIsPiling`), and the bot that reads it still loses on wave timing at 0.75 taps/s.
 - [ ] First damage to the enemy gate lands at about 35-48 s; the owner's band is about 20 s.
 - [ ] Days 3-7 are nearly empty for a free player (no new chapter, seals frozen, coins pile up with nothing to buy). Find an honest bounded beat from the game's own content.
 - [ ] Coins become meaningless for a free player stuck at the paywall (millions by day 7).
