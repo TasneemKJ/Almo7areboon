@@ -41,7 +41,7 @@ async function tap(c, why) {
   // A two-step loop (e.g. Continue -> paywall -> Close -> Continue) is a state the player cannot leave by following
   // the screen: 4 cycles of the same two commands, nothing else, is a stuck finding.
   recent.push(c.cmd || why); if (recent.length > 8) recent.shift();
-  if (recent.length === 8 && new Set(recent).size === 2 && recent.every((k, i) => k === recent[i % 2]) && !/deploy|order|rally/.test(recent.join(' ')) && !loopFlagged.has(recent.slice(0, 2).join('>'))) { loopFlagged.add(recent.slice(0, 2).join('>')); m.stuck.push({at: T(), kind: 'two-step loop', control: recent.slice(0, 2).join(' > '), screen: screens.get(lastSig)}); note(`LOOP: ${recent.slice(0, 2).join(' > ')}`); }
+  if (recent.length === 8 && new Set(recent).size === 2 && recent.every((k, i) => k === recent[i % 2]) && !/deploy|order|rally|^try /.test(recent[0]) && !/deploy|order|rally|^try /.test(recent[1]) && !loopFlagged.has(recent.slice(0, 2).join('>'))) { loopFlagged.add(recent.slice(0, 2).join('>')); m.stuck.push({at: T(), kind: 'two-step loop', control: recent.slice(0, 2).join(' > '), screen: screens.get(lastSig)}); note(`LOOP: ${recent.slice(0, 2).join(' > ')}`); }
   return true;
 }
 
