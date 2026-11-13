@@ -15,7 +15,7 @@ export const STORE_COMMANDS = ['full-journey', 'lamplighter', 'buy-full-journey'
 
 export interface StoreFlowDeps {
   dom: Pick<Runtime, 'lifetime'>;
-  ports: Pick<ShellApi, 'action' | 'closeModal' | 'navState' | 'persist' | 'playable' | 'sessionState' | 'showModal' | 'showResult' | 'showSettings' | 'toast'>;
+  ports: Pick<ShellApi, 'action' | 'closeModal' | 'navState' | 'persist' | 'playable' | 'renderScreen' | 'sessionState' | 'showModal' | 'showResult' | 'showSettings' | 'toast'>;
 }
 
 /**
@@ -113,6 +113,8 @@ export function createStoreFlow(deps: StoreFlowDeps, bridge: TasBridge = almoApp
   }
   const stop = onStoreChange((_, unlockedNow) => {
     if (open() && ports.playable()) render();
+    // The evolve control under the card shows a lock and the price until Full Journey is owned: redraw it with the store.
+    if (ports.playable() && ports.navState.activeTab === 'evolution') ports.renderScreen();
     if (unlockedNow && ports.playable()) ports.toast(tr('Full Journey is yours. Every chapter is open.', 'الرحلة كاملة لك. كلّ الفصول مفتوحة.'), 6000);
   });
   deps.dom.lifetime.add(stop);

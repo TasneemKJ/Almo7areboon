@@ -4,6 +4,7 @@ import { advanceStatus } from '../game/mastery.ts';
 import { campCounsel } from '../game/counsel.ts';
 import type { Profile, BattleState } from '../game/types.ts';
 import { n, tr } from './i18n.ts';
+import { evolutionNeedsFullJourney } from './app-bridge.ts';
 
 const number=(value:number)=>value.toLocaleString('en-US');
 /** A number inside Arabic markup, isolated left-to-right. */
@@ -19,7 +20,8 @@ export function regroupLearningHtml(profile:Readonly<Profile>,state:Readonly<Bat
  // Same order as the lit Camp place (game/counsel.ts): food first, then the gate, then a waiting troop.
  const counsel=campCounsel(profile);
  let funded=tr('Try one change at a time. Your coins already earned are kept.','جرّب تغييراً واحداً في كلّ مرّة. النقود التي كسبتها تبقى معك.');
- if(profile.age<5&&profile.age<=profile.enemyAge&&profile.coins>=ERAS[profile.age].evolveCost)
+ // Not while the next chapter is behind Full Journey: coins alone do not open it, so the advice stays on what they do buy.
+ if(profile.age<5&&profile.age<=profile.enemyAge&&profile.coins>=ERAS[profile.age].evolveCost&&!evolutionNeedsFullJourney(profile.age))
   funded=tr(`Evolution is affordable: ${number(ERAS[profile.age].evolveCost)} coins. It resets coins, age upgrades and troop unlocks; review Evolution before confirming.`,`تستطيع الآن الارتقاء: ${num(ERAS[profile.age].evolveCost)} من النقود. الارتقاء يعيد النقود وتطويرات العصر وفتح الجند إلى البداية؛ راجع «الارتقاء» قبل أن تؤكّد.`);
  else if(counsel?.station==='company'&&counsel.kind===1)
   funded=tr(`Unlock ranged troops for ${number(unlockCost(1,profile))} coins, then protect them with a melee front line.`,`افتح الرماة مقابل ${num(unlockCost(1,profile))} من النقود، ثم احمِهم بخطّ أماميّ للقتال القريب.`);

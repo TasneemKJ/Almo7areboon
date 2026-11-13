@@ -11,7 +11,8 @@ import { masteryMarksHtml, masteryAttemptText, masteryAdvice } from './mastery-p
 import { villageVoice, villageMoment } from './chapter-scouting.ts';
 import { earlierChapter, regroupLearningHtml } from './regroup-learning.ts';
 import { campCounsel } from '../game/counsel.ts';
-import { almoApp, FREE_AGES, ownsFullJourney } from './app-bridge.ts';
+import { almoApp, evolutionNeedsFullJourney, FREE_AGES, ownsFullJourney, type TasBridge } from './app-bridge.ts';
+import { lockedEvolveLabel } from './evolution-screen.ts';
 import { counselCopy, counselStation } from './counsel-copy.ts';
 import { nextGoalLabel } from './next-goal.ts';
 import { localDay } from '../game/data.ts';
@@ -45,7 +46,7 @@ export function defeatRecapHtml(age:number,state:BattleState):string {
  return `<p class="defeat-recap">${tr(`Most damage came from your ${name}: ${share} of what your army dealt.`,`جاء معظم الضرر من ${name}: ${n(share)} ممّا أوقعه جيشك.`)}</p>`;
 }
 
-export function resultsHtml(profile: Profile, state: BattleState): string {
+export function resultsHtml(profile: Profile, state: BattleState, bridge: TasBridge = almoApp): string {
  const won=state.phase==='won',run=profile.chronicle?.expedition,stats=battleStats(state.stats),advance=advanceStatus(profile,state),view=chapterMastery(profile,profile.enemyAge);
  const terminal=advance.reason==='complete',receipt=won?profile.pendingVictory:null;
  const settled=receipt?.settlement==='mastery-v1'?receipt:null;
@@ -56,7 +57,8 @@ export function resultsHtml(profile: Profile, state: BattleState): string {
  const continuation=advance.allowed&&!profile.chronicle?.expedition?`<button class="big-button green" data-command="next">${advance.target==='timeline'?tr('Next Timeline','الخطّ الزمنيّ التالي'):tr(`Continue to ${nextTitle}`,`تابع إلى ${nextTitle}`)} ${icon('arrow')}</button>`:'';
  const retry=canRetry(profile,state)&&!terminal?`<button class="big-button ${won?'secondary':'blue'}" data-command="retry">${won?(view.record.earnedMask===7?tr('Replay','العب مجدّداً'):tr('Try for remaining seals','حاول نيل الأختام الباقية')):tr('Prepare next attempt','استعدّ للمحاولة التالية')} ${icon('arrow')}</button>`:'';
  const canEvolve=!profile.chronicle?.expedition&&won&&profile.age<ERAS.length-1&&profile.age<=profile.enemyAge;
- const evolve=canEvolve?`<button class="big-button secondary" data-command="evolve" ${profile.coins<ERAS[profile.age].evolveCost?'disabled':''}>${tr(`Evolve · ${amount(ERAS[profile.age].evolveCost)} coins`,`ارتقِ · ${n(amount(ERAS[profile.age].evolveCost))} من النقود`)}</button>`:'';
+ const lock=lockedEvolveLabel(bridge);
+ const evolve=canEvolve&&evolutionNeedsFullJourney(profile.age,bridge)?`<button class="big-button secondary" data-command="evolve" data-locked="full-journey" aria-label="${tr('Evolve','ارتقِ')}. ${lock.aria}">${tr('Evolve','ارتقِ')} · ${lock.html}</button>`:canEvolve?`<button class="big-button secondary" data-command="evolve" ${profile.coins<ERAS[profile.age].evolveCost?'disabled':''}>${tr(`Evolve · ${amount(ERAS[profile.age].evolveCost)} coins`,`ارتقِ · ${n(amount(ERAS[profile.age].evolveCost))} من النقود`)}</button>`:'';
  return `<div class="result-landscape" aria-hidden="true"><img alt="" src="${chapterLandscape(won&&!run&&advance.target==='battle'?advance.nextBattle!:profile.enemyAge)}"/></div><div class="result-emblem ${won?'':'defeat'}">${icon(won?'trophy':'shield')}</div><span class="eyebrow">${won?tr('THE BATTLE IS YOURS','المعركة لك'):tr('YOUR COINS ARE SAFE','نقودك في أمان')}</span><h2 id="dialog-title" tabindex="-1" data-initial-focus>${won?tr('VICTORY!','نصر!'):tr('REGROUP','لُمَّ الشمل')}</h2><p>${won&&run?`${encounterDone(run.stage)} ${run.stage<2?tr('Choose provisions below before continuing.','اختر مؤونتك في الأسفل قبل أن تتابع.'):tr('Bring the company home when you are ready.','أعِد السريّة إلى الديار متى شئت.')}`:terminal?terminalCopy:won?(advance.target==='timeline'?`${tr('Timeline complete!','اكتمل الخطّ الزمنيّ!')} ${timelineResetCopy()}`:tr(`${nextTitle} is next. Your own army evolves separately.`,`التالي: ${nextTitle}. وجيشك يرتقي وحده على حِدة.`)):masteryAdvice(profile,state)}</p>
  <blockquote class="village-voice" data-village-moment="${villageMoment(voiceStats)}">${villageVoice(profile.enemyAge,state.phase,voiceStats)}</blockquote>
  ${defeatRecapHtml(profile.age,state)}${regroupLearningHtml(profile,state)}
