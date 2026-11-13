@@ -22,6 +22,7 @@ test('no screen speaks of evolving or ages: the company moves camp along the roa
   assert.ok(copy.length > 400, 'the copy was found');
   const said = copy.join('\n');
   assert.doesNotMatch(said, /\bEvolution\b|\bEVOLVE\b|\bEvolve\b|\bevolv(e|es|ing)\b|FINAL AGE|CURRENT AGE|YOUR ERA|age economy|age upgrades|first age/);
-  assert.doesNotMatch(said, /ارتقِ|الارتقاء|يرتقي|ترتقي|عصرك|العصر/);
+  assert.doesNotMatch(said, /ارتقِ|الارتقاء|يرتقي|ترتقي|عصرك|العصر|العصور/);
+  assert.doesNotMatch(said + readFileSync(new URL('../index.html', import.meta.url), 'utf8'), /Through the Ages|\b[Aa]ges\b|\b[Ee]ras?\b|عبر العصور/);
   assert.match(said, /MOVE CAMP/); assert.match(said, /انقل المخيّم/); assert.match(said, /'The Road','الطريق'/);
 });

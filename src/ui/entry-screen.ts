@@ -3,7 +3,7 @@ import { chapterLandscape, chapterPresentation } from './chapter-presentation.ts
 import { n, tr } from './i18n.ts';
 
 /** The page title in the current language (index.html carries the English one until boot). */
-export function documentTitle():string { return tr('Almo7areboon — Through the Ages','المحاربون — عبر العصور'); }
+export function documentTitle():string { return tr('Almo7areboon — Through the Levant','المحاربون — عبر بلاد الشام'); }
 
 /** A settings-only save is not evidence of play; older saves retain their real history. */
 export function hasPriorPlay(profile:Profile):boolean {
