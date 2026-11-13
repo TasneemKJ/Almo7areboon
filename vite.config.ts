@@ -2,8 +2,11 @@ import { defineConfig } from 'vite';
 import { readdirSync, readFileSync, writeFileSync } from 'node:fs';
 import { resolve } from 'node:path';
 
+const pkg = JSON.parse(readFileSync(new URL('./package.json', import.meta.url), 'utf8')) as { version: string };
+
 export default defineConfig({
   base: './',
+  define: { __GAME_VERSION__: JSON.stringify(pkg.version) },
   plugins: [{
     name: 'complete-offline-installation',
     writeBundle(options) {

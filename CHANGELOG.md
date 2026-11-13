@@ -2,6 +2,11 @@
 
 Semantic versioning. Each merged batch adds an entry; `package.json` and the top heading carry the same version (a test checks). Git tags are cut by the maintainer at release time (only `v0.2.0` exists).
 
+## 1.0.0 - 2026-11-13
+- The iPhone app (ios/, TasKit): Full Journey (chapters 3-6 and the harder timeline) asked for at the end of chapter 2 and from Settings; the Lamplighter subscription (monthly or yearly), whose only gift is lit lanterns behind your gate. The web build sells nothing and stays open.
+- The whole game in Arabic as well as English, one language per screen; joined Arabic letters (no tracking), Arabic clock times and compact numbers.
+- The journey path on the entry (six lamps; in the app the locked stretch names the free scope). A Taptic tap and a soft tick on every press. Settings shows the version and the studio, and in the app Support and Privacy. Selects drawn at 44px. Copy speaks of this device, not the browser.
+
 ## 0.3.14 - 2026-10-06
 - Visual pass: revealed Hold/Advance gate labels anchor to their gate's outer edge (Advance no longer runs off the right edge on phones) and sit above the base health bar instead of hiding it; the sticky Back to Camp button on Cards and Evolution keeps paper above it so scrolled cards no longer show over it.
 - Weekly goal edge closed: a battle that starts in a new week opens it first, and a win that is the first thing seen in a new week counts the seals it just settled (they were earned this week) instead of making them the base.

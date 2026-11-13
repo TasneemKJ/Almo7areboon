@@ -91,3 +91,15 @@ test('the entry screen lets the locked stretch of the path open Full Journey bef
   const listeners = readFileSync(new URL('../src/app/listeners.ts', import.meta.url), 'utf8');
   assert.match(listeners, /!ports\.navState\.entryEntered&&!ports\.navState\.modal&&[^\n]*command!=='full-journey'/);
 });
+
+test('Settings names the version and the studio, and in the app links Support and Privacy', async () => {
+  const { preferencesHtml } = await import('../src/ui/preferences-screen.ts');
+  const mix = { effects: 80, atmosphere: 60 };
+  const web = preferencesHtml(defaultProfile(), true, mix, true, '');
+  assert.match(web, /class="preferences-about"[^>]*>Almo7areboon <bdi dir="ltr">[^<]+<\/bdi> · A game by Tas Games</);
+  const app = preferencesHtml(defaultProfile(), true, mix, true, '', { inApp: true });
+  assert.match(app, /data-command="open-support"/);
+  assert.match(app, /data-command="open-privacy"/);
+  const { STORE_COMMANDS } = await import('../src/app/store-flow.ts');
+  assert.ok((STORE_COMMANDS as readonly string[]).includes('open-support'));
+});

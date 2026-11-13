@@ -1,6 +1,6 @@
 # Almo7areboon
 
-A mobile-first, portrait web recreation of the **We Are Warriors!** core loop, built with TypeScript, Phaser 3 and Vite. The source and vector artwork are original.
+**Almo7areboon (المحاربون)** is an original mobile-first battle tale from the Levant: at dusk you gather your village's company and hold the gate, chapter by chapter, across six hand-painted places and a storybook of captains, veterans and tales. Built with TypeScript, Phaser 3 and Vite; the source, story and artwork are original. It plays in the lane-battler tradition (food recruits troops who push a rival line), in Arabic and English.
 
 ## Folktale tactics expansion
 
@@ -10,7 +10,7 @@ See [the twenty-idea scope and acceptance record](docs/FOLKTALE-TACTICS.md) for 
 
 ## Current delivery
 
-The deterministic core, 30-card collection, progression and save recovery are implemented. The illustrated visual overhaul adds six environments, redesigned armies and a coordinated mobile interface. Its local suite (`npm test`) and the production build pass; the test count is deliberately not quoted here because it changes with every iteration. This is **not** a verified pixel-exact clone or a complete recreation of the reference's live-service systems.
+The deterministic core, 30-card collection, progression and save recovery are implemented. The illustrated visual overhaul adds six environments, redesigned armies and a coordinated mobile interface. Its local suite (`npm test`) and the production build pass; the test count is deliberately not quoted here because it changes with every iteration.
 
 The early visual-overhaul record predates the current Chromium browser gates. Component tests and CSS/source checks do not replace rendered browser checks, and touch-device/Safari acceptance remains separate and unfinished. See the [visual-overhaul evidence](docs/VISUAL-OVERHAUL.md), [core verification](docs/VERIFICATION.md), [original 40-pass record](docs/ITERATIONS.md) and [folktale expansion review](docs/FOLKTALE-TACTICS.md).
 
@@ -87,8 +87,7 @@ See [CREDITS.md](CREDITS.md) for licences and the privacy note, and [docs/perfor
 
 ## Fidelity and limits
 
-Food-to-troop combat, melee/ranged/heavy choices, six eras with 18 appearances, evolution, upgrades, cards and skills are recreated. Original hidden tuning is not available: era rewards, later-age balance and some card curves remain provisional. The original reference's heroes, runes, dungeons, live events, ads, purchases and backend services are not included. The original story captains, expeditions and rule-based alternate timelines in this expansion are separate systems, not recreations of those reference features. Phaser's vendor bundle still produces a size warning; low-end device performance is unmeasured.
+Food-to-troop combat, melee/ranged/heavy choices, six chapters with 18 troop appearances, evolution, upgrades, cards and skills are implemented, with the game's own story captains, expeditions and rule-based alternate timelines. Later-chapter balance and some card curves remain provisional. There are no ads, accounts or backend services. Phaser's vendor bundle still produces a size warning; low-end device performance is unmeasured.
 
-Reference: [We Are Warriors! on Google Play](https://play.google.com/store/apps/details?id=com.vjsjlqvlmp.wearewarriors&hl=en_GB).
 
 Known accessibility limits: upgrade labels and prices use relative font sizes with intrinsic wrapping; the focused browser harness covers 100/125/150/200% root-size emulation. Native persistent default-font preference remains unverified, and other game text still uses fixed pixel sizes. Rotating the device resizes the battlefield correctly, but landscape shows a 480px column that scrolls vertically; the installed app is locked to portrait. Reduced motion and forced-colours modes are honoured.

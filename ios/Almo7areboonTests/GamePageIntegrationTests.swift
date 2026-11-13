@@ -34,7 +34,8 @@ final class GamePageIntegrationTests: XCTestCase {
         window.addSubview(web)
         web.frame = window.bounds
         window.isHidden = false
-        try await waitFor("typeof almoApp==='object'&&document.readyState==='complete'&&!!document.querySelector('[data-command=\"enter-world\"]')")
+        // A cold simulator on a busy machine can take most of a minute to load the page the first time.
+        try await waitFor("typeof almoApp==='object'&&document.readyState==='complete'&&!!document.querySelector('[data-command=\"enter-world\"]')", seconds: 90)
     }
 
     override func tearDown() async throws {
@@ -135,4 +136,41 @@ final class GamePageIntegrationTests: XCTestCase {
         XCTAssertEqual(host.vault.load()["almo7areboon.test.copy"], "kept")
         _ = try await js("localStorage.removeItem('almo7areboon.test.copy');true")
     }
+
+    /// The Lamplighter card in English: both plans, Restore, Terms, Privacy and Not now are 44pt targets on a 390×844
+    /// screen, the prices are the App Store's, and the renewal line is on the card before paying.
+    func testTheLamplighterCardFitsAndSaysHowRenewalWorks() async throws {
+        try await waitFor("(almoApp.prices.lamplighterYearly||'').length>0&&(almoApp.prices.lamplighterMonthly||'').length>0")
+        _ = try await js("window.__almoShowLamplighter&&window.__almoShowLamplighter();true")
+        try await waitFor("!!document.querySelector('[data-command=\"buy-lamplighter-yearly\"]')")
+        try await Task.sleep(for: .milliseconds(400))
+        let report = try await js("""
+        (function(){var out=[];
+          ['buy-lamplighter-yearly','buy-lamplighter-monthly','restore-purchases','open-terms','open-privacy','close'].forEach(function(c){
+            var b=document.querySelector('#modal-layer [data-command="'+c+'"]');if(!b){out.push(c+':missing');return;}
+            var r=b.getBoundingClientRect();
+            if(r.height<44||r.left<0||r.right>innerWidth)out.push(c+':'+Math.round(r.height));});
+          if(!/renews automatically/.test(document.querySelector('#modal-layer').textContent))out.push('renewal');
+          if(document.querySelectorAll('#modal-layer bdi[dir=ltr]').length<2)out.push('prices');
+          return out.join(',');})()
+        """) as? String
+        XCTAssertEqual(report, "")
+        try await snapshot("lamplighter-card-en")
+    }
+
+    /// Subscribing reaches the page: the card turns to Manage subscription, and the lanterns are lit on the field.
+    func testSubscribingLightsTheLanterns() async throws {
+        try await waitFor("document.getElementById('battlefield').dataset.renderer==='ready'", seconds: 30)
+        await host.store.buy("lamplighterYearly")
+        XCTAssertTrue(host.store.owns("lamplighterYearly"))
+        try await waitFor("almoApp.owned.lamplighterYearly===true")
+        let ownsJourney = try await js("almoApp.owns('fullGame')") as? Bool
+        XCTAssertEqual(ownsJourney, false, "the subscription opens no chapter")
+        _ = try await js("window.__almoShowLamplighter();true")
+        try await waitFor("!!document.querySelector('#modal-layer [data-command=\"manage-subscriptions\"]')")
+        _ = try await js("document.querySelector('#modal-layer [data-command=\"close\"]').click();document.querySelector('[data-command=\"enter-world\"]').click();true")
+        try await Task.sleep(for: .seconds(14))
+        try await snapshot("almo7areboon-lanterns")
+    }
+
 }

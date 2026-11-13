@@ -16,6 +16,7 @@ import './ui/simple-entry.css';
 import './ui/preferences.css';
 import './ui/store.css';
 import './ui/arabic-type.css';
+import './ui/selects.css';
 import './ui/intro.css';
 import './ui/company-film.css';
 import './ui/landscape-rail.css';

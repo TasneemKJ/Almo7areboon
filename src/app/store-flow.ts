@@ -10,7 +10,7 @@ import type { ShellApi } from './shell.ts';
 export type StoreOrigin = 'settings' | 'evolve' | 'evolve-result' | 'other';
 export const STORE_MODALS = ['full-journey', 'lamplighter'] as const;
 /** The buttons whose commands the store flow handles (listeners.ts routes them here). */
-export const STORE_COMMANDS = ['full-journey', 'lamplighter', 'buy-full-journey', 'buy-lamplighter-monthly', 'buy-lamplighter-yearly', 'restore-purchases', 'manage-subscriptions', 'open-terms', 'open-privacy'] as const;
+export const STORE_COMMANDS = ['full-journey', 'lamplighter', 'buy-full-journey', 'buy-lamplighter-monthly', 'buy-lamplighter-yearly', 'restore-purchases', 'manage-subscriptions', 'open-terms', 'open-privacy', 'open-support'] as const;
 
 export interface StoreFlowDeps {
   dom: Pick<Runtime, 'lifetime'>;
@@ -67,6 +67,7 @@ export function createStoreFlow(deps: StoreFlowDeps, bridge: TasBridge = almoApp
       case 'manage-subscriptions': manageSubscriptions(bridge); return true;
       case 'open-terms': bridge.openPage('terms'); return true;
       case 'open-privacy': bridge.openPage('privacy'); return true;
+      case 'open-support': bridge.openPage('support'); return true;
       case 'close': if (!open()) return false; leave(); return true;
       default: return false;
     }

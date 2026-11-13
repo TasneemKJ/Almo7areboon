@@ -3,6 +3,10 @@ import type {AudioMix} from './audio-preferences.ts';
 import {lang,n,tr} from './i18n.ts';
 import {almoApp} from './app-bridge.ts';
 
+declare const __GAME_VERSION__: string | undefined;
+/** The release version (package.json, injected by Vite); 'dev' in node tests. */
+export const GAME_VERSION = typeof __GAME_VERSION__ === 'string' ? __GAME_VERSION__ : 'dev';
+
 /** Seven independent preference fields; navigation/destruction are separate actions. */
 /** `store.inApp`: the iPhone app sells Full Journey and the Lamplighter; their cards open from here. Off the app nothing is sold. */
 export function preferencesHtml(p:Profile,atmosphere:boolean,mix:AudioMix,canWrite:boolean,notice:string,store:{inApp:boolean}=almoApp):string {
@@ -19,7 +23,9 @@ export function preferencesHtml(p:Profile,atmosphere:boolean,mix:AudioMix,canWri
  <p class="preference-note">${tr('Tap a waiting defender to recruit; tap the standard to gather or release. Select an enemy for tactical powers.','المس مدافعاً ينتظر لتجنّده، والمس الراية لتجمع السريّة أو تطلقها. اختر عدوّاً لتستعمل القدرات التكتيكية.')} ${tr('<kbd>Tab</kbd> then <kbd>Enter</kbd> selects objects; <kbd>1–3</kbd> recruits; <kbd>Q/W/E</kbd> uses Freeze, Meteor or Food when available. <kbd>Esc</kbd> closes a dialog or clears selection.','<kbd dir="ltr">Tab</kbd> ثم <kbd dir="ltr">Enter</kbd> يختار العناصر، و<kbd dir="ltr">1–3</kbd> للتجنيد، و<kbd dir="ltr">Q/W/E</kbd> للتجميد والنيزك والمؤونة حين تتاح. <kbd dir="ltr">Esc</kbd> يغلق النافذة أو يلغي الاختيار.')}</p>
  <p id="preference-status" class="save-note" role="status">${notice}</p>
  ${store.inApp?`<div class="preferences-store"><button class="big-button secondary" data-command="full-journey">${tr('Full Journey','الرحلة كاملة')}</button><button class="big-button secondary" data-command="lamplighter">${tr('The Lamplighter','مُشعِل القناديل')}</button></div>`:''}
- <div class="preferences-actions"><button class="big-button secondary" data-command="watch-intro">${tr('Watch intro','شاهد المقدّمة')}</button><button class="big-button secondary" data-command="watch-film">${tr('Watch film','شاهد الفيلم')}</button><button class="big-button secondary" data-command="save-recovery">${tr('Save &amp; recovery','الحفظ والاستعادة')}</button><button class="big-button secondary" data-command="reset" ${canWrite?'':'disabled'}>${tr('Start over…','ابدأ من جديد…')}</button><button class="big-button green" data-command="close">${tr('Done','تمّ')}</button></div>`;
+ <div class="preferences-actions"><button class="big-button secondary" data-command="watch-intro">${tr('Watch intro','شاهد المقدّمة')}</button><button class="big-button secondary" data-command="watch-film">${tr('Watch film','شاهد الفيلم')}</button><button class="big-button secondary" data-command="save-recovery">${tr('Save &amp; recovery','الحفظ والاستعادة')}</button><button class="big-button secondary" data-command="reset" ${canWrite?'':'disabled'}>${tr('Start over…','ابدأ من جديد…')}</button><button class="big-button green" data-command="close">${tr('Done','تمّ')}</button></div>
+ ${store.inApp?`<p class="full-journey-legal"><button class="link-button" data-command="open-support">${tr('Support','الدعم')}</button> · <button class="link-button" data-command="open-privacy">${tr('Privacy','الخصوصية')}</button></p>`:''}
+ <p class="preferences-about">${tr('Almo7areboon','المحاربون')} ${n(GAME_VERSION)} · ${tr('A game by Tas Games','لعبة من تاس غيمز')}</p>`;
 }
 export function saveRecoveryHtml(canWrite:boolean,notice:string):string {
  return `<h2 id="dialog-title">${tr('Save &amp; recovery','الحفظ والاستعادة')}</h2><p id="recovery-status" class="save-note" role="status">${notice}</p><p>${tr('Game progress stays on this device. Export a copy you control; importing replaces the current progress only after confirmation.','يبقى تقدّمك على هذا الجهاز. صدّر نسخة تحتفظ بها، والاستيراد لا يستبدل تقدّمك الحالي إلا بعد التأكيد.')}</p><div class="recovery-actions"><button class="big-button blue" data-command="export">${tr('Export','تصدير')}</button><button class="big-button secondary" data-command="import" ${canWrite?'':'disabled'}>${tr('Import','استيراد')}</button><button class="big-button secondary" data-command="close">${tr('Back','رجوع')}</button></div><input id="import-save" type="file" accept=".json,application/json" hidden>`;
