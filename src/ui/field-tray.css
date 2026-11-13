@@ -8,6 +8,6 @@
 #app[data-field-mode="field"] .chronicle-command-row{min-height:0}
 #app[data-field-mode="field"] .unit-cards{gap:8px}
 #app[data-field-mode="field"] .unit-card{min-height:56px}
-@media (max-height:700px){#app[data-field-mode="field"] .unit-card{height:72px}#app[data-field-mode="field"] .unit-card img{height:46px;bottom:16px}#app[data-field-mode="field"] .order-banner{padding-bottom:4px}}
+@media (max-height:700px){#app[data-field-mode="field"] .unit-card{height:80px}#app[data-field-mode="field"] .unit-card img{height:46px;bottom:16px}#app[data-field-mode="field"] .order-banner{padding-bottom:4px}}
 /* The select-enemy target over a rival troop shows itself: a dashed ember ring. */
 .enemy-hit::before{content:"";position:absolute;inset:4px;border:2px dashed #f19d75;border-radius:50%;opacity:.85;pointer-events:none}
