@@ -28,10 +28,12 @@ export function createStoreFlow(deps: StoreFlowDeps, bridge: TasBridge = almoApp
   let origin: StoreOrigin = 'other';
   const open = () => STORE_MODALS.includes(ports.navState.modal as typeof STORE_MODALS[number]);
 
+  /** The free chapter a held save can step back to; none while an expedition holds the battle choice. */
+  const freeRoute = () => ports.sessionState.game.profile.chronicle?.expedition ? null : freeChapterFor(ports.sessionState.game.profile);
   /** The Full Journey card for the save as it is now; a held save (past the free chapters, not owned) says so. */
   function cardHtml(): string {
     const profile = ports.sessionState.game.profile;
-    const held = journeyHeld(profile, bridge) ? { freeChapter: freeChapterFor(profile) !== null } : null;
+    const held = journeyHeld(profile, bridge) ? { freeChapter: freeRoute() !== null } : null;
     return fullJourneyHtml(bridge, chapterPresentation(Math.min(5, Math.max(2, profile.age + 1))).title, profile.furthestBattle >= 1 && profile.wins > 0, held);
   }
   function render(): void {
@@ -94,7 +96,7 @@ export function createStoreFlow(deps: StoreFlowDeps, bridge: TasBridge = almoApp
       // Declining a held save: step back to the last free chapter (a choice of battle, as in the battle list; the
       // furthest battle reached stays on record and opens again with Full Journey).
       case 'free-chapters': {
-        const chapter = freeChapterFor(ports.sessionState.game.profile);
+        const chapter = freeRoute();
         if (ports.navState.modal !== 'full-journey' || chapter === null) return true;
         origin = 'other';
         if (ports.action({ type: 'select-battle', battle: chapter }) && ports.playable() && ports.navState.modal === 'full-journey') ports.closeModal();

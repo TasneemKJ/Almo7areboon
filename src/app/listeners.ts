@@ -227,6 +227,8 @@ export function installListeners(deps: ListenersDeps): void {
       }
       const storyAction=chronicleActionFromData(button.dataset);
       if(storyAction){
+        // A storybook route or expedition chooses its battle too: a paid chapter asks the store first, as the battle list does.
+        if('battle' in storyAction&&ports.gateBattle(storyAction.battle))return;
         if(ports.action(storyAction)&&ports.playable()&&ports.navState.modal!=='session')ports.showStoryFollowUp(storyFollowUp(storyAction.type,ports.sessionState.game.state.phase));
         return;
       }

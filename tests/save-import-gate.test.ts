@@ -152,3 +152,23 @@ test('a card that is already open when Camp mounts keeps its own buttons', () =>
   assert.match(nav, /if\(navState\.campOwner\.kind==='advanced'\)return !navState\.modal&&!button\.closest\('#secondary-screen'\);/, 'an advanced owner lets dialog buttons through');
   assert.match(nav, /if\(navState\.campOwner\.kind==='advanced'&&!navState\.modal&&navState\.activeTab==='battle'\)navState\.campOwner=\{kind:'root'\};/, 'and Camp takes its root back when the dialog closes');
 });
+
+// A free player who has just won chapter 2 has chapter 3 on record; the storybook's routes and expeditions choose a
+// battle as the battle list does, so they ask the store as well (otherwise the choice lands and the save reads as held).
+test('a storybook route or expedition into a paid chapter asks the store before choosing it', () => {
+  const listeners = readFileSync(new URL('../src/app/listeners.ts', import.meta.url), 'utf8');
+  assert.match(listeners, /if\(storyAction\)\{\n[^\n]*\n\s*if\('battle' in storyAction&&ports\.gateBattle\(storyAction\.battle\)\)return;\n\s*if\(ports\.action\(storyAction\)/);
+});
+
+test('while an expedition holds the battle choice the held card does not offer a step back it cannot take', () => {
+  const s = app();
+  s.importSave(backupOf({ age: 1, enemyAge: 2, furthestBattle: 2 }));
+  s.sessionState.game.profile.chronicle!.expedition = { stage: 0, chapter: 2, reserve: 0, provision: 'supplies' }; // an expedition is under way in chapter 3
+  assert.equal(s.sessionState.game.dispatch({ type: 'select-battle', battle: 1 }), false, 'which owns the battle choice');
+  assert.equal(s.ports.action({ type: 'start' }), false);
+  assert.doesNotMatch(s.last.html, /data-command="free-chapters"/);
+  assert.match(s.last.html, /data-command="close"/);
+  s.flow.handleStoreCommand('free-chapters');
+  assert.equal(s.sessionState.game.profile.enemyAge, 2, 'nothing is changed behind the card');
+  s.dispose();
+});
