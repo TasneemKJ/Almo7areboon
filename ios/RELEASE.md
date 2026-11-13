@@ -22,8 +22,25 @@ xcodebuild -exportArchive -archivePath Almo7areboon-<ver>b<n>.xcarchive -exportO
 ```
 
 ## Review notes
-Full Journey: play the first two chapters (or open **Settings → Full Journey**); evolving past chapter 2 shows the
-card with the price, Restore purchases, Terms of Use and Privacy. The game has no accounts and collects no data.
+The full text is `ios/store/listing.json` → `reviewNotes`. Full Journey: play the first two chapters (or open
+**Settings → Full Journey**); going on to chapter 3 or evolving past chapter 2 shows the card with the price, Restore
+purchases, Terms of Use and Privacy. The Lamplighter: **Settings → The Lamplighter** (lengths, prices, renewal and
+cancel line, Restore, Terms, Privacy; Manage subscription while subscribed). The game has no accounts and collects no
+data. IAP review screenshots: `ios/store/review/store-card.png`, `ios/store/review/lamplighter-card.png`.
+
+## tas-games lines to update (not edited from this repo)
+The Lamplighter (2026-11-13) makes these lines in `tas-games` untrue; the market sheet changed the store name,
+subtitle and keywords. Make tas-games match `ios/store/listing.json`:
+- `store/almo7areboon/listing.json`: en-US `name` → "Almo7areboon: The Warriors"; both `subtitle`s and `keywords`;
+  the description's "No ads, no timers, nothing else to buy." / «ولا شيء آخر للشراء» (add the Lamplighter paragraph
+  and the renewal line); `iap` → a list with the two subscriptions and the group «مُشعِل القناديل» / The Lamplighter;
+  Full Journey en description "Every later chapter and the harder timeline"; `reviewNotes` (the subscription, native
+  features); `ageRating` → 9+ expected.
+- `almo7areboon/index.html`: "Price: Free, with one optional purchase: Full Journey" / «مع شراء واحد اختياري» and
+  "Full Journey is one optional purchase…" → mention the optional Lamplighter subscription.
+- `almo7areboon/support.html`: add "How do I cancel the Lamplighter?" (Settings → The Lamplighter → Manage
+  subscription, or the Apple Account's Subscriptions) and Restore for subscriptions.
+- `almo7areboon/privacy.html`: unchanged in substance (purchases and subscriptions are handled by Apple).
 
 ## Before external testing
 First ten minutes on a real iPhone in Arabic and English; buy Full Journey with a sandbox account; Restore; Ask to
