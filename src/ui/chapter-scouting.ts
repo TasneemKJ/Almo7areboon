@@ -48,7 +48,7 @@ export function battleTeachingHtml():string {
 /** Per chapter: the speaker (English, Arabic), then the won and lost lines as [English, Arabic]. */
 type Line=readonly [string,string];
 const voices:readonly (readonly [Line,Line,Line])[]=[
- [['The hearth-keeper says: ','تقول حارسة الموقد: '],['The soup can wait. You cannot.','الشوربة تنتظر. أمّا أنت فلا.'],['Same fire tomorrow. Bring a bigger spoon.','النار نفسها غداً. أحضِر ملعقةً أكبر.']],
+ [['The hearth-keeper says: ','تقول حارسة الموقد: '],['The soup can wait. You cannot.','الحساء ينتظر. أمّا أنت فلا.'],['Same fire tomorrow. Bring a bigger spoon.','النار نفسها غداً. أحضِر ملعقةً أكبر.']],
  [['A voice from the press-house: ','صوتٌ من المعصرة: '],['A fine watch. Even the olives approve.','حراسةٌ حسنة. حتى الزيتون راضٍ.'],['Bent branches still bear fruit. Try again.','الغصن المائل يحمل ثمراً. حاوِل من جديد.']],
  [['The quay-keeper says: ','يقول حارس الرصيف: '],['Not a fish out of place. Mostly.','ولا سمكة في غير مكانها. تقريباً.'],['A rough tide is still a tide. We will find our footing.','المدّ العاتي يبقى مدّاً. سنجد موطئ أقدامنا.']],
  [['The lantern-maker says: ','يقول صانع الفوانيس: '],['A bright evening. I shall take some credit.','مساءٌ مضيء. ولي فيه بعض الفضل.'],['One wick at a time. Then another watch.','فتيلةٌ بعد فتيلة. ثم حراسةٌ أخرى.']],
