@@ -30,6 +30,7 @@ right inside the text. `…` stands for a chapter name, a number or a price.
 | Move camp dialog, cost | Moving camp requires **… coins**. | نقل المخيّم يحتاج **… من النقود**. | الارتقاء يحتاج … |
 | Move camp dialog, confirm | MOVE CAMP TO … | انقل المخيّم إلى … | ارتقِ إلى … |
 | Move camp dialog, decline | STAY IN THIS CAMP | ابقَ في هذا المخيّم | أبقِني في عصري |
+| Browser/page title | Almo7areboon — Through the Levant | المحاربون — عبر بلاد الشام | المحاربون — عبر العصور |
 | Battle screen, ready banner | YOUR COMPANY. YOUR ROAD. | سريّتك. طريقك. | جيشك. عصرك. |
 | Start over dialog | … your camp, coins, upgrades … | … مخيّمك ونقودك وتطويراتك … | … عصرك ونقودك … |
 | App Store description (`ios/store/listing.json`) | … move camp to the next chapter and begin again stronger. | وحين تشتدّ سريّتك، انقل مخيّمك إلى الفصل التالي وابدأ من جديد أقوى. | … ارتقِ إلى الفصل التالي … |

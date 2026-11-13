@@ -171,7 +171,8 @@ Owner override (2026-11-13): the iPhone app (ios/, TasKit) sells two things; the
   is past the free arc and StoreKit has not said Full Journey is owned. The save is never clamped or rewritten, in
   memory or on disk, so a late StoreKit answer, a Restore or a purchase opens exactly what was imported. The card says
   so, can be declined, and offers "Play the free chapters" (a battle choice back to chapter 2) when the save's own army
-  is still a free one; the import dialog warns before a playable save is replaced by a held one.
+  is still a free one; the import dialog warns before a playable save is replaced by a held one. Storybook routes and
+  expeditions choose a battle too, so they ask `gateBattle` like the battle list.
 - **The Lamplighter** (مُشعِل القناديل), one auto-renewing group: `Tas.Almo7areboon.lamplighter.monthly` (US$1.99) and
   `.yearly` (US$14.99, level 1, ranks above monthly). Its one benefit is light, a presence and not power: while a plan is
   live, an old lamplighter lights a row of three hanging lanterns behind the player's gate at the start of every battle
@@ -261,7 +262,8 @@ number, command id, save field or art.
   Levant", and the store card already said "The road goes on".
 - **Camp** replaces "age"/"era" wherever the player's own stage was meant ("camp upgrades", "first camp", "THE LAST
   CAMP", "YOUR COMPANY. YOUR ROAD." for "YOUR ARMY. YOUR ERA."). Chapters were already named for places (First Fires …
-  Courtyards Beyond) and stay.
+  Courtyards Beyond) and stay. The page title "Through the Ages" is "Through the Levant" (عبر بلاد الشام), the line
+  The Road already carried.
 - **Kept on purpose:** the other troop names (Pathkeeper, Fieldhand, Quay Guard, Gatekeeper …) are the game's own; the
   internal tables (`src/game/data.ts` era and unit keys, `visual-theme.ts`) never reach the screen and keep save and test
   compatibility. "Timeline" (the harder replay) is unchanged.
