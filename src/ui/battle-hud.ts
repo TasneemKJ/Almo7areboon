@@ -85,7 +85,7 @@ export function battleGuidance(profile: Profile, state: BattleState, preview?: W
   if (state.stats.deployed === 0 && state.food >= ERAS[profile.age].units[0].cost) return tr('Deploy a melee warrior. Save some food for the next wave.', 'أرسل محارباً للقتال القريب، واحفظ بعض المؤونة للموجة التالية.');
   const captain=profile.chronicle?.enabled&&profile.chronicle.captain!=='none'?CAPTAINS.find(c=>c.id===profile.chronicle!.captain):undefined;
   // A first-timer who banks food loses the battle with it unspent, so this outranks the skill cues below.
-  if (foodIsPiling(profile, state)) return `${GUIDE.piling()} (${Math.floor(state.food)}). ${tr('Tap the waiting defender again to send more warriors.','المس المدافع المنتظر مرّة أخرى لترسل محاربين أكثر.')}`;
+  if (foodIsPiling(profile, state)) return `${GUIDE.piling()} (${Math.floor(state.food)}). ${tr('Tap a troop below to send more warriors.','المس جندياً في الأسفل لترسل محاربين أكثر.')}`;
   // First-Freeze cue: teach the skill at the moment it pays off, while three or more enemies gather.
   if (profile.wins < 5 && state.stats.skillsCast === 0 && !state.skillsUsed.includes('freeze') && state.units.filter(unit => unit.side === 'enemy' && unit.hp > 0).length >= 3) return tr('Enemies are gathering. ','الأعداء يتجمّعون. ')+GUIDE.tapFreeze()+tr(' to hold them while your army strikes.',' لتوقفهم بينما يضرب جيشك.');
   // First-Meteor cue: once Freeze has been tried, point at the skill that damages every living enemy at once.

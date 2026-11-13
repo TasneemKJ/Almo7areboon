@@ -1,4 +1,4 @@
-import { almoApp, evolutionNeedsFullJourney, FULL_JOURNEY, installSaveFlush, LAMPLIGHTER_MONTHLY, LAMPLIGHTER_YEARLY, manageSubscriptions, onStoreChange, type TasBridge } from '../ui/app-bridge.ts';
+import { almoApp, evolutionNeedsFullJourney, FREE_AGES, FULL_JOURNEY, ownsFullJourney, installSaveFlush, LAMPLIGHTER_MONTHLY, LAMPLIGHTER_YEARLY, manageSubscriptions, onStoreChange, type TasBridge } from '../ui/app-bridge.ts';
 import { fullJourneyHtml } from '../ui/full-journey-screen.ts';
 import { lamplighterHtml } from '../ui/lamplighter-screen.ts';
 import { chapterPresentation } from '../ui/chapter-presentation.ts';
@@ -28,14 +28,14 @@ export function createStoreFlow(deps: StoreFlowDeps, bridge: TasBridge = almoApp
   const open = () => STORE_MODALS.includes(ports.navState.modal as typeof STORE_MODALS[number]);
 
   function render(): void {
-    if (ports.navState.modal === 'full-journey') ports.showModal('full-journey', fullJourneyHtml(bridge, chapterPresentation(Math.min(5, Math.max(2, ports.sessionState.game.profile.age + 1))).title));
+    if (ports.navState.modal === 'full-journey') ports.showModal('full-journey', fullJourneyHtml(bridge, chapterPresentation(Math.min(5, Math.max(2, ports.sessionState.game.profile.age + 1))).title, ports.sessionState.game.profile.furthestBattle >= 1 && ports.sessionState.game.profile.wins > 0));
     else if (ports.navState.modal === 'lamplighter') ports.showModal('lamplighter', lamplighterHtml(bridge));
   }
   function showFullJourney(from: StoreOrigin = 'other'): void {
     if (!ports.playable()) return;
     origin = from;
     bridge.refresh(); // fresh prices and ownership whenever a card opens
-    ports.showModal('full-journey', fullJourneyHtml(bridge, chapterPresentation(Math.min(5, Math.max(2, ports.sessionState.game.profile.age + 1))).title));
+    ports.showModal('full-journey', fullJourneyHtml(bridge, chapterPresentation(Math.min(5, Math.max(2, ports.sessionState.game.profile.age + 1))).title, ports.sessionState.game.profile.furthestBattle >= 1 && ports.sessionState.game.profile.wins > 0));
   }
   function showLamplighter(from: StoreOrigin = 'other'): void {
     if (!ports.playable()) return;
@@ -47,6 +47,12 @@ export function createStoreFlow(deps: StoreFlowDeps, bridge: TasBridge = almoApp
   function gateEvolution(): boolean {
     if (!evolutionNeedsFullJourney(ports.sessionState.game.profile.age, bridge)) return false;
     showFullJourney(ports.navState.modal === 'result' || ports.navState.evolutionFromResult ? 'evolve-result' : 'evolve');
+    return true;
+  }
+  /** True when the battle against chapter `battle` (0-based) was stopped and the Full Journey card shown instead. */
+  function gateBattle(battle: number): boolean {
+    if (!bridge.inApp || battle < FREE_AGES || ownsFullJourney(bridge)) return false;
+    showFullJourney(ports.navState.modal === 'result' ? 'evolve-result' : 'other');
     return true;
   }
   function leave(): void {
@@ -81,5 +87,5 @@ export function createStoreFlow(deps: StoreFlowDeps, bridge: TasBridge = almoApp
   // Test and screenshot hooks for the app's integration tests (ios/Almo7areboonTests).
   Object.assign(globalThis, { __almoShowFullJourney: () => showFullJourney(), __almoShowLamplighter: () => showLamplighter() });
   bridge.refresh(); // prices sent before the page loaded are lost: ask again now that the bridge exists
-  return { showFullJourney, showLamplighter, gateEvolution, handleStoreCommand };
+  return { showFullJourney, showLamplighter, gateEvolution, gateBattle, handleStoreCommand };
 }

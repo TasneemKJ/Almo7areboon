@@ -109,3 +109,21 @@ test('the paid stretch of the journey path appears only after a first win, never
   const nav = readFileSync(new URL('../src/app/navigation.ts', import.meta.url), 'utf8');
   assert.match(nav, /journeyPathHtml\(ports\.sessionState\.game\.profile\.enemyAge,ports\.sessionState\.game\.profile\.wins>0&&!ownsFullJourney\(\)\)/);
 });
+
+// QA gate 2026-11-13: a free player could fight chapters 3-6 by going on to the next battle; only evolving asked.
+test('in the app, going on to chapter 3 or later, or choosing it, opens Full Journey instead; chapters 1-2 stay free', () => {
+  const s = setup(1);
+  assert.equal(s.flow.gateBattle(1), false, 'chapter 2 is free');
+  assert.equal(s.flow.gateBattle(2), true);
+  assert.equal(s.navState.modal, 'full-journey');
+  s.dispose();
+  const owner = setup(1, { fullGame: true }); assert.equal(owner.flow.gateBattle(4), false); owner.dispose();
+  const web = setup(1); (web.bridge as { inApp: boolean }).inApp = false; assert.equal(web.flow.gateBattle(5), false, 'the web never gates'); web.dispose();
+});
+
+test('the next-battle and choose-battle routes ask the gate before acting', async () => {
+  const { readFileSync } = await import('node:fs');
+  const listeners = readFileSync(new URL('../src/app/listeners.ts', import.meta.url), 'utf8');
+  assert.match(listeners, /advancement\.target==='battle'&&advancement\.nextBattle!==null&&ports\.gateBattle\(advancement\.nextBattle\)/);
+  assert.match(listeners, /if\(ports\.gateBattle\(Number\(button\.dataset\.battle\)\)\)return true;/);
+});

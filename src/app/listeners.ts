@@ -46,7 +46,7 @@ export interface InputState {
 /** What the listeners module needs: its slice of state, DOM handles and sibling operations. */
 export interface ListenersDeps {
   dom: Pick<Runtime, '$' | 'blockModalTap' | 'fieldControls' | 'lifetime' | 'money' | 'motionQuery' | 'root' | 'activeElement' | 'hidden' | 'now' | 'pageEvents' | 'reload' | 'viewEvents'>;
-  ports: Pick<ShellApi, 'acquireSession' | 'action' | 'gateEvolution' | 'handleStoreCommand' | 'adoptRestoredGame' | 'claimQuestRecord' | 'clearPrestigeContext' | 'closeModal' | 'continueWithProvision' | 'dismissModal' | 'enterCamp' | 'enterWorld' | 'exportSave' | 'guardAction' | 'handleCampInput' | 'leaveBattle' | 'navState' | 'openPrestige' | 'persist' | 'playable' | 'playIntro' | 'watchIntro' | 'preferenceNotice' | 'questState' | 'rebuildArmy' | 'refreshPrestige' | 'refreshQuestRecord' | 'renderScreen' | 'returnToCamp' | 'returnToChapters' | 'sessionState' | 'showFieldPause' | 'showHome' | 'showLeaveBattle' | 'showModal' | 'showQuests' | 'showResult' | 'showResultDetails' | 'showSaveRecovery' | 'showSettings' | 'showStoryFollowUp' | 'suspendSession' | 'switchTab' | 'syncMarks' | 'syncMotion' | 'syncPause' | 'syncWeek' | 'toast' | 'update'>;
+  ports: Pick<ShellApi, 'acquireSession' | 'action' | 'gateBattle' | 'gateEvolution' | 'handleStoreCommand' | 'adoptRestoredGame' | 'claimQuestRecord' | 'clearPrestigeContext' | 'closeModal' | 'continueWithProvision' | 'dismissModal' | 'enterCamp' | 'enterWorld' | 'exportSave' | 'guardAction' | 'handleCampInput' | 'leaveBattle' | 'navState' | 'openPrestige' | 'persist' | 'playable' | 'playIntro' | 'watchIntro' | 'preferenceNotice' | 'questState' | 'rebuildArmy' | 'refreshPrestige' | 'refreshQuestRecord' | 'renderScreen' | 'returnToCamp' | 'returnToChapters' | 'sessionState' | 'showFieldPause' | 'showHome' | 'showLeaveBattle' | 'showModal' | 'showQuests' | 'showResult' | 'showResultDetails' | 'showSaveRecovery' | 'showSettings' | 'showStoryFollowUp' | 'suspendSession' | 'switchTab' | 'syncMarks' | 'syncMotion' | 'syncPause' | 'syncWeek' | 'toast' | 'update'>;
 }
 
 export function installListeners(deps: ListenersDeps): void {
@@ -89,6 +89,7 @@ export function installListeners(deps: ListenersDeps): void {
     'next':()=>{
       const advancement=advanceStatus(ports.sessionState.game.profile,ports.sessionState.game.state);
       if(advancement.allowed&&advancement.target==='timeline'){ports.openPrestige();return;}
+      if(advancement.allowed&&advancement.target==='battle'&&advancement.nextBattle!==null&&ports.gateBattle(advancement.nextBattle))return;
       if(ports.action({type:'next'})&&ports.playable()&&ports.navState.modal!=='session'){ports.navState.evolutionFromResult=false;ports.closeModal(false);ports.sessionState.manualPaused=false;ports.switchTab('battle');}
     },
     'retry':()=>{if(ports.action({type:'retry'})&&ports.playable()&&ports.navState.modal!=='session'){ports.navState.evolutionFromResult=false;ports.closeModal(false);ports.sessionState.manualPaused=false;ports.switchTab('battle');};},
@@ -135,7 +136,7 @@ export function installListeners(deps: ListenersDeps): void {
     }
     if(button.dataset.daily){if(ports.action({type:'daily',day:Number(button.dataset.daily)}))ports.showQuests();return true;}
     if(button.dataset.claim){const fromJourney=ports.navState.modal==='journey';if(ports.action({type:'claim',id:button.dataset.claim})){if(fromJourney&&ports.playable()&&ports.navState.modal!=='session')ports.showModal('journey',journeyScreenHtml(ports.sessionState.game.profile,ports.sessionState.game.state));else ports.showQuests();}return true;}
-    if(button.dataset.battle!==undefined){if(ports.action({type:'select-battle',battle:Number(button.dataset.battle)}))ports.closeModal();return true;}
+    if(button.dataset.battle!==undefined){if(ports.gateBattle(Number(button.dataset.battle)))return true;if(ports.action({type:'select-battle',battle:Number(button.dataset.battle)}))ports.closeModal();return true;}
     if(button.dataset.pack!==undefined){
       if(ports.navState.activeTab!=='cards'||ports.navState.modal||!button.closest('#secondary-screen')||button.dataset.pack!==String(ports.navState.cardQuantity))return true;
       const before=[...ports.sessionState.game.profile.cards],count=Number(button.dataset.pack) as 1|10|50;

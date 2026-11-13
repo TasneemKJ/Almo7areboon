@@ -14,6 +14,7 @@ export function runInApp(code: string, context: Record<string, unknown>): unknow
   // The store flow (src/app/store-flow.ts, tested in tests/store-flow.test.ts) as it behaves off the app: nothing is
   // gated and no store command is its own, so every other flow runs exactly as on the web.
   context.gateEvolution ??= () => false;
+  context.gateBattle ??= () => false;
   context.handleStoreCommand ??= () => false;
   context.STORE_COMMANDS ??= STORE_COMMANDS;
   // The shell's own text goes through the language pair helpers (English in tests).

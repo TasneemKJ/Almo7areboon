@@ -28,3 +28,10 @@ test('in Arabic the card is all Arabic but the price', () => {
     }
   } finally { setLang('en'); }
 });
+
+test('opened before the player has held chapter 2, the card does not claim they have', () => {
+  const early = fullJourneyHtml(store(false), 'Harbor Watch', false);
+  assert.doesNotMatch(early, /has held the first two chapters/);
+  assert.match(early, /The first two chapters are free/);
+  assert.match(fullJourneyHtml(store(false), 'Harbor Watch', true), /has held the first two chapters/);
+});

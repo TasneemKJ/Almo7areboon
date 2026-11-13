@@ -19,7 +19,7 @@ export function fullJourneyStatus(bridge: Pick<TasBridge, 'status' | 'owns'>): s
  * Full Journey: chapters 3 to 6 and the harder timeline after them, bought once. Shown when a player who does not own
  * it chooses to evolve past chapter 2, and from Settings. Restore, Terms and Privacy sit on the same card (App Review).
  */
-export function fullJourneyHtml(bridge: Pick<TasBridge, 'status' | 'owns' | 'prices' | 'price'>, chapterName: string): string {
+export function fullJourneyHtml(bridge: Pick<TasBridge, 'status' | 'owns' | 'prices' | 'price'>, chapterName: string, heldTwo = true): string {
   const owned = bridge.owns(FULL_JOURNEY);
   const price = bridge.prices[FULL_JOURNEY] || bridge.price || '';
   const busy = bridge.status === 'buying';
@@ -32,7 +32,7 @@ export function fullJourneyHtml(bridge: Pick<TasBridge, 'status' | 'owns' | 'pri
     tr('Bought once and yours to keep. No ads, no timers.', 'تشتريها مرّة واحدة وتبقى لك. بلا إعلانات ولا انتظار.'),
   ];
   return `<span class="eyebrow">${tr('FULL JOURNEY', 'الرحلة كاملة')}</span><h2 id="dialog-title">${owned ? tr('The road is open', 'الطريق مفتوح') : tr('The road goes on', 'الطريق يمتدّ')}</h2>
- <p>${tr('Your company has held the first two chapters. Full Journey opens the rest of the tale.', 'صمدت سريّتك في الفصلين الأوّلين. الرحلة كاملة تفتح بقيّة الحكاية.')}</p>
+ <p>${heldTwo ? tr('Your company has held the first two chapters. Full Journey opens the rest of the tale.', 'صمدت سريّتك في الفصلين الأوّلين. الرحلة كاملة تفتح بقيّة الحكاية.') : tr('The first two chapters are free. Full Journey opens the rest of the tale.', 'الفصلان الأوّلان مجّانيّان. الرحلة كاملة تفتح بقيّة الحكاية.')}</p>
  <ul class="full-journey-list">${items.map(item => `<li>${item}</li>`).join('')}</ul>
  <p id="full-journey-status" class="save-note" role="status">${fullJourneyStatus(bridge)}</p>
  <div class="full-journey-actions">${owned

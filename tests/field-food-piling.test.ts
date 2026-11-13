@@ -24,7 +24,7 @@ function harness(){
 }
 test('actual physical controller points banked food at the waiting defender and gives that recruit the teaching ring',()=>{
  const h=harness(),before=JSON.stringify([h.g.profile,h.g.state]);h.update();
- assert.match(h.cue.textContent,/^Food is piling up \(26\)\. Tap the waiting defender again/);
+ assert.match(h.cue.textContent,/^Food is piling up \(26\)\. Tap a troop below/);
  assert.doesNotMatch(h.cue.textContent,/card|Select an enemy|Freeze/);assert.equal(h.recruits[0].classes.has('teach'),true);
  assert.equal(h.recruits[1].classes.has('teach'),false);assert.equal(JSON.stringify([h.g.profile,h.g.state]),before,'presentation does not dispatch or spend');
 });

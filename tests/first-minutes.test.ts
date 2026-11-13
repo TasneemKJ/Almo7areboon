@@ -61,7 +61,7 @@ test('piling food: the hint and ring chase a first-timer who banks food after th
   const foe = () => ({ ...(g.state.units[0] ?? {}), side: 'enemy', hp: 10 } as any);
   g.state.units = [mine(), foe(), foe(), foe()];
   assert.equal(foodIsPiling(g.profile, g.state), true);
-  assert.match(battleGuidance(g.profile, g.state), /^Food is piling up \(26\)\. Tap the waiting defender again/, 'outranks the Freeze cue');
+  assert.match(battleGuidance(g.profile, g.state), /^Food is piling up \(26\)\. Tap a troop below/, 'outranks the Freeze cue');
   g.state.units = [mine(), mine(), mine(), foe()];
   assert.equal(foodIsPiling(g.profile, g.state), false, 'three fighters is enough');
   g.state.units = [mine()]; g.state.food = 8;

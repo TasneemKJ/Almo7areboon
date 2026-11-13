@@ -1,0 +1,13 @@
+/* The battle tray (owner play-test, 2026-11-13): in battle the controls sit in one tray under the painted field, in
+   the game's navy-and-brass plate: Hold and Advance with the momentum meter, the food line, and one card per troop
+   (portrait, name, role, cost). The painted waiting defender stays as scenery; nothing invisible takes a tap. */
+#app[data-field-mode="field"][data-entry="play"] .battle-view{display:grid!important;grid-template-rows:minmax(0,1fr) auto;height:100%;min-height:0}
+#app[data-field-mode="field"][data-entry="play"] .battle-view>.deployment{display:block!important;padding:8px 12px max(8px,env(safe-area-inset-bottom))}
+#app[data-field-mode="field"] .recruit-hit,#app[data-field-mode="field"] .gate-hit{display:none!important}
+#app[data-field-mode="field"] .chronicle-command-row .deploy-hint{display:none}
+#app[data-field-mode="field"] .chronicle-command-row{min-height:0}
+#app[data-field-mode="field"] .unit-cards{gap:8px}
+#app[data-field-mode="field"] .unit-card{min-height:56px}
+@media (max-height:700px){#app[data-field-mode="field"] .unit-card{height:72px}#app[data-field-mode="field"] .unit-card img{height:46px;bottom:16px}#app[data-field-mode="field"] .order-banner{padding-bottom:4px}}
+/* The select-enemy target over a rival troop shows itself: a dashed ember ring. */
+.enemy-hit::before{content:"";position:absolute;inset:4px;border:2px dashed #f19d75;border-radius:50%;opacity:.85;pointer-events:none}
