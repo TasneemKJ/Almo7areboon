@@ -26,8 +26,8 @@ export function troopControlLabel(profile:Readonly<Profile>,kind:UnitKind,status
   const cost=locked?unlockCost(kind,profile):ERAS[profile.age].units[kind].cost;
   const missing=Math.max(0,cost-profile.coins);
   const wait=Math.ceil(status.waitSeconds);
-  const hint=locked?missing>0?tr(`Needs ${missing.toLocaleString('en-US')} more ${missing===1?'coin':'coins'}`,`ينقصك ${missing.toLocaleString('en-US')} من النقود`):tr('Tap to unlock','المس لتفتحه')
-    :status.reason==='available'?tr('Tap to deploy','المس لترسله')
+  const hint=locked?missing>0?tr(`Needs ${missing.toLocaleString('en-US')} more ${missing===1?'coin':'coins'}`,`ينقصك ${missing.toLocaleString('en-US')} من النقود`):tr('Tap to unlock','انقر لتفتحه')
+    :status.reason==='available'?tr('Tap to deploy','انقر لترسله')
     :status.reason==='food'?tr(`Ready in ${wait} seconds`,`يجهز بعد ${wait} ${plural(wait,['second','seconds'],['ثانية','ثانيتين','ثوانٍ','ثانية'])}`)
     :status.reason==='blocked'?tr('Deployment area full','ساحة الإرسال ممتلئة')
     :status.reason==='capacity'?tr('Army limit reached','بلغ الجيش حدّه')
@@ -47,7 +47,7 @@ export function troopUnlockMessage(profile: Readonly<Profile>, phase: Phase, kin
     : status.reason === 'food' ? tr(`Needs ${cost} food; wait ${wait}s.`, `يحتاج ${cost} من المؤونة؛ انتظر ${wait} ث.`)
     : status.reason === 'blocked' ? tr(`Deployment area full; wait for space. Costs ${cost} food.`, `ساحة الإرسال ممتلئة؛ انتظر مكاناً. كلفته ${cost} من المؤونة.`)
     : status.reason === 'capacity' ? tr(`Army full; wait for a place. Costs ${cost} food.`, `الجيش مكتمل؛ انتظر مكاناً. كلفته ${cost} من المؤونة.`)
-    : tr(`Tap it again to deploy: ${cost} food.`, `المسه مرّة أخرى لترسله: ${cost} من المؤونة.`);
+    : tr(`Tap it again to deploy: ${cost} food.`, `انقره مرّة أخرى لترسله: ${cost} من المؤونة.`);
   return `${tr(`${name} unlocked!`, `انضمّ ${name}!`)} ${troopSpecialty(kind).effect} ${next}`;
 }
 type MarkupTarget = Pick<HTMLElement, 'innerHTML'>;

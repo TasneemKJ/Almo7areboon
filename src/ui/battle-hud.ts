@@ -46,8 +46,8 @@ export const GUIDE = {
   danger: () => tr('Your base is in danger.', 'حصنك في خطر.'),
   piling: () => tr('Food is piling up', 'المؤونة تتكدّس'),
   foodDrop: () => tr('Food Drop adds', 'إمداد المؤونة يضيف'),
-  tapFreeze: () => tr('Tap Freeze', 'المس «التجميد»'),
-  tapMeteor: () => tr('Tap Meteor', 'المس «النيزك»'),
+  tapFreeze: () => tr('Tap Freeze', 'انقر على «التجميد»'),
+  tapMeteor: () => tr('Tap Meteor', 'انقر على «النيزك»'),
   trySkill: () => tr('Try a skill:', 'جرّب مهارة:'),
   needCover: () => tr('Ranged troops need cover.', 'الرماة يحتاجون إلى غطاء.'),
   affordable: () => tr('Ranged troops are affordable.', 'تستطيع الآن شراء الرماة.'),
@@ -77,7 +77,7 @@ export function foodIsPiling(profile: Profile, state: BattleState): boolean {
 
 /** A single contextual instruction, not an onboarding panel over the battlefield. */
 export function battleGuidance(profile: Profile, state: BattleState, preview?: WavePreview | null, melee?: Readonly<DeploymentStatus>): string {
-  if (state.phase === 'ready') return profile.wins===0?tr('Tap Battle, then spend food on warriors. They fight automatically.','المس «المعركة»، ثم أنفق المؤونة على المحاربين. سيقاتلون وحدهم.'):`${chapterScouting(profile.enemyAge).opening} ${tr('Tap Battle to begin.','المس «المعركة» لتبدأ.')}`;
+  if (state.phase === 'ready') return profile.wins===0?tr('Tap Battle, then spend food on warriors. They fight automatically.','انقر على «المعركة»، ثم أنفق المؤونة على المحاربين. سيقاتلون وحدهم.'):`${chapterScouting(profile.enemyAge).opening} ${tr('Tap Battle to begin.','انقر على «المعركة» لتبدأ.')}`;
   if (state.phase === 'won') return tr('Victory! Continue to the next battle when you are ready.', 'نصر! تابع إلى المعركة التالية متى كنت مستعدّاً.');
   if (state.phase === 'lost') return `${tr('Your coins are safe.','نقودك في أمان.')} ${masteryAdvice(profile,state)}`;
   if (state.paused) return tr('Battle paused. Resume to deploy your army.', 'المعركة متوقّفة. تابع لترسل جيشك.');
@@ -85,7 +85,7 @@ export function battleGuidance(profile: Profile, state: BattleState, preview?: W
   if (state.stats.deployed === 0 && state.food >= ERAS[profile.age].units[0].cost) return tr('Deploy a melee warrior. Save some food for the next wave.', 'أرسل محارباً للقتال القريب، واحفظ بعض المؤونة للموجة التالية.');
   const captain=profile.chronicle?.enabled&&profile.chronicle.captain!=='none'?CAPTAINS.find(c=>c.id===profile.chronicle!.captain):undefined;
   // A first-timer who banks food loses the battle with it unspent, so this outranks the skill cues below.
-  if (foodIsPiling(profile, state)) return `${GUIDE.piling()} (${Math.floor(state.food)}). ${tr('Tap a troop below to send more warriors.','المس جندياً في الأسفل لترسل محاربين أكثر.')}`;
+  if (foodIsPiling(profile, state)) return `${GUIDE.piling()} (${Math.floor(state.food)}). ${tr('Tap a troop below to send more warriors.','انقر على جنديٍّ في الأسفل لترسل محاربين أكثر.')}`;
   // First-Freeze cue: teach the skill at the moment it pays off, while three or more enemies gather.
   if (profile.wins < 5 && state.stats.skillsCast === 0 && !state.skillsUsed.includes('freeze') && state.units.filter(unit => unit.side === 'enemy' && unit.hp > 0).length >= 3) return tr('Enemies are gathering. ','الأعداء يتجمّعون. ')+GUIDE.tapFreeze()+tr(' to hold them while your army strikes.',' لتوقفهم بينما يضرب جيشك.');
   // First-Meteor cue: once Freeze has been tried, point at the skill that damages every living enemy at once.

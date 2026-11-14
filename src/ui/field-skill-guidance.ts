@@ -3,7 +3,7 @@
  * Recognises the canonical line through the same GUIDE pairs that wrote it, in either language. */
 export function physicalSkillCue(canonical:string,supportName=GUIDE.foodDropName()):string {
  if(canonical.startsWith(GUIDE.danger()))return canonical;
- if(canonical.startsWith(GUIDE.foodDrop()))return canonical.replace(GUIDE.foodDrop(),tr('Tap Supplies for Food Drop: add','المس المؤن لإمداد المؤونة: يضيف'));
+ if(canonical.startsWith(GUIDE.foodDrop()))return canonical.replace(GUIDE.foodDrop(),tr('Tap Supplies for Food Drop: add','انقر على المؤن لإمداد المؤونة: يضيف'));
  if(canonical.startsWith(GUIDE.piling()))return canonical;
  if(canonical.includes(GUIDE.tapFreeze()))return tr('Select an enemy, then Freeze to hold the group.','اختر عدوّاً، ثم «التجميد» لتوقف المجموعة.');
  if(canonical.includes(GUIDE.tapMeteor()))return tr('Select an enemy, then Meteor to strike the group.','اختر عدوّاً، ثم «النيزك» لتضرب المجموعة.');

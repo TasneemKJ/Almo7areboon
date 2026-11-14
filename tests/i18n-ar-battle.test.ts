@@ -53,7 +53,7 @@ test('Arabic battle guidance, its physical cue and its announcement keep their d
  const meteor=battleGuidance(p,s);lines.push(meteor);assert.equal(physicalSkillCue(meteor),'اختر عدوّاً، ثم «النيزك» لتضرب المجموعة.');
  s.skillsUsed=[];s.stats.skillsCast=0;s.units=[];s.food=0;s.time=1;
  const drop=battleGuidance(p,s);lines.push(drop);
- const physicalDrop=physicalSkillCue(drop);lines.push(physicalDrop);assert.match(physicalDrop,/^المس المؤن لإمداد المؤونة/);
+ const physicalDrop=physicalSkillCue(drop);lines.push(physicalDrop);assert.match(physicalDrop,/^انقر على المؤن لإمداد المؤونة/);
  const spoken=fieldAnnouncement(physicalDrop);lines.push(spoken);assert.doesNotMatch(spoken,/انتظر \d/);
  p.wins=4;lines.push(battleGuidance(p,s));p.wins=0;
  s.food=40;s.time=30;s.units=enemies(1);lines.push(battleGuidance(p,s));lines.push(physicalSkillCue(battleGuidance(p,s)));

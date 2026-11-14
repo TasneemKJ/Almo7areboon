@@ -98,7 +98,7 @@ function syncGoals({$,game}:HudView):void {
   if(story?.enabled){
     const instruction=chronicleGuidance(p,s);
     if(s.phase==='running'&&!s.paused&&(!health.danger)&&(story.route!=='road'||story.rally||p.unlocked[1]))textIfChanged($('deploy-hint'),instruction);
-    textIfChanged($('story-ready-rule'),p.wins===0&&story.route==='road'?tr('Rima waits at the gate. Tap Battle, then send a defender. The company fights together.','ريما تنتظر عند البوّابة. المس «المعركة»، ثم أرسل مدافعاً. السريّة تقاتل معاً.'):routeDefinition(story.route).rule);
+    textIfChanged($('story-ready-rule'),p.wins===0&&story.route==='road'?tr('Rima waits at the gate. Tap Battle, then send a defender. The company fights together.','ريما تنتظر عند البوّابة. انقر على «المعركة»، ثم أرسل مدافعاً. السريّة تقاتل معاً.'):routeDefinition(story.route).rule);
 
   }
 }
