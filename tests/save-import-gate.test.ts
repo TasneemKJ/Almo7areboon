@@ -108,7 +108,7 @@ test('declining leaves a way on: a held save whose own army is free steps back t
   assert.match(s.last.html, /data-command="free-chapters"/);
   assert.equal(s.flow.handleStoreCommand('free-chapters'), true);
   assert.equal(s.navState.modal, null);
-  assert.equal(s.sessionState.game.profile.enemyAge, 1, 'chapter 2, the last free one');
+  assert.equal(s.sessionState.game.profile.enemyAge, 2, 'chapter 3, the last free one (1.3)');
   assert.equal(s.sessionState.game.profile.furthestBattle, 4, 'the furthest battle reached stays on record');
   assert.equal(s.ports.action({ type: 'start' }), true, 'and the free chapter plays');
   s.dispose();
@@ -120,16 +120,20 @@ test('declining leaves a way on: a held save whose own army is free steps back t
 });
 
 test('free progress and the web are never held', () => {
-  const free = app();
-  free.importSave(backupOf({ age: 1, enemyAge: 1, furthestBattle: 1 }));
-  assert.equal(free.ports.action({ type: 'start' }), true);
-  free.dispose();
+  for (const progress of [{ age: 1, enemyAge: 1, furthestBattle: 1 }, { age: 2, enemyAge: 2, furthestBattle: 3 }]) {
+    const free = app();
+    free.importSave(backupOf(progress));
+    assert.equal(free.ports.action({ type: 'start' }), true, `chapter ${progress.enemyAge + 1} with the chapter ${progress.age + 1} army is free`);
+    free.dispose();
+  }
   const web = app({}, false);
   web.importSave(backupOf({ timeline: 3, age: 5, enemyAge: 5, furthestBattle: 5 }));
   assert.equal(web.ports.action({ type: 'start' }), true, 'the web build sells nothing and gates nothing');
   web.dispose();
   assert.equal(pastFreeArc({ timeline: 1, age: 1, enemyAge: 1 }), false);
-  assert.equal(freeChapterFor({ timeline: 1, age: 0, enemyAge: 3, furthestBattle: 3 }), 1);
+  assert.equal(pastFreeArc({ timeline: 1, age: 2, enemyAge: 2 }), false, 'chapter 3 is free since 1.3');
+  assert.equal(pastFreeArc({ timeline: 1, age: 2, enemyAge: 3 }), true);
+  assert.equal(freeChapterFor({ timeline: 1, age: 0, enemyAge: 3, furthestBattle: 3 }), 2);
   assert.equal(freeChapterFor({ timeline: 2, age: 0, enemyAge: 3, furthestBattle: 3 }), null);
 });
 
@@ -153,7 +157,7 @@ test('a card that is already open when Camp mounts keeps its own buttons', () =>
   assert.match(nav, /if\(navState\.campOwner\.kind==='advanced'&&!navState\.modal&&navState\.activeTab==='battle'\)navState\.campOwner=\{kind:'root'\};/, 'and Camp takes its root back when the dialog closes');
 });
 
-// A free player who has just won chapter 2 has chapter 3 on record; the storybook's routes and expeditions choose a
+// A free player who has just won chapter 3 has chapter 4 on record; the storybook's routes and expeditions choose a
 // battle as the battle list does, so they ask the store as well (otherwise the choice lands and the save reads as held).
 test('a storybook route or expedition into a paid chapter asks the store before choosing it', () => {
   const listeners = readFileSync(new URL('../src/app/listeners.ts', import.meta.url), 'utf8');
@@ -162,13 +166,13 @@ test('a storybook route or expedition into a paid chapter asks the store before 
 
 test('while an expedition holds the battle choice the held card does not offer a step back it cannot take', () => {
   const s = app();
-  s.importSave(backupOf({ age: 1, enemyAge: 2, furthestBattle: 2 }));
-  s.sessionState.game.profile.chronicle!.expedition = { stage: 0, chapter: 2, reserve: 0, provision: 'supplies' }; // an expedition is under way in chapter 3
-  assert.equal(s.sessionState.game.dispatch({ type: 'select-battle', battle: 1 }), false, 'which owns the battle choice');
+  s.importSave(backupOf({ age: 2, enemyAge: 3, furthestBattle: 3 }));
+  s.sessionState.game.profile.chronicle!.expedition = { stage: 0, chapter: 3, reserve: 0, provision: 'supplies' }; // an expedition is under way in chapter 4
+  assert.equal(s.sessionState.game.dispatch({ type: 'select-battle', battle: 2 }), false, 'which owns the battle choice');
   assert.equal(s.ports.action({ type: 'start' }), false);
   assert.doesNotMatch(s.last.html, /data-command="free-chapters"/);
   assert.match(s.last.html, /data-command="close"/);
   s.flow.handleStoreCommand('free-chapters');
-  assert.equal(s.sessionState.game.profile.enemyAge, 2, 'nothing is changed behind the card');
+  assert.equal(s.sessionState.game.profile.enemyAge, 3, 'nothing is changed behind the card');
   s.dispose();
 });

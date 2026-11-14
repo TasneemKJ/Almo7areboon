@@ -14,16 +14,21 @@
 // coins earned in battle, spent in Camp, wiped by Move camp and still idle when the chapter was won, and what Move
 // camp asked. A wall is a chapter with a run of more than 3 defeats, or one whose next step needed coins the player
 // had not earned there. `appGate` is the battle where the iPhone app's Full Journey card would first stop this player
-// (src/ui/app-bridge.ts pastFreeArc), printed for reference only: the sim plays the rules, not the store.
-// Run: node --experimental-strip-types scripts/qa-gate/free-path-sim.ts [seeds=12] [CAMP=counsel] [battles=150] [SMITH=keep] [TAP=first|mix]
+// (src/ui/app-bridge.ts pastFreeArc), and `freeEndAtBattle` the battle that wins the last free chapter (chapter
+// FREE_AGES, chapter 3 since 1.3).
+// STORE=web plays the web rules (nothing sold) to the chapter 6 win. STORE=app plays the iPhone app without Full
+// Journey: Move camp into a paid chapter's army is refused, and the run ends when the last free chapter is won (then
+// `finished` counts players who reached the end of the free road).
+// Run: node --experimental-strip-types scripts/qa-gate/free-path-sim.ts [seeds=12] [CAMP=counsel] [battles=150] [SMITH=keep] [TAP=first|mix] [STORE=web|app]
 import { Game } from '../../src/game/simulation.ts';
 import { campCounsel, counselAction, litCounsel } from '../../src/game/counsel.ts';
 import { ERAS } from '../../src/game/data.ts';
 import { rallyLevel } from '../../src/game/encounters.ts';
 import { blades, brokenBlades, fieldBlades, reforgeCost } from '../../src/game/smithy.ts';
 import type { UnitKind } from '../../src/game/types.ts';
+import { FREE_AGES, pastFreeArc } from '../../src/ui/app-bridge.ts';
 
-const SEEDS = Number(process.argv[2] ?? 12), CAMP = process.argv[3] ?? 'counsel', BATTLES = Number(process.argv[4] ?? 150), SMITH = process.argv[5] ?? 'keep', TAP = process.argv[6] ?? 'first';
+const SEEDS = Number(process.argv[2] ?? 12), CAMP = process.argv[3] ?? 'counsel', BATTLES = Number(process.argv[4] ?? 150), SMITH = process.argv[5] ?? 'keep', TAP = process.argv[6] ?? 'first', STORE = process.argv[7] ?? 'web';
 function seeded(s: number) { let seed = s >>> 0 || 1; return () => { seed = (seed + 0x6d2b79f5) >>> 0; let t = seed; t = Math.imul(t ^ (t >>> 15), t | 1); t ^= t + Math.imul(t ^ (t >>> 7), t | 61); return ((t ^ (t >>> 14)) >>> 0) / 4294967296; }; }
 type Row = { battles: number; losses: number; streak: number; rallyWins: number; earned: number; spent: number; wiped: number; idle: number; moveCost: number; reforged: number; won: boolean; firstTry: boolean };
 const blank = (): Row => ({ battles: 0, losses: 0, streak: 0, rallyWins: 0, earned: 0, spent: 0, wiped: 0, idle: 0, moveCost: 0, reforged: 0, won: false, firstTry: false });
@@ -53,6 +58,7 @@ function camp(game: Game, row: Row) {
 }
 function move(game: Game, row: Row): boolean {
   if (CAMP === '0' || !canMove(game)) return false;
+  if (STORE === 'app' && game.profile.age + 1 >= FREE_AGES) return false; // the app's lock: a paid chapter's army
   const cost = ERAS[game.profile.age].evolveCost, coins = game.profile.coins;
   if (!game.dispatch({ type: 'evolve' })) return false;
   row.spent += cost; row.wiped += coins - cost - game.profile.coins; return true;
@@ -75,19 +81,21 @@ function forge(game: Game, row: Row) {
   if (SMITH === 'all') { const last = forged.at(-1); if (last && !last.hung) game.dispatch({ type: 'hang', id: last.id }); }
 }
 
-const players: { chapters: Row[]; battles: number; done: boolean; appGate: number | null; walls: string[] }[] = [];
+const players: { chapters: Row[]; battles: number; done: boolean; appGate: number | null; freeEnd: number | null; walls: string[] }[] = [];
 for (let s = 1; s <= SEEDS; s++) {
   const rnd = seeded(s); Math.random = seeded(1000 + s);
-  const game = new Game(); const chapters = Array.from({ length: 6 }, blank); let streak = 0, appGate: number | null = null, b = 0, done = false;
+  const game = new Game(); const chapters = Array.from({ length: 6 }, blank); let streak = 0, appGate: number | null = null, freeEnd: number | null = null, b = 0, done = false;
   for (; b < BATTLES && !done; b++) {
     const ch = game.profile.enemyAge, row = chapters[ch];
-    if (appGate === null && (ch >= 2 || game.profile.age >= 2)) appGate = b + 1;
+    if (appGate === null && pastFreeArc(game.profile)) appGate = b + 1;
     const rally = rallyLevel(game.profile) > 0, coins = game.profile.coins;
     const won = fight(game, rnd);
     row.battles++; row.earned += game.profile.coins - coins;
     smithy(game, row); forge(game, row);
     if (won) {
       streak = 0; if (rally) row.rallyWins++; if (row.battles === 1) row.firstTry = true;
+      if (ch === FREE_AGES - 1 && freeEnd === null) freeEnd = b + 1;
+      if (STORE === 'app' && ch === FREE_AGES - 1) { row.won = true; row.idle = game.profile.coins; done = true; break; }
       if (ch === 5) { row.won = true; row.idle = game.profile.coins; done = true; break; }
       row.won = true; row.idle = game.profile.coins;
       if (!game.dispatch({ type: 'next' })) game.dispatch({ type: 'retry' });
@@ -100,9 +108,9 @@ for (let s = 1; s <= SEEDS; s++) {
     camp(game, chapters[game.profile.enemyAge]); forge(game, chapters[game.profile.enemyAge]);
   }
   const walls = chapters.flatMap((r, i) => r.battles && (r.streak > 3 || (!r.won && r.moveCost > r.earned)) ? [`ch${i + 1}${r.streak > 3 ? ` streak ${r.streak}` : ''}${!r.won && r.moveCost > r.earned ? ` needs ${r.moveCost}` : ''}`] : []);
-  players.push({ chapters, battles: b + (done ? 1 : 0), done, appGate, walls });
+  players.push({ chapters, battles: b + (done ? 1 : 0), done, appGate, freeEnd, walls });
 }
 const avg = (f: (r: Row) => number, i: number) => +(players.reduce((a, p) => a + f(p.chapters[i]), 0) / players.length).toFixed(1);
 const table = Array.from({ length: 6 }, (_, i) => ({ chapter: i + 1, reached: players.filter(p => p.chapters[i].battles).length, won: players.filter(p => p.chapters[i].won).length, firstTry: players.filter(p => p.chapters[i].firstTry).length, battles: avg(r => r.battles, i), losses: avg(r => r.losses, i), maxStreak: Math.max(...players.map(p => p.chapters[i].streak)), rallyWins: avg(r => r.rallyWins, i), earned: avg(r => r.earned, i), spent: avg(r => r.spent, i), wiped: avg(r => r.wiped, i), idle: avg(r => r.idle, i), reforged: avg(r => r.reforged, i) }));
-console.log(JSON.stringify({ camp: CAMP, smith: SMITH, tap: TAP, seeds: SEEDS, battleCap: BATTLES, finished: players.filter(p => p.done).length, battlesToFinish: players.map(p => p.done ? p.battles : `${p.battles}+`).join(','), worstStreak: Math.max(...players.flatMap(p => p.chapters.map(r => r.streak))), appGateAtBattle: players.map(p => p.appGate ?? '-').join(','), walls: [...new Set(players.flatMap(p => p.walls))] }));
+console.log(JSON.stringify({ camp: CAMP, smith: SMITH, tap: TAP, store: STORE, freeChapters: FREE_AGES, seeds: SEEDS, battleCap: BATTLES, finished: players.filter(p => p.done).length, battlesToFinish: players.map(p => p.done ? p.battles : `${p.battles}+`).join(','), worstStreak: Math.max(...players.flatMap(p => p.chapters.map(r => r.streak))), appGateAtBattle: players.map(p => p.appGate ?? '-').join(','), freeEndAtBattle: players.map(p => p.freeEnd ?? '-').join(','), walls: [...new Set(players.flatMap(p => p.walls))] }));
 for (const row of table) console.log(JSON.stringify(row));

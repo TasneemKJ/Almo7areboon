@@ -92,12 +92,13 @@ export function wonClimax(p: { readonly pendingVictory: { readonly settlement: s
 export function manageSubscriptions(bridge: TasBridge = almoApp): boolean { return bridge.post('manageSubscriptions'); }
 
 /**
- * Chapters 1 and 2 (ages 0-1) are free. Evolving into chapter 3 or beyond, and so every later chapter and the harder
- * timeline, needs Full Journey. A save that is already past chapter 2 (imported, or from the web) is held: it stays
- * exactly as it is on disk and no battle starts from it until StoreKit says Full Journey is owned (1.1; in 1.0 such a
- * save kept playing, which let an import walk around the purchase).
+ * Chapters 1 to 3 (ages 0-2) are free (1.3; through 1.2 only chapters 1 and 2 were). Evolving into chapter 4 or beyond,
+ * and so every later chapter and the harder timeline, needs Full Journey. A save that is already past chapter 3
+ * (imported, or from the web) is held: it stays exactly as it is on disk and no battle starts from it until StoreKit
+ * says Full Journey is owned (1.1; in 1.0 such a save kept playing, which let an import walk around the purchase).
+ * Nothing about the free scope is stored in the save, so a 1.2 save simply finds one more chapter open.
  */
-export const FREE_AGES = 2;
+export const FREE_AGES = 3;
 type JourneyProgress = { readonly timeline: number; readonly age: number; readonly enemyAge: number; readonly furthestBattle: number };
 /** Past the free arc: a paid chapter is the chosen battle, the army wears a paid chapter, or it is a later timeline. */
 export function pastFreeArc(p: Pick<JourneyProgress, 'timeline' | 'age' | 'enemyAge'>): boolean {

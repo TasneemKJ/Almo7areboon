@@ -1,4 +1,5 @@
-// Can a free player (simulated app, no Full Journey) fight chapter 3? Loads a profile with chapter 3 open and presses Continue.
+// Can a free player (simulated app, no Full Journey) fight chapter 3? Since 1.3 it must (chapters 1-3 are free; chapter 4
+// is the first that opens the card). Loads a profile with chapter 3 open and presses Play.
 // node scripts/qa-gate/free-chapter-check.mjs
 import {readFileSync} from 'node:fs';
 import {launch, newPhone, BASE, OUT} from './lib.mjs';

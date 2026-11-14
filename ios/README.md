@@ -44,7 +44,7 @@ before copying the save keys (`almo7areboon.*`) to its vault.
 - **Persisted names never change**: scheme `almo7areboon`, storage prefix `almo7areboon`, vault
   `almo7areboon-save-vault.json`, UserDefaults `store.owned` / `store.prices`, product `Tas.Almo7areboon.fullGame`.
 - **Swift owns what was bought.** Purchases never enter the save.
-- **Nothing that gives power is sold.** Full Journey opens chapters 3-6 and the harder timeline; gems, cards and coins
+- **Nothing that gives power is sold.** Full Journey opens chapters 4-6 and the harder timeline (chapters 1-3 are free); gems, cards and coins
   are earned in play only. The Lamplighter sells light: three lanterns behind your gate, no number changed.
 - **Two languages, one per screen** (`docs/i18n.md`); the App Store listing is Arabic first, with English.
 

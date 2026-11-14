@@ -19,7 +19,7 @@ export interface StoreFlowDeps {
 }
 
 /**
- * The app's two store cards (Full Journey, the Lamplighter) and the one gate: evolving past chapter 2 in the app
+ * The app's two store cards (Full Journey, the Lamplighter) and the one gate: evolving past chapter 3 in the app
  * without Full Journey opens its card instead. Off the app the bridge owns everything, so nothing here ever shows.
  * Ownership is asked of the bridge at the moment of use and never written to the save.
  */
@@ -34,7 +34,8 @@ export function createStoreFlow(deps: StoreFlowDeps, bridge: TasBridge = almoApp
   function cardHtml(): string {
     const profile = ports.sessionState.game.profile;
     const held = journeyHeld(profile, bridge) ? { freeChapter: freeRoute() !== null } : null;
-    return fullJourneyHtml(bridge, chapterPresentation(Math.min(5, Math.max(2, profile.age + 1))).title, profile.furthestBattle >= 1 && profile.wins > 0, held);
+    // The list names the first paid chapter; "held the three free chapters" once chapter 3 is won (chapter 4 on record).
+    return fullJourneyHtml(bridge, chapterPresentation(FREE_AGES).title, profile.furthestBattle >= FREE_AGES && profile.wins > 0, held);
   }
   function render(): void {
     if (ports.navState.modal === 'full-journey') ports.showModal('full-journey', cardHtml());

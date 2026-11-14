@@ -220,7 +220,7 @@ export function createNavigation(deps: NavigationDeps) {
     // that dialog owns its own buttons, exactly as when a dialog opens over Camp (showModal).
     navState.campOwner??=navState.modal&&navState.modal!=='camp-focus'&&navState.modal!=='session'?{kind:'advanced',returnTarget:'journal'}:{kind:'root'};
     if(navState.campOwner.kind==='advanced'&&!navState.modal&&navState.activeTab==='battle')navState.campOwner={kind:'root'};
-    const p=ports.sessionState.game.profile,day=localDay(),store={lit:lamplighterWalks(),inApp:almoApp.inApp},key=JSON.stringify([p.age,p.enemyAge,p.foodLevel,p.baseLevel,p.unlocked,p.chronicle?.route,campGoalText(p,day),p.coins,p.dusk,p.wins>0,store,p.smithy?.blades]);
+    const p=ports.sessionState.game.profile,day=localDay(),store={lit:lamplighterWalks(),inApp:almoApp.inApp,journey:ownsFullJourney()},key=JSON.stringify([p.age,p.enemyAge,p.furthestBattle,p.foodLevel,p.baseLevel,p.unlocked,p.chronicle?.route,campGoalText(p,day),p.coins,p.dusk,p.wins>0,store,p.smithy?.blades]);
     if(key!==navState.campRenderKey){navState.campRenderKey=key;htmlIfChanged($('camp-view'),campRootHtml(p,day,store));}
     $('camp-view').hidden=navState.activeTab!=='battle';$('camp-view').inert=navState.modal!==null||navState.activeTab!=='battle';
     $('battle-view').inert=true;

@@ -308,3 +308,4 @@ Combined-main camp/cinema acceptance:1464tests/build pass; six-size native touch
 - [ ] Show the hung weapon on the troops in battle (a glint on that kind's weapon)
 - [ ] Real-touch check on iOS of carrying a blade before the result card
 - [ ] Owner decision: a free path to chapter 6 in the app would need Full Journey to sell something other than chapters 3-6
+- [x] 1.3: chapter 3 is free; Full Journey opens chapters 4-6 and the harder timeline. Camp's footer names the wall before it is met; 1.2 saves load unchanged (tests/save-migration-1-2.test.ts); free-path sim STORE=app reaches the chapter 3 win in 5-7 battles

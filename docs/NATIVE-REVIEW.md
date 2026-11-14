@@ -73,3 +73,19 @@ Read and kept, for the native reader to confirm:
 - App Store **keywords** (`ios/store/listing.json`): «بدون نت»، «اوفلاين»، «ابراج» are written the way people type
   in search, without hamza and in everyday form. They are never shown as text, so they were left as they are; the
   owner may prefer fusha there too («بلا إنترنت»، «أبراج») at some cost to search matching.
+
+## 4. Chapter 3 free (1.3)
+
+Chapters 1 to 3 are free; Full Journey opens chapters 4 to 6 and the harder timeline. Changed or new lines:
+
+| Where | English | Arabic |
+|---|---|---|
+| Entry, journey path (app, not owned) | Chapters 1–3 free · 4–6 with Full Journey | الفصول ١–٣ مجّاناً · ٤–٦ مع الرحلة كاملة |
+| Full Journey card, opened early | The first three chapters are free. Full Journey opens the rest of the tale. | الفصول الثلاثة الأولى مجّانية. الرحلة كاملة تفتح بقيّة الحكاية. |
+| Full Journey card, after chapter 3 is won | Your company has held the three free chapters. Full Journey opens the rest of the tale. | صمدت سريّتك في الفصول الثلاثة المجّانية. الرحلة كاملة تفتح بقيّة الحكاية. |
+| Full Journey card, first item | Lantern Quarter and the two chapters after it | حيّ الفوانيس والفصلان اللذان يليانه |
+| Full Journey card, second item | Nine new troops in new wardrobes | تسعة جنود جدد بأزياء جديدة |
+| Camp footer, in chapter 3 (app, not owned) | Harbor Watch is the last free chapter. Full Journey opens the three after it, and the harder timeline. | حراسة الميناء آخر الفصول المجّانية. و«الرحلة كاملة» تفتح الفصول الثلاثة التي بعدها، والخطّ الزمني الأصعب. |
+| Camp footer, after chapter 3 is won | The free chapters stay yours to replay. Full Journey opens Lantern Quarter and the two chapters after it. | الفصول المجّانية باقية لك تعيدها متى شئت. و«الرحلة كاملة» تفتح حيّ الفوانيس والفصلين اللذين يليانه. |
+| App Store description | The first three chapters are free. Full Journey … opens chapters four to six … | الفصول الثلاثة الأولى مجّانية. «الرحلة كاملة» … يفتح الفصول من الرابع إلى السادس … |
+| Full Journey product description (App Store Connect) | Every later chapter and the harder timeline | الفصول من الرابع إلى السادس والخطّ الأصعب |

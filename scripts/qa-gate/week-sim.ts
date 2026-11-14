@@ -1,5 +1,5 @@
 // Simulated week for a casual player: 2 short sessions a day (SESSION_S game-seconds of battle each), using the game's own
-// rules (Game.dispatch: daily, weekly, quests, upgrades, summons, evolution). Evolution past the free chapters (age>=1 -> 2)
+// rules (Game.dispatch: daily, weekly, quests, upgrades, summons, evolution). Evolution past the free chapters (age>=2 -> 3 since 1.3)
 // is blocked unless PAID=1, matching evolutionNeedsFullJourney in the iPhone app.
 // Run: node --experimental-strip-types scripts/qa-gate/week-sim.ts [sessionSeconds=360] [PAID=0]
 import { Game } from '../../src/game/simulation.ts';
@@ -8,6 +8,7 @@ import { weekId, weeklyStatus } from '../../src/game/weekly.ts';
 import { currentSealCount } from '../../src/game/prestige.ts';
 import { cardPackCost } from '../../src/game/cards.ts';
 import type { UnitKind } from '../../src/game/types.ts';
+import { FREE_AGES } from '../../src/ui/app-bridge.ts';
 
 const SESSION_S = Number(process.argv[2] ?? 360), PAID = process.argv[3] === '1', SEED = Number(process.argv[4] ?? 1);
 // Seeded so runs are repeatable; the Game's own summon seed is separate.
@@ -38,7 +39,7 @@ function spend(log: string[]) {
     break;
   }
   if (p.gems >= cardPackCost(1) && game.dispatch({ type: 'summon', count: 1 })) log.push(`card pack opened (gems left ${p.gems})`);
-  const gated = p.age + 1 >= 2 && !PAID;
+  const gated = p.age + 1 >= FREE_AGES && !PAID;
   if (p.age < 5 && p.age <= p.enemyAge && p.coins >= ERAS[p.age].evolveCost) {
     if (gated) log.push(`evolution to ${ERAS[p.age + 1].name} affordable but needs Full Journey (paywall)`);
     else if (game.dispatch({ type: 'evolve' })) log.push(`EVOLVED to ${ERAS[p.age].name}`);

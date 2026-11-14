@@ -16,13 +16,14 @@ test('on the web nothing is gated and nothing is posted', () => {
   assert.equal((globalThis as unknown as { almoApp: unknown }).almoApp, almoApp);
 });
 
-test('in the app unknown means locked, and only the next evolution past chapter 2 asks', () => {
+test('in the app unknown means locked, and only the next evolution past chapter 3 asks', () => {
   const { win, posted } = fakeApp();
   const bridge = createAppBridge(win);
   assert.equal(bridge.inApp, true);
   assert.equal(ownsFullJourney(bridge), false);
   assert.equal(evolutionNeedsFullJourney(0, bridge), false, 'chapter 1 → 2 is free');
-  assert.equal(evolutionNeedsFullJourney(1, bridge), true, 'chapter 2 → 3 needs Full Journey');
+  assert.equal(evolutionNeedsFullJourney(1, bridge), false, 'chapter 2 → 3 is free (1.3)');
+  assert.equal(evolutionNeedsFullJourney(2, bridge), true, 'chapter 3 → 4 needs Full Journey');
   assert.equal(evolutionNeedsFullJourney(4, bridge), true);
   bridge.buy(FULL_JOURNEY); bridge.restore(); bridge.openPage('privacy');
   assert.deepEqual(posted, [{ type: 'buy', data: { id: 'fullGame' } }, { type: 'restore', data: null }, { type: 'openURL', data: { page: 'privacy' } }]);
@@ -68,7 +69,7 @@ test('the Lamplighter walks only while a plan is live in the app, and never on t
   assert.equal(lamplighterWalks(bridge), true);
   assert.equal(lamplighterPlan(bridge), 'lamplighterMonthly');
   assert.equal(ownsFullJourney(bridge), false, 'the subscription opens no chapter');
-  assert.equal(evolutionNeedsFullJourney(1, bridge), true);
+  assert.equal(evolutionNeedsFullJourney(2, bridge), true);
   bridge.update({ owned: { lamplighterMonthly: true, lamplighterYearly: true } });
   assert.equal(lamplighterPlan(bridge), 'lamplighterYearly');
   bridge.update({ owned: {} });

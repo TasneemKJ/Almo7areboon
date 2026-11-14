@@ -165,6 +165,12 @@ Owner override (2026-11-13): the iPhone app (ios/, TasKit) sells two things; the
   and the harder timeline. Chapters 1 and 2 are the free arc. The gate is asked of StoreKit at the moment of use
   (`src/app/store-flow.ts` `gateEvolution`): choosing Evolve at the end of chapter 2 opens the Full Journey card instead
   of the evolution dialog. Ownership is never written to the save. The card also opens from Settings → Full Journey.
+  **1.3 (2026-11-15): chapter 3 is free.** Chapters 1 to 3 are the free arc (`FREE_AGES = 3`); Full Journey opens
+  chapters 4 to 6 and the harder timeline, same product and price. Every "chapter 2" below now reads "chapter 3". The
+  free player sees the wall coming: once the company reaches chapter 3, Camp's footer line (the calm line above Battle,
+  `camp-screen.ts` `campRoadNote`) says «حراسة الميناء آخر الفصول المجّانية…» / "Harbor Watch is the last free chapter…",
+  and after chapter 3 is won that the free chapters stay to replay and what Full Journey opens next. Text in the scene,
+  no dialog and nothing to tap; owners and the web keep the usual line. Saves written by 1.2 load unchanged.
   **1.1 (2026-11-13):** a save already past chapter 2 (imported, pasted or from the web) no longer keeps playing where
   it is; that let an import walk around the purchase. It is *held*: `gateStart` (asked in `lifecycle.ts` `action`, the
   one way into a battle) opens the card instead of starting while the chosen battle, the army's chapter or the timeline
@@ -184,8 +190,8 @@ Owner override (2026-11-13): the iPhone app (ios/, TasKit) sells two things; the
   auto-renew and cancel line, and offers Manage subscription (Apple's sheet) while subscribed. Both languages.
 - Copy that said "nothing else to buy" now says "Bought once and yours to keep".
 - **Journey path (council, 2026-11-13):** the entry shows six lamps under the chapter name (where you are of six). In
-  the app, once the player has won a battle and while Full Journey is not owned, chapters 3-6 are a dashed stretch with
-  "Chapters 1–2 free · 3–6 with Full Journey", which opens the card. Never before the first win, so the store is not
+  the app, once the player has won a battle and while Full Journey is not owned, chapters 4-6 are a dashed stretch with
+  "Chapters 1–3 free · 4–6 with Full Journey" (1.3; it was 1–2 and 3–6), which opens the card. Never before the first win, so the store is not
   the first thing a new player sees.
 - **Touch and sound on every press (studio gate):** a short Taptic tap (navigator.vibrate, mapped to the Taptic Engine
   by TasKit; iOS's system haptics setting governs it) and a soft wooden tick when sound is on; recruits a firmer tap

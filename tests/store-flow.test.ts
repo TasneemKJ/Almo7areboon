@@ -31,20 +31,21 @@ test('the page asks the app for prices as soon as the bridge exists', () => {
   assert.deepEqual(s.posted[0], { type: 'price', data: null });
 });
 
-test('chapter 1 to 2 evolves freely; chapter 2 to 3 opens Full Journey instead, and owning it lets it through', () => {
-  const free = setup(0); assert.equal(free.flow.gateEvolution(), false); free.dispose();
-  const gated = setup(1);
+test('chapters 1 to 3 evolve freely; chapter 3 to 4 opens Full Journey instead, and owning it lets it through', () => {
+  for (const age of [0, 1]) { const free = setup(age); assert.equal(free.flow.gateEvolution(), false, `army of chapter ${age + 1} moves on freely`); free.dispose(); }
+  const gated = setup(2);
   assert.equal(gated.flow.gateEvolution(), true);
   assert.equal(gated.navState.modal, 'full-journey');
-  assert.match(gated.last.html, /Lantern Quarter|Harbor Watch/);
+  assert.match(gated.last.html, /Lantern Quarter and the two chapters after it/);
+  assert.match(gated.last.html, /Nine new troops/);
   assert.match(gated.last.html, /data-command="buy-full-journey"/);
   gated.dispose();
-  const owner = setup(1, { fullGame: true }); assert.equal(owner.flow.gateEvolution(), false); owner.dispose();
-  const subscriber = setup(1, { lamplighterYearly: true }); assert.equal(subscriber.flow.gateEvolution(), true, 'the subscription opens no chapter'); subscriber.dispose();
+  const owner = setup(2, { fullGame: true }); assert.equal(owner.flow.gateEvolution(), false); owner.dispose();
+  const subscriber = setup(2, { lamplighterYearly: true }); assert.equal(subscriber.flow.gateEvolution(), true, 'the subscription opens no chapter'); subscriber.dispose();
 });
 
 test('buying, restoring, legal pages and manage go to the app; the card redraws when the store answers', () => {
-  const s = setup(1);
+  const s = setup(2);
   s.flow.gateEvolution();
   for (const c of ['buy-full-journey', 'restore-purchases', 'open-terms', 'open-privacy']) assert.equal(s.flow.handleStoreCommand(c), true);
   assert.deepEqual(s.posted.slice(-4).map(p => p.type), ['buy', 'restore', 'openURL', 'openURL']);
@@ -110,11 +111,14 @@ test('the paid stretch of the journey path appears only after a first win, never
   assert.match(nav, /journeyPathHtml\(ports\.sessionState\.game\.profile\.enemyAge,ports\.sessionState\.game\.profile\.wins>0&&!ownsFullJourney\(\)\)/);
 });
 
-// QA gate 2026-11-13: a free player could fight chapters 3-6 by going on to the next battle; only evolving asked.
-test('in the app, going on to chapter 3 or later, or choosing it, opens Full Journey instead; chapters 1-2 stay free', () => {
+// QA gate 2026-11-13: a free player could fight paid chapters by going on to the next battle; only evolving asked.
+// 1.3: chapters 1 to 3 are free, so the gate is chapter 4.
+test('in the app, going on to chapter 4 or later, or choosing it, opens Full Journey instead; chapters 1-3 stay free', () => {
   const s = setup(1);
   assert.equal(s.flow.gateBattle(1), false, 'chapter 2 is free');
-  assert.equal(s.flow.gateBattle(2), true);
+  assert.equal(s.flow.gateBattle(2), false, 'chapter 3 is free');
+  assert.equal(s.navState.modal, null);
+  assert.equal(s.flow.gateBattle(3), true);
   assert.equal(s.navState.modal, 'full-journey');
   s.dispose();
   const owner = setup(1, { fullGame: true }); assert.equal(owner.flow.gateBattle(4), false); owner.dispose();

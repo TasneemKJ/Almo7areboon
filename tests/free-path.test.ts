@@ -17,3 +17,13 @@ test('the smith changes identity, not who gets through: reforging everything sti
   const [summary] = run('2', 'counsel', '40', 'all', 'mix');
   assert.equal(summary.finished, 2); assert.ok(summary.worstStreak <= 2); assert.deepEqual(summary.walls, []);
 });
+
+test('1.3: in the app without Full Journey a free player walks the whole free road, chapters 1 to 3, with no wall', () => {
+  const [summary, ...chapters] = run('3', 'counsel', '40', 'keep', 'first', 'app');
+  assert.equal(summary.store, 'app'); assert.equal(summary.freeChapters, 3);
+  assert.equal(summary.finished, 3, 'every player wins chapter 3 without moving camp into a paid army');
+  assert.deepEqual(summary.walls, []); assert.ok(summary.worstStreak <= 2);
+  assert.ok(String(summary.freeEndAtBattle).split(',').every((b: string) => Number(b) > 0 && Number(b) <= 10), summary.freeEndAtBattle);
+  assert.deepEqual(chapters.slice(0, 3).map((c: { won: number }) => c.won), [3, 3, 3]);
+  assert.deepEqual(chapters.slice(3).map((c: { reached: number }) => c.reached), [0, 0, 0], 'no paid chapter is fought');
+});

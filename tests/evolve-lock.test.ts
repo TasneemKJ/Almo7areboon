@@ -17,47 +17,49 @@ const appBridge = (owned: Record<string, boolean> = {}, prices: Record<string, s
 const gameAt = (age: number, coins: number) => { const p = defaultProfile(); Object.assign(p, { age, enemyAge: age, furthestBattle: age, coins, wins: 3 }); return new Game(p); };
 const evolveButton = (html: string) => html.match(/<button[^>]*data-command="evolve"[^>]*>[\s\S]*?<\/button>/)![0];
 
-test('a free player at the end of chapter 2 sees a lock and the store price on EVOLVE, never a coin cost', () => {
-  for (const coins of [0, ERAS[1].evolveCost * 2]) {
-    const game = gameAt(1, coins), button = evolveButton(evolutionScreenHtml(game.profile, game.state, appBridge()));
+test('a free player at the end of chapter 3 sees a lock and the store price on EVOLVE, never a coin cost', () => {
+  for (const coins of [0, ERAS[2].evolveCost * 2]) {
+    const game = gameAt(2, coins), button = evolveButton(evolutionScreenHtml(game.profile, game.state, appBridge()));
     assert.match(button, /data-locked="full-journey"/);
     assert.match(button, /<bdi dir="ltr">\$4\.99<\/bdi>/, 'the App Store price, isolated left to right like the card');
     assert.match(button, /aria-label="MOVE CAMP\. Locked\. Opens with Full Journey, \$4\.99"/);
-    assert.doesNotMatch(button, /20k|disabled/, 'no coin cost, and it can always be tapped to open the card');
+    assert.doesNotMatch(button, /170k|disabled/, 'no coin cost, and it can always be tapped to open the card');
   }
-  const game = gameAt(1, 5), html = evolutionScreenHtml(game.profile, game.state, appBridge());
+  const game = gameAt(2, 5), html = evolutionScreenHtml(game.profile, game.state, appBridge());
   assert.doesNotMatch(html, /camp-shortfall|Needs [\d,]+ more/, 'no coin shortfall toward a wall');
-  assert.match(html, /This chapter opens with Full Journey, bought once\. Moving camp then costs 20,000 coins\./, 'both costs are said plainly');
+  assert.match(html, /This chapter opens with Full Journey, bought once\. Moving camp then costs 170,000 coins\./, 'both costs are said plainly');
 });
 
 test('before the store has answered the lock names Full Journey instead of a price', () => {
-  const game = gameAt(1, 0), button = evolveButton(evolutionScreenHtml(game.profile, game.state, appBridge({}, {})));
+  const game = gameAt(2, 0), button = evolveButton(evolutionScreenHtml(game.profile, game.state, appBridge({}, {})));
   assert.match(button, /data-locked="full-journey"/);
   assert.match(button, /<span>Full Journey<\/span>/);
   assert.doesNotMatch(button, /undefined|\$|disabled/);
 });
 
-test('owners, the free first evolution and the web keep the normal coin cost', () => {
-  const owner = gameAt(1, 5), owned = evolveButton(evolutionScreenHtml(owner.profile, owner.state, appBridge({ fullGame: true })));
-  assert.match(owned, /20k/); assert.match(owned, /disabled/); assert.doesNotMatch(owned, /data-locked/);
+test('owners, the free evolutions (into chapters 2 and 3) and the web keep the normal coin cost', () => {
+  const owner = gameAt(2, 5), owned = evolveButton(evolutionScreenHtml(owner.profile, owner.state, appBridge({ fullGame: true })));
+  assert.match(owned, /170k/); assert.match(owned, /disabled/); assert.doesNotMatch(owned, /data-locked/);
   const first = gameAt(0, ERAS[0].evolveCost), free = evolveButton(evolutionScreenHtml(first.profile, first.state, appBridge()));
   assert.match(free, /2\.5k/); assert.doesNotMatch(free, /data-locked|disabled/);
-  const web = gameAt(1, 5);
-  assert.match(evolveButton(evolutionScreenHtml(web.profile, web.state)), /20k/);
+  const second = gameAt(1, ERAS[1].evolveCost), third = evolveButton(evolutionScreenHtml(second.profile, second.state, appBridge()));
+  assert.match(third, /20k/); assert.doesNotMatch(third, /data-locked|disabled/, 'chapter 3 is free since 1.3: moving camp into it costs coins only');
+  const web = gameAt(2, 5);
+  assert.match(evolveButton(evolutionScreenHtml(web.profile, web.state)), /170k/);
   assert.doesNotMatch(evolutionScreenHtml(web.profile, web.state), /data-locked/);
 });
 
 test('the result details and the regroup advice stop pointing coins at the locked chapter', () => {
-  const game = gameAt(1, ERAS[1].evolveCost); game.state.phase = 'won';
+  const game = gameAt(2, ERAS[2].evolveCost); game.state.phase = 'won';
   const locked = evolveButton(resultsHtml(game.profile, game.state, appBridge()));
   assert.match(locked, /data-locked="full-journey"/); assert.match(locked, /\$4\.99/); assert.doesNotMatch(locked, /coins|disabled/);
-  assert.match(evolveButton(resultsHtml(game.profile, game.state, appBridge({ fullGame: true }))), /Move camp · 20,000 coins/);
+  assert.match(evolveButton(resultsHtml(game.profile, game.state, appBridge({ fullGame: true }))), /Move camp · 170,000 coins/);
   game.state.phase = 'lost';
-  assert.match(regroupLearningHtml(game.profile, game.state), /Moving camp is affordable: 20,000 coins/, 'the web keeps the advice');
+  assert.match(regroupLearningHtml(game.profile, game.state), /Moving camp is affordable: 170,000 coins/, 'the web keeps the advice');
 });
 
 test('tapping the locked control opens the store card once; declining closes it and nothing reopens it', () => {
-  const bridge = appBridge(), profile = { ...defaultProfile(), age: 1, enemyAge: 1, furthestBattle: 1, wins: 3 };
+  const bridge = appBridge(), profile = { ...defaultProfile(), age: 2, enemyAge: 2, furthestBattle: 2, wins: 3 };
   const navState = { modal: null as string | null, evolutionFromResult: false, activeTab: 'evolution' }, shown: string[] = [], redraws: string[] = [];
   const ports = {
     action: () => false, closeModal: () => { navState.modal = null; }, navState, persist: () => {}, playable: () => true, renderScreen: () => { redraws.push('screen'); },

@@ -12,10 +12,10 @@ test('the entry shows where you are on the six-chapter journey', () => {
   assert.match(html, />Chapter <bdi dir="ltr">2<\/bdi> of <bdi dir="ltr">6<\/bdi></);
 });
 
-test('in the app without Full Journey, chapters 3-6 are a visible locked stretch and the free scope is named', () => {
+test('in the app without Full Journey, chapters 4-6 are a visible locked stretch and the free scope is named', () => {
   const html = journeyPathHtml(0, true);
-  assert.deepEqual(marks(html), ['path-here', 'path-ahead', 'path-locked', 'path-locked', 'path-locked', 'path-locked']);
-  assert.match(html, /Chapters 1–2 free · 3–6 with Full Journey/);
+  assert.deepEqual(marks(html), ['path-here', 'path-ahead', 'path-ahead', 'path-locked', 'path-locked', 'path-locked']);
+  assert.match(html, /Chapters 1–3 free · 4–6 with Full Journey/);
   assert.match(html, /data-command="full-journey"/, 'the locked stretch opens the card that says what it adds');
   setLang('ar');
   try {

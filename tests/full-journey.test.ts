@@ -29,9 +29,24 @@ test('in Arabic the card is all Arabic but the price', () => {
   } finally { setLang('en'); }
 });
 
-test('opened before the player has held chapter 2, the card does not claim they have', () => {
-  const early = fullJourneyHtml(store(false), 'Harbor Watch', false);
-  assert.doesNotMatch(early, /has held the first two chapters/);
-  assert.match(early, /The first two chapters are free/);
-  assert.match(fullJourneyHtml(store(false), 'Harbor Watch', true), /has held the first two chapters/);
+test('opened before the player has held chapter 3, the card does not claim they have', () => {
+  const early = fullJourneyHtml(store(false), 'Lantern Quarter', false);
+  assert.doesNotMatch(early, /has held the three free chapters/);
+  assert.match(early, /The first three chapters are free/);
+  assert.match(fullJourneyHtml(store(false), 'Lantern Quarter', true), /has held the three free chapters/);
+});
+
+test('1.3: the card sells chapters 4 to 6, with their true count of chapters and troops', () => {
+  const html = fullJourneyHtml(store(false), 'Lantern Quarter');
+  assert.match(html, /<li>Lantern Quarter and the two chapters after it<\/li>/);
+  assert.match(html, /<li>Nine new troops in new wardrobes<\/li>/);
+  assert.doesNotMatch(html, /first two|three chapters after|Twelve/);
+  setLang('ar');
+  try {
+    const ar = fullJourneyHtml(store(false), 'حيّ الفوانيس', false);
+    assert.match(ar, /حيّ الفوانيس والفصلان اللذان يليانه/);
+    assert.match(ar, /تسعة جنود جدد/);
+    assert.match(ar, /الفصول الثلاثة الأولى مجّانية/);
+    assert.doesNotMatch(ar, /الفصلان الأوّلان|الفصلين الأوّلين|اثنا عشر/);
+  } finally { setLang('en'); }
 });

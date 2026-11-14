@@ -1,6 +1,7 @@
 import type { Profile, BattleState } from '../game/types.ts';
 import { chapterLandscape, chapterPresentation } from './chapter-presentation.ts';
 import { n, tr } from './i18n.ts';
+import { FREE_AGES } from './app-bridge.ts';
 
 /** The page title in the current language (index.html carries the English one until boot). */
 export function documentTitle():string { return tr('Almo7areboon — Through the Levant','المحاربون — عبر بلاد الشام'); }
@@ -31,15 +32,15 @@ export function entryScreenHtml(profile:Profile):string {
 
 /**
  * Where the player is on the six-chapter journey, under the chapter name on the entry screen. In the app without Full
- * Journey, chapters 3-6 are drawn as a locked stretch and the free scope is named; tapping it opens the card that says
+ * Journey, chapters 4-6 are drawn as a locked stretch and the free scope is named; tapping it opens the card that says
  * exactly what Full Journey adds. On the web (and once owned) it is only the path.
  */
 export function journeyPathHtml(chapterIndex:number,locked:boolean):string {
  const here=Math.max(0,Math.min(5,Math.floor(Number.isFinite(chapterIndex)?chapterIndex:0)));
- const dots=Array.from({length:6},(_,i)=>`<li class="${i<here?'path-done':i===here?'path-here':locked&&i>=2?'path-locked':'path-ahead'}"></li>`).join('');
+ const dots=Array.from({length:6},(_,i)=>`<li class="${i<here?'path-done':i===here?'path-here':locked&&i>=FREE_AGES?'path-locked':'path-ahead'}"></li>`).join('');
  const label=tr(`Chapter ${here+1} of 6`,`الفصل ${here+1} من 6`);
  const note=locked
-  ?`<button class="entry-path-note" data-command="full-journey">${tr('Chapters 1–2 free · 3–6 with Full Journey',`الفصلان ${n('1–2')} مجّاناً · ${n('3–6')} مع الرحلة كاملة`)}</button>`
+  ?`<button class="entry-path-note" data-command="full-journey">${tr('Chapters 1–3 free · 4–6 with Full Journey',`الفصول ${n('1–3')} مجّاناً · ${n('4–6')} مع الرحلة كاملة`)}</button>`
   :`<span class="entry-path-note">${tr(`Chapter ${n(here+1)} of ${n(6)}`,`الفصل ${n(here+1)} من ${n(6)}`)}</span>`;
  return `<ol class="entry-path" aria-label="${label}">${dots}</ol>${note}`;
 }
