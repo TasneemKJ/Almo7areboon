@@ -279,3 +279,6 @@ once, then the coins. Owners, the free first move and the web see the coin cost 
 ## Store compliance (2026-11-14)
 
 No narration, ever shipped or planned: the ElevenLabs free plan grants no commercial licence, so the opening tale and both films stay captioned with the procedural score. The store presents the game as a folk-tale lane battle across eras (subtitles «حكاية معارك من زمن الحكايات» / "Battles from a storybook age"), answers guns or other weapons honestly as infrequent/mild, and names no card the game lacks. No rule, number or save changes.
+
+## Backlog from random stimulus (2026-11-14)
+- **The Hakawati's Night (ليلة الحكواتي):** each battle is told live in a café; the player is the storyteller. The audience reacts in fusha with gentle humour («لا! ليس الفارس!»); their cheers give a short morale boost. Limited storytelling turns per chapter (each unit sent is a decision). A dabke formation: units walking the lane linked shoulder to shoulder fight better; breaking the line costs. Gives identity beyond the Age of War lane formula. Comparables: Age of War (lanes), Darkest Dungeon (narrator), Slay the Spire (every choice counts).
