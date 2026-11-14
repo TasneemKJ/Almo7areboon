@@ -82,6 +82,8 @@ export function createFieldController(root:HTMLElement){
  const clear=()=>{selected=null;releaseFieldContext(context,origin,pause);enemy.classList.remove('selected');cover.classList.remove('selected');};
  return {
   clear,
+  /** Whether a tactical choice (enemy, supplies, cover) is open: a field tap then only closes it. */
+  isOpen:()=>selected!==null,
   select(kind:string,game:Game){
    if(game.state.phase!=='running'||game.state.paused)return;
    if(kind==='supplies'){selected='supplies';origin=supplies;}

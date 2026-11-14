@@ -8,7 +8,7 @@ import { companyFilmHtml, mountCompanyFilm } from '../ui/company-film.ts';
 
 import { questRecords } from '../ui/quest-records.ts';
 import { storyFollowUp } from '../ui/story-flow.ts';
-import { battlefieldOrderFromGesture } from '../ui/battlefield-orders.ts';
+import { battlefieldOrderFromGesture, fieldTapOrder } from '../ui/battlefield-orders.ts';
 import { bannerDragIntent, bannerDragOffset, bannerOrderFromDrag } from '../ui/banner-gesture.ts';
 import { journeyScreenHtml } from '../ui/journey-screen.ts';
 import { chronicleScreenHtml, chronicleActionFromData } from '../ui/chronicle-screen.ts';
@@ -47,7 +47,7 @@ export interface InputState {
 
 /** What the listeners module needs: its slice of state, DOM handles and sibling operations. */
 export interface ListenersDeps {
-  dom: Pick<Runtime, '$' | 'blockModalTap' | 'fieldControls' | 'lifetime' | 'money' | 'motionQuery' | 'root' | 'activeElement' | 'hidden' | 'now' | 'pageEvents' | 'reload' | 'viewEvents'>;
+  dom: Pick<Runtime, '$' | 'blockModalTap' | 'clearTimer' | 'fieldControls' | 'lifetime' | 'money' | 'motionQuery' | 'root' | 'activeElement' | 'hidden' | 'now' | 'pageEvents' | 'reload' | 'setTimer' | 'viewEvents'>;
   ports: Pick<ShellApi, 'acquireSession' | 'action' | 'gateBattle' | 'gateEvolution' | 'handleStoreCommand' | 'adoptRestoredGame' | 'claimQuestRecord' | 'clearPrestigeContext' | 'closeModal' | 'continueWithProvision' | 'dismissModal' | 'enterCamp' | 'enterWorld' | 'exportSave' | 'guardAction' | 'handleCampInput' | 'leaveBattle' | 'navState' | 'openPrestige' | 'persist' | 'playable' | 'playIntro' | 'watchIntro' | 'preferenceNotice' | 'questState' | 'rebuildArmy' | 'refreshPrestige' | 'refreshQuestRecord' | 'renderScreen' | 'returnToCamp' | 'returnToChapters' | 'syncCamp' | 'showCampFocus' | 'sessionState' | 'showFieldPause' | 'showHome' | 'showLeaveBattle' | 'showModal' | 'showQuests' | 'showResult' | 'showResultDetails' | 'showSaveRecovery' | 'showSettings' | 'showStoryFollowUp' | 'suspendSession' | 'switchTab' | 'syncMarks' | 'syncMotion' | 'syncPause' | 'syncWeek' | 'toast' | 'update'>;
 }
 
@@ -60,6 +60,24 @@ function openCounsel(ports:Pick<ShellApi,'action'|'closeModal'|'navState'|'playa
   // The free chapters light the place in the camp scene itself, with its act hung on it (camp-screen.ts counselActLabel).
   if(ports.sessionState.game.profile.furthestBattle<2){root?.querySelector<HTMLElement>('#camp-view [data-primary="true"]')?.focus({preventScroll:true});return;}
   ports.showCampFocus(recruit?{recruit:Number(recruit[1]) as UnitKind}:target as 'storehouse'|'gate');
+}
+
+/**
+ * A field tap's order: the banner is carried to that side when the simulation admits it. When momentum is short the
+ * banner leans that way and its plate names what is missing (the same plate a drag shows), then settles: an answer, not
+ * an order.
+ */
+function fieldBanner({dom:{$,lifetime,setTimer,clearTimer},ports}:Pick<ListenersDeps,'dom'|'ports'>):(order:'advance'|'hold')=>void {
+  const banner=$('field-banner');let timer=0;
+  lifetime.add(()=>clearTimer(timer));
+  return order=>{
+    const sound=ports.sessionState.game.profile.sound;unlockAudio(sound);
+    if(ports.action({type:'order',order})){pressFeedback({sound,kind:'press'});return;}
+    if(banner.classList.contains('dragging'))return;
+    clearTimer(timer);banner.classList.remove('wanting');void banner.offsetWidth;
+    banner.dataset.intent=order;banner.dataset.wait='true';banner.classList.add('wanting');
+    timer=setTimer(()=>{banner.classList.remove('wanting');if(!banner.classList.contains('dragging')){banner.dataset.intent='none';banner.dataset.wait='false';}},1400);
+  };
 }
 
 /** The company banner: drag forward to Advance, back to Hold. The simulation still admits and applies the order. */
@@ -199,6 +217,7 @@ export function installListeners(deps: ListenersDeps): void {
     return false;
   }
   function listenPointer():void {
+    const plantBanner=fieldBanner(deps);
     lifetime.listen<PointerEvent>($('battlefield'),'pointerdown',e=>{
      if(!e.isPrimary||e.button!==0){inputState.battlefieldPointer=null;return;}
      inputState.battlefieldPointer={id:e.pointerId,x:e.clientX,y:e.clientY};
@@ -206,9 +225,16 @@ export function installListeners(deps: ListenersDeps): void {
     lifetime.listen<PointerEvent>($('battlefield'),'pointercancel',()=>{inputState.battlefieldPointer=null;});
     lifetime.listen<PointerEvent>($('battlefield'),'pointerup',e=>{
      const start=inputState.battlefieldPointer;inputState.battlefieldPointer=null;
-     if(root!.dataset.fieldMode==='field'){fieldControls.clear();return;}
-     if(!start||!e.isPrimary||e.pointerId!==start.id||!ports.navState.entryEntered||ports.navState.modal||ports.navState.activeTab!=='battle'||ports.sessionState.game.state.phase!=='running'||ports.sessionState.game.state.paused||!ports.playable())return;
+     const live=!!start&&e.isPrimary&&e.pointerId===start.id&&ports.navState.entryEntered&&!ports.navState.modal&&ports.navState.activeTab==='battle'&&ports.sessionState.game.state.phase==='running'&&!ports.sessionState.game.state.paused&&ports.playable();
      const rect=$('battlefield').getBoundingClientRect();
+     if(root!.dataset.fieldMode==='field'){
+      // An open tactical choice closes first; otherwise the tap plants the banner (fieldTapOrder).
+      if(fieldControls.isOpen()){fieldControls.clear();return;}
+      const order=live?fieldTapOrder({startX:start!.x,startY:start!.y,endX:e.clientX,endY:e.clientY},{left:rect.left,top:rect.top,width:rect.width,height:rect.height}):null;
+      if(order)plantBanner(order);
+      return;
+     }
+     if(!live||!start)return;
      const order=battlefieldOrderFromGesture({startX:start.x,startY:start.y,endX:e.clientX,endY:e.clientY},{left:rect.left,top:rect.top,width:rect.width,height:rect.height});
      if(order)ports.action({type:'order',order});
     });

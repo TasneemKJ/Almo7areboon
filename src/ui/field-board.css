@@ -138,3 +138,10 @@ html[lang="en"] #app[data-field-mode="field"][data-entry="play"] .deployment .un
 /* While the banner's Hold/Advance plates show, the camp's own sign steps back: they share a row on a phone
    (iOS QA: the Hold plate covered "Gather"). Clash Royale likewise quiets other labels mid-drag. */
 body:has(.field-banner.hinting,.field-banner.dragging) #field-standard .world-target-name{opacity:.12;transition:opacity .15s}
+/* A field tap without momentum (listeners.ts fieldBanner): the banner strains toward the tapped side and its plate says what is missing. */
+.field-banner.wanting[data-intent="advance"]{--lean:6deg}.field-banner.wanting[data-intent="hold"]{--lean:-4deg}
+.field-banner.wanting .banner-carry{animation:banner-want .7s ease-out}
+.field-banner.wanting[data-intent="hold"] .banner-carry{animation-name:banner-want-back}
+@keyframes banner-want{0%{translate:0}40%{translate:7px}100%{translate:0}}
+@keyframes banner-want-back{0%{translate:0}40%{translate:-6px}100%{translate:0}}
+[data-motion=reduced] .field-banner.wanting .banner-carry{animation:none}
