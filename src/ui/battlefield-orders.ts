@@ -1,4 +1,5 @@
 import type { BattleOrder } from '../game/battle-orders.ts';
+import { arenaLayout } from '../view/visual-theme.ts';
 
 export const DIRECT_ORDER_EDGE_FRACTION = .30;
 export const DIRECT_ORDER_MAX_TRAVEL = 18;
@@ -50,4 +51,9 @@ export function fieldTapOrder(
  const right=bounds.left+bounds.width,bottom=bounds.top+bounds.height;
  if(gesture.endX<bounds.left||gesture.endX>right||gesture.endY<bounds.top||gesture.endY>bottom)return null;
  return (gesture.endX-bounds.left)/bounds.width>=.5?'advance':'hold';
+}
+
+/** Where a tap hangs a dusk-raid lamp: the field's simulation x under the finger (the field is drawn at .45 of it). */
+export function duskLampX(offsetX:number,width:number,height:number):number {
+ return offsetX/(.45*arenaLayout(width,height).scale);
 }

@@ -25,7 +25,7 @@ test('while subscribed the card offers Manage subscription instead of the plans'
   const html = lamplighterHtml(store({ lamplighterYearly: true }));
   assert.match(html, /data-command="manage-subscriptions"/);
   assert.doesNotMatch(html, /buy-lamplighter-/);
-  assert.match(lamplighterStatus(store({ lamplighterYearly: true })), /lanterns lit at your gate/);
+  assert.match(lamplighterStatus(store({ lamplighterYearly: true })), /wall lamps each dusk/);
   for (const status of ['buying', 'pending', 'failed', 'unavailable', 'nothing']) assert.ok(lamplighterStatus(store({}, status)).length > 10, status);
 });
 

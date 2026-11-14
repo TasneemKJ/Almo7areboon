@@ -54,3 +54,14 @@
 .camp-place-worked .camp-place-art{animation:camp-worked .6s ease-out}
 @keyframes camp-worked{0%{transform:translateY(0)}35%{transform:translateY(-5px)}100%{transform:translateY(0)}}
 @media(orientation:landscape) and (max-height:540px) and (min-width:600px){.camp-counsel-act,.camp-counsel-act:active{align-self:start;transform:none}.camp-counsel-act-company{grid-area:1/3}}
+/* The wall lamps (camp-screen.ts campDuskHtml): three lanterns on the village wall; lit, they open today's dusk raid. */
+.camp-dusk{position:absolute;z-index:2;top:31%;inset-inline-end:4%;min-width:120px;min-height:88px;padding:0 4px 2px;border:0;border-radius:12px;background:transparent;color:var(--paper);font:inherit;display:flex;flex-direction:column;align-items:center;gap:2px;cursor:pointer;touch-action:manipulation}
+.camp-dusk:focus-visible{outline:3px solid var(--gold);outline-offset:2px}
+.camp-dusk-lamps{position:relative;display:flex;gap:8px;align-items:flex-start;padding:0 6px}.camp-dusk-lamps::before{content:"";position:absolute;left:-14px;right:-14px;top:-14px;height:26px;border-bottom:1.5px solid #1d3036;border-radius:0 0 50% 50%;pointer-events:none}
+.camp-dusk-lamp{display:block;width:34px;height:54px;margin-top:-4px}.camp-dusk-lamp:nth-child(2){margin-top:4px}
+.camp-dusk-lamp .camp-lamp{position:static;width:100%;max-width:none;height:100%;animation:none}
+.camp-dusk-lamp:not(.lit) .camp-lamp ellipse{display:none}.camp-dusk-lamp:not(.lit) .camp-lamp rect{fill:#5b5a48}
+.camp-dusk-lit .camp-dusk-lamp .camp-lamp{animation:camp-lamp-sway 3.6s ease-in-out infinite}.camp-dusk-lit .camp-dusk-lamp:nth-child(2) .camp-lamp{animation-delay:-1.2s}.camp-dusk-lit .camp-dusk-lamp:nth-child(3) .camp-lamp{animation-delay:-2.4s}
+.camp-dusk-name{font-size:.75rem;line-height:1.2;font-weight:800;padding:2px 8px;border-radius:7px;background:#102c29c7;text-shadow:0 1px 3px #102c29;white-space:nowrap}
+.camp-dusk-lit .camp-dusk-name{background:#3a2a12e6;color:#ffdc92;box-shadow:0 0 0 1.5px #c7a773}
+@media(orientation:landscape) and (max-height:540px) and (min-width:600px){.camp-dusk{top:22%}}

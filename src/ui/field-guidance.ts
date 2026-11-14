@@ -10,6 +10,7 @@ export {fieldAnnouncement} from './field-announcement.ts';
 /** Preserve the canonical decision priority, with one physical instruction owner. */
 export function fieldGuidance(game:Game):string {
  const p=game.profile,s=game.state;
+ if(s.dusk&&s.phase==='ready')return tr(`Tap the field to hang a lamp (${s.dusk.lamps.length+1} of 3). Raiders show only in their light.`,`انقر على الساحة لتعلّق قنديلاً (${s.dusk.lamps.length+1} من 3). لا يظهر المغيرون إلا في نوره.`);
  if(s.phase!=='running')return '';
  const status=game.deploymentStatus(0),support=skillCue(p,s,'food',game.canUseSkill('food')).label.split(' · ')[0];
  const hint=physicalFieldCue(p,s,game.waveStatus().preview,status,support);

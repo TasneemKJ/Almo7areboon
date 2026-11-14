@@ -3,6 +3,7 @@ import type {Profile,UnitKind} from '../game/types.ts';
 import {ERAS,baseUpgradeCost,dailyReward,foodRate,foodUpgradeCost,unlockCost} from '../game/data.ts';
 import {CAPTAINS,preparationAvailable,routeDefinition} from '../game/chronicle.ts';
 import {legacyEffects} from '../game/prestige.ts';
+import {duskAvailable} from '../game/dusk-raid.ts';
 import {campGateImage,campLampIllustration,journalIllustration,storehouseIllustration} from '../view/camp-illustrations.ts';
 import {litCounsel,type CampCounsel} from '../game/counsel.ts';
 import {unitPortrait} from '../view/unit-illustrations.ts';
@@ -40,7 +41,18 @@ export function counselActLabel(p:Readonly<Profile>,counsel:CampCounsel):string 
  const name=unitPresentationName(p.age,counsel.kind);
  return `${tr(`Invite the ${name}`,`ادعُ ${name}`)} · ${coins(unlockCost(counsel.kind,p))}`;
 }
-export function campRootHtml(p:Readonly<Profile>,day?:number):string {
+/**
+ * The wall lamps (DESIGN.md #51, game/dusk-raid.ts): after the first victory three lanterns hang on the village wall. Lit,
+ * they open today's dusk raid; unlit in the app, they open the Lamplighter's card. A world object, never the primary.
+ */
+export function campDuskHtml(p:Readonly<Profile>,day:number|undefined,store:{lit:boolean;inApp:boolean}):string {
+ if(day===undefined||p.wins<1)return '';
+ const lamps=(lit:boolean)=>`<span class="camp-dusk-lamps" aria-hidden="true">${[0,1,2].map(()=>`<i class="camp-dusk-lamp${lit?' lit':''}">${campLampIllustration()}</i>`).join('')}</span>`;
+ if(duskAvailable(p,day,store.lit))return `<button class="camp-dusk camp-dusk-lit" data-command="camp-dusk" aria-label="${tr('Dusk raid. Hang three lamps on the field; raiders show only in their light. It earns nothing; it is a different fight.','غارة الغسق. علّق ثلاثة قناديل في الساحة، فلا يظهر المغيرون إلا في نورها. لا تكسب منها شيئاً، إنّما هي قتالٌ آخر.')}">${lamps(true)}<span class="camp-dusk-name">${tr('Dusk raid','غارة الغسق')}</span></button>`;
+ if(store.inApp&&!store.lit)return `<button class="camp-dusk" data-command="lamplighter" aria-label="${tr('The wall lamps. The Lamplighter lights them each dusk.','قناديل السور. يُشعلها مُشعِل القناديل كلّ غروب.')}">${lamps(false)}<span class="camp-dusk-name">${tr('The wall lamps','قناديل السور')}</span></button>`;
+ return '';
+}
+export function campRootHtml(p:Readonly<Profile>,day?:number,store:{lit:boolean;inApp:boolean}={lit:false,inApp:false}):string {
  const chapter=chapterPresentation(p.age),destination=chapterPresentation(p.enemyAge),route=p.chronicle?.enabled?routeDefinition(p.chronicle.route).name:'';
  // One obvious next action: while a place is worth a visit, a village lamp hangs over it, the others step back and the
  // journal's goal line waits (progressive reveal; see DESIGN.md "Counsel").
@@ -49,7 +61,7 @@ export function campRootHtml(p:Readonly<Profile>,day?:number):string {
  const counsel=litCounsel(p),lit=counsel?.station??null;
  const goal=day===undefined||(lit&&!dailyReward(p,day).available)?'':campGoalText(p,day);
  const place=(id:CampStation,name:string,art:string,detail:string)=>`<button class="camp-place camp-place-${id}${id===lit?' camp-place-counsel':''}" data-camp-station="${id}" aria-label="${name}. ${id===lit?`${tr('Lit for you now','أُضيء لك الآن')}. `:''}${detail}">${id===lit?campLampIllustration():''}<span class="camp-place-art" aria-hidden="true">${art}</span><span class="camp-place-name">${name}</span></button>`;
- return `<div class="camp-scene"><div class="camp-ground"><img class="camp-landscape" src="${chapterLandscape(p.age)}" alt=""/><header class="camp-heading"><p class="eyebrow">${tr('THE COMPANY AT REST','السريّة في استراحة')}</p><h1>${chapter.title}</h1><p>${tr('Destination','الوجهة')}: ${destination.title}${route?` · ${route}`:''}</p>${goal?`<p class="camp-goal">${escape(goal)}</p>`:''}</header><div class="camp-places"${lit?` data-counsel="${lit}"`:''} aria-label="${tr('Places in Camp','أماكن المخيّم')}">${place('storehouse',tr('Storehouse','المخزن'),storehouseIllustration(p.foodLevel),tr('Improve food or pack bread','حسّن المؤونة أو احزم الخبز'))}${place('gate',tr('Home gate','بوّابة الديار'),`<img src="${campGateImage(p.age)}" alt=""/>${p.baseLevel?'<i class="camp-gate-brace"></i>':''}`,tr('Strengthen the gate or prepare repairs','قوِّ البوّابة أو جهّز الترميم'))}${place('company',tr('Your company','سريّتك'),companyArt(p),tr('Meet your troops and prepare your company','تعرّف إلى جنودك وجهّز سريّتك'))}${place('journal',tr('Journal','الدفتر'),journalIllustration(),tr('Choose a battle or read company records','اختر معركة أو اقرأ سجلّات السريّة'))}${counsel?`<button class="camp-counsel-act camp-counsel-act-${counsel.station}" data-command="camp-counsel-act" data-primary="true">${counselActLabel(p,counsel)}</button>`:''}</div></div></div><footer class="camp-footer"><p>${tr('Battle starts when you choose Battle.','لا تبدأ المعركة إلا حين تختار «المعركة».')}</p><div><button class="big-button green" data-command="camp-battle"${counsel?'':' data-primary="true"'}>${tr('Battle','المعركة')}</button><button class="big-button secondary" data-command="camp-home">${tr('Home','الرئيسية')}</button></div></footer>`;
+ return `<div class="camp-scene"><div class="camp-ground"><img class="camp-landscape" src="${chapterLandscape(p.age)}" alt=""/>${campDuskHtml(p,day,store)}<header class="camp-heading"><p class="eyebrow">${tr('THE COMPANY AT REST','السريّة في استراحة')}</p><h1>${chapter.title}</h1><p>${tr('Destination','الوجهة')}: ${destination.title}${route?` · ${route}`:''}</p>${goal?`<p class="camp-goal">${escape(goal)}</p>`:''}</header><div class="camp-places"${lit?` data-counsel="${lit}"`:''} aria-label="${tr('Places in Camp','أماكن المخيّم')}">${place('storehouse',tr('Storehouse','المخزن'),storehouseIllustration(p.foodLevel),tr('Improve food or pack bread','حسّن المؤونة أو احزم الخبز'))}${place('gate',tr('Home gate','بوّابة الديار'),`<img src="${campGateImage(p.age)}" alt=""/>${p.baseLevel?'<i class="camp-gate-brace"></i>':''}`,tr('Strengthen the gate or prepare repairs','قوِّ البوّابة أو جهّز الترميم'))}${place('company',tr('Your company','سريّتك'),companyArt(p),tr('Meet your troops and prepare your company','تعرّف إلى جنودك وجهّز سريّتك'))}${place('journal',tr('Journal','الدفتر'),journalIllustration(),tr('Choose a battle or read company records','اختر معركة أو اقرأ سجلّات السريّة'))}${counsel?`<button class="camp-counsel-act camp-counsel-act-${counsel.station}" data-command="camp-counsel-act" data-primary="true">${counselActLabel(p,counsel)}</button>`:''}</div></div></div><footer class="camp-footer"><p>${tr('Battle starts when you choose Battle.','لا تبدأ المعركة إلا حين تختار «المعركة».')}</p><div><button class="big-button green" data-command="camp-battle"${counsel?'':' data-primary="true"'}>${tr('Battle','المعركة')}</button><button class="big-button secondary" data-command="camp-home">${tr('Home','الرئيسية')}</button></div></footer>`;
 }
 function preparationHtml(p:Readonly<Profile>,focus:'storehouse'|'gate'):string {
  const c=p.chronicle,preparation=focus==='storehouse'?'bread':'repair';

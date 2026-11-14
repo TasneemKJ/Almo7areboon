@@ -35,12 +35,30 @@ export interface LanternGraphics {
   lineBetween(x1: number, y1: number, x2: number, y2: number): unknown;
 }
 
+/**
+ * The dusk raid's three lamps (game/dusk-raid.ts), each on a short staff planted where the player hung it. The light
+ * they cast on the raiders is game/dusk-raid.ts duskSight; this paints only the lamps.
+ */
+export function paintDuskLamps(body: LanternGraphics, glow: LanternGraphics, lamps: readonly number[], groundY: number, time: number, reduced: boolean): void {
+  for (const [index, simX] of lamps.entries()) {
+    const x = simX * .45, top = groundY - 44, breathe = reduced ? 1 : .88 + .12 * Math.sin(time * 2.3 + index * 1.9);
+    body.lineStyle(2.4, INK, .95); body.lineBetween(x, groundY + 4, x, top - 20);
+    for (const [radius, alpha] of [[70, .07], [44, .1]] as const) { glow.fillStyle(HALO, alpha * breathe); glow.fillCircle(x, groundY - 8, radius); }
+    paintLantern(body, glow, { x, y: top, scale: 1.1, lit: 1, glow: breathe });
+  }
+}
+
 const INK = 0x2f3a36, BRASS = 0xc7a773, GLASS_DARK = 0x5b5a48, GLASS = 0xffdc92, HALO = 0xffd18a;
 
 /** Paints the lanterns into `body` (normal blend) and their halos into `glow` (additive). */
 export function paintGateLanterns(body: LanternGraphics, glow: LanternGraphics, plan: readonly GateLantern[]): void {
   body.clear(); glow.clear();
-  for (const l of plan) {
+  for (const l of plan) paintLantern(body, glow, l);
+}
+
+/** One lantern in the scenery's motif: ink hanger, brass body, warm glass and its halo. */
+export function paintLantern(body: LanternGraphics, glow: LanternGraphics, l: GateLantern): void {
+  {
     const s = l.scale;
     for (const [radius, alpha] of [[34, .10], [22, .16], [12, .24]] as const) {
       glow.fillStyle(HALO, alpha * l.glow); glow.fillCircle(l.x, l.y, radius * s);

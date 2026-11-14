@@ -9,7 +9,8 @@ import { companyFilmHtml, mountCompanyFilm } from '../ui/company-film.ts';
 import { questRecords } from '../ui/quest-records.ts';
 import { litCounsel } from '../game/counsel.ts';
 import { storyFollowUp } from '../ui/story-flow.ts';
-import { battlefieldOrderFromGesture, fieldTapOrder } from '../ui/battlefield-orders.ts';
+import { battlefieldOrderFromGesture, DIRECT_ORDER_MAX_TRAVEL, duskLampX, fieldTapOrder } from '../ui/battlefield-orders.ts';
+import { DUSK_LAMPS } from '../game/dusk-raid.ts';
 import { bannerDragIntent, bannerDragOffset, bannerOrderFromDrag } from '../ui/banner-gesture.ts';
 import { journeyScreenHtml } from '../ui/journey-screen.ts';
 import { chronicleScreenHtml, chronicleActionFromData } from '../ui/chronicle-screen.ts';
@@ -228,6 +229,14 @@ export function installListeners(deps: ListenersDeps): void {
      const start=inputState.battlefieldPointer;inputState.battlefieldPointer=null;
      const live=!!start&&e.isPrimary&&e.pointerId===start.id&&ports.navState.entryEntered&&!ports.navState.modal&&ports.navState.activeTab==='battle'&&ports.sessionState.game.state.phase==='running'&&!ports.sessionState.game.state.paused&&ports.playable();
      const rect=$('battlefield').getBoundingClientRect();
+     const s=ports.sessionState.game.state;
+     if(root!.dataset.fieldMode==='field'&&s.dusk&&s.phase==='ready'){
+      // The dusk raid waits while three lamps are hung; the third starts it (game/dusk-raid.ts).
+      if(!start||!e.isPrimary||e.pointerId!==start.id||!ports.navState.entryEntered||ports.navState.modal||!ports.playable()||Math.hypot(e.clientX-start.x,e.clientY-start.y)>DIRECT_ORDER_MAX_TRAVEL)return;
+      const world=$('world'),box=world.getBoundingClientRect();
+      if(ports.action({type:'dusk-lamp',x:duskLampX(e.clientX-box.left,world.clientWidth,world.clientHeight)})){pressFeedback({sound:ports.sessionState.game.profile.sound,kind:'press'});if(s.dusk.lamps.length>=DUSK_LAMPS){ports.sessionState.manualPaused=false;ports.action({type:'start'});}ports.update(true);}
+      return;
+     }
      if(root!.dataset.fieldMode==='field'){
       // An open tactical choice closes first; otherwise the tap plants the banner (fieldTapOrder).
       if(fieldControls.isOpen()){fieldControls.clear();return;}

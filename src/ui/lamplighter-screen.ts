@@ -6,7 +6,7 @@ type Store = Pick<TasBridge, 'inApp' | 'owned' | 'status' | 'prices'>;
 
 /** The one line under the buttons for the store's state. */
 export function lamplighterStatus(bridge: Store): string {
-  if (lamplighterPlan(bridge)) return tr('The Lamplighter keeps the lanterns lit at your gate.', 'مُشعِل القناديل يُبقي القناديل مضاءة عند بوّابتك.');
+  if (lamplighterPlan(bridge)) return tr('The Lamplighter lights the wall lamps each dusk and keeps the lanterns lit at your gate.', 'يُشعل مُشعِل القناديل قناديل السور كلّ غروب، ويُبقي القناديل مضاءة عند بوّابتك.');
   switch (bridge.status) {
     case 'buying': return tr('Opening the App Store…', 'جارٍ فتح متجر التطبيقات…');
     case 'pending': return tr('Waiting for approval. He joins you as soon as it is approved.', 'بانتظار الموافقة. ينضمّ إليك حالما تتمّ الموافقة.');
@@ -18,9 +18,11 @@ export function lamplighterStatus(bridge: Store): string {
 }
 
 /**
- * The Lamplighter (مُشعِل القناديل): an auto-renewing subscription, monthly or yearly, whose one benefit is presence.
- * An old lamplighter lights a row of lanterns at the player's gate in every battle, warming the dusk field. They have
- * no hitbox and change no number: no food, coins, gems, speed or strength. Opened from Settings in the app only.
+ * The Lamplighter (مُشعِل القناديل): an auto-renewing subscription, monthly or yearly. Each dusk he lights the village
+ * wall's lamps, which opens one extra battle that day, the dusk raid (game/dusk-raid.ts, DESIGN.md #51): the player hangs
+ * three lamps and raiders show only in their light. It is a different fight, never a stronger army, and it pays nothing.
+ * He also keeps lanterns lit at the gate in every battle. Without him a player gets one raid as a sample. Opened from
+ * Settings, or from the unlit wall lamps in Camp, in the app only.
  * The card says what he does, both lengths and prices, and how renewal and cancelling work before anything is paid
  * (App Review 3.1.2), with Restore, Manage subscription, Terms and Privacy on the same card.
  */
@@ -32,9 +34,10 @@ export function lamplighterHtml(bridge: Store): string {
   const plan = (command: string, label: string, price: string, per: string, aria: string, cls: string) =>
     `<button class="big-button ${cls}" data-command="${command}" aria-label="${aria}" ${busy ? 'disabled' : ''}>${label}${price ? ` · ${n(price)} ${per}` : ''}</button>`;
   const items = [
-    tr('He lights the lanterns at your gate before every battle', 'يُشعل القناديل عند بوّابتك قبل كلّ معركة'),
-    tr('Their light warms the dusk field in every chapter', 'ونورها يدفّئ ساحة الغروب في كلّ فصل'),
-    tr('He does not fight, and gives no food, coins or strength. The light is his gift.', 'لا يقاتل، ولا يعطي مؤونةً ولا نقوداً ولا قوّة. هديّته النور.'),
+    tr('Each dusk he lights the lamps on the village wall, and one more battle comes out of the dark: the dusk raid, once a day', 'كلّ غروب يُشعل قناديل سور القرية، فتخرج من الظلام معركةٌ أخرى: غارة الغسق، مرّةً كلّ يوم'),
+    tr('You hang three lamps on the field, and the raiders show only in their light. A different fight, not a stronger army', 'تعلّق ثلاثة قناديل في الساحة، فلا يظهر المغيرون إلا في نورها. قتالٌ آخر، لا جيشٌ أقوى'),
+    tr('He also keeps the lanterns lit at your gate in every battle', 'ويُبقي القناديل مضاءة عند بوّابتك في كلّ معركة'),
+    tr('He does not fight, and gives no food, coins or strength; the raid earns none either. Without him, the wall lamps are lit once, as a sample.', 'لا يقاتل، ولا يعطي مؤونةً ولا نقوداً ولا قوّة، ولا تكسب الغارة شيئاً منها. ومن دونه تُشعَل قناديل السور مرّةً واحدة للتجربة.'),
   ];
   const actions = live
     ? `<button class="big-button green" data-command="close">${tr('Onward', 'إلى الأمام')}</button>
@@ -46,7 +49,7 @@ export function lamplighterHtml(bridge: Store): string {
  <button class="big-button secondary" data-command="restore-purchases" ${busy ? 'disabled' : ''}>${tr('Restore purchases', 'استعادة المشتريات')}</button>
  <button class="big-button secondary" data-command="close">${tr('Not now', 'ليس الآن')}</button>`;
   return `<span class="eyebrow">${tr('THE LAMPLIGHTER', 'مُشعِل القناديل')}</span><h2 id="dialog-title">${tr('A lamp for the road', 'قنديلٌ للطريق')}</h2>
- <p>${tr('At dusk an old lamplighter walks the valley. Subscribe, and he keeps the lanterns lit at your gate.', 'عند الغروب يمشي مُشعِل قناديل عجوز في الوادي. اشترك، فيُبقي القناديل مضاءة عند بوّابتك.')}</p>
+ <p>${tr('At dusk an old lamplighter walks the valley. Subscribe, and he lights the wall lamps for a raid each evening.', 'عند الغروب يمشي مُشعِل قناديل عجوز في الوادي. اشترك، فيُشعل قناديل السور لغارةٍ كلّ مساء.')}</p>
  <ul class="full-journey-list">${items.map(item => `<li>${item}</li>`).join('')}</ul>
  <p id="lamplighter-status" class="save-note" role="status">${lamplighterStatus(bridge)}</p>
  <div class="full-journey-actions">${actions}</div>

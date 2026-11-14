@@ -4,6 +4,8 @@ import { planChronicleAction } from './chronicle-actions.ts';
 import { createChronicleBattle, chronicleStartingFood, chronicleGateFactor, chronicleSpawn, toggleRally, chronicleDamage, chronicleBaseDamage, chronicleAfterHit, chronicleSkill, captainSkill, chronicleTick, chronicleOutcome, type ChronicleHost } from './chronicle-combat.ts';
 import { isLegacyChoice, legacyEffects, prestigePreview } from './prestige.ts';
 import { advanceStatus, canRetry, createMastery, masteryAward } from './mastery.ts';
+import { spawnSpot } from './unit-movement.ts';
+import { beginDusk, DUSK_ACTIONS, duskEncounter, placeDuskLamp, settleDusk } from './dusk-raid.ts';
 import { companyEncounter, encounterForAge, rallyLevel, rallyPower, RALLY_FOOD, scheduledSpawns, type Encounter, type ScheduledSpawn, type WaveStatus } from './encounters.ts';
 import { resolveRoleHit, sweepTarget } from './role-traits.ts';
 import { battleStats } from './statistics.ts';
@@ -37,6 +39,7 @@ export class Game implements GamePort {
 
   /** The narrow view of this game that the economy actions (unlock, upgrade, evolve, cards, rewards) work through. */
   private readonly economy: EconomyPort;
+  private duskSnapshot = ''; // the profile when the wall lamps were lit (dusk-raid.ts settleDusk restores it)
 
   constructor(profile: Profile = defaultProfile()) {
     const self = this;
@@ -79,7 +82,7 @@ export class Game implements GamePort {
     return { orders: createBattleOrders(), chronicle: createChronicleBattle(this.profile), stats: battleStats(), phase: 'ready', paused: false, time: 0, food: Math.min(99,legacyEffects(this.profile.legacy).startingFood+chronicleStartingFood(this.profile)+(rallyLevel(this.profile)?RALLY_FOOD:0)), playerHp, playerMaxHp: playerHp, enemyHp, enemyMaxHp: enemyHp, units: [], wave: 0, totalWaves: this.encounter.waves.length, earned: 0, freezeUntil: 0, skillsUsed: [] };
   }
 
-  private buildEncounter(): void { this.encounter = companyEncounter(this.profile, chronicleEncounter(encounterForAge(this.profile.enemyAge),this.profile.chronicle!,this.profile.enemyAge)); this.schedule = scheduledSpawns(this.encounter); if (this.state) this.state.totalWaves = this.encounter.waves.length; }
+  private buildEncounter(): void { const base = companyEncounter(this.profile, chronicleEncounter(encounterForAge(this.profile.enemyAge),this.profile.chronicle!,this.profile.enemyAge)); this.encounter = this.state?.dusk ? duskEncounter(base) : base; this.schedule = scheduledSpawns(this.encounter); if (this.state) this.state.totalWaves = this.encounter.waves.length; }
   private baseHealth(): number { return Math.round(180 * 1.65 ** this.profile.age * (1 + this.profile.baseLevel * 0.4) * this.bonuses().base * legacyEffects(this.profile.legacy).gateFactor * chronicleGateFactor(this.profile)); }
   private refreshBaseHealth(): void {
     const nextMaxHp = this.baseHealth();
@@ -104,10 +107,11 @@ export class Game implements GamePort {
       if(plan.reset){this.profile.pendingVictory=null;this.state=this.newBattle();}
       return true;
     }
-    if(this.profile.chronicle?.expedition&&['next','prestige','select-battle','evolve'].includes(action.type))return false;
+    if((this.profile.chronicle?.expedition||this.state.dusk)&&['next','prestige','select-battle','evolve'].includes(action.type))return false;
+    if(this.state.dusk&&!this.state.dusk.settled&&!DUSK_ACTIONS.has(action.type))return false;
     if (!Object.hasOwn(Game.ACTION_HANDLERS, action.type)) return false;
     // Each handler narrows its own action type; the table key guarantees the match.
-    return Game.ACTION_HANDLERS[action.type]!(this, action as never);
+    const changed = Game.ACTION_HANDLERS[action.type]!(this, action as never); settleDusk(this.profile, this.state, this.duskSnapshot); return changed;
   }
 
   /** One handler per action type; each returns whether it changed anything. */
@@ -127,6 +131,8 @@ export class Game implements GamePort {
     'upgrade': (game, action: ActionOf<'upgrade'>) => upgradeBase(game.economy, action),
     'evolve': (game) => evolve(game.economy),
     'summon': (game, action: ActionOf<'summon'>) => summonCards(game.economy, action),
+    'dusk': (game, action: ActionOf<'dusk'>) => { if (!beginDusk(game.profile, game.state, action.day, action.lit)) return false; game.duskSnapshot = JSON.stringify(game.profile); game.buildEncounter(); return true; },
+    'dusk-lamp': (game, action: ActionOf<'dusk-lamp'>) => placeDuskLamp(game.state, action.x),
     'daily': (game, action: ActionOf<'daily'>) => claimDaily(game.economy, action),
     'weekly-sync': (game, action: ActionOf<'weekly-sync'>) => syncWeek(game.economy, action),
     'weekly': (game, action: ActionOf<'weekly'>) => claimWeekly(game.economy, action),
@@ -170,7 +176,7 @@ export class Game implements GamePort {
     this.state.food -= ERAS[this.profile.age].units[action.kind].cost;
     chronicleSpawn(this.profile,this.state,this.state.units[this.state.units.length-1]);
     earnMomentum(this.state,12);
-    this.profile.deployed++;
+    if (!this.state.dusk) this.profile.deployed++;
     this.state.stats.deployed++;
     this.state.stats.deployedByKind[action.kind]++;
     this.state.stats.foodSpent += ERAS[this.profile.age].units[action.kind].cost;
@@ -183,7 +189,7 @@ export class Game implements GamePort {
   }
 
   private doRetry(action: ActionOf<'retry'>): boolean {
-    if (!canRetry(this.profile,this.state)) return false;
+    if (!this.state.dusk?.settled && !canRetry(this.profile,this.state)) return false;
     this.profile.pendingVictory = null;
     this.state = this.newBattle();
     return true;
@@ -245,25 +251,14 @@ export class Game implements GamePort {
     if (this.state.phase !== 'running') return status('ready');
     if (this.state.paused) return status('paused');
     if (this.state.units.filter(unit => unit.side === 'player' && unit.hp > 0).length >= 60) return status('capacity');
-    if (!this.findSpawnSpot('player')) return status('blocked');
+    if (!spawnSpot(this.state.units, 'player', this.playerLane)) return status('blocked');
     const missing = Math.max(0, ERAS[this.profile.age].units[kind].cost - this.state.food);
     return missing > 0 ? status('food', missing, missing / foodRate(this.profile)) : status('available');
   }
 
-  private findSpawnSpot(side: Side): { lane: number; x: number } | null {
-    const nextLane = side === 'player' ? this.playerLane : this.enemyLane;
-    for (let attempt = 0; attempt < 3; attempt++) {
-      const lane = (nextLane + attempt) % 3;
-      const sameLane = this.state.units.filter(unit => unit.side === side && unit.lane === lane && unit.hp > 0);
-      const x = side === 'player' ? Math.min(140, ...sameLane.map(unit => unit.x - 24)) : Math.max(860, ...sameLane.map(unit => unit.x + 24));
-      if (side === 'enemy' || x >= 92) return { lane, x };
-    }
-    return null;
-  }
-
   private spawn(side: Side, kind: UnitKind): boolean {
     if (this.state.units.filter(unit => unit.side === side && unit.hp > 0).length >= 60) return false;
-    const spot = this.findSpawnSpot(side);
+    const spot = spawnSpot(this.state.units, side, side === 'player' ? this.playerLane : this.enemyLane);
     if (!spot) return false;
     const { lane, x } = spot;
     const age = side === 'player' ? this.profile.age : this.profile.enemyAge;
@@ -318,6 +313,7 @@ export class Game implements GamePort {
       this.tickBonuses = cardBonus(this.profile);
       try { this.tick(FIXED_STEP); } finally { this.tickBonuses = null; }
     }
+    settleDusk(this.profile, this.state, this.duskSnapshot);
   }
 
   private tick(dt: number): void {
@@ -405,7 +401,7 @@ export class Game implements GamePort {
       this.events.push({ type: 'death', x: unit.x, lane: unit.lane, side: unit.side, kind: unit.kind });
       if (unit.side === 'enemy') {
         earnMomentum(this.state,8);
-        this.profile.kills++;
+        if (!this.state.dusk) this.profile.kills++;
         this.state.stats.kills++;
         this.reward(Math.round((12 + unit.kind * 9) * (1 + unit.age * 0.5)), unit.x);
       }
@@ -442,7 +438,7 @@ export class Game implements GamePort {
   }
 
   private reward(coins: number, x?: number): void {
-    if (!Number.isFinite(coins) || coins <= 0) return;
+    if (!Number.isFinite(coins) || coins <= 0 || this.state.dusk) return;
     const scaled = coins * eraEconomyScale(this.profile.enemyAge) * this.bonuses().coins + this.rewardRemainder;
     const whole = Math.floor(scaled + 1e-9);
     this.rewardRemainder = Math.max(0, scaled - whole);

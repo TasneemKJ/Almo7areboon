@@ -4,7 +4,7 @@ export type CampFocus=CampStation|{readonly recruit:UnitKind};
 export type CampOwner={kind:'root'}|{kind:'focus';focus:CampFocus;returnTarget:CampStation}|{kind:'advanced';returnTarget:CampStation};
 /** Presentation admission is deliberately narrower than canonical transactions. */
 export function canOwnCamp(profile:Readonly<Profile>,state:Readonly<BattleState>):boolean {
- return state.phase==='ready'&&!profile.pendingVictory;
+ return state.phase==='ready'&&!profile.pendingVictory&&!state.dusk;
 }
 export function isCampStation(value:string|undefined):value is CampStation {
  return value!==undefined&&['storehouse','gate','company','journal'].includes(value);

@@ -20,7 +20,7 @@ import { temporarySessionText } from '../ui/save-session-screen.ts';
 import type { UnitKind } from '../game/types.ts';
 import { chapterLandscape } from '../ui/chapter-presentation.ts';
 import { entryCopy, hasPriorPlay, entrySecondary, journeyPathHtml } from '../ui/entry-screen.ts';
-import { ownsFullJourney } from '../ui/app-bridge.ts';
+import { almoApp, lamplighterWalks, ownsFullJourney } from '../ui/app-bridge.ts';
 import { preferencesHtml, saveRecoveryHtml } from '../ui/preferences-screen.ts';
 import { evolutionScreenHtml } from '../ui/evolution-screen.ts';
 import { icon } from '../view/icons.ts';
@@ -219,8 +219,8 @@ export function createNavigation(deps: NavigationDeps) {
     // that dialog owns its own buttons, exactly as when a dialog opens over Camp (showModal).
     navState.campOwner??=navState.modal&&navState.modal!=='camp-focus'&&navState.modal!=='session'?{kind:'advanced',returnTarget:'journal'}:{kind:'root'};
     if(navState.campOwner.kind==='advanced'&&!navState.modal&&navState.activeTab==='battle')navState.campOwner={kind:'root'};
-    const p=ports.sessionState.game.profile,day=localDay(),key=JSON.stringify([p.age,p.enemyAge,p.foodLevel,p.baseLevel,p.unlocked,p.chronicle?.route,campGoalText(p,day),p.coins]);
-    if(key!==navState.campRenderKey){navState.campRenderKey=key;htmlIfChanged($('camp-view'),campRootHtml(p,day));}
+    const p=ports.sessionState.game.profile,day=localDay(),store={lit:lamplighterWalks(),inApp:almoApp.inApp},key=JSON.stringify([p.age,p.enemyAge,p.foodLevel,p.baseLevel,p.unlocked,p.chronicle?.route,campGoalText(p,day),p.coins,p.dusk,p.wins>0,store]);
+    if(key!==navState.campRenderKey){navState.campRenderKey=key;htmlIfChanged($('camp-view'),campRootHtml(p,day,store));}
     $('camp-view').hidden=navState.activeTab!=='battle';$('camp-view').inert=navState.modal!==null||navState.activeTab!=='battle';
     $('battle-view').inert=true;
     root!.querySelectorAll<HTMLElement>('.resources,.bottom-nav').forEach(node=>{node.inert=true;});
@@ -250,6 +250,11 @@ export function createNavigation(deps: NavigationDeps) {
     if(place){place.classList.remove('camp-place-worked');void place.offsetWidth;place.classList.add('camp-place-worked');}
     root!.querySelector<HTMLElement>('#camp-view [data-primary="true"]')?.focus({preventScroll:true});
   }
+  /** The lit wall lamps: today's dusk raid opens on the field, which waits in its ready phase while three lamps are hung. */
+  function startDusk(){
+    if(navState.modal||!ports.action({type:'dusk',day:localDay(),lit:lamplighterWalks()})||!ports.playable()||navState.modal)return;
+    navState.campOwner=null;root!.dataset.fieldMode='field';switchTab('battle');$('world').focus({preventScroll:true});
+  }
   function returnToCamp(){
     if(!navState.campOwner||!ports.guardAction()||!canOwnCamp(ports.sessionState.game.profile,ports.sessionState.game.state)||navState.modal==='session')return;
     if(navState.campOwner.kind==='focus'&&typeof navState.campOwner.focus==='object'){showCampFocus('company');return;}
@@ -268,6 +273,8 @@ export function createNavigation(deps: NavigationDeps) {
       if(isCampStation(button.dataset.campStation)){showCampFocus(button.dataset.campStation);return true;}
       if(command==='camp-home'){showHome();return true;}
       if(command==='camp-counsel-act'){buyCounsel();return true;}
+      if(command==='lamplighter')return false;
+      if(command==='camp-dusk'){startDusk();return true;}
       if(command==='camp-battle'&&entryReady()&&!navState.modal){ports.sessionState.manualPaused=false;if(ports.action({type:'start'})&&ports.playable()&&navState.modal!=='session'){navState.campOwner=null;root!.dataset.fieldMode='field';switchTab('battle');$('world').focus({preventScroll:true});}return true;}
       return true;
     }

@@ -12,6 +12,8 @@ import {groundEffectDepth} from './ground-effects.ts';
 import {createBaseSprite,createTroopSprite} from './battlefield-sprites.ts';
 import {paintWaveSignal} from './battlefield-wave-signal.ts';
 import {paintFieldCamp} from './battlefield-camp.ts';
+import {paintDuskLamps} from './gate-lanterns.ts';
+import {duskSight} from '../game/dusk-raid.ts';
 import { paintIdleActors, updateTroopViews } from './battlefield-troop-paint.ts';
 import type {ChronicleView} from './chronicle-view.ts';
 import type {WaveArrivalFrame} from './wave-arrival.ts';
@@ -59,6 +61,9 @@ export function createBattlefieldArmy(host:ArmyHost,layers:ArmyLayers,effects:Re
    layers.baseDamage.setDepth(groundY+12.1);
    for(let lane=0;lane<3;lane++)layers.groundFx[lane].clear().setDepth(groundEffectDepth(groundY,lane,host.layout().laneGap));
    updateTroopViews({host,layers,effects,units,sprite,g,h,aftermath,aftermathElapsed,aftermathCounts});
+   // The dusk raid: raiders show only inside lamplight (game/dusk-raid.ts); outside a raid every view is whole.
+   for(const view of units.values())view.body.setAlpha(view.side==='enemy'?duskSight(host.game.state,view.x/.45):1);
+   if(host.game.state.dusk)paintDuskLamps(g,h,host.game.state.dusk.lamps,groundY,host.clock(),host.reduce());
    if(navigator.webdriver)host.canvas().dataset.battlefieldEnemyViews=String([...units.values()].filter(view=>view.side==='enemy').length);
    paintIdleActors(g,idle,host.game.state,host.game.profile,groundY);
    layers.chronicleView.update(host.game.profile,host.game.state,groundY,host.layout().laneGap,host.reduce());

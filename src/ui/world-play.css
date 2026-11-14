@@ -82,3 +82,11 @@
 #app[data-field-mode="camp"] .field-tale{display:none}
 @keyframes field-tale{0%{opacity:0}12%,78%{opacity:1}100%{opacity:0}}
 [data-motion=reduced] .field-tale{animation:none}
+/* The dusk raid (field-controller.ts syncDusk): the field is dark but for a pool of light at each hung lamp. */
+.dusk-veil{position:absolute;inset:0;z-index:2;pointer-events:none;background:linear-gradient(#050c12cc,#07121add 60%,#050c12ee);
+ -webkit-mask-image:radial-gradient(ellipse calc(var(--reach) * 1.05) calc(var(--reach) * .8) at var(--l1) var(--gy),transparent 55%,#000 100%),radial-gradient(ellipse calc(var(--reach) * 1.05) calc(var(--reach) * .8) at var(--l2) var(--gy),transparent 55%,#000 100%),radial-gradient(ellipse calc(var(--reach) * 1.05) calc(var(--reach) * .8) at var(--l3) var(--gy),transparent 55%,#000 100%);
+ mask-image:radial-gradient(ellipse calc(var(--reach) * 1.05) calc(var(--reach) * .8) at var(--l1) var(--gy),transparent 55%,#000 100%),radial-gradient(ellipse calc(var(--reach) * 1.05) calc(var(--reach) * .8) at var(--l2) var(--gy),transparent 55%,#000 100%),radial-gradient(ellipse calc(var(--reach) * 1.05) calc(var(--reach) * .8) at var(--l3) var(--gy),transparent 55%,#000 100%);
+ -webkit-mask-composite:source-in;mask-composite:intersect;transition:opacity .6s}
+.dusk-veil[hidden]{display:none}
+#app[data-field-mode="camp"] .dusk-veil{display:none}
+.field-tale[data-dusk]{animation:none;opacity:1}

@@ -17,6 +17,8 @@ import {storybookArt} from '../view/storybook-art.ts';
 import {secondsShort} from './battle-hud.ts';
 import {tr} from './i18n.ts';
 import {bannerView} from './banner-gesture.ts';
+import {LAMP_REACH,duskSight} from '../game/dusk-raid.ts';
+import {lang} from '../game/locale.ts';
 
 const placeBox=(node:HTMLElement,rect:CampTarget|{x:number;y:number;width:number;height:number})=>{
   const value=`left:${rect.x}px;top:${rect.y}px;width:${rect.width}px;height:${rect.height}px`;
@@ -69,10 +71,25 @@ function syncBanner(node:HTMLElement,rect:CampTarget,s:Game['state'],running:boo
  if(node.getAttribute('style')!==style)node.setAttribute('style',style);
 }
 
+/** The dusk raid's dark: a veil with a pool of light at each hung lamp (game/dusk-raid.ts), and its one line while lamps are hung. */
+export const DUSK_LINE={en:'Lamps do not fight, but they give away whoever creeps in.',ar:'القناديل لا تقاتل، لكنها تفضح من يتسلّل.'} as const;
+function syncDusk(veil:HTMLElement,tale:HTMLElement,s:Game['state'],arena:ReturnType<typeof arenaLayout>):void {
+ const dusk=s.dusk&&(s.phase==='ready'||s.phase==='running')?s.dusk:null;
+ veil.hidden=!dusk;
+ if(dusk){
+  const at=(i:number)=>dusk.lamps[i]===undefined?'-999px':`${(dusk.lamps[i]*.45*arena.scale).toFixed(1)}px`;
+  const style=`--l1:${at(0)};--l2:${at(1)};--l3:${at(2)};--gy:${(arena.groundY*arena.scale).toFixed(1)}px;--reach:${(LAMP_REACH*.45*arena.scale).toFixed(1)}px`;
+  if(veil.getAttribute('style')!==style)veil.setAttribute('style',style);
+ }
+ const telling=!!dusk&&(s.phase==='ready'||s.time<5);
+ if(telling){const line=DUSK_LINE[lang()];textIfChanged(tale,line);tale.dataset.dusk='true';tale.hidden=false;}
+ else if(tale.dataset.dusk){delete tale.dataset.dusk;tale.hidden=true;}
+}
+
 /** Presentation ownership only. Every mutation still goes through main's guarded dispatch. */
 export function createFieldController(root:HTMLElement){
  const find=(id:string)=>root.querySelector<HTMLElement>(`#${id}`)!;
- const world=find('world'),context=find('field-context'),cue=find('field-cue'),food=find('field-food'),announcement=find('field-announcement'),cover=find('field-cover');
+ const veil=find('dusk-veil'),tale=find('field-tale'),world=find('world'),context=find('field-context'),cue=find('field-cue'),food=find('field-food'),announcement=find('field-announcement'),cover=find('field-cover');
  const recruits=Array.from(root.querySelectorAll<HTMLButtonElement>('[data-field-recruit]'));
  const gates=Array.from(root.querySelectorAll<HTMLButtonElement>('[data-field-gate]'));
  const banner=find('field-banner'),standard=find('field-standard') as HTMLButtonElement,supplies=find('field-supplies') as HTMLButtonElement,enemy=find('field-enemy') as HTMLButtonElement;
@@ -108,7 +125,7 @@ export function createFieldController(root:HTMLElement){
    supplies.hidden=!running||s.stats.deployed===0;supplies.setAttribute('aria-label',skillCue(p,s,'food',game.canUseSkill('food')).label);
    const coverTarget=fieldCoverTarget(game,w,h);hideFieldTarget(cover,!coverTarget,pause);
    if(coverTarget)place(cover,coverTarget);
-   const target=typeof selected==='number'?s.units.find(u=>u.id===selected&&u.side==='enemy'&&u.hp>0):s.units.find(u=>u.side==='enemy'&&u.hp>0);
+   const target=typeof selected==='number'?s.units.find(u=>u.id===selected&&u.side==='enemy'&&u.hp>0):s.units.find(u=>u.side==='enemy'&&u.hp>0&&duskSight(s,u.x)>=1);
    enemy.hidden=!running||!target;
    if(target){
     const size=48,x=target.x*.45*arena.scale,y=(arena.groundY+target.lane*arena.laneGap)*arena.scale;
@@ -124,6 +141,7 @@ export function createFieldController(root:HTMLElement){
    context.hidden=selected===null;enemy.classList.toggle('selected',typeof selected==='number');
    cover.classList.toggle('selected',selected==='cover');
    context.querySelectorAll<HTMLButtonElement>('[data-skill]').forEach(button=>{const skill=button.dataset.skill as Skill;button.disabled=!game.canUseSkill(skill);const label=skillCue(p,s,skill,!button.disabled).label;button.setAttribute('aria-label',label);if(skill==='food')textIfChanged(button,label.split(' · ')[0]);});
+   syncDusk(veil,tale,s,arena);
    const message=fieldGuidance(game);textIfChanged(cue,message);cue.hidden=!message;
    textIfChanged(announcement,fieldAnnouncement(message));
    const readout=fieldFoodReadout(s.food);food.hidden=!running;textIfChanged(food.querySelector<HTMLElement>('span')!,readout.text);
