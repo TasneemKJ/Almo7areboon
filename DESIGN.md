@@ -343,3 +343,11 @@ Next: add it after the 1.3 "play not menus" agent lands. Make it one rule in the
 - **Valley fog (ضباب الوادي), random stimulus #16:** some battles open in morning fog drawn as layered storybook washes. You see only as far as your own banner; the rival's cards arrive as shapes and sounds before they have faces. A cheap scout card (a boy with a lantern) walks ahead and thins the fog in a circle for a while. The fog lifts with the sun mid-battle, so the first minute is a guess and the rest is a fight. Punishes spamming one card blind, rewards reading sounds (horses, drums). Dry line from the hakawati: «في الضباب، كلّ شجرة جيش، وكلّ جيش شجرة».
 - **The drummer (الطبّال), #16b:** your drummer stands behind the banner and sets the troops' pace. Enemy archers aim for him; if he is hit the beat falters and your line slows until you tap the drum yourself in the world, on the beat, to rally. Protect him or carry the beat by hand.
 - Comparables: Clash Royale (lanes, cards), Kingdom Two Crowns (dread of what the dark brings), Darkest Dungeon (the light radius). Ours: fog and sound as a storybook mood, and a beat you keep with your own finger.
+
+## Backlog from random stimulus (2026-11-14, round 3)
+## #22 (random-stimulus) «المحاربون القدامى»
+A unit that survives three battles earns a name and a small painted mark (a bandaged arm, a notched shield) and walks out a little stronger. Lost, it is gone: its card returns plain, and the hakawati gives it one line at the campfire («كان يكره المطر، ومات في يوم مشمس. لم يُرضه شيء قط»). Wounded veterans rest a night by the fire; the lamplighter (subscription) tends them so they are ready by dawn. Spending veterans recklessly hurts; protecting them is the skill.
+Comparables: XCOM (named soldiers you grieve), Darkest Dungeon (scars), Clash Royale (card levels). Ours: stakes told by a storyteller, not a stat sheet.
+
+## #22b «الجسر الخشبي»
+Some valleys have a wooden bridge across the middle lane. A torch card burns it, cutting that lane for both armies for the rest of the battle: a tempo trade drawn as orange storybook flames.
