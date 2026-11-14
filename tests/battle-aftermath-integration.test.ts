@@ -46,9 +46,9 @@ test('pause, hidden ownership and reduced motion cannot advance an independent a
  assert.doesNotMatch(source,/setTimeout\([^)]*aftermath|requestAnimationFrame\([^)]*aftermath/);
 });
 
-test('result timing and model ownership remain unchanged',()=>{
+test('result timing and model ownership remain unchanged; only a raid turned back holds its breath longer',()=>{
  const main=mainSource(),source=battlefield();
- assert.match(main,/resultDue=now\+\(dom\.rootElement\(\)\.dataset\.motion==='reduced'\?350:1300\)/);
+ assert.match(main,/resultDue=now\+\(s\.dusk&&s\.phase==='won'\?DUSK_HELD_BREATH_MS:dom\.rootElement\(\)\.dataset\.motion==='reduced'\?350:1300\)/);
  assert.match(main,/const reviewHoldingResult=dom\.automated\(\)&&dom\.query\('canvas'\)\?\.dataset\.battlefieldReviewFrameReady===s\.phase;/,'only phase-matched native browser evidence may hold a due result sheet, while non-browser model tests remain inert');
  assert.match(main,/(?:ports\.)?sessionState\.resultShown!==s\.phase&&now>=(?:ports\.)?sessionState\.resultDue&&!reviewHoldingResult/,'the evidence latch must not alter the production deadline or terminal ownership');
  assert.doesNotMatch(source,/\.dispatch\(/);assert.doesNotMatch(source,/profile\.[A-Za-z_$][\w$]*\s*=/);

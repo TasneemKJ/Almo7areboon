@@ -10,6 +10,8 @@ import type { BattleState, Profile } from './types.ts';
  * stored: a player without the Lamplighter gets one raid as a sample.
  */
 export const DUSK_LAMPS = 3;
+/** After a raid turned back: a held breath before the result (the banner settles, one line), then the rating ask may follow. */
+export const DUSK_HELD_BREATH_MS = 1500;
 /** How far a lamp's light reaches along the field, in simulation x (the gates stand at 90 and 910). */
 export const LAMP_REACH = 120;
 const FIELD_MIN = 90, FIELD_MAX = 910;

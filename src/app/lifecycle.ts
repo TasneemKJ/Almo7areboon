@@ -1,4 +1,5 @@
 import { askForRatingAfter } from '../ui/app-bridge.ts';
+import { DUSK_HELD_BREATH_MS } from '../game/dusk-raid.ts';
 import { createSaveSession, type SaveSession } from '../game/save-session.ts';
 import type { Phase } from '../game/types.ts';
 import type { AudioMix } from '../game/audio-mix.ts';
@@ -40,6 +41,8 @@ export interface SessionState {
   lastSave: number;
   lastPhase: Phase;
   resultDue: number;
+  /** A victory was just won in play: the rating ask may follow once its result appears (never on a restored result). */
+  ratingDue?: boolean;
   resultShown: string;
   savedWarning: boolean;
   toastTimer: number;
@@ -177,9 +180,9 @@ export function createLifecycle(deps: LifecycleDeps) {
    syncBattleHud({root:root!,$,game:sessionState.game,money,coin,manualPaused:sessionState.manualPaused});
     fieldControls.update(sessionState.game);
     // Let the finishing blow and base collapse play before the result dialog covers them.
-    if(s.phase!==sessionState.lastPhase){if(sessionState.lastPhase==='running'&&(s.phase==='won'||s.phase==='lost'))sessionState.resultDue=now+(dom.rootElement().dataset.motion==='reduced'?350:1300);sessionState.lastPhase=s.phase;}
+    if(s.phase!==sessionState.lastPhase){if(sessionState.lastPhase==='running'&&(s.phase==='won'||s.phase==='lost'))sessionState.resultDue=now+(s.dusk&&s.phase==='won'?DUSK_HELD_BREATH_MS:dom.rootElement().dataset.motion==='reduced'?350:1300);sessionState.lastPhase=s.phase;}
     const reviewHoldingResult=dom.automated()&&dom.query('canvas')?.dataset.battlefieldReviewFrameReady===s.phase;
-    if(ports.navState.entryEntered&&playable()&&ports.navState.modal!=='session'&&(s.phase==='won'||s.phase==='lost')&&sessionState.resultShown!==s.phase&&now>=sessionState.resultDue&&!reviewHoldingResult){sessionState.resultShown=s.phase;ports.showResult();}
+    if(ports.navState.entryEntered&&playable()&&ports.navState.modal!=='session'&&(s.phase==='won'||s.phase==='lost')&&sessionState.resultShown!==s.phase&&now>=sessionState.resultDue&&!reviewHoldingResult){sessionState.resultShown=s.phase;ports.showResult();if(sessionState.ratingDue&&s.phase==='won'){sessionState.ratingDue=false;askForRatingAfter([{type:'win'}]);}}
     if(s.phase==='ready'||s.phase==='running')sessionState.resultShown='';
     if(playable()&&sessionState.session.status==='active'&&now-sessionState.lastSave>5000)persist();
   }
@@ -205,7 +208,7 @@ export function createLifecycle(deps: LifecycleDeps) {
     playCombatEvents(batch,sessionState.game.profile.sound&&playable()&&!dom.hidden()&&!sessionState.manualPaused&&!sessionState.game.state.paused&&ports.navState.activeTab==='battle'&&ports.navState.modal===null);
     if(batch.some(event=>event.type==='win')&&guardAction()){const receipt=sessionState.game.profile.pendingVictory,mask=receipt&&receipt.settlement==='mastery-v1'?receipt.newMask:0;sessionState.game.dispatch({type:'weekly-sync',week:weekId(localDay()),earned:(mask&1)+((mask>>1)&1)+((mask>>2)&1)});}
     if(batch.some(event=>event.type==='win'||event.type==='lose'))persist();
-    if(playable())askForRatingAfter(batch);
+    if(batch.some(event=>event.type==='win')&&!batch.some(event=>event.type==='lose'))sessionState.ratingDue=true;
   }
   return { playable, guardAction, sessionPresentation, acquireSession, rebuildArmy, toast, persist, syncPause, syncVillagePresentation, syncMarks, syncMotion, action, update, exportSave, adoptRestoredGame, suspendSession, events, sessionState: sessionState as Pick<SessionState, 'acquisitionVersion' | 'atmosphereEnabled' | 'audioMix' | 'game' | 'hasPlayed' | 'lastSavedAt' | 'manualPaused' | 'pagePresent' | 'resultShown' | 'resumeOwnership' | 'retriedSession' | 'savedWarning' | 'session' | 'sessionReady' | 'toastTimer' | 'villagePresentation'> };
 }

@@ -99,3 +99,17 @@ test('a raid turned back leaves a dusk banner on the village wall (a keepsake th
   assert.doesNotMatch(html, /<button/, 'on the web, after the sample, it is a picture on the wall, nothing to open');
   assert.equal(campDuskHtml(veteran({ dusk: { day: DAY, sampled: true } }), DAY + 1, { lit: false, inApp: false }), '');
 });
+
+test('after a raid turned back: a held breath of 1.5 s, the banner settles, one line, and only then the rating ask', async () => {
+  const { DUSK_HELD_BREATH_MS } = await import('../src/game/dusk-raid.ts');
+  const { DUSK_AFTER_LINE } = await import('../src/ui/field-controller.ts');
+  const { readFileSync } = await import('node:fs');
+  assert.equal(DUSK_HELD_BREATH_MS, 1500);
+  for (const line of Object.values(DUSK_AFTER_LINE)) assert.doesNotMatch(line, /!|لمس|ولادة|ميلاد|birth/);
+  assert.equal(DUSK_AFTER_LINE.ar, 'صمدت القناديل، ورحل المغيرون.');
+  const lifecycle = readFileSync(new URL('../src/app/lifecycle.ts', import.meta.url), 'utf8');
+  assert.match(lifecycle, /ports\.showResult\(\);if\(sessionState\.ratingDue&&s\.phase==='won'\)\{sessionState\.ratingDue=false;askForRatingAfter/, 'the ask follows the result, after the pause');
+  assert.match(lifecycle, /!batch\.some\(event=>event\.type==='lose'\)\)sessionState\.ratingDue=true/, 'only a battle just won in play');
+  const controller = readFileSync(new URL('../src/ui/field-controller.ts', import.meta.url), 'utf8');
+  assert.match(controller, /const settling=!!s\.dusk&&s\.phase==='won';node\.hidden=!running&&!settling;/);
+});

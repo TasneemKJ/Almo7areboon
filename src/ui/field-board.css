@@ -145,3 +145,8 @@ body:has(.field-banner.hinting,.field-banner.dragging) #field-standard .world-ta
 @keyframes banner-want{0%{translate:0}40%{translate:7px}100%{translate:0}}
 @keyframes banner-want-back{0%{translate:0}40%{translate:-6px}100%{translate:0}}
 [data-motion=reduced] .field-banner.wanting .banner-carry{animation:none}
+/* The held breath after a raid turned back (field-controller.ts syncBanner): the banner lowers its cloth and settles. */
+.field-banner.settling{pointer-events:none}
+.field-banner.settling .banner-carry{transition:transform 1.2s cubic-bezier(.3,.7,.3,1);--carried:0px;--lean:-2deg}
+.field-banner.settling .banner-cloth{animation:none;transition:transform 1.2s ease-out;transform:skewY(-4deg) scaleY(.94)}
+.field-banner.settling .banner-plate,.field-banner.settling::before,.field-banner.settling::after{display:none}

@@ -61,7 +61,8 @@ function syncGates(gates:readonly HTMLButtonElement[],arena:ReturnType<typeof ar
 
 /** The planted company banner: its place, and momentum shown as lit cloth (see banner-gesture.ts). */
 function syncBanner(node:HTMLElement,rect:CampTarget,s:Game['state'],running:boolean):void {
- node.hidden=!running;
+ // After a raid turned back the banner stays a moment and settles back into the ground (the held breath).
+ const settling=!!s.dusk&&s.phase==='won';node.hidden=!running&&!settling;node.classList.toggle('settling',settling);
  const view=bannerView(s),order=view.order??'none';
  if(node.dataset.ready!==String(view.ready))node.dataset.ready=String(view.ready);
  if(node.dataset.order!==order)node.dataset.order=order;
@@ -73,6 +74,8 @@ function syncBanner(node:HTMLElement,rect:CampTarget,s:Game['state'],running:boo
 
 /** The dusk raid's dark: a veil with a pool of light at each hung lamp (game/dusk-raid.ts), and its one line while lamps are hung. */
 export const DUSK_LINE={en:'Lamps do not fight, but they give away whoever creeps in.',ar:'القناديل لا تقاتل، لكنها تفضح من يتسلّل.'} as const;
+/** The held breath after a raid turned back (DUSK_HELD_BREATH_MS): the one line over the quiet field. */
+export const DUSK_AFTER_LINE={en:'The lamps held. The raiders are gone.',ar:'صمدت القناديل، ورحل المغيرون.'} as const;
 function syncDusk(veil:HTMLElement,tale:HTMLElement,s:Game['state'],arena:ReturnType<typeof arenaLayout>):void {
  const dusk=s.dusk&&(s.phase==='ready'||s.phase==='running')?s.dusk:null;
  veil.hidden=!dusk;
@@ -81,8 +84,8 @@ function syncDusk(veil:HTMLElement,tale:HTMLElement,s:Game['state'],arena:Return
   const style=`--l1:${at(0)};--l2:${at(1)};--l3:${at(2)};--gy:${(arena.groundY*arena.scale).toFixed(1)}px;--reach:${(LAMP_REACH*.45*arena.scale).toFixed(1)}px`;
   if(veil.getAttribute('style')!==style)veil.setAttribute('style',style);
  }
- const telling=!!dusk&&(s.phase==='ready'||s.time<5);
- if(telling){const line=DUSK_LINE[lang()];textIfChanged(tale,line);tale.dataset.dusk='true';tale.hidden=false;}
+ const held=!!s.dusk&&s.phase==='won',telling=held||!!dusk&&(s.phase==='ready'||s.time<5);
+ if(telling){const line=(held?DUSK_AFTER_LINE:DUSK_LINE)[lang()];textIfChanged(tale,line);tale.dataset.dusk='true';tale.hidden=false;}
  else if(tale.dataset.dusk){delete tale.dataset.dusk;tale.hidden=true;}
 }
 
