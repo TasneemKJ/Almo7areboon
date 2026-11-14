@@ -63,6 +63,6 @@ Outstanding visual acceptance: 320x568 and 390x844 portrait, narrow/short landsc
 
 Phaser's vendor chunk is approximately 1.21 MB uncompressed / 332 KB gzip and emits Vite's chunk-size warning. Other code and CSS build successfully. There is no measured frame-rate claim.
 
-## Fidelity scope
+## Scope
 
-Original code and vector art are retained. The reference's hidden economy and complete live-service systems are not reproduced; no pixel-exact comparison has been performed. See the README for explicit exclusions.
+Original code and vector art: a lane battle across eras. See the README for explicit exclusions.

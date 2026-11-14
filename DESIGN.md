@@ -269,9 +269,13 @@ number, command id, save field or art.
   compatibility. "Timeline" (the harder replay) is unchanged.
 - **Open, reported to the owner:** the card names in `src/game/cards.ts` (Dino Ribs, T-Rex Head, Trojan Horse, UAV-3.0 …)
   follow the reference game's card list and each has its own illustration, so renaming them is an art decision, not a
-  copy pass; the store description promises "the Olive Wood Shield … the Golden Sickle", which the game does not have.
+  copy pass. (The store description no longer names cards the game does not have; fixed 2026-11-14.)
 
 **The lock on Move camp (same release).** In the app, while the next chapter is behind Full Journey, the control shows a
 lock and the App Store's price instead of a coin cost, is never disabled, and opens the existing card (declinable; it
 returns to where it was opened and never reopens by itself). The line under it says both costs plainly: Full Journey
 once, then the coins. Owners, the free first move and the web see the coin cost as before.
+
+## Store compliance (2026-11-14)
+
+No narration, ever shipped or planned: the ElevenLabs free plan grants no commercial licence, so the opening tale and both films stay captioned with the procedural score. The store presents the game as a folk-tale lane battle across eras (subtitles «حكاية معارك من زمن الحكايات» / "Battles from a storybook age"), answers guns or other weapons honestly as infrequent/mild, and names no card the game lacks. No rule, number or save changes.

@@ -2,8 +2,7 @@ import { cardBonuses } from './cards.ts';
 import { tr } from './locale.ts';
 import type { Era, Profile, UnitDef, UnitKind } from './types.ts';
 
-// Public reference material does not expose the original game's balance tables.
-// Keep this recreation's tuning here so its pacing can be adjusted independently.
+// The lane battle's tuning lives here so its pacing can be adjusted independently.
 const names = [
   ['Caveman', 'Thrower', 'Dino'],
   ['Farmer', 'Slinger', 'Scythe'],

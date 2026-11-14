@@ -1,12 +1,12 @@
 # Almo7areboon Implementation Plan
 
-**Goal:** A faithful mobile-first recreation of the reference's core game.
+**Goal:** A mobile-first lane battle across eras, with its own story, art and tuning.
 **Architecture:** Typed deterministic simulation, Phaser presentation, DOM HUD. Rendering consumes GamePort, never owns gameplay rules.
 **Tech Stack:** TypeScript, Phaser 3, Vite.
 **Spec:** ../specs/2026-09-28-almo7areboon-design.md
 
 ## Global constraints
-- Original code and artwork; reference layout/mechanics preserved.
+- Original code and artwork.
 - Phone-first, usable at 320px width, touch controls at least 44px.
 - No writes under parent sources directory.
 

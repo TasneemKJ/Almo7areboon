@@ -85,7 +85,7 @@ GitHub Actions runs tests and the production build with read-only repository per
 
 See [CREDITS.md](CREDITS.md) for licences and the privacy note, and [docs/performance-budgets.md](docs/performance-budgets.md) for load and size budgets.
 
-## Fidelity and limits
+## Scope and limits
 
 Food-to-troop combat, melee/ranged/heavy choices, six chapters with 18 troop appearances, evolution, upgrades, cards and skills are implemented, with the game's own story captains, expeditions and rule-based alternate timelines. Later-chapter balance and some card curves remain provisional. There are no ads, accounts or backend services. Phaser's vendor bundle still produces a size warning; low-end device performance is unmeasured.
 
