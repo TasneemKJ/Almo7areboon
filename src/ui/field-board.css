@@ -135,3 +135,6 @@
 [dir="rtl"] #app[data-field-mode="field"][data-entry="play"] .deployment .unit-card .unit-name{left:2px;right:51px}
 html[lang="en"] #app[data-field-mode="field"][data-entry="play"] .deployment .unit-card .unit-name{font-size:11px;letter-spacing:-.3px}
 @media (max-width:359px){html[lang="en"] #app[data-field-mode="field"][data-entry="play"] .deployment .unit-card .unit-name{font-size:9.5px}}
+/* While the banner's Hold/Advance plates show, the camp's own sign steps back: they share a row on a phone
+   (iOS QA: the Hold plate covered "Gather"). Clash Royale likewise quiets other labels mid-drag. */
+body:has(.field-banner.hinting,.field-banner.dragging) #field-standard .world-target-name{opacity:.12;transition:opacity .15s}
