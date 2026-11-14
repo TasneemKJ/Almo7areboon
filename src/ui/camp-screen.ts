@@ -66,8 +66,10 @@ export type CampStore={lit:boolean;inApp:boolean;journey?:boolean};
  * reached the last free chapter, Camp's one footer line names what Full Journey opens, so the first lock a player meets
  * (the Road's Move camp, the chapter after it) is never a surprise. Text in the scene, not a dialog; nothing to tap.
  */
-export function campRoadNote(p:Readonly<Pick<Profile,'age'|'enemyAge'|'furthestBattle'>>,store:CampStore):string {
+export function campRoadNote(p:Readonly<Pick<Profile,'timeline'|'age'|'enemyAge'|'furthestBattle'>>,store:CampStore):string {
  if(!store.inApp||store.journey!==false||Math.max(p.age,p.enemyAge,p.furthestBattle)<FREE_AGES-1)return '';
+ // A held save whose own army or timeline is paid has no free chapter to replay; its Full Journey card already speaks.
+ if(p.timeline>1||p.age>=FREE_AGES)return '';
  const last=chapterPresentation(FREE_AGES-1).title,first=chapterPresentation(FREE_AGES).title;
  return p.furthestBattle<FREE_AGES
   ?tr(`${last} is the last free chapter. Full Journey opens the three after it, and the harder timeline.`,`${last} آخر الفصول المجّانية. و«الرحلة كاملة» تفتح الفصول الثلاثة التي بعدها، والخطّ الزمني الأصعب.`)

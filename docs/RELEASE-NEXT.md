@@ -25,7 +25,7 @@ Branch `ios/taskit-1.3`. The App Store copy lives in `ios/store/listing.json`; t
 > you decide anything. Full Journey now opens chapters 4 to 6 and the harder timeline. If you already own it, nothing
 > changes, and your save carries on exactly where it was.
 >
-> The smith's weapons now hang from a proper rack instead of the evening air.
+> The smith's weapons now hang from a proper rack instead of the night air.
 
 **Arabic (ar-SA)**
 
@@ -33,7 +33,7 @@ Branch `ios/taskit-1.3`. The App Store copy lives in `ios/store/listing.json`; t
 > تقرّر أيّ شيء. و«الرحلة كاملة» تفتح الآن الفصول من الرابع إلى السادس والخطّ الزمني الأصعب. وإن كانت لك من قبل
 > فلا يتغيّر شيء، ويبقى حفظك حيث تركته.
 >
-> وأسلحة الحدّاد معلّقة الآن على حاملٍ متين، لا في هواء المساء.
+> وأسلحة الحدّاد معلّقة الآن على حاملٍ متين، لا في هواء الليل.
 
 ## App Review notes
 
@@ -43,7 +43,7 @@ Branch `ios/taskit-1.3`. The App Store copy lives in `ios/store/listing.json`; t
 > collection. Language: Settings (gear on Home) → Language (Arabic / English).
 >
 > Change in this version: chapter 3 is now free. The non-consumable Full Journey (product Tas.Almo7areboon.fullGame,
-> price unchanged) now opens chapters 4 to 6 and the harder timeline; it used to open chapters 3 to 6. Existing owners
+> price unchanged) now opens chapters 4 to 6 and the harder timeline; chapter 3 moved from it to the free part. Existing owners
 > lose nothing: ownership comes from StoreKit and the save is unchanged.
 >
 > To reach the Full Journey card: open Settings → Full Journey at any time; or win chapter 3 (the Harbor Watch) and
@@ -60,7 +60,7 @@ Branch `ios/taskit-1.3`. The App Store copy lives in `ios/store/listing.json`; t
 > اللغة: الإعدادات ← اللغة (العربية / الإنجليزية).
 >
 > الجديد في هذا الإصدار: صار الفصل الثالث مجّانياً. و«الرحلة كاملة» (شراء غير مستهلَك، بالسعر نفسه) تفتح الآن الفصول
-> من الرابع إلى السادس والخطّ الزمني الأصعب، وكانت تفتح الفصول من الثالث إلى السادس. ولا يخسر من اشتراها شيئاً:
+> من الرابع إلى السادس والخطّ الزمني الأصعب، وانتقل الفصل الثالث منها إلى الجزء المجّاني. ولا يخسر من اشتراها شيئاً:
 > الملكية يقرّرها StoreKit، والحفظ لا يتغيّر.
 >
 > للوصول إلى بطاقة «الرحلة كاملة»: الإعدادات ← الرحلة كاملة في أيّ وقت، أو انتصر في الفصل الثالث (حراسة الميناء)
@@ -75,6 +75,9 @@ Branch `ios/taskit-1.3`. The App Store copy lives in `ios/store/listing.json`; t
   English one ("Every later chapter and the harder timeline") is still true. Product ID, type and price are unchanged.
 - **IAP review screenshot** `ios/store/review/store-card.png` shows the 1.2 card ("first two chapters", "Twelve new
   troops"); retake it from the 1.3 build.
+- **App Store screenshot 1** (`ios/store/screenshots/en/1-dusk-village.png` and its `ar/` twin) shows the entry
+  path note "Chapters 1-2 free · 3-6 with Full Journey"; retake it from the 1.3 build. The other four show no store
+  text.
 - **tas-games** (`store/almo7areboon/listing.json`, `almo7areboon/index.html`) still says the first two chapters are
   free; make it match `ios/store/listing.json`.
 - **Version numbers:** `MARKETING_VERSION` in the Xcode project and `package.json` still read 1.1 although 1.2 is on

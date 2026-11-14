@@ -38,7 +38,7 @@ function upgradedApp(save: string, owned: Record<string, boolean> = {}) {
 const asWritten = (save: string) => JSON.parse(save) as Profile;
 
 test('the 1.2 fixtures are real saves of the expected shape, written by the 1.2 rules', () => {
-  for (const save of [OWNER, FREE_MID, FREE_WON]) assert.notEqual(decodeSave(save).profile, null);
+  for (const save of [OWNER, FREE_MID, FREE_WON]) assert.deepEqual(decodeSave(save).profile, JSON.parse(save), '1.3 decodes every field exactly as 1.2 wrote it');
   const owner = asWritten(OWNER), mid = asWritten(FREE_MID), won = asWritten(FREE_WON);
   assert.deepEqual([owner.timeline, owner.age, owner.enemyAge, owner.furthestBattle], [1, 3, 4, 4]);
   assert.deepEqual([mid.age, mid.enemyAge, mid.furthestBattle], [0, 1, 1]);

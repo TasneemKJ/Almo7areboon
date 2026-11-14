@@ -28,6 +28,12 @@ test('after chapter 3 is won the line says the free chapters stay and what opens
   assert.equal(campRoadNote(at(2, 2, 3), free), 'The free chapters stay yours to replay. Full Journey opens Lantern Quarter and the two chapters after it.');
 });
 
+test('a held save with a paid army or a later timeline gets no line: it has no free chapter to replay', () => {
+  assert.equal(campRoadNote(at(3, 3, 4), free), '');
+  assert.equal(campRoadNote({ ...at(0, 0, 0), timeline: 2 }, free), '');
+  assert.notEqual(campRoadNote(at(1, 3, 3), free), '', 'a free army whose chosen battle is paid can still step back');
+});
+
 test('earlier, for owners and on the web, Camp keeps its usual line', () => {
   for (const [p, store] of [[at(0, 0, 0), free], [at(0, 1, 1), free], [at(1, 2, 2), owned], [at(2, 2, 3), web], [at(1, 2, 2), { lit: false, inApp: true }]] as const) {
     assert.equal(campRoadNote(p, store), '');

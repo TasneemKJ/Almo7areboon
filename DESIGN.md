@@ -161,8 +161,8 @@ Waiting recruits use a shared48–72 CSS-pixel height bounded by neighbour spaci
 
 Owner override (2026-11-13): the iPhone app (ios/, TasKit) sells two things; the web build sells nothing and stays fully open.
 
-- **Full Journey** (`Tas.Almo7areboon.fullGame`, non-consumable, US$4.99) opens more game, never power: chapters 3 to 6
-  and the harder timeline. Chapters 1 and 2 are the free arc. The gate is asked of StoreKit at the moment of use
+- **Full Journey** (`Tas.Almo7areboon.fullGame`, non-consumable, US$4.99) opens more game, never power: chapters 4 to 6
+  and the harder timeline since 1.3 (through 1.2 it also opened chapter 3). Chapters 1 to 3 are the free arc. The gate is asked of StoreKit at the moment of use
   (`src/app/store-flow.ts` `gateEvolution`): choosing Evolve at the end of chapter 2 opens the Full Journey card instead
   of the evolution dialog. Ownership is never written to the save. The card also opens from Settings → Full Journey.
   **1.3 (2026-11-15): chapter 3 is free.** Chapters 1 to 3 are the free arc (`FREE_AGES = 3`); Full Journey opens
