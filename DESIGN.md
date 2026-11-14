@@ -396,3 +396,37 @@ Fixes Almo's lowest dimension: pay-to-progress. Coins need a sink that a free pl
 - **The world answers taps.** A tap on the open field plants the banner: the rival's half Advances, your own half Holds; short momentum makes the banner lean and name what is missing.
 - **First launch** opens on the live field with one line of the tale; the whole tale is in Settings › Watch intro.
 - **#51 «غارة الغسق», first slice.** Wall lamps in Camp after the first victory. Lit (once a day with the Lamplighter, once ever as a sample), they open a dusk raid: three lamps hung by tapping the field, raiders seen only in their light, one more melee raider per wave. It pays nothing and moves no road; the profile keeps only the day stamp. Not yet: the dusk banner keepsake on the village wall.
+
+## Shipped 2026-11-14: the free path and the smith (#60, first slice)
+- **Measured first** (`scripts/qa-gate/free-path-sim.ts`, a player who never buys, by the rules, to the chapter 6 win;
+  12 seeds). No run of more than 3 defeats and no step that needed coins the player had not earned, but from chapter 3
+  on no first try was ever won, every chapter was won only after the pacing director thinned the rival, and 46-48M
+  coins sat idle at the end. Cause: a moved camp arrived with one troop and an empty purse, and the lamp stayed dark
+  after a win. In the app, Full Journey still opens chapters 3-6 (owner decision, unchanged); the sim plays the rules.
+- **The company walks on together.** Move camp keeps the troops who joined and the coins left after the price; only
+  the storehouse and the gate are built again (a new camp's prices are eight times higher, so the purse buys about an
+  eighth). The village lamp also lights in a camp just moved, until five levels of bread. Following the lamp: 15.1 ->
+  13.3 battles to the end for a first-card tapper, 14.7 -> 8.5 for one who sends its troops in turn; the second player
+  wins chapters 3-6 without the director. A player who never opens Camp is still carried (worst run 3).
+- **Broken blades.** After a battle, one blade (a victory) or two (a defeat) lie where the company's troops fell: the
+  fall furthest forward, then the latest of another kind. A tap carries one home. The result waits up to 3.5 s while
+  they lie and comes 0.45 s after the last is carried; uncarried blades stay on the ready field and are left behind
+  when the next battle starts. The hakawati's line rests over the field: «السيف المكسور يعرف عن الحرب أكثر من السيف
+  الجديد.» A battle nobody fell in: «لم يسقط أحد، فلا شيء يُحمل إلى الديار. سيشعر الحدّاد بالملل الليلة.» A dusk raid
+  drops nothing.
+- **The smith «الحدّاد»** has his corner by the village houses in Camp, opposite the wall lamps, once a blade is home:
+  the wall of kept weapons, a beam with three hooks (one per troop kind) and the forge (anvil, brazier, the broken
+  blades by it), drawn in code in the camp's ink and brass (`src/view/smithy-art.ts`). Tap the forge to reforge the
+  oldest blade (400 coins times the camp's scale) into a weapon named for its battle: «سيف النيران الأولى», «حربة
+  مدرّجات الزيتون», «رمح حراسة الميناء». It hangs on an empty hook of its kind, else on the wall. Tap a hook to hang
+  the next weapon of that kind from the wall, or take the hung one down. The forge stays cold while the village lamp
+  is lit elsewhere («النار تنتظر. الخبز أوّلاً، ثم الحديد.»), so it never takes bread money. Wall label: «السيوف على
+  هذا الجدار لم تعد تقاتل، لكنها لا تنسى.»
+- **Sidegrades, never upgrades.** A hung weapon tempers its own troop kind: one number better, one worse. Swords:
+  harder and slower, or quicker and lighter. Javelins: further and slower, or quicker from closer. Lances: arrive first
+  and fall sooner, or hold longer and arrive later. A blade won in victory keeps its edge; one carried from a defeat
+  learned patience. With reforging free, the sim's outcomes stay within noise of no smith; paid for, it costs about
+  half a battle over the whole road, which is the sink working (coins for identity, not power).
+- **Save:** `smithy {next, blades, field?}`, optional and normalized on load; it survives Move camp and a new
+  timeline, and Start over begins without it. At most 60 blades.
+- Not yet: the Thursday caravan «قافلة الخميس»; a sign of the hung weapon on the troops in battle.

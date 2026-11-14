@@ -19,6 +19,7 @@ import {tr} from './i18n.ts';
 import {bannerView} from './banner-gesture.ts';
 import {LAMP_REACH,duskSight} from '../game/dusk-raid.ts';
 import {lang} from '../game/locale.ts';
+import {syncFieldBlades} from './field-blades.ts';
 
 const placeBox=(node:HTMLElement,rect:CampTarget|{x:number;y:number;width:number;height:number})=>{
   const value=`left:${rect.x}px;top:${rect.y}px;width:${rect.width}px;height:${rect.height}px`;
@@ -95,7 +96,7 @@ export function createFieldController(root:HTMLElement){
  const veil=find('dusk-veil'),tale=find('field-tale'),world=find('world'),context=find('field-context'),cue=find('field-cue'),food=find('field-food'),announcement=find('field-announcement'),cover=find('field-cover');
  const recruits=Array.from(root.querySelectorAll<HTMLButtonElement>('[data-field-recruit]'));
  const gates=Array.from(root.querySelectorAll<HTMLButtonElement>('[data-field-gate]'));
- const banner=find('field-banner'),standard=find('field-standard') as HTMLButtonElement,supplies=find('field-supplies') as HTMLButtonElement,enemy=find('field-enemy') as HTMLButtonElement;
+ const bladeLayer=find('field-blades'),banner=find('field-banner'),standard=find('field-standard') as HTMLButtonElement,supplies=find('field-supplies') as HTMLButtonElement,enemy=find('field-enemy') as HTMLButtonElement;
  let selected:number|'supplies'|'cover'|null=null,contextKey='',origin:HTMLElement|null=null;
  const pause=root.querySelector<HTMLElement>('[data-command="field-pause"]')!;
  const place=placeBox;
@@ -145,6 +146,7 @@ export function createFieldController(root:HTMLElement){
    cover.classList.toggle('selected',selected==='cover');
    context.querySelectorAll<HTMLButtonElement>('[data-skill]').forEach(button=>{const skill=button.dataset.skill as Skill;button.disabled=!game.canUseSkill(skill);const label=skillCue(p,s,skill,!button.disabled).label;button.setAttribute('aria-label',label);if(skill==='food')textIfChanged(button,label.split(' · ')[0]);});
    syncDusk(veil,tale,s,arena);
+   syncFieldBlades(bladeLayer,tale,p,s,arena,w,h);
    const message=fieldGuidance(game);textIfChanged(cue,message);cue.hidden=!message;
    textIfChanged(announcement,fieldAnnouncement(message));
    const readout=fieldFoodReadout(s.food);food.hidden=!running;textIfChanged(food.querySelector<HTMLElement>('span')!,readout.text);

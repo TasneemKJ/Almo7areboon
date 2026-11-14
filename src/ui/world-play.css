@@ -93,3 +93,13 @@
 .dusk-veil[hidden]{display:none}
 #app[data-field-mode="camp"] .dusk-veil{display:none}
 .field-tale[data-dusk]{animation:none;opacity:1}
+/* Broken blades lying where the company's troops fell (game/smithy.ts): a tap carries one home. Shown after a battle and on the ready field. */
+.field-blade{position:absolute;z-index:5;width:64px;height:44px;min-width:44px;min-height:44px;padding:0;border:0;border-radius:10px;background:radial-gradient(closest-side,#ffe7a833,transparent);cursor:pointer;touch-action:manipulation}
+.field-blade[hidden]{display:none}
+.field-blade svg{width:100%;height:100%;display:block;filter:drop-shadow(0 0 4px #ffd18a99)}
+.field-blade .broken-blade-glint{animation:blade-glint 2.2s ease-in-out infinite}
+@keyframes blade-glint{0%,70%,100%{opacity:0}80%{opacity:1}}
+.field-blade.carried{animation:blade-carried .5s ease-in forwards;pointer-events:none}
+@keyframes blade-carried{to{transform:translate(-40px,-30px) scale(.5);opacity:0}}
+.field-blade:focus-visible{outline:3px solid var(--gold);outline-offset:2px}
+@media(prefers-reduced-motion:reduce){.field-blade *,.field-blade{animation:none!important}}

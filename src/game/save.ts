@@ -3,6 +3,7 @@ import { normalizeLegacy } from './prestige.ts';
 import { createMastery, normalizeMastery, masteryReward } from './mastery.ts';
 import { battleStats } from './statistics.ts';
 import { CARD_DEFS, MAX_DAILY_DAY, QUESTS } from './data.ts';
+import { normalizeSmithy } from './smithy.ts';
 import type { Profile } from './types.ts';
 
 export const SAVE_KEY = 'almo7areboon.save.v1';
@@ -122,6 +123,7 @@ function readGoalsAndPreferences(data: Raw, clean: Profile): void {
   const dusk = data.dusk as { day?: unknown; sampled?: unknown; kept?: unknown } | undefined;
   if (dusk && typeof dusk === 'object' && Number.isInteger(dusk.day) && (dusk.day as number) > 0 && (dusk.day as number) <= 1_000_000) clean.dusk = { day: dusk.day as number, ...(dusk.sampled === true ? { sampled: true as const } : {}), ...(Number.isInteger(dusk.kept) && (dusk.kept as number) > 0 ? { kept: Math.min(999, dusk.kept as number) } : {}) };
   if (Number.isInteger(data.lossStreak) && (data.lossStreak as number) > 0) clean.lossStreak = Math.min(99, data.lossStreak as number);
+  const smithy = normalizeSmithy(data.smithy); if (smithy) clean.smithy = smithy;
 }
 
 function validate(value: unknown): Profile {

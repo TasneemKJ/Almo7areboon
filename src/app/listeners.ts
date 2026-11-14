@@ -294,6 +294,7 @@ export function installListeners(deps: ListenersDeps): void {
       if(command==='field-pause'){ports.showFieldPause();return;}
       if(command==='field-resume'){if(ports.navState.modal==='field-pause'){ports.sessionState.manualPaused=false;ports.closeModal();}return;}
       if(command==='field-dismiss'){fieldControls.clear();return;}
+      if(command==='blade-carry'){if(ports.action({type:'blade-carry',id:Number(button.dataset.blade)}))button.classList.add('carried');return;}
       if(button.dataset.fieldContext){fieldControls.select(button.dataset.fieldContext,ports.sessionState.game);return;}
       if(button.closest('#field-targets'))fieldControls.clear();
       if(command==='result-details'){ports.showResultDetails();return;}

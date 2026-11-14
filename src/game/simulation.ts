@@ -6,6 +6,7 @@ import { isLegacyChoice, legacyEffects, prestigePreview } from './prestige.ts';
 import { advanceStatus, canRetry, createMastery, masteryAward } from './mastery.ts';
 import { spawnSpot } from './unit-movement.ts';
 import { beginDusk, DUSK_ACTIONS, duskEncounter, placeDuskLamp, settleDusk } from './dusk-raid.ts';
+import { dropBlades, leaveField, noteFall, smithAction, troopDef } from './smithy.ts';
 import { companyEncounter, encounterForAge, rallyLevel, rallyPower, RALLY_FOOD, STALEMATE_SECONDS, scheduledSpawns, type Encounter, type ScheduledSpawn, type WaveStatus } from './encounters.ts';
 import { resolveRoleHit, sweepTarget } from './role-traits.ts';
 import { battleStats } from './statistics.ts';
@@ -111,7 +112,7 @@ export class Game implements GamePort {
     if(this.state.dusk&&!this.state.dusk.settled&&!DUSK_ACTIONS.has(action.type))return false;
     if (!Object.hasOwn(Game.ACTION_HANDLERS, action.type)) return false;
     // Each handler narrows its own action type; the table key guarantees the match.
-    const changed = Game.ACTION_HANDLERS[action.type]!(this, action as never); settleDusk(this.profile, this.state, this.duskSnapshot); return changed;
+    const changed = Game.ACTION_HANDLERS[action.type]!(this, action as never); settleDusk(this.profile, this.state, this.duskSnapshot); dropBlades(this.profile, this.state); return changed;
   }
 
   /** One handler per action type; each returns whether it changed anything. */
@@ -133,6 +134,7 @@ export class Game implements GamePort {
     'summon': (game, action: ActionOf<'summon'>) => summonCards(game.economy, action),
     'dusk': (game, action: ActionOf<'dusk'>) => { if (!beginDusk(game.profile, game.state, action.day, action.lit)) return false; game.duskSnapshot = JSON.stringify(game.profile); game.buildEncounter(); return true; },
     'dusk-lamp': (game, action: ActionOf<'dusk-lamp'>) => placeDuskLamp(game.state, action.x),
+    'blade-carry': (game, action: ActionOf<'blade-carry'>) => smithAction(game.economy, action), 'reforge': (game, action: ActionOf<'reforge'>) => smithAction(game.economy, action), 'hang': (game, action: ActionOf<'hang'>) => smithAction(game.economy, action),
     'daily': (game, action: ActionOf<'daily'>) => claimDaily(game.economy, action),
     'weekly-sync': (game, action: ActionOf<'weekly-sync'>) => syncWeek(game.economy, action),
     'weekly': (game, action: ActionOf<'weekly'>) => claimWeekly(game.economy, action),
@@ -150,7 +152,7 @@ export class Game implements GamePort {
     if (this.state.phase !== 'ready') return false;
     if (this.state.time === 0 && this.nextSpawn === 0) this.buildEncounter(); // the lone-company ease is read at the start (encounters.ts)
     this.state.phase = 'running';
-    this.profile.played = true;
+    this.profile.played = true; leaveField(this.profile); // blades nobody carried stay on the old field (smithy.ts)
     return true;
   }
 
@@ -263,7 +265,7 @@ export class Game implements GamePort {
     if (!spot) return false;
     const { lane, x } = spot;
     const age = side === 'player' ? this.profile.age : this.profile.enemyAge;
-    const def = ERAS[age].units[kind];
+    const def = troopDef(this.profile, { side, age, kind });
     if (side === 'player') this.playerLane = lane + 1;
     else this.enemyLane = lane + 1;
     const healthBonus = side === 'player' ? this.bonuses().health : this.timelinePower() * 0.94 * rallyPower(this.profile);
@@ -314,7 +316,7 @@ export class Game implements GamePort {
       this.tickBonuses = cardBonus(this.profile);
       try { this.tick(FIXED_STEP); } finally { this.tickBonuses = null; }
     }
-    settleDusk(this.profile, this.state, this.duskSnapshot);
+    settleDusk(this.profile, this.state, this.duskSnapshot); dropBlades(this.profile, this.state);
   }
 
   private tick(dt: number): void {
@@ -350,7 +352,7 @@ export class Game implements GamePort {
     unit.attacking = false;
     if (unit.side === 'enemy' && this.state.time < this.state.freezeUntil) return false;
     unit.attackTimer = Math.max(0, unit.attackTimer - dt);
-    const def = ERAS[unit.age].units[unit.kind];
+    const def = troopDef(this.profile, unit); // a weapon on its kind's hook tempers a player troop (smithy.ts)
     const targets = this.state.units.filter(other => other.side !== unit.side && other.hp > 0);
     const distance = (other: Unit) => Math.hypot(other.x - unit.x, (other.lane - unit.lane) * 10);
     const target = targets.sort((a, b) => (distance(a) - distance(b)) || a.id - b.id)[0];
@@ -399,7 +401,7 @@ export class Game implements GamePort {
     unit.hp = Math.max(0, unit.hp - actual);
     unit.hitFlash = 0.16;
     if (unit.hp === 0) {
-      this.events.push({ type: 'death', x: unit.x, lane: unit.lane, side: unit.side, kind: unit.kind });
+      this.events.push({ type: 'death', x: unit.x, lane: unit.lane, side: unit.side, kind: unit.kind }); noteFall(this.state, unit);
       if (unit.side === 'enemy') {
         earnMomentum(this.state,8);
         if (!this.state.dusk) this.profile.kills++;

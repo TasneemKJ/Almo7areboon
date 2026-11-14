@@ -14,6 +14,7 @@ ${[0,1,2].map(kind=>`<button class="world-hit recruit-hit" data-field-recruit="$
 <button class="world-hit gate-hit" data-field-gate="advance" data-order="advance" aria-label="${tr('Advance toward the enemy gate','تقدّم نحو بوّابة العدوّ')}"><span class="world-target-name">${tr('Advance · 60 momentum',`تقدّم · ${n(60)} من الزخم`)}</span></button>
 <button id="field-standard" class="world-hit camp-hit" data-command="story-rally" aria-label="${tr('Gather newly deployed troops at your camp','اجمع الجند الجدد عند مخيّمك')}" hidden><span class="world-target-name">${tr('Gather','اجمع')}</span></button>
 ${fieldBannerHtml()}
+<div id="field-blades" class="field-blades"></div>
 <button id="field-supplies" class="world-hit" data-field-context="supplies" aria-label="${tr('Inspect supplies','افحص المؤن')}" hidden><span class="world-target-name">${tr('Supplies','المؤن')}</span></button>
 <button id="field-enemy" class="world-hit enemy-hit" data-field-context="enemy" aria-label="${tr('Select enemy for a tactical skill','اختر عدوّاً لمهارة تكتيكية')}" hidden><span class="world-target-name">${tr('Select enemy','اختر عدوّاً')}</span></button>
 <button id="field-cover" class="world-hit cover-hit" data-field-context="cover" aria-label="${tr('Select road shelter for Meteor to break cover','اختر ملجأ الطريق ليحطّمه «النيزك»')}" hidden><span class="world-target-name">${tr('Break cover','حطّم الملجأ')}</span></button>

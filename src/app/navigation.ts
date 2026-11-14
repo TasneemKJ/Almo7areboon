@@ -219,7 +219,7 @@ export function createNavigation(deps: NavigationDeps) {
     // that dialog owns its own buttons, exactly as when a dialog opens over Camp (showModal).
     navState.campOwner??=navState.modal&&navState.modal!=='camp-focus'&&navState.modal!=='session'?{kind:'advanced',returnTarget:'journal'}:{kind:'root'};
     if(navState.campOwner.kind==='advanced'&&!navState.modal&&navState.activeTab==='battle')navState.campOwner={kind:'root'};
-    const p=ports.sessionState.game.profile,day=localDay(),store={lit:lamplighterWalks(),inApp:almoApp.inApp},key=JSON.stringify([p.age,p.enemyAge,p.foodLevel,p.baseLevel,p.unlocked,p.chronicle?.route,campGoalText(p,day),p.coins,p.dusk,p.wins>0,store]);
+    const p=ports.sessionState.game.profile,day=localDay(),store={lit:lamplighterWalks(),inApp:almoApp.inApp},key=JSON.stringify([p.age,p.enemyAge,p.foodLevel,p.baseLevel,p.unlocked,p.chronicle?.route,campGoalText(p,day),p.coins,p.dusk,p.wins>0,store,p.smithy?.blades]);
     if(key!==navState.campRenderKey){navState.campRenderKey=key;htmlIfChanged($('camp-view'),campRootHtml(p,day,store));}
     $('camp-view').hidden=navState.activeTab!=='battle';$('camp-view').inert=navState.modal!==null||navState.activeTab!=='battle';
     $('battle-view').inert=true;
@@ -250,6 +250,14 @@ export function createNavigation(deps: NavigationDeps) {
     if(place){place.classList.remove('camp-place-worked');void place.offsetWidth;place.classList.add('camp-place-worked');}
     root!.querySelector<HTMLElement>('#camp-view [data-primary="true"]')?.focus({preventScroll:true});
   }
+  /** The smith (game/smithy.ts): the forge reforges the oldest broken blade; a hook hangs or takes down a weapon. */
+  function workSmithy(command:string,button:HTMLButtonElement){
+    const id=Number(button.dataset.blade);
+    if(navState.modal||button.getAttribute('aria-disabled')==='true'||!Number.isInteger(id)||!ports.action({type:command==='smithy-reforge'?'reforge':'hang',id})||!ports.playable()||navState.modal)return;
+    pressFeedback({sound:ports.sessionState.game.profile.sound,kind:'press'});syncCamp();
+    const node=root!.querySelector<HTMLElement>(command==='smithy-reforge'?'.camp-smithy-forge':`.camp-smithy-hook[data-kind="${button.dataset.kind}"]`);
+    if(node){node.classList.remove('camp-smithy-worked');void node.offsetWidth;node.classList.add('camp-smithy-worked');node.focus({preventScroll:true});}
+  }
   /** The lit wall lamps: today's dusk raid opens on the field, which waits in its ready phase while three lamps are hung. */
   function startDusk(){
     if(navState.modal||!ports.action({type:'dusk',day:localDay(),lit:lamplighterWalks()})||!ports.playable()||navState.modal)return;
@@ -275,6 +283,7 @@ export function createNavigation(deps: NavigationDeps) {
       if(command==='camp-counsel-act'){buyCounsel();return true;}
       if(command==='lamplighter')return false;
       if(command==='camp-dusk'){startDusk();return true;}
+      if(command==='smithy-reforge'||command==='smithy-hang'){workSmithy(command,button);return true;}
       if(command==='camp-battle'&&entryReady()&&!navState.modal){ports.sessionState.manualPaused=false;if(ports.action({type:'start'})&&ports.playable()&&navState.modal!=='session'){navState.campOwner=null;root!.dataset.fieldMode='field';switchTab('battle');$('world').focus({preventScroll:true});}return true;}
       return true;
     }

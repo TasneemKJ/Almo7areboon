@@ -259,7 +259,7 @@ Combined-main camp/cinema acceptance:1464tests/build pass; six-size native touch
 - [x] (1.1, counsel: defeat card names the storehouse, Camp lights it; sim 0% -> 100% by try 2 at 0.75 taps/s; DESIGN.md) Chapter 2 (Olive Terraces) is a wall for a slow tapper: the cold bot (0.75 taps/s) lost it 11 times in a row; a quick player beats it on the second try. Tune its waves or coach after the first defeat (point at the next unlock, offer Replay First Fires). A one-line hint does not fix it: the field guide already says "food is piling up, tap a troop" (`battleGuidance`, `foodIsPiling`), and the bot that reads it still loses on wave timing at 0.75 taps/s.
 - [ ] First damage to the enemy gate lands at about 35-48 s; the owner's band is about 20 s.
 - [ ] Days 3-7 are nearly empty for a free player (no new chapter, seals frozen, coins pile up with nothing to buy). Find an honest bounded beat from the game's own content.
-- [ ] Coins become meaningless for a free player stuck at the paywall (millions by day 7).
+- [x] (free-path-sim.ts; the smith #60 is the coin sink, and Move camp keeps the purse) Coins become meaningless for a free player stuck at the paywall (millions by day 7).
 - [x] (1.1: the counselled place carries the village lantern, others step back, daily line waits) Camp's first visit has four stations and a daily-reward detour; put it on rails (one highlighted action).
 - [ ] Art: Cards (flat vector icons, native select), Settings (stock form), the store cards and pause sheet (flat cream cards) do not belong to the painted world yet. The Lamplighter's lanterns are small at phone size; one sits behind the gate's health plate.
 - [ ] A mid-battle reload drops the battle without a word; say so on the title ("Your last battle ended when the game closed").
@@ -299,3 +299,12 @@ Combined-main camp/cinema acceptance:1464tests/build pass; six-size native touch
 - [ ] Dusk raid: real-touch check of lamp hanging on iOS.
 - [x] Pacing director past chapter 2 for a player who never opens Camp: a rally closes the age gap; streak-sim mode 0 worst streak 3 over 20 players x 30 battles
 - [ ] Game Center: the bundle ID capability, provisioning profile and the com.apple.developer.game-center entitlement (coordinator, at ship time); the seven achievements and the leaderboard exist in App Store Connect.
+
+## Free path and the smith (#60, 2026-11-14)
+- [x] Free-path sim (scripts/qa-gate/free-path-sim.ts): a free player by the rules to the chapter 6 win
+- [x] Move camp keeps the company and the purse; the lamp lights a camp just moved
+- [x] Broken blades on the field; the smith reforges them into named sidegrades; three hooks; the keepsake wall
+- [ ] The Thursday caravan «قافلة الخميس» (#60 backlog)
+- [ ] Show the hung weapon on the troops in battle (a glint on that kind's weapon)
+- [ ] Real-touch check on iOS of carrying a blade before the result card
+- [ ] Owner decision: a free path to chapter 6 in the app would need Full Journey to sell something other than chapters 3-6

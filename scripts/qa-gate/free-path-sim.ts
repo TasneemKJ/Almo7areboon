@@ -7,8 +7,9 @@
 //                 coins can do it (the defeat card's primary then), as streak-sim.ts does;
 //   CAMP=spend    spends like a player who wanders Camp after every battle: Move camp when affordable, else the counsel
 //                 order with no lamp scope (campCounsel), so coins never sit idle.
-// SMITH=keep|none|all|hang3 (the smith, #60): keep = carry blades home and do nothing else; none = leave them; all =
-// reforge every blade that can be paid for, hang the newest; hang3 = reforge and keep three hung, one per troop kind.
+// SMITH=keep|none|all|hang3 (the smith, #60, src/game/smithy.ts): keep = carry blades home and do nothing else; none =
+// leave them on the field; all = reforge every blade that can be paid for and hang the newest; hang3 = reforge every
+// blade and keep the first weapon of each kind on its hook (three hung). The smith must not change who reaches chapter 6.
 // Per chapter it reports battles, losses, the longest run of defeats, wins that needed the pacing director's rally,
 // coins earned in battle, spent in Camp, wiped by Move camp and still idle when the chapter was won, and what Move
 // camp asked. A wall is a chapter with a run of more than 3 defeats, or one whose next step needed coins the player
@@ -19,6 +20,7 @@ import { Game } from '../../src/game/simulation.ts';
 import { campCounsel, counselAction, litCounsel } from '../../src/game/counsel.ts';
 import { ERAS } from '../../src/game/data.ts';
 import { rallyLevel } from '../../src/game/encounters.ts';
+import { blades, brokenBlades, fieldBlades, reforgeCost } from '../../src/game/smithy.ts';
 import type { UnitKind } from '../../src/game/types.ts';
 
 const SEEDS = Number(process.argv[2] ?? 12), CAMP = process.argv[3] ?? 'counsel', BATTLES = Number(process.argv[4] ?? 150), SMITH = process.argv[5] ?? 'keep', TAP = process.argv[6] ?? 'first';
@@ -53,22 +55,24 @@ function move(game: Game, row: Row): boolean {
   if (CAMP === '0' || !canMove(game)) return false;
   const cost = ERAS[game.profile.age].evolveCost, coins = game.profile.coins;
   if (!game.dispatch({ type: 'evolve' })) return false;
-  row.spent += cost; row.wiped += coins - cost; return true;
+  row.spent += cost; row.wiped += coins - cost - game.profile.coins; return true;
 }
 function smithy(game: Game, row: Row) {
   if (SMITH === 'none') return;
-  for (const blade of (game.state as { fallen?: { id: number }[] }).fallen ?? []) game.dispatch({ type: 'blade-carry', id: blade.id } as never);
-  if (SMITH === 'keep') return;
-  type Blade = { id: number; kind: number; forged?: true; hung?: true };
-  const blades = (): Blade[] => (game.profile as { smithy?: { blades: Blade[] } }).smithy?.blades ?? [];
-  for (const blade of [...blades()]) {
-    if (blade.forged) continue;
-    const coins = game.profile.coins;
-    if (game.dispatch({ type: 'reforge', id: blade.id } as never)) { row.spent += coins - game.profile.coins; row.reforged++; }
+  for (const blade of [...fieldBlades(game.profile)]) game.dispatch({ type: 'blade-carry', id: blade.id });
+}
+/** Reforging after a battle (before Move camp) and again after Camp's bread: the smith only takes what is left over. */
+function forge(game: Game, row: Row) {
+  if (SMITH === 'none' || SMITH === 'keep') return;
+  for (const blade of brokenBlades(game.profile)) {
+    const coins = game.profile.coins, p = game.profile;
+    // A thrifty smith's customer: never the coins the road needs (Move camp while behind the rival).
+    if (p.age < p.enemyAge && p.age < ERAS.length - 1 && coins - reforgeCost(p) < ERAS[p.age].evolveCost) break;
+    if (game.dispatch({ type: 'reforge', id: blade.id })) { row.spent += coins - game.profile.coins; row.reforged++; }
   }
-  const forged = blades().filter(b => b.forged);
-  if (SMITH === 'all') { const last = forged.at(-1); if (last && !last.hung) game.dispatch({ type: 'hang', id: last.id } as never); }
-  if (SMITH === 'hang3') for (const kind of [0, 1, 2]) { const b = forged.filter(x => x.kind === kind).at(-1); if (b && !b.hung) game.dispatch({ type: 'hang', id: b.id } as never); }
+  const forged = blades(game.profile).filter(b => b.forged);
+  // all: the newest weapon always hangs (replacing its kind's); hang3 keeps the earliest on each hook (reforge's own rule).
+  if (SMITH === 'all') { const last = forged.at(-1); if (last && !last.hung) game.dispatch({ type: 'hang', id: last.id }); }
 }
 
 const players: { chapters: Row[]; battles: number; done: boolean; appGate: number | null; walls: string[] }[] = [];
@@ -81,7 +85,7 @@ for (let s = 1; s <= SEEDS; s++) {
     const rally = rallyLevel(game.profile) > 0, coins = game.profile.coins;
     const won = fight(game, rnd);
     row.battles++; row.earned += game.profile.coins - coins;
-    smithy(game, row);
+    smithy(game, row); forge(game, row);
     if (won) {
       streak = 0; if (rally) row.rallyWins++; if (row.battles === 1) row.firstTry = true;
       if (ch === 5) { row.won = true; row.idle = game.profile.coins; done = true; break; }
@@ -93,7 +97,7 @@ for (let s = 1; s <= SEEDS; s++) {
     }
     // Move camp is the army's own road: a player keeps up with the rival when the coins allow (counsel and spend).
     if (game.profile.age < game.profile.enemyAge) { chapters[game.profile.enemyAge].moveCost = ERAS[game.profile.age].evolveCost; move(game, chapters[game.profile.enemyAge]); }
-    camp(game, chapters[game.profile.enemyAge]);
+    camp(game, chapters[game.profile.enemyAge]); forge(game, chapters[game.profile.enemyAge]);
   }
   const walls = chapters.flatMap((r, i) => r.battles && (r.streak > 3 || (!r.won && r.moveCost > r.earned)) ? [`ch${i + 1}${r.streak > 3 ? ` streak ${r.streak}` : ''}${!r.won && r.moveCost > r.earned ? ` needs ${r.moveCost}` : ''}`] : []);
   players.push({ chapters, battles: b + (done ? 1 : 0), done, appGate, walls });

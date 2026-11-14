@@ -1,5 +1,6 @@
 import { askForRatingAfter } from '../ui/app-bridge.ts';
 import { DUSK_HELD_BREATH_MS } from '../game/dusk-raid.ts';
+import { BLADE_HOLD_MS, BLADE_LAST_MS, fieldBlades } from '../game/smithy.ts';
 import { createSaveSession, type SaveSession } from '../game/save-session.ts';
 import type { Phase } from '../game/types.ts';
 import type { AudioMix } from '../game/audio-mix.ts';
@@ -43,6 +44,8 @@ export interface SessionState {
   resultDue: number;
   /** A victory was just won in play: the rating ask may follow once its result appears (never on a restored result). */
   ratingDue?: boolean;
+  /** Broken blades lie on the field: the result waits a little (game/smithy.ts BLADE_HOLD_MS), less once they are carried. */
+  bladeHold?: boolean;
   resultShown: string;
   savedWarning: boolean;
   toastTimer: number;
@@ -180,10 +183,11 @@ export function createLifecycle(deps: LifecycleDeps) {
    syncBattleHud({root:root!,$,game:sessionState.game,money,coin,manualPaused:sessionState.manualPaused});
     fieldControls.update(sessionState.game);
     // Let the finishing blow and base collapse play before the result dialog covers them.
-    if(s.phase!==sessionState.lastPhase){if(sessionState.lastPhase==='running'&&(s.phase==='won'||s.phase==='lost'))sessionState.resultDue=now+(s.dusk&&s.phase==='won'?DUSK_HELD_BREATH_MS:dom.rootElement().dataset.motion==='reduced'?350:1300);sessionState.lastPhase=s.phase;}
+    if(s.phase!==sessionState.lastPhase){if(sessionState.lastPhase==='running'&&(s.phase==='won'||s.phase==='lost'))sessionState.resultDue=now+(s.dusk&&s.phase==='won'?DUSK_HELD_BREATH_MS:dom.rootElement().dataset.motion==='reduced'?350:1300);if(sessionState.lastPhase==='running'&&fieldBlades(sessionState.game.profile).length){sessionState.resultDue+=BLADE_HOLD_MS;sessionState.bladeHold=true;}sessionState.lastPhase=s.phase;}
+    if(sessionState.bladeHold&&!fieldBlades(sessionState.game.profile).length){sessionState.bladeHold=false;sessionState.resultDue=Math.min(sessionState.resultDue,now+BLADE_LAST_MS);}
     const reviewHoldingResult=dom.automated()&&dom.query('canvas')?.dataset.battlefieldReviewFrameReady===s.phase;
     if(ports.navState.entryEntered&&playable()&&ports.navState.modal!=='session'&&(s.phase==='won'||s.phase==='lost')&&sessionState.resultShown!==s.phase&&now>=sessionState.resultDue&&!reviewHoldingResult){sessionState.resultShown=s.phase;ports.showResult();if(sessionState.ratingDue&&s.phase==='won'){sessionState.ratingDue=false;askForRatingAfter([{type:'win'}]);}}
-    if(s.phase==='ready'||s.phase==='running')sessionState.resultShown='';
+    if(s.phase==='ready'||s.phase==='running'){sessionState.resultShown='';sessionState.bladeHold=false;}
     if(playable()&&sessionState.session.status==='active'&&now-sessionState.lastSave>5000)persist();
   }
   function exportSave(){
