@@ -373,6 +373,23 @@ Comparables: Kingdom Two Crowns (night pressure, light as safety), Stick War Leg
 - Second idea (backlog): «الراية». A battle can also be won by seizing the enemy banner (a fast unit runs the lane) and ending it without a rout; captured banners hang in the village as a collection (meta).
 - Why: fixes the Lamplighter being cosmetic only (PENDING #10) with a renewable daily challenge, and makes dusk the game's most atmospheric moment.
 
+
+## #60 (random-stimulus) «سيوف المعركة المكسورة»: stimuli: a broken sword · a mule caravan · "the army remembers every loss"
+Fixes Almo's lowest dimension: pay-to-progress. Coins need a sink that a free player can afford, and chapter 6 needs a free path to it.
+- **The smith reforges what the battle broke (best).**
+  - After every battle, won or lost, one or two broken blades lie on the field where your troops fell. Tap them to carry them home.
+  - At the village smith «الحدّاد», coins reforge a blade into a named weapon. The name comes from that battle: «سيف الجسر الخشبي», «رمح ليلة الغسق».
+  - Hang it on one troop kind for a sidegrade, never a straight upgrade. For example, riders hit first but turn back sooner; throwers reach further but throw slower.
+  - At most three hang at once; the rest hang on the smithy wall, which becomes the keepsake collection.
+  - Losses now produce something, which softens the defeat streak without a label. Coins get a sink that earns identity rather than power.
+  - The free path through chapter 6 is real, because blades come only from battles, not from the shop.
+  - Hakawati: «السيف المكسور يعرف عن الحرب أكثر من السيف الجديد.»
+- **The Thursday caravan «قافلة الخميس» (backlog):**
+  - Once a week a mule caravan rests at the village gate with three offers for coins: a rare temper for one blade, a banner colour, a song for the eve feast (#40).
+  - It is gone next week, so it is a weekly reason to come back. It never sells troops or food for money.
+  - The Lamplighter sub sees the caravan a day early, which is cosmetic timing and not power.
+- **Comparables:** Darkest Dungeon (heirlooms from expeditions), Slay the Spire (relics as sidegrades), Kingdom Rush (the upgrade smithy). Ours: every weapon is a memory of a named battle, told by the hakawati.
+
 ## Shipped 2026-11-14 (audit #1 fixes)
 - **Battle 2 wall.** The Regroup card's one primary (`data-primary`) returns to the camp scene, where the lit place carries its act on a lamp-lit plate (bread first, five levels, then the gate, then the Thrower). Lit in the free chapters, and later only while a defeat streak is live. A defeat with coins to move camp makes Move camp the primary. Battle 2 eases for a lone company (waves a tenth later).
 - **The pacing director.** After two fallen gates in a row the next battle quietly thins the rival's later waves, weakens them a tenth and starts with 5 more bread; each further defeat adds a step (up to three); a victory ends it. No label. Checked by `scripts/qa-gate/streak-sim.ts`.
