@@ -150,3 +150,10 @@ body:has(.field-banner.hinting,.field-banner.dragging) #field-standard .world-ta
 .field-banner.settling .banner-carry{transition:transform 1.2s cubic-bezier(.3,.7,.3,1);--carried:0px;--lean:-2deg}
 .field-banner.settling .banner-cloth{animation:none;transition:transform 1.2s ease-out;transform:skewY(-4deg) scaleY(.94)}
 .field-banner.settling .banner-plate,.field-banner.settling::before,.field-banner.settling::after{display:none}
+/* iPhone portrait (375x812, 390x844). A one-word name of ten letters or more ("Pathkeeper") cannot wrap onto the
+   token's second line, so it ended in an ellipsis: it takes a slightly smaller face instead. The banner's Hold/Advance
+   plates hung above its cloth, over the lanes where the waiting company stands (the "+20% strike" plate covered a
+   Pathkeeper); on a tap or a want they now hang below its foot, over open ground. While a finger carries the banner
+   they rise above it again, where the finger does not cover them. */
+@media (min-width:360px){html[lang="en"] #app[data-field-mode="field"][data-entry="play"] .deployment .unit-card .unit-name.long-name{font-size:10px;letter-spacing:-.4px}}
+@media (orientation:portrait){.field-banner:not(.dragging) .banner-plate{bottom:auto;top:calc(100% + 4px)}}
