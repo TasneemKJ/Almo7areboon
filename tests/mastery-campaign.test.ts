@@ -95,7 +95,7 @@ test('older real replay continues one chapter without relocking farther access',
 });
 test('fresh mixed timeline remains viable with common-only paid draws and honest progression economy',async()=>{
  const { simulateMastery } = await import('../scripts/simulate-mastery.ts');const trace=simulateMastery('mixed');
- assert.equal(trace.completed,true);assert.equal(trace.commonOnly,true);assert.equal(trace.firstVictoryPurchase,true);assert.equal(trace.dailyGems,0);assert.equal(trace.questGems,300);
+ assert.equal(trace.completed,true);assert.equal(trace.commonOnly,true);assert.equal(trace.firstVictoryPurchase,true);assert.equal(trace.dailyGems,0);assert.equal(trace.questGems,200,'the purse and company travel (free-path-sim.ts): six battles, three milestones');
  assert.ok(trace.totalSeconds<=720,'competent path exceeds the approximate upper pacing target');
  assert.ok(trace.evolutionPurchases.length>=4);assert.ok(trace.evolutionPurchases.every(p=>Number(p.wins)<=1&&Number(p.losses)<=2));
  const evolves=trace.transitions.filter(t=>t.kind==='evolve');assert.ok(evolves.every(t=>t.enemyBefore===t.enemyAfter&&t.frontierBefore===t.frontierAfter));

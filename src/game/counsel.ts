@@ -28,10 +28,18 @@ export function campCounsel(p: Readonly<Profile>): CampCounsel | null {
 
 /**
  * The counsel Camp lights for this player now: always in the free chapters, and later only after a defeat (while the
- * pacing director's streak is live), so a lantern that never goes out does not become noise as coins pile up.
+ * pacing director's streak is live) or in a camp just moved, so a lantern that never goes out does not become noise as coins pile up.
  */
 export function litCounsel(p: Readonly<Profile>): CampCounsel | null {
-  return p.furthestBattle < 2 || (p.lossStreak ?? 0) > 0 ? campCounsel(p) : null;
+  return p.furthestBattle < 2 || (p.lossStreak ?? 0) > 0 || freshCamp(p) ? campCounsel(p) : null;
+}
+/**
+ * A camp just moved, before its storehouse has its first five levels of bread: the lamp lights there too, so the purse
+ * the company carried is spent on bread before the first battle in the new place (free-path-sim.ts: without it a
+ * carried purse sat idle and the first battle after Move camp was nearly always lost).
+ */
+export function freshCamp(p: Readonly<Pick<Profile, 'age' | 'foodLevel'>>): boolean {
+  return p.age > 0 && p.foodLevel < FIRST_BREAD;
 }
 
 /** The one action that buys what the lit place offers (Camp's in-world act and the bot both spend through this). */

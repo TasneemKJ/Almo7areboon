@@ -12,7 +12,7 @@ test('Evolution puts the decision, wallet and reset consequences before the chap
  const game=gameAt(0,1200),html=evolutionScreenHtml(game.profile,game.state);
  assert.ok(html.indexOf('class="evolution-decision"')<html.indexOf('class="era-list"'));
  assert.match(html,/Your coins:\s*<strong>1,200<\/strong>/);
- assert.match(html,/All coins, upgrades and troop unlocks reset/);
+ assert.match(html,/The storehouse and gate are built again\. Your troops come along, and so do the coins left after the price/);
  assert.match(html,/selected opponent and unlocked battles stay/);
 });
 

@@ -45,7 +45,7 @@ test('funded option uses exact current prices and respects evolution prerequisit
  assert.doesNotMatch(regroupLearningHtml(g.profile,g.state),/Unlock ranged/);
  Object.assign(g.profile,{foodLevel:0,baseLevel:0});
  g.profile.coins=ERAS[0].evolveCost;
- assert.match(regroupLearningHtml(g.profile,g.state),/Moving camp.*2,500 coins.*resets/);
+ assert.match(regroupLearningHtml(g.profile,g.state),/Moving camp.*2,500 coins.*built again/);
  g.profile.age=1;g.profile.enemyAge=0;g.profile.coins=ERAS[1].evolveCost;
  assert.doesNotMatch(regroupLearningHtml(g.profile,g.state),/Moving camp is affordable/);
 });

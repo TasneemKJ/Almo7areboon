@@ -75,7 +75,7 @@ test('evolution title changes do not weaken the spending, active battle or final
  assert.match(html,/confirm-evolve" disabled/);
  g.profile.coins=ERAS[0].evolveCost;
  html=evolutionDialogHtml(g.profile,g.state)!;assert.doesNotMatch(html,/confirm-evolve" disabled/);
- assert.match(html,/remaining coins are also cleared/);
+ assert.match(html,/so do the coins left after the price/);assert.doesNotMatch(html,/cleared/);
  g.dispatch({type:'start'});assert.equal(evolutionDialogHtml(g.profile,g.state),null);
  g.state.paused=true;assert.equal(evolutionDialogHtml(g.profile,g.state),null);
  g.profile.age=5;g.state.phase='ready';assert.equal(evolutionDialogHtml(g.profile,g.state),null);

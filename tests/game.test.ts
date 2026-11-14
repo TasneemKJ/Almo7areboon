@@ -193,7 +193,7 @@ function unit(id: number, side: 'player' | 'enemy', x: number, hp = 26, kind: 0 
   assert.equal(game.state.phase, 'running');
 });
 
- test('evolution requires its configured cost and resets the age economy', () => {
+ test('evolution requires its configured cost, rebuilds the storehouse and gate, and the company and purse travel', () => {
   const game = new Game();
   game.profile.coins = ERAS[0].evolveCost + 2000;
   game.profile.foodLevel = 4;
@@ -201,10 +201,10 @@ function unit(id: number, side: 'player' | 'enemy', x: number, hp = 26, kind: 0 
   game.profile.unlocked = [true, true, true];
   assert.equal(game.dispatch({ type: 'evolve' }), true);
   assert.equal(game.profile.age, 1);
-  assert.equal(game.profile.coins, 0);
+  assert.equal(game.profile.coins, 2000, 'the coins left after the price come along');
   assert.equal(game.profile.foodLevel, 0);
   assert.equal(game.profile.baseLevel, 0);
-  assert.deepEqual(game.profile.unlocked, [true, false, false]);
+  assert.deepEqual(game.profile.unlocked, [true, true, true], 'the troops who joined walk on with the company');
   assert.equal(game.dispatch({ type: 'evolve' }), false);
 });
 

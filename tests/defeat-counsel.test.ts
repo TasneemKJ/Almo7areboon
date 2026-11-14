@@ -60,8 +60,10 @@ test('Camp keeps the lantern to the free chapters and never hides a ready daily 
   setLang('en');
   const day = 20_000, p = defaultProfile(); Object.assign(p, { enemyAge: 1, furthestBattle: 1, coins: 560, played: true });
   assert.match(campRootHtml(p, day), /camp-goal/, 'a ready daily reward still shows');
-  Object.assign(p, { age: 1, enemyAge: 3, furthestBattle: 3, coins: 5_000 });
+  Object.assign(p, { age: 1, enemyAge: 3, furthestBattle: 3, coins: 5_000, foodLevel: 5 });
   assert.doesNotMatch(campRootHtml(p, day), /camp-lamp|data-counsel/, 'later, coins pile up: no permanent lantern');
+  Object.assign(p, { foodLevel: 0 });
+  assert.match(campRootHtml(p, day), /data-counsel="storehouse"/, 'a camp just moved: the lamp lights the storehouse until its first five levels of bread');
 });
 
 test('the defeat card names a cause only where it was measured (chapter 2, gate fallen); elsewhere it only points', () => {

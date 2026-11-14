@@ -46,7 +46,7 @@ test('P23: battle selection exposes only unlocked ready-state battles',()=>{
  assert.match(main(),/battleSelectionHtml\((?:ports\.)?sessionState\.game\.profile,\s*(?:ports\.)?sessionState\.game\.state\)/);
 });
 test('P24: evolution has an explicit reset warning and confirmation action',()=>{
- const g=new Game();const html=evolutionDialogHtml(g.profile,g.state)!;assert.match(html,/All coins/);assert.match(html,/cards and gems/);assert.match(html,/confirm-evolve/);
+ const g=new Game();const html=evolutionDialogHtml(g.profile,g.state)!;assert.match(html,/Food and base upgrades/);assert.match(html,/cards and gems/);assert.match(html,/confirm-evolve/);
  g.dispatch({type:'start'});assert.equal(evolutionDialogHtml(g.profile,g.state),null);
  assert.match(main(),/'confirm-evolve':/);assert.match(main(),/evolutionDialogHtml\((?:ports\.)?sessionState\.game\.profile,\s*(?:ports\.)?sessionState\.game\.state\)/);
 });

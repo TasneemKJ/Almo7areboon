@@ -247,7 +247,7 @@ for(const legacy of [false,true])test(`actual result evolution click/cancel and 
  h.click('close');assert.equal(c.modal,'result');assert.deepEqual(c.game.profile,before);
  h.click('evolve');c.api.dismissModal();assert.equal(c.modal,'result');assert.deepEqual(c.game.profile,before);
  h.click('evolve');h.click('confirm-evolve');assert.equal(c.modal,'result');assert.equal(c.game.state.phase,'won');
- assert.equal(c.game.profile.age,1);assert.equal(c.game.profile.coins,0);
+ assert.equal(c.game.profile.age,1);assert.equal(c.game.profile.coins,before.coins-ERAS[0].evolveCost,'the purse past the price travels');
  for(const field of ['enemyAge','furthestBattle','mastery','pendingVictory','wins','gems'])assert.deepEqual(c.game.profile[field],before[field]);
  const html=resultsHtml(c.game.profile,c.game.state);assert.match(html,new RegExp(`Move camp · ${ERAS[1].evolveCost.toLocaleString('en-US')} coins`));assert.match(html,/data-command="evolve" disabled/);
  // Synthetic activation reaches the same rejected action path; affordability refreshes without losing Return.
@@ -404,7 +404,7 @@ test('normal native double-click deployment still accepts both affordable troop 
 });
 
 
-test('actual optional-probe evolution route retains Battle 5 and seals while resetting local army progress',()=>{
+test('actual optional-probe evolution route retains Battle 5, seals, the company and the purse while rebuilding storehouse and gate',()=>{
  const h=harness(),c=h.context,p=defaultProfile();
  Object.assign(p,{age:4,enemyAge:4,furthestBattle:4,coins:14000000,foodLevel:5,baseLevel:3,unlocked:[true,true,true]});
  p.mastery.chapters[4]={earnedMask:3,bestSeconds:81,bestGateDamage:0};c.game=new Game(p);
@@ -414,8 +414,8 @@ test('actual optional-probe evolution route retains Battle 5 and seals while res
  h.click('evolve',1);assert.equal(c.modal,'evolve');h.click('confirm-evolve',1);
  assert.equal(c.modal,null);assert.equal(c.activeTab,'battle');assert.equal(c.game.state.phase,'ready');
  assert.deepEqual([c.game.profile.age,c.game.profile.enemyAge,c.game.profile.furthestBattle],[5,4,4]);
- assert.deepEqual([c.game.profile.coins,c.game.profile.foodLevel,c.game.profile.baseLevel],[0,0,0]);
- assert.deepEqual(c.game.profile.unlocked,[true,false,false]);assert.deepEqual(c.game.profile.mastery,mastery);
+ assert.deepEqual([c.game.profile.coins,c.game.profile.foodLevel,c.game.profile.baseLevel],[1000000,0,0]);
+ assert.deepEqual(c.game.profile.unlocked,[true,true,true]);assert.deepEqual(c.game.profile.mastery,mastery);
  assert.equal(c.$('timeline').textContent,'TIMELINE 1 · BATTLE 5');
 });
 test('closing a storybook opened from a settled victory returns to its result without losing the receipt',()=>{const h=settledHarness(),c=h.context,before=JSON.stringify(c.game.profile);h.click('chronicle');assert.equal(c.modal,'chronicle');c.api.dismissModal();assert.equal(c.modal,'result');assert.equal(JSON.stringify(c.game.profile),before);});

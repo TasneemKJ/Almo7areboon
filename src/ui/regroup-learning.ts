@@ -22,7 +22,7 @@ export function regroupLearningHtml(profile:Readonly<Profile>,state:Readonly<Bat
  let funded=tr('Try one change at a time. Your coins already earned are kept.','جرّب تغييراً واحداً في كلّ مرّة. النقود التي كسبتها تبقى معك.');
  // Not while the next chapter is behind Full Journey: coins alone do not open it, so the advice stays on what they do buy.
  if(profile.age<5&&profile.age<=profile.enemyAge&&profile.coins>=ERAS[profile.age].evolveCost&&!evolutionNeedsFullJourney(profile.age))
-  funded=tr(`Moving camp is affordable: ${number(ERAS[profile.age].evolveCost)} coins. It resets coins, camp upgrades and troop unlocks; review The Road before confirming.`,`تستطيع الآن نقل المخيّم: ${num(ERAS[profile.age].evolveCost)} من النقود. نقل المخيّم يعيد النقود وتطويرات المخيّم وفتح الجند إلى البداية؛ راجع «الطريق» قبل أن تؤكّد.`);
+  funded=tr(`Moving camp is affordable: ${number(ERAS[profile.age].evolveCost)} coins. The storehouse and gate are built again; your troops and the coins left after the price come along. Review The Road before confirming.`,`تستطيع الآن نقل المخيّم: ${num(ERAS[profile.age].evolveCost)} من النقود. يُبنى المخزن والبوّابة من جديد، ويأتي معك جنودك وما يبقى من نقودك بعد الثمن. راجع «الطريق» قبل أن تؤكّد.`);
  else if(counsel?.station==='company'&&counsel.kind===1)
   funded=tr(`Unlock ranged troops for ${number(unlockCost(1,profile))} coins, then protect them with a melee front line.`,`افتح الرماة مقابل ${num(unlockCost(1,profile))} من النقود، ثم احمِهم بخطّ أماميّ للقتال القريب.`);
  else if(counsel?.station==='company')

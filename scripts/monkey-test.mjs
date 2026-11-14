@@ -61,7 +61,7 @@ for (const [name, raw] of Object.entries(saves)) {
   await flow.waitForFunction(key => JSON.parse(localStorage.getItem(key)).age === 5, SAVE);
   const saved = await stored(flow);
   const after = {age: saved.age, enemyAge: saved.enemyAge, coins: saved.coins, foodLevel: saved.foodLevel, unlocked: saved.unlocked.map(u => u ? 'U' : 'L').join('')};
-  const good = after.age === 5 && after.enemyAge === 4 && after.coins === 0 && after.foodLevel === 0 && after.unlocked === 'ULL' && flowErrors.length === 0;
+  const good = after.age === 5 && after.enemyAge === 4 && after.coins === 1000000 && after.foodLevel === 0 && after.unlocked === 'UUU' && flowErrors.length === 0;
   console.log(`${good ? 'ok  ' : 'FAIL'} evolution flow: ${JSON.stringify(after)}${flowErrors.length ? ` errors=${flowErrors.join(' | ')}` : ''}`);
   if (!good) failures.push('evolution flow');
   await flow.close();

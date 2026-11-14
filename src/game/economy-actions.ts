@@ -46,10 +46,13 @@ export function evolve(game: EconomyPort): boolean {
   const { profile } = game;
   if (game.phase === 'running' || profile.age >= 5 || profile.age > profile.enemyAge || !game.spend(ERAS[profile.age].evolveCost)) return false;
   profile.age++;
-  profile.coins = 0;
+  // The company walks on together (free-path-sim.ts, 2026-11-14). The troops who joined come along, in the new place's
+  // dress, and the coins left after the price travel in the purse; only the storehouse and the gate are built again.
+  // The new camp's prices are eight times higher, so the purse buys about an eighth of what it did: enough bread that
+  // the first battle in a new place is not lost before it starts. Before this, a moved camp arrived with one troop and
+  // nothing in the purse, and a free player lost every chapter from 3 to 6 until the pacing director stepped in.
   profile.foodLevel = 0;
   profile.baseLevel = 0;
-  profile.unlocked = [true, false, false];
   game.restartBattle();
   game.restorePendingVictory();
   game.emit({ type: 'evolve' });

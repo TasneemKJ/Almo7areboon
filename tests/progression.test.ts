@@ -6,12 +6,12 @@ import {defaultProfile,loadProfile,saveProfile,SAVE_KEY} from '../src/game/save.
 
 function forceWon(g:Game) {g.dispatch({type:'start'});g.state.enemyHp=0;g.step(1/60);}
 
-test('evolving resets coins and retains battle progress, while keeping the new age and permanent collection',()=>{
+test('moving camp keeps the purse past the price, the company and battle progress, with the new age and permanent collection',()=>{
   const p=defaultProfile();p.coins=ERAS[0].evolveCost+999;p.enemyAge=2;p.furthestBattle=3;p.cards[0]=4;
   const g=new Game(p);assert.equal(g.dispatch({type:'evolve'}),true);
   assert.equal(g.profile.age,1);assert.equal(g.profile.enemyAge,2);assert.equal(g.profile.furthestBattle,3);
-  assert.equal(g.profile.coins,0);assert.equal(g.profile.cards[0],4);assert.equal(g.profile.gems,p.gems);
-  assert.equal(g.state.phase,'ready');assert.deepEqual(g.profile.unlocked,[true,false,false]);
+  assert.equal(g.profile.coins,999);assert.equal(g.profile.cards[0],4);assert.equal(g.profile.gems,p.gems);
+  assert.equal(g.state.phase,'ready');assert.deepEqual(g.profile.unlocked,[true,false,false],'only the troops who had joined come along');
 });
 
 test('cleared battles can be replayed without relocking the furthest available battle',()=>{

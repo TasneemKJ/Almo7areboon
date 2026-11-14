@@ -36,5 +36,5 @@ for (const loseSelection of [false, true]) test(`optional evolution probe ${lose
   };
   await runInNewContext(`(async () => ${scenario.getText(ast)})()`, { browser: { newPage: async () => flow }, SAVE: 'isolated-save', url: 'http://fixture.test', failures, console: { log() {} }, openEvolution: async () => { evolutionOpen = true; }, stored: async () => structuredClone(game.profile) });
   assert.deepEqual(failures, loseSelection ? ['evolution flow'] : []);
-  assert.equal(game!.profile.age, 5); assert.equal(game!.profile.coins, 0); assert.deepEqual(game!.profile.unlocked, [true, false, false]);
+  assert.equal(game!.profile.age, 5); assert.equal(game!.profile.coins, 1_000_000, 'the purse travels'); assert.deepEqual(game!.profile.unlocked, [true, true, true], 'the company walks on together');
 });
