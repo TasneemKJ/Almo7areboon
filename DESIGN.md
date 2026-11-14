@@ -257,7 +257,8 @@ number, command id, save field or art.
 - **Move camp / انقل المخيّم** (was Evolve / ارتقِ). The company does not evolve through the ages of mankind; it breaks
   camp and walks on to the next place of the tale. It also explains the rule the old word could not: a new camp starts
   from nothing (coins, storehouse, gate and troop unlocks reset) while what the company carries (cards, gems, seals) comes
-  along. The confirm button reads "MOVE CAMP TO <PLACE>", the decline "STAY IN THIS CAMP".
+  along. (Since 2026-11-14 the troops who joined and the coins left after the price come along too, and only the
+  storehouse and gate are built again: see "the free path and the smith" below.) The confirm button reads "MOVE CAMP TO <PLACE>", the decline "STAY IN THIS CAMP".
 - **The Road / الطريق** (was the Evolution page). The page already showed the six places in order under "Through the
   Levant", and the store card already said "The road goes on".
 - **Camp** replaces "age"/"era" wherever the player's own stage was meant ("camp upgrades", "first camp", "THE LAST
@@ -411,10 +412,11 @@ Fixes Almo's lowest dimension: pay-to-progress. Coins need a sink that a free pl
 - **Broken blades.** After a battle, one blade (a victory) or two (a defeat) lie where the company's troops fell: the
   fall furthest forward, then the latest of another kind. A tap carries one home. The result waits up to 3.5 s while
   they lie and comes 0.45 s after the last is carried; uncarried blades stay on the ready field and are left behind
-  when the next battle starts. The hakawati's line rests over the field: «السيف المكسور يعرف عن الحرب أكثر من السيف
+  when the next battle starts. A defeat's Regroup leads to Camp, so while blades lie there Camp's Battle opens the
+  ready field (its own Battle button starts the fight) instead of starting at once. The hakawati's line rests over the field: «السيف المكسور يعرف عن الحرب أكثر من السيف
   الجديد.» A battle nobody fell in: «لم يسقط أحد، فلا شيء يُحمل إلى الديار. سيشعر الحدّاد بالملل الليلة.» A dusk raid
   drops nothing.
-- **The smith «الحدّاد»** has his corner by the village houses in Camp, opposite the wall lamps, once a blade is home:
+- **The smith «الحدّاد»** (plate «أصلِح»: a plain verb, so no word of ط-ر-ق stands beside the game's «الطريق») has his corner by the village houses in Camp, opposite the wall lamps, once a blade is home:
   the wall of kept weapons, a beam with three hooks (one per troop kind) and the forge (anvil, brazier, the broken
   blades by it), drawn in code in the camp's ink and brass (`src/view/smithy-art.ts`). Tap the forge to reforge the
   oldest blade (400 coins times the camp's scale) into a weapon named for its battle: «سيف النيران الأولى», «حربة
@@ -425,8 +427,11 @@ Fixes Almo's lowest dimension: pay-to-progress. Coins need a sink that a free pl
 - **Sidegrades, never upgrades.** A hung weapon tempers its own troop kind: one number better, one worse. Swords:
   harder and slower, or quicker and lighter. Javelins: further and slower, or quicker from closer. Lances: arrive first
   and fall sooner, or hold longer and arrive later. A blade won in victory keeps its edge; one carried from a defeat
-  learned patience. With reforging free, the sim's outcomes stay within noise of no smith; paid for, it costs about
-  half a battle over the whole road, which is the sink working (coins for identity, not power).
+  learned patience. With reforging free, the sim's outcomes stay within noise of no smith (identity, not power); paid
+  for, it costs about half a battle over the whole road. The sink is shallow: with the purse now travelling, coins idle
+  at the chapter 6 win rose (48M -> 57M for a first-card tapper, 62M -> 75M for one who sends its troops in turn), and
+  reforging everything takes back only 2-9M of it. The day-7 plateau (week-sim) is not measured again here.
 - **Save:** `smithy {next, blades, field?}`, optional and normalized on load; it survives Move camp and a new
-  timeline, and Start over begins without it. At most 60 blades.
+  timeline, and Start over begins without it. At most 60 blades: a full smithy gives the oldest blade still waiting by
+  the anvil (else the oldest weapon on the wall, never a hung one) to the village, so a tap on the field always carries.
 - Not yet: the Thursday caravan «قافلة الخميس»; a sign of the hung weapon on the troops in battle.

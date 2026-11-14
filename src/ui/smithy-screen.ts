@@ -18,6 +18,8 @@ export const WALL_LINE={en:'The swords on this wall no longer fight, but they do
 const number=(value:number)=>Math.floor(value).toLocaleString('en-US');
 /** Attribute text: no markup (n() wraps digits in <bdi>) and no bare quotes. */
 const attr=(text:string)=>text.replace(/<[^>]*>/g,'').replace(/"/g,'&quot;');
+/** The Arabic object pronoun for a weapon: «حربة» is feminine, «سيف» and «رمح» masculine. */
+const it=(kind:UnitKind)=>kind===1?'ها':'ه';
 const weaponNoun=(kind:UnitKind)=>[tr('Sword','سيف'),tr('Javelin','حربة'),tr('Lance','رمح')][kind];
 /** The battle's place in the genitive: «ساحاتٌ» becomes «ساحاتِ…» after a noun (idafa), so the name reads as one phrase. */
 const placeOf=(chapter:number)=>{const title=chapterPresentation(chapter).title;return isArabic()?title.replace(/ٌ/g,'ِ'):title;};
@@ -43,7 +45,7 @@ export function temperLine(p:Readonly<Pick<Profile,'age'>>,blade:Pick<Blade,'kin
 }
 /** A blade on the field: its label says what it is and what a tap does. */
 export function fieldBladeLabel(p:Readonly<Pick<Profile,'age'>>,blade:Pick<Blade,'kind'|'chapter'>):string {
- return `${brokenName(blade)}, ${tr(`where a ${unitPresentationName(p.age,blade.kind)} fell`,`حيث سقط ${unitPresentationName(p.age,blade.kind)}`)}. ${tr('Tap to carry it home.','انقر لتحمله إلى الديار.')}`;
+ return `${brokenName(blade)}, ${tr(`where a ${unitPresentationName(p.age,blade.kind)} fell`,`حيث سقط ${unitPresentationName(p.age,blade.kind)}`)}. ${tr('Tap to carry it home.',`انقر لتحمل${it(blade.kind)} إلى الديار.`)}`;
 }
 export function fieldBladeHtml(id:number,kind:UnitKind):string {
  return `<button class="world-hit field-blade" data-command="blade-carry" data-blade="${id}">${brokenBladeIllustration(kind)}</button>`;
@@ -54,7 +56,7 @@ function hookHtml(p:Readonly<Profile>,kind:UnitKind):string {
  const hung=hungFor(p,kind),spare=wallBlades(p).find(b=>b.kind===kind),target=spare??hung;
  const name=unitPresentationName(p.age,kind);
  const now=hung?`${weaponName(hung)}. ${temperLine(p,hung)}.`:tr(`No weapon on the ${name}'s hook.`,`لا سلاح على خطّاف ${name}.`);
- const act=spare?tr(` Tap to hang the ${weaponName(spare)}.`,` انقر لتعلّق ${weaponName(spare)}.`):hung?tr(' Tap to take it down to the wall.',' انقر لتنزله إلى الجدار.'):'';
+ const act=spare?tr(` Tap to hang the ${weaponName(spare)}.`,` انقر لتعلّق ${weaponName(spare)}.`):hung?tr(' Tap to take it down to the wall.',` انقر لتنزل${it(hung!.kind)} إلى الجدار.`):'';
  return `<button class="camp-smithy-hook${hung?' hung':''}" data-command="smithy-hang"${target?` data-blade="${target.id}"`:' aria-disabled="true"'} data-kind="${kind}" aria-label="${attr(now+act)}"><i class="camp-smithy-peg" aria-hidden="true"></i>${hung?weaponIllustration(kind,true):''}</button>`;
 }
 /** The smithy in Camp, once the company has carried a blade home. */
@@ -62,9 +64,9 @@ export function campSmithyHtml(p:Readonly<Profile>):string {
  if(!blades(p).length)return '';
  const broken=brokenBlades(p),next=broken[0],cost=reforgeCost(p),waits=!!next&&forgeWaits(p),short=!!next&&!waits&&p.coins<cost;
  const wall=wallBlades(p),shown=wall.slice(0,8);
- const plate=!next?tr('The smith','الحدّاد'):waits?FORGE_WAITS_LINE[isArabic()?'ar':'en']:`${tr('Reforge','أعِد الطَّرق')} · ${tr(`${number(cost)} coins`,`${n(number(cost))} من النقود`)}`;
- const forgeLabel=!next?tr('The smith. Carry broken blades home from the field and he will reforge them.','الحدّاد. احمل السيوف المكسورة من الساحة إلى الديار، وهو يعيد طَرْقها.')
-  :`${tr('The smith','الحدّاد')}. ${brokenName(next)}${broken.length>1?tr(`, and ${broken.length-1} more waiting`,`، وينتظر غيره ${n(broken.length-1)}`):''}. ${waits?FORGE_WAITS_LINE[isArabic()?'ar':'en']:tr(`Tap to reforge it into the ${weaponName(next)} for ${number(cost)} coins. ${temperLine(p,next)}.`,`انقر ليُطرَق ${weaponName(next)} مقابل ${n(number(cost))} من النقود. ${temperLine(p,next)}.`)}${short?tr(` You have ${number(p.coins)}.`,` معك ${n(number(p.coins))}.`):''}`;
+ const plate=!next?tr('The smith','الحدّاد'):waits?tr('The fire waits','النار تنتظر'):`${tr('Reforge','أصلِح')} · ${tr(`${number(cost)} coins`,`${n(number(cost))} من النقود`)}`;
+ const forgeLabel=!next?tr('The smith. Carry broken blades home from the field and he will reforge them.','الحدّاد. احمل السيوف المكسورة من الساحة إلى الديار، وهو يصلحها.')
+  :`${tr('The smith','الحدّاد')}. ${brokenName(next)}${broken.length>1?tr(`, and ${broken.length-1} more waiting`,`، وينتظر غيره ${n(broken.length-1)}`):''}. ${waits?FORGE_WAITS_LINE[isArabic()?'ar':'en']:tr(`Tap to reforge it into the ${weaponName(next)} for ${number(cost)} coins. ${temperLine(p,next)}.`,`انقر ليصنع من${it(next.kind)} الحدّاد «${weaponName(next)}» مقابل ${n(number(cost))} من النقود. ${temperLine(p,next)}.`)}${short?tr(` You have ${number(p.coins)}.`,` معك ${n(number(p.coins))}.`):''}`;
  const wallLabel=wall.length?`${tr(`The smithy wall: ${wall.length} ${wall.length===1?'weapon':'weapons'} kept`,`جدار الحدّاد: ${n(wall.length)} من الأسلحة المحفوظة`)}: ${wall.slice(0,12).map(weaponName).join(isArabic()?'، ':', ')}. ${WALL_LINE[isArabic()?'ar':'en']}`:'';
  return `<div class="camp-smithy" data-waits="${waits}">${wall.length?`<span class="camp-smithy-wall" role="img" aria-label="${attr(wallLabel)}">${shown.map(b=>`<i>${weaponIllustration(b.kind)}</i>`).join('')}${wall.length>shown.length?`<b>+${n(wall.length-shown.length)}</b>`:''}</span>`:''}<span class="camp-smithy-hooks">${([0,1,2] as UnitKind[]).map(kind=>hookHtml(p,kind)).join('')}</span><button class="camp-smithy-forge${next&&!waits&&!short?' smithy-ready':''}" data-command="smithy-reforge"${next?` data-blade="${next.id}"`:''}${next&&!waits&&!short?'':' aria-disabled="true"'} aria-label="${attr(forgeLabel)}">${forgeIllustration(!!next&&!waits)}${broken.length?`<span class="camp-smithy-pile" aria-hidden="true">${broken.slice(0,3).map(b=>brokenBladeIllustration(b.kind)).join('')}</span>`:''}<span class="camp-smithy-plate">${plate}</span></button></div>`;
 }

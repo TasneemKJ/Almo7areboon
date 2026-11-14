@@ -294,14 +294,14 @@ try{
  const f=await open(name,width,height,p,'no-preference');await armCanvasShot(f,outcome);await reachNaturalOutcome(f.page,outcome);
   await waitForVerdictFrame(f,outcome);await verdictWorldShot(f,`${outcome}-survivor-verdict-world`);
   const capture=await canvasShot(f,`${outcome}-survivor-verdict`,outcome);await assertVerdictClearOfHud(f.page,capture.villageVerdict);await noOverflow(f.page);
-  await f.page.locator('.result-dialog').waitFor({timeout:2500});const afterSettlement=await saved(f.page);await f.page.waitForTimeout(450);assert.equal(await saved(f.page),afterSettlement,'settled verdict presentation must remain save-inert');
+  await f.page.locator('.result-dialog').waitFor({timeout:6500});const afterSettlement=await saved(f.page);await f.page.waitForTimeout(450);assert.equal(await saved(f.page),afterSettlement,'settled verdict presentation must remain save-inert');
   checks.push(`${width}: public controls reach a natural ${outcome}; same-frame canvas and full-stage HUD evidence precede the unchanged result sheet and remain save-inert`);await f.context.close();
  }
  for(const [name,width,height,outcome,reducedMotion] of [['390-aftermath-reduced',390,844,'won','reduce']]){
   const p=preparedChronicleProfile();p.motion='system';p.speed=2;p.age=0;p.enemyAge=0;p.chronicle.route='road';p.chronicle.expedition=null;
   const f=await open(name,width,height,p,reducedMotion);await armCanvasShot(f,outcome);await reachNaturalOutcome(f.page,outcome);
   const capture=await canvasShotAndRelease(f,`${outcome}-survivor-verdict`,outcome,true);await assertVerdictClearOfHud(f.page,capture.villageVerdict);await noOverflow(f.page);
-  await f.page.locator('.result-dialog').waitFor({timeout:2500});await f.page.waitForTimeout(450);const settled=await f.page.locator('canvas').evaluate(node=>JSON.parse(node.dataset.villageVerdict));assert.deepEqual(settled,capture.villageVerdict,'reduced-motion verdict must remain complete and static');
+  await f.page.locator('.result-dialog').waitFor({timeout:6500});await f.page.waitForTimeout(450);const settled=await f.page.locator('canvas').evaluate(node=>JSON.parse(node.dataset.villageVerdict));assert.deepEqual(settled,capture.villageVerdict,'reduced-motion verdict must remain complete and static');
   checks.push('390: reduced motion renders the complete stable village verdict through the same natural public-control win');await f.context.close();
  }
  {

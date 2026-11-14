@@ -71,27 +71,34 @@
 .camp-dusk-banner b{position:absolute;left:3px;width:5px;height:3px;border-radius:2px;background:#e3c27e;box-shadow:0 0 0 1px #24150b}
 .camp-dusk-banner b:nth-of-type(1){top:30px}.camp-dusk-banner b:nth-of-type(2){top:25px}.camp-dusk-banner b:nth-of-type(3){top:20px}.camp-dusk-banner b:nth-of-type(4){top:15px}.camp-dusk-banner b:nth-of-type(5){top:10px}
 /* The smith (smithy-screen.ts campSmithyHtml, DESIGN.md #60): his corner by the village houses, opposite the wall lamps.
-   The wall of kept weapons above, three hooks on a beam (one per troop kind), the forge with the broken blades by it. */
-.camp-smithy{position:absolute;z-index:2;top:max(22%,8.4rem);inset-inline-start:3%;display:grid;grid-template-columns:auto auto;grid-template-rows:auto auto;align-items:end;gap:0 4px;max-width:62%;isolation:isolate}
+   One compact row: the forge (anvil, brazier, the broken blades by it), then a beam with three hooks (one per troop
+   kind) under the wall of kept weapons. Narrow enough to clear the wall lamps at 375 and 390. */
+.camp-smithy{position:absolute;z-index:2;top:max(22%,8.4rem);inset-inline-start:3%;display:grid;grid-template-columns:auto auto;grid-template-rows:auto auto;align-items:end;gap:0 2px;isolation:isolate}
 .camp-smithy::before{content:"";position:absolute;z-index:-1;inset:-10px -14px -6px;border-radius:50%;background:radial-gradient(closest-side,#ffb35c38,#ffb35c14 60%,transparent);pointer-events:none}
-.camp-smithy-wall{grid-column:1;grid-row:1;justify-self:center;display:flex;align-items:flex-end;gap:3px;min-height:34px;margin:0 0 2px;padding:3px 7px 2px;border-radius:6px 6px 3px 3px;background:linear-gradient(#6b5039,#46331f);box-shadow:inset 0 0 0 1.5px #243e4a,inset 0 3px 0 #ffffff14,0 2px 3px #102a2980}
-.camp-smithy-wall i{display:block;width:10px;height:28px}.camp-smithy-wall i:nth-child(odd){transform:rotate(-6deg)}.camp-smithy-wall i:nth-child(even){transform:rotate(5deg)}.camp-smithy-wall svg{width:100%;height:100%;display:block}
-.camp-smithy-wall b{font-size:.625rem;line-height:1;color:#ffdc92;padding:0 2px 2px}
-.camp-smithy-hooks{grid-column:1;grid-row:2;position:relative;display:flex;align-items:flex-start;padding-top:6px}
+.camp-smithy-wall{grid-column:2;grid-row:1;justify-self:center;display:flex;align-items:flex-end;gap:2px;min-height:30px;max-width:132px;overflow:hidden;margin:0 0 2px;padding:3px 6px 2px;border-radius:6px 6px 3px 3px;background:linear-gradient(#6b5039,#46331f);box-shadow:inset 0 0 0 1.5px #243e4a,inset 0 3px 0 #ffffff14,0 2px 3px #102a2980}
+.camp-smithy-wall i{display:block;flex:none;width:9px;height:24px}.camp-smithy-wall i:nth-child(odd){transform:rotate(-6deg)}.camp-smithy-wall i:nth-child(even){transform:rotate(5deg)}
+.camp-smithy-wall svg{width:100%;height:100%;display:block}
+.camp-smithy-wall b{flex:none;font-size:.625rem;line-height:1;color:#ffdc92;padding:0 1px 2px}
+.camp-smithy-hooks{grid-column:2;grid-row:2;position:relative;display:flex;align-items:flex-start;padding-top:6px}
 .camp-smithy-hooks::before{content:"";position:absolute;inset-inline:2px;top:2px;height:6px;border-radius:2px;background:#6b4a2c;box-shadow:inset 0 0 0 1.3px #243e4a,0 2px 2px #102a2966}
 .camp-smithy-hook{position:relative;width:44px;height:64px;min-width:44px;min-height:44px;padding:0;border:0;border-radius:8px;background:transparent;cursor:pointer;touch-action:manipulation;display:flex;justify-content:center;align-items:flex-start}
 .camp-smithy-peg{position:absolute;top:2px;left:50%;width:6px;height:9px;margin-left:-3px;border-radius:0 0 3px 3px;background:#c7a773;box-shadow:0 0 0 1px #243e4a}
 .camp-smithy-hook svg{width:20px;height:54px;margin-top:6px;transform-origin:50% 0;animation:camp-lamp-sway 4.6s ease-in-out infinite;filter:drop-shadow(0 2px 2px #102a2999)}
 .camp-smithy-hook:nth-child(2) svg{animation-delay:-1.5s}.camp-smithy-hook:nth-child(3) svg{animation-delay:-3s}
 .camp-smithy-hook[aria-disabled="true"]{cursor:default}
-.camp-smithy-forge{grid-column:2;grid-row:1/3;align-self:end;position:relative;width:96px;min-height:88px;padding:0 0 2px;border:0;border-radius:12px;background:transparent;color:var(--paper);font:inherit;cursor:pointer;touch-action:manipulation;display:flex;flex-direction:column;align-items:center;justify-content:flex-end}
-.camp-smithy-forge svg.smithy-forge{width:92px;height:69px;display:block}
-.camp-smithy-pile{position:absolute;left:4px;bottom:24px;display:flex;flex-direction:column;pointer-events:none}.camp-smithy-pile svg{width:34px;height:17px;margin-top:-7px}
-.camp-smithy-plate{font-size:.6875rem;line-height:1.2;font-weight:800;padding:2px 7px;border-radius:7px;background:#102c29c7;text-shadow:0 1px 3px #102c29;max-width:150px;white-space:normal;text-align:center}
+.camp-smithy-forge{grid-column:1;grid-row:1/3;align-self:end;position:relative;width:72px;min-height:80px;padding:0 0 2px;border:0;border-radius:12px;background:transparent;color:var(--paper);font:inherit;cursor:pointer;touch-action:manipulation;display:flex;flex-direction:column;align-items:flex-start;justify-content:flex-end}
+.camp-smithy-forge svg.smithy-forge{width:72px;height:54px;display:block}
+.camp-smithy-pile{position:absolute;left:0;bottom:30px;display:flex;flex-direction:column;pointer-events:none}.camp-smithy-pile svg{width:30px;height:15px;margin-top:-7px}
+.camp-smithy-plate{font-size:.625rem;line-height:1.2;font-weight:800;padding:2px 5px;border-radius:7px;background:#102c29c7;text-shadow:0 1px 3px #102c29;width:max-content;max-width:74px;white-space:normal;text-align:center}
 .camp-smithy-forge.smithy-ready .camp-smithy-plate{background:#3a2a12e6;color:#ffdc92;box-shadow:0 0 0 1.5px #c7a773}
 .camp-smithy-forge .smithy-glow{animation:smithy-ember 2.4s ease-in-out infinite}.camp-smithy-forge .smithy-spark{animation:smithy-spark 1.6s ease-out infinite}
 @keyframes smithy-ember{0%,100%{opacity:.75}50%{opacity:1}}
 @keyframes smithy-spark{0%{opacity:0;transform:translateY(2px)}30%{opacity:1}100%{opacity:0;transform:translateY(-5px)}}
 .camp-smithy-hook:focus-visible,.camp-smithy-forge:focus-visible{outline:3px solid var(--gold);outline-offset:2px}
 .camp-smithy-worked{animation:camp-worked .6s ease-out}
-@media(orientation:landscape) and (max-height:540px) and (min-width:600px){.camp-smithy{top:22%}}
+/* While the village lamp is lit over another place the forge is cold (game/smithy.ts forgeWaits): the smith steps back
+   like the other places. Narrow phones (320) keep only the forge beside the wall lamps; landscape keeps the forge and
+   hooks in the band between the heading and the places, and hides them while the lamp's plate hangs in that band. */
+.camp-ground:has(.camp-places[data-counsel]) .camp-smithy{opacity:.6;filter:saturate(.7)}
+@media (max-width:359px){.camp-smithy{top:max(27%,8rem);inset-inline-start:2%}.camp-smithy-wall,.camp-smithy-hooks{display:none}.camp-smithy-forge{min-height:64px}.camp-smithy-forge svg.smithy-forge{width:60px;height:45px}}
+@media(orientation:landscape) and (max-height:540px) and (min-width:600px){.camp-smithy{top:28%}.camp-smithy-wall{display:none}.camp-smithy-forge{min-height:64px}.camp-smithy-forge svg.smithy-forge{width:60px;height:45px}.camp-smithy-hook{height:56px}.camp-smithy-hook svg{height:46px}.camp-ground:has(.camp-places[data-counsel]) .camp-smithy{display:none}}

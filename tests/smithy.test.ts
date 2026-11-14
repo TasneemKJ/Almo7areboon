@@ -138,7 +138,42 @@ test('Camp shows the smith only once a blade is home, as world objects: a forge 
   assert.equal((html.match(/class="camp-smithy-hook[" ]/g) ?? []).length, 3);
   assert.doesNotMatch(html, /dialog|camp-focus/);
   Object.assign(g.profile, { lossStreak: 1, foodLevel: 0, coins: 10_000 });
-  assert.match(campSmithyHtml(g.profile), /The fire waits\. Bread first, then iron\./);
+  const cold = campSmithyHtml(g.profile);
+  assert.match(cold, /<span class="camp-smithy-plate">The fire waits<\/span>/); assert.match(cold, /aria-label="[^"]*The fire waits\. Bread first, then iron\./);
   const camp = readFileSync(new URL('../src/ui/camp-screen.ts', import.meta.url), 'utf8');
   assert.match(camp, /\$\{campSmithyHtml\(p\)\}/);
+});
+
+test('a full smithy makes room: the oldest waiting blade goes to the village, never a hung weapon', () => {
+  const g = lostBattle(), lying = fieldBlades(g.profile).map(b => ({ ...b }));
+  g.profile.smithy!.blades = Array.from({ length: SMITHY_CAP }, (_, i) => ({ id: 100 + i, chapter: 0, kind: 0 as const, forged: true as const, ...(i === 0 ? { hung: true as const } : {}) }));
+  g.profile.smithy!.blades[5] = { id: 105, chapter: 1, kind: 1 };
+  assert.equal(g.dispatch({ type: 'blade-carry', id: lying[0].id }), true, 'the 61st blade still carries');
+  assert.equal(blades(g.profile).length, SMITHY_CAP);
+  assert.ok(!blades(g.profile).some(b => b.id === 105), 'the blade waiting by the anvil made room');
+  assert.equal(g.dispatch({ type: 'blade-carry', id: lying[1].id }), true);
+  assert.ok(blades(g.profile).some(b => b.id === 100 && b.hung), 'a hung weapon stays');
+  assert.ok(!blades(g.profile).some(b => b.id === lying[0].id), 'the earlier carried blade, still waiting, made room this time');
+  g.profile.smithy!.blades.forEach(b => { b.forged = true; });
+  g.profile.smithy!.field = [{ id: 999, chapter: 2, kind: 2, x: 500, lane: 1 }];
+  assert.equal(g.dispatch({ type: 'blade-carry', id: 999 }), true);
+  assert.ok(!blades(g.profile).some(b => b.id === 101), 'with nothing waiting, the oldest weapon on the wall');
+  assert.ok(blades(g.profile).some(b => b.id === 100 && b.hung));
+});
+
+test('a dusk raid holds no result for blades, and the Arabic labels agree with each weapon', () => {
+  const lifecycle = readFileSync(new URL('../src/app/lifecycle.ts', import.meta.url), 'utf8');
+  assert.match(lifecycle, /sessionState\.lastPhase==='running'&&!s\.dusk&&fieldBlades\(sessionState\.game\.profile\)\.length/);
+  setLang('ar');
+  assert.match(fieldBladeLabel({ age: 0 }, { kind: 1, chapter: 0 }), /انقر لتحملها إلى الديار\.$/, '«حربة» is feminine');
+  assert.match(fieldBladeLabel({ age: 0 }, { kind: 0, chapter: 0 }), /انقر لتحمله إلى الديار\.$/);
+  const html = campSmithyHtml(atRest().profile);
+  assert.match(html, /أصلِح/); assert.doesNotMatch(html, /طَرق|طَرْق|يُطرَق/, 'no word of ط-ر-ق beside «الطريق»');
+  setLang('en');
+});
+
+test('from Camp, Battle opens the ready field while blades lie there, so the defeat path still offers them', () => {
+  const nav = readFileSync(new URL('../src/app/navigation.ts', import.meta.url), 'utf8');
+  assert.match(nav, /command==='camp-battle'&&entryReady\(\)&&!navState\.modal&&fieldBlades\(ports\.sessionState\.game\.profile\)\.length&&ports\.sessionState\.game\.state\.phase==='ready'&&!ports\.sessionState\.game\.state\.dusk\)\{navState\.campOwner=null;root!\.dataset\.fieldMode='field';/);
+  assert.match(nav, /\$\('battle-view'\)\.inert=false;/);
 });

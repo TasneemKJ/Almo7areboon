@@ -110,7 +110,13 @@ export function smithAction(game: SmithPort, action: SmithAction): boolean {
   if (!smithy || !Number.isInteger(action.id) || game.phase === 'running') return false;
   if (action.type === 'blade-carry') {
     const index = smithy.field?.findIndex(b => b.id === action.id) ?? -1;
-    if (index < 0 || smithy.blades.length >= SMITHY_CAP) return false;
+    if (index < 0) return false;
+    // A full smithy makes room: the oldest blade still waiting by the anvil, else the oldest weapon on the wall, goes to
+    // the village (it is never a hung weapon), so a tap on the field always carries.
+    if (smithy.blades.length >= SMITHY_CAP) {
+      const spare = smithy.blades.findIndex(b => !b.forged), old = spare >= 0 ? spare : smithy.blades.findIndex(b => !b.hung);
+      smithy.blades.splice(old, 1);
+    }
     const [{ x: _x, lane: _lane, ...blade }] = smithy.field!.splice(index, 1);
     if (!smithy.field!.length) delete smithy.field;
     smithy.blades.push(blade);

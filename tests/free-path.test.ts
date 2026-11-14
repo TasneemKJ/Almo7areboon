@@ -10,7 +10,7 @@ test('a free player who follows the lamp and sends its troops in turn reaches th
   assert.equal(summary.finished, 2);
   assert.ok(summary.worstStreak <= 2, `worst run of defeats ${summary.worstStreak}`);
   assert.deepEqual(summary.walls, []);
-  assert.ok(chapters.slice(2).every((c: { rallyWins: number }) => c.rallyWins <= 1), 'chapters 3-6 are not won only by the pacing director');
+  assert.deepEqual(chapters.slice(2).map((c: { rallyWins: number }) => c.rallyWins), [0, 0, 0, 0], 'chapters 3-6 are won without the pacing director');
 });
 
 test('the smith changes identity, not who gets through: reforging everything still reaches chapter 6 with no wall', () => {

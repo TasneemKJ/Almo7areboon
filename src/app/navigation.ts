@@ -8,6 +8,7 @@ import { type CampOwner } from '../ui/camp-owner.ts';
 import {campRootHtml,campFocusHtml,campGoalText} from '../ui/camp-screen.ts';
 import { localDay } from '../game/data.ts';
 import { counselAction, litCounsel } from '../game/counsel.ts';
+import { fieldBlades } from '../game/smithy.ts';
 import { pressFeedback } from '../ui/press-feedback.ts';
 import { canOwnCamp, isCampStation, campActionFromData, type CampFocus } from '../ui/camp-owner.ts';
 import { type StoryFollowUp } from '../ui/story-flow.ts';
@@ -284,6 +285,9 @@ export function createNavigation(deps: NavigationDeps) {
       if(command==='lamplighter')return false;
       if(command==='camp-dusk'){startDusk();return true;}
       if(command==='smithy-reforge'||command==='smithy-hang'){workSmithy(command,button);return true;}
+      // Broken blades still lie on the field (game/smithy.ts): Battle opens the ready field first, so they can be carried
+      // home before the fight; its own Start begins it. Otherwise Battle starts at once, as before.
+      if(command==='camp-battle'&&entryReady()&&!navState.modal&&fieldBlades(ports.sessionState.game.profile).length&&ports.sessionState.game.state.phase==='ready'&&!ports.sessionState.game.state.dusk){navState.campOwner=null;root!.dataset.fieldMode='field';syncCamp();$('battle-view').inert=false;$('battle-view').setAttribute('aria-hidden','false');ports.syncPause();ports.update(true);$('world').focus({preventScroll:true});return true;}
       if(command==='camp-battle'&&entryReady()&&!navState.modal){ports.sessionState.manualPaused=false;if(ports.action({type:'start'})&&ports.playable()&&navState.modal!=='session'){navState.campOwner=null;root!.dataset.fieldMode='field';switchTab('battle');$('world').focus({preventScroll:true});}return true;}
       return true;
     }

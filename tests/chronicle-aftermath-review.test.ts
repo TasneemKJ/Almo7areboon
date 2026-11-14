@@ -41,7 +41,7 @@ test('victory and defeat tableaux are captured before the unchanged result sheet
  assert.match(script,/delete node\.dataset\.battlefieldReviewFrameReady/,'the evidence latch must release immediately after the verified full-stage capture');
  assert.match(script,/finally\{await releaseVerdictFrame\(fixture\);\}/,'every timed evidence wrapper must release its result latch even when capture or validation fails');
  assert.match(script,/const capture=await canvasShotAndRelease\(f,`\$\{outcome\}-survivor-verdict`,outcome,true\)/,'reduced motion must release its canvas-only evidence latch before awaiting the result');
- assert.match(script,/await f\.page\.locator\('\.result-dialog'\)\.waitFor\(\{timeout:2500\}\)/);
+ assert.match(script,/await f\.page\.locator\('\.result-dialog'\)\.waitFor\(\{timeout:6500\}\)/,'the result may wait 3.5 s while broken blades lie on the field (game/smithy.ts)');
 });
 
 test('journey validates bounded diagnostics, settlement stability, overflow, runtime and assets',()=>{
