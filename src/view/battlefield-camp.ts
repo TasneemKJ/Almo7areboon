@@ -24,13 +24,8 @@ export function paintFieldCamp(host:ArmyHost,layers:ArmyLayers,campActors:readon
  }
  if(!visible||host.game.state.stats.deployed===0)return;
  // Objects are painted on the ground plane, with no button plates or card frames.
- const flag=plan.standard,basket=plan.supplies,x=flag.footX/scale,y=flag.footY/scale,k=1/scale;
- g.setDepth(Math.max(flag.footY,basket.footY)/scale+.1);
- if(host.game.state.chronicle?.enabled){
-  g.lineStyle(3*k,0x765435,1);g.lineBetween(x,y,x,y-43*k);
-  g.fillStyle(host.game.state.chronicle.rally?0xe2b969:0xc7d6ad,1);g.fillTriangle(x,y-42*k,x+24*k,y-35*k,x,y-23*k);
-  g.fillStyle(0x243e40,.25);g.fillEllipse(x,y+2*k,24*k,6*k);
- }
+ const basket=plan.supplies,k=1/scale;
+ g.setDepth(basket.footY/scale+.1);
  const bx=basket.footX/scale,by=basket.footY/scale;
  g.fillStyle(0x4a3529,1);g.fillEllipse(bx,by-12*k,38*k,27*k);
  g.fillStyle(0xc18f4e,1);g.fillRoundedRect(bx-18*k,by-20*k,36*k,21*k,5*k);

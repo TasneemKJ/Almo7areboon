@@ -18,5 +18,5 @@ export function fieldGuidance(game:Game):string {
  if(hint)return hint;
  if(status.reason==='food')return tr(`The camp needs food. Ready in ${Math.ceil(status.waitSeconds)}s.`,`المخيّم يحتاج إلى مؤونة. جاهز بعد ${secondsShort(Math.ceil(status.waitSeconds))}.`);
  if(p.wins===0&&s.stats.deployed<3)return tr('Tap the troop again when its card lights.','المس الجنديّ مرّة أخرى حين تضيء بطاقته.');
- return orderStatus(s).canCast?tr('Momentum ready. Your gate holds; their gate advances.','الزخم جاهز. بوّابتك للثبات، وبوّابتهم للتقدّم.'):'';
+ return orderStatus(s).canCast?tr('Momentum ready. Drag the banner forward to advance, back to hold.','الزخم جاهز. اسحب الراية إلى الأمام لتتقدّم، وإلى الخلف لتثبت.'):'';
 }

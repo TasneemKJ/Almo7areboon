@@ -6,7 +6,7 @@ import { tr } from './i18n.ts';
 export function orderStatus(state: Readonly<BattleState>) {
  const active=activeBattleOrder(state,state.time),seconds=active?Math.max(0,Math.ceil((state.orders?.until??0)-state.time)):0;
  const charge=state.orders?.charge??0;
- const label=state.paused?tr('Paused · orders wait','متوقّف · الأوامر تنتظر'):active?`${active==='advance'?tr('Advance','تقدّم'):tr('Hold','اثبُت')} · ${secondsShort(seconds)}`:state.phase==='ready'?tr('Deploy troops to build momentum','أرسل جندك لتبني الزخم'):state.phase!=='running'?tr('Company stands down','السريّة تستريح'):charge>=ORDER_COST?tr('Momentum ready · tap a gate or choose an order','الزخم جاهز · المس بوّابة أو اختر أمراً'):`${tr('Momentum','الزخم')} ${charge}/${ORDER_COST}`;
+ const label=state.paused?tr('Paused · orders wait','متوقّف · الأوامر تنتظر'):active?`${active==='advance'?tr('Advance','تقدّم'):tr('Hold','اثبُت')} · ${secondsShort(seconds)}`:state.phase==='ready'?tr('Deploy troops to build momentum','أرسل جندك لتبني الزخم'):state.phase!=='running'?tr('Company stands down','السريّة تستريح'):charge>=ORDER_COST?tr('Momentum ready · carry the banner','الزخم جاهز · احمل الراية'):`${tr('Momentum','الزخم')} ${charge}/${ORDER_COST}`;
  return {charge,active,seconds,label,canCast:canIssueOrder(state,'advance')};
 }
 export function updateOrderBanner(root: HTMLElement, state: Readonly<BattleState>): void {

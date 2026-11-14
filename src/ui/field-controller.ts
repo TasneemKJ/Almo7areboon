@@ -16,6 +16,7 @@ import {gateChoiceLabel,gateLabelLift} from './field-gate-label.ts';
 import {storybookArt} from '../view/storybook-art.ts';
 import {secondsShort} from './battle-hud.ts';
 import {tr} from './i18n.ts';
+import {bannerView} from './banner-gesture.ts';
 
 const placeBox=(node:HTMLElement,rect:CampTarget|{x:number;y:number;width:number;height:number})=>{
   const value=`left:${rect.x}px;top:${rect.y}px;width:${rect.width}px;height:${rect.height}px`;
@@ -56,13 +57,25 @@ function syncGates(gates:readonly HTMLButtonElement[],arena:ReturnType<typeof ar
  }
 }
 
+/** The planted company banner: its place, and momentum shown as lit cloth (see banner-gesture.ts). */
+function syncBanner(node:HTMLElement,rect:CampTarget,s:Game['state'],running:boolean):void {
+ node.hidden=!running;
+ const view=bannerView(s),order=view.order??'none';
+ if(node.dataset.ready!==String(view.ready))node.dataset.ready=String(view.ready);
+ if(node.dataset.order!==order)node.dataset.order=order;
+ const steps=String(view.steps);if(node.dataset.steps!==steps)node.dataset.steps=steps;
+ // The drag offset lives on the inner .banner-carry, so rewriting the outer box never drops a finger's carry.
+ const style=`left:${rect.x}px;top:${rect.y}px;width:${rect.width}px;height:${rect.height}px;--cloth:${view.cloth.toFixed(3)}`;
+ if(node.getAttribute('style')!==style)node.setAttribute('style',style);
+}
+
 /** Presentation ownership only. Every mutation still goes through main's guarded dispatch. */
 export function createFieldController(root:HTMLElement){
  const find=(id:string)=>root.querySelector<HTMLElement>(`#${id}`)!;
  const world=find('world'),context=find('field-context'),cue=find('field-cue'),food=find('field-food'),announcement=find('field-announcement'),cover=find('field-cover');
  const recruits=Array.from(root.querySelectorAll<HTMLButtonElement>('[data-field-recruit]'));
  const gates=Array.from(root.querySelectorAll<HTMLButtonElement>('[data-field-gate]'));
- const standard=find('field-standard') as HTMLButtonElement,supplies=find('field-supplies') as HTMLButtonElement,enemy=find('field-enemy') as HTMLButtonElement;
+ const banner=find('field-banner'),standard=find('field-standard') as HTMLButtonElement,supplies=find('field-supplies') as HTMLButtonElement,enemy=find('field-enemy') as HTMLButtonElement;
  let selected:number|'supplies'|'cover'|null=null,contextKey='',origin:HTMLElement|null=null;
  const pause=root.querySelector<HTMLElement>('[data-command="field-pause"]')!;
  const place=placeBox;
@@ -82,11 +95,14 @@ export function createFieldController(root:HTMLElement){
    const plan=campLayout(w,h),arena=arenaLayout(w,h),available=campRecruits(p),orders=orderStatus(s),running=s.phase==='running';
    syncRecruits(recruits,plan,available,game,running);
    syncGates(gates,arena,w,orders,running,{player:p.age,enemy:p.enemyAge});
-   place(standard,plan.standard);place(supplies,plan.supplies);
+   place(supplies,plan.supplies);
+   // Gather lives on your own camp (the gate shelter on the left), where the gathered company waits.
+   {const size=Math.max(56,Math.min(96,80*arena.scale)),top=Math.max(0,arena.groundY*arena.scale-62*arena.scale);place(standard,{x:0,y:top,width:size,height:Math.max(56,Math.min(96,74*arena.scale))});}
+   syncBanner(banner,plan.banner,s,running);
    standard.hidden=!running||!s.chronicle?.enabled||s.stats.deployed===0;
    standard.setAttribute('aria-disabled',String(s.paused));standard.setAttribute('aria-pressed',String(s.chronicle?.rally??false));
-   const rally=s.chronicle?.rally?tr(`Release ${s.chronicle.gathered.length} gathered troops`,`أطلق الجند المجتمعين (${s.chronicle.gathered.length})`):tr('Gather newly deployed troops at the standard','اجمع الجند الجدد عند الراية');
-   standard.setAttribute('aria-label',rally);textIfChanged(standard.querySelector<HTMLElement>('span')!,s.chronicle?.rally?tr('Release','أطلق'):tr('Gather','اجمع'));
+   const rally=s.chronicle?.rally?tr(`Release ${s.chronicle.gathered.length} gathered troops`,`أطلق الجند المجتمعين (${s.chronicle.gathered.length})`):tr('Gather newly deployed troops at your camp','اجمع الجند الجدد عند مخيّمك');
+   standard.setAttribute('aria-label',rally);textIfChanged(standard.querySelector<HTMLElement>('span')!,s.chronicle?.rally?tr(`Release ${s.chronicle.gathered.length}/6`,`أطلق ${s.chronicle.gathered.length}/6`):tr('Gather','اجمع'));
    supplies.hidden=!running||s.stats.deployed===0;supplies.setAttribute('aria-label',skillCue(p,s,'food',game.canUseSkill('food')).label);
    const coverTarget=fieldCoverTarget(game,w,h);hideFieldTarget(cover,!coverTarget,pause);
    if(coverTarget)place(cover,coverTarget);

@@ -20,6 +20,7 @@ import './ui/selects.css';
 import './ui/field-tray.css';
 import './ui/intro.css';
 import './ui/company-film.css';
+import './ui/field-board.css';
 import './ui/landscape-rail.css';
 import { createBattlefieldPort } from './game/battlefield-port.ts';
 import { localDay } from './game/data.ts';

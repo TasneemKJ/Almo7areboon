@@ -9,6 +9,7 @@ import { companyFilmHtml, mountCompanyFilm } from '../ui/company-film.ts';
 import { questRecords } from '../ui/quest-records.ts';
 import { storyFollowUp } from '../ui/story-flow.ts';
 import { battlefieldOrderFromGesture } from '../ui/battlefield-orders.ts';
+import { bannerDragIntent, bannerDragOffset, bannerOrderFromDrag } from '../ui/banner-gesture.ts';
 import { journeyScreenHtml } from '../ui/journey-screen.ts';
 import { chronicleScreenHtml, chronicleActionFromData } from '../ui/chronicle-screen.ts';
 import { advanceStatus } from '../game/mastery.ts';
@@ -57,6 +58,38 @@ function openCounsel(ports:Pick<ShellApi,'action'|'closeModal'|'navState'|'playa
   if(!ports.action({type:'retry'})||!ports.playable()||(ports.navState.modal as string|null)==='session')return;
   ports.navState.evolutionFromResult=false;ports.closeModal(false);ports.sessionState.manualPaused=false;ports.switchTab('battle');ports.syncCamp();
   ports.showCampFocus(recruit?{recruit:Number(recruit[1]) as UnitKind}:target as 'storehouse'|'gate');
+}
+
+/** The company banner: drag forward to Advance, back to Hold. The simulation still admits and applies the order. */
+function listenBanner({dom:{$,lifetime},ports}:ListenersDeps):void {
+  const banner=$('field-banner'),carry=banner.querySelector<HTMLElement>('.banner-carry')!;
+  let drag:{id:number;x:number;y:number}|null=null;
+  const allowed=()=>ports.navState.entryEntered&&!ports.navState.modal&&ports.navState.activeTab==='battle'&&ports.sessionState.game.state.phase==='running'&&!ports.sessionState.game.state.paused&&ports.playable();
+  const settle=()=>{drag=null;banner.classList.remove('dragging');carry.style.removeProperty('--drag');banner.dataset.intent='none';banner.dataset.wait='false';};
+  lifetime.listen<PointerEvent>(banner,'pointerdown',e=>{
+    if(!e.isPrimary||(e.pointerType==='mouse'&&e.button!==0)||!allowed())return;
+    e.preventDefault();drag={id:e.pointerId,x:e.clientX,y:e.clientY};banner.classList.add('dragging');
+    try{banner.setPointerCapture(e.pointerId);}catch{/* capture is a convenience */}
+  });
+  lifetime.listen<PointerEvent>(banner,'pointermove',e=>{
+    if(!drag||e.pointerId!==drag.id)return;
+    const dx=e.clientX-drag.x,dy=e.clientY-drag.y;
+    carry.style.setProperty('--drag',`${bannerDragOffset(dx)}px`);
+    const intent=bannerDragIntent(dx,dy,banner.dataset.ready==='true');banner.dataset.wait=String(intent==='wait');banner.dataset.intent=intent==='wait'?bannerOrderFromDrag(dx,dy)!:intent??'none';
+  });
+  lifetime.listen<PointerEvent>(banner,'pointercancel',settle);
+  lifetime.listen<PointerEvent>(banner,'pointerup',e=>{
+    if(!drag||e.pointerId!==drag.id)return;
+    const dx=e.clientX-drag.x,dy=e.clientY-drag.y;settle();
+    const order=bannerOrderFromDrag(dx,dy);
+    if(order&&allowed()){
+      unlockAudio(ports.sessionState.game.profile.sound);pressFeedback({sound:ports.sessionState.game.profile.sound,kind:'press'});
+      if(ports.action({type:'order',order}))return;
+    }
+    // A tap, a short drag, or a carry without momentum: the banner shows both directions once.
+    banner.classList.remove('hinting');void banner.offsetWidth;banner.classList.add('hinting');
+  });
+  lifetime.listen<AnimationEvent>(banner,'animationend',e=>{if(e.animationName==='banner-hint')banner.classList.remove('hinting');});
 }
 
 export function installListeners(deps: ListenersDeps): void {
@@ -174,6 +207,7 @@ export function installListeners(deps: ListenersDeps): void {
      const order=battlefieldOrderFromGesture({startX:start.x,startY:start.y,endX:e.clientX,endY:e.clientY},{left:rect.left,top:rect.top,width:rect.width,height:rect.height});
      if(order)ports.action({type:'order',order});
     });
+    listenBanner(deps);
     lifetime.listen(dom.viewEvents(),'blur',()=>{inputState.battlefieldPointer=null;});
     lifetime.listen<PointerEvent>(root,'pointerup',e=>blockModalTap.recordPointer(e,dom.now()));
   }
