@@ -67,6 +67,7 @@ function listenBanner({dom:{$,lifetime},ports}:ListenersDeps):void {
   const allowed=()=>ports.navState.entryEntered&&!ports.navState.modal&&ports.navState.activeTab==='battle'&&ports.sessionState.game.state.phase==='running'&&!ports.sessionState.game.state.paused&&ports.playable();
   const settle=()=>{drag=null;banner.classList.remove('dragging');carry.style.removeProperty('--drag');banner.dataset.intent='none';banner.dataset.wait='false';};
   lifetime.listen<PointerEvent>(banner,'pointerdown',e=>{
+    banner.classList.remove('hinting');
     if(!e.isPrimary||(e.pointerType==='mouse'&&e.button!==0)||!allowed())return;
     e.preventDefault();drag={id:e.pointerId,x:e.clientX,y:e.clientY};banner.classList.add('dragging');
     try{banner.setPointerCapture(e.pointerId);}catch{/* capture is a convenience */}
@@ -90,6 +91,8 @@ function listenBanner({dom:{$,lifetime},ports}:ListenersDeps):void {
     banner.classList.remove('hinting');void banner.offsetWidth;banner.classList.add('hinting');
   });
   lifetime.listen<AnimationEvent>(banner,'animationend',e=>{if(e.animationName==='banner-hint')banner.classList.remove('hinting');});
+  // Reduced motion has no animationend: the hint then stays until the next touch anywhere on the field.
+  lifetime.listen<PointerEvent>($('world'),'pointerdown',e=>{if(!(e.target instanceof Node)||!banner.contains(e.target))banner.classList.remove('hinting');});
 }
 
 export function installListeners(deps: ListenersDeps): void {

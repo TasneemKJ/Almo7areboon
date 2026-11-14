@@ -106,11 +106,17 @@ test('copy teaches the banner in both languages', async () => {
   assert.match(guidance, /اسحب الراية إلى الأمام لتتقدّم، وإلى الخلف لتثبت\./);
 });
 
-for (const [width, height] of [[320, 568], [390, 844], [390, 700], [412, 915], [844, 390], [667, 375]]) test(`the banner is a 44px+ target inside the field, clear of the supply basket, at ${width}x${height}`, async () => {
+for (const [width, height] of [[320, 568], [390, 844], [390, 700], [412, 915], [844, 390], [667, 375], [568, 320]]) test(`the banner is a 44px+ target inside the field, clear of the supply basket, at ${width}x${height}`, async () => {
   const {campLayout} = await import('../src/view/world-camp.ts');
   const plan = campLayout(width, height), b = plan.banner, s = plan.supplies;
   assert.ok(b.width >= 44 && b.height >= 44);
   assert.ok(b.x >= 0 && b.y >= 0 && b.x + b.width <= width && b.y + b.height <= height);
   assert.ok(b.x + b.width <= s.x || s.x + s.width <= b.x || b.y + b.height <= s.y || s.y + s.height <= b.y, 'banner and basket do not overlap');
-  if (height > width) assert.ok(b.y >= height * .66 + 24 * width / 450, 'in portrait the banner stands below the combat lanes');
+  assert.ok(b.y >= height * .66 + 24 * width / 450, 'the banner hit box stands below the combat lanes');
+});
+
+test('the tap hint clears on the next touch, so reduced motion (no animationend) never leaves it on', () => {
+  const src = readFileSync(new URL('../src/app/listeners.ts', import.meta.url), 'utf8');
+  assert.match(src, /lifetime\.listen<PointerEvent>\(banner,'pointerdown',e=>\{\n    banner\.classList\.remove\('hinting'\);/);
+  assert.match(src, /\$\('world'\),'pointerdown',e=>\{if\(!\(e\.target instanceof Node\)\|\|!banner\.contains\(e\.target\)\)banner\.classList\.remove\('hinting'\);/);
 });

@@ -16,7 +16,7 @@ export function campLayout(width:number,height:number){
  // The widest idle frame is256×192; its origin is136/144 down the sprite.
  const footMargin=Math.ceil(recruitHeight*8/144);
  const recruit=(x:number,y:number)=>target(x,y,recruitHeight*256/192,recruitHeight+footMargin,footMargin);
- if(w>h){const foot=h-28;return {recruitHeight,recruits:[recruit(span*.16,foot),recruit(span*.39,foot),recruit(span*.62,foot)],standard:target(span*.79,foot),supplies:target(span*.94,foot),banner:target(span*.79,foot,64,96)};}
+ if(w>h){const foot=h-28;return {recruitHeight,recruits:[recruit(span*.16,foot),recruit(span*.39,foot),recruit(span*.62,foot)],standard:target(span*.79,foot),supplies:target(span*.94,foot),banner:target(span*.79,h-24,64,Math.max(44,Math.min(64,h-24-(h*.66+24*w/450)-2)))};}
  return {recruitHeight,recruits:[recruit(span*.16,h*.86),recruit(span*.39,h*.92),recruit(span*.62,h*.86)],standard:target(span*.86,h*.79),supplies:target(span*.86,h*.96),banner:target(span*.29,Math.min(h-4,Math.max(h*.8,h*.66+24*w/450+92)),64,90)};
 }
 export function campRecruits(profile:Readonly<Profile>):UnitKind[]{return ([0,1,2] as const).filter(kind=>profile.unlocked[kind]);}
