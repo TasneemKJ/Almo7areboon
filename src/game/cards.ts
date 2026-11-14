@@ -16,47 +16,48 @@ export interface CardDef {
 const RARITIES: CardRarity[] = ['common', 'rare', 'epic', 'legendary'];
 const COLORS: Record<CardRarity, string> = { common: '#82b975', rare: '#76a8de', epic: '#b588d6', legendary: '#e6b750' };
 
-function card(name: string, rarity: CardRarity, stat: CardDef['stat'], icon: string, secondary?: CardDef['secondary'], arabic = name): CardDef {
+// `idSource` keeps the saved id stable (saves key collected copies by id); `shown` is the English name players see.
+function card(idSource: string, rarity: CardRarity, stat: CardDef['stat'], icon: string, secondary?: CardDef['secondary'], arabic = idSource, shown = idSource): CardDef {
+  const name = shown;
   const english = `Multiplies unit ${stat}${secondary ? ` and ${secondary === 'base' ? 'base health' : secondary === 'food' ? 'food production' : 'coins earned'}` : ''}.`;
   const arabicDescription = `تُضاعِف ${stat === 'health' ? 'صحّة' : 'ضرر'} جنودك${secondary ? ` و${secondary === 'base' ? 'صمود الحصن' : secondary === 'food' ? 'إنتاج المؤونة' : 'النقود المكتسبة'}` : ''}.`;
   // Getters: the shown name and description follow the current language; the id stays derived from the English name.
-  return { id: name.toLowerCase().replace(/[^a-z0-9]+/g, '-').replace(/^-|-$/g, ''), get name() { return tr(name, arabic); }, get description() { return tr(english, arabicDescription); }, icon, color: COLORS[rarity], stat, rarity, ...(secondary ? { secondary } : {}) };
+  return { id: idSource.toLowerCase().replace(/[^a-z0-9]+/g, '-').replace(/^-|-$/g, ''), get name() { return tr(name, arabic); }, get description() { return tr(english, arabicDescription); }, icon, color: COLORS[rarity], stat, rarity, ...(secondary ? { secondary } : {}) };
 }
 
-// Reference collection and progression tables:
-// https://we-are-warriors-game.fandom.com/wiki/Cards (consulted 2026-09-28).
+// The storybook collection: thirty objects from the village's own tales (renamed 2026-11-14; ids unchanged for saves).
 // This collection covers the four supported summon rarities; Ultimate is separate.
 export const CARD_DEFS: CardDef[] = [
-  card('Turtle Shell', 'common', 'health', 'shield', undefined, 'درع السلحفاة'),
-  card('Camp Fire', 'common', 'health', 'meteor', undefined, 'نار المخيّم'),
-  card('Dino Ribs', 'common', 'health', 'food', undefined, 'أضلاع الديناصور'),
-  card('Bandages', 'common', 'health', 'heart', undefined, 'الضمادات'),
-  card('Canned Food', 'common', 'health', 'food', undefined, 'المعلّبات'),
-  card('Furnace', 'common', 'health', 'meteor', undefined, 'الفرن'),
-  card('Crop Seeds', 'common', 'health', 'evolution', undefined, 'بذور الحقل'),
-  card('Ancient Emblem', 'common', 'health', 'shield', undefined, 'الشعار القديم'),
-  card('Combat Dummy', 'common', 'damage', 'battle', undefined, 'دمية التدريب'),
-  card('Target', 'common', 'damage', 'battle', undefined, 'الهدف'),
-  card('Grind Stone', 'common', 'damage', 'gear', undefined, 'حجر الشحذ'),
-  card('Battle Horn', 'common', 'damage', 'sound', undefined, 'بوق المعركة'),
-  card('War Banner', 'common', 'damage', 'flag', undefined, 'راية الحرب'),
-  card('Vial of Poison', 'common', 'damage', 'skills', undefined, 'قارورة السمّ'),
-  card('Anvil', 'common', 'damage', 'gear', undefined, 'السندان'),
-  card('Weights', 'common', 'damage', 'battle', undefined, 'الأثقال'),
-  card('Red Rose', 'rare', 'damage', 'heart', undefined, 'الوردة الحمراء'),
-  card('Gun Powder', 'rare', 'damage', 'meteor', undefined, 'البارود'),
-  card('Sabre Cat Skull', 'rare', 'damage', 'battle', undefined, 'جمجمة النمر ذي الأنياب'),
-  card('Trojan Horse', 'rare', 'damage', 'battle', undefined, 'حصان طروادة'),
-  card('Fountain of Life', 'rare', 'health', 'heart', undefined, 'ينبوع الحياة'),
-  card('Kevlar Thread', 'rare', 'health', 'shield', undefined, 'خيط الكيفلار'),
-  card('STEM-C5', 'rare', 'health', 'skills', undefined, 'مصل الخلايا 5'),
-  card('Pestle and Mortar', 'rare', 'health', 'food', undefined, 'الهاون والمدقّة'),
-  card('UAV-3.0', 'epic', 'damage', 'battle', 'base', 'الطائرة المسيّرة 3.0'),
-  card('Cave Painting', 'epic', 'damage', 'flag', 'base', 'رسم الكهف'),
-  card('Obelisk', 'epic', 'health', 'shield', 'base', 'المسلّة'),
-  card('Military Radio', 'epic', 'health', 'sound', 'base', 'المذياع العسكريّ'),
-  card('T-Rex Head', 'legendary', 'damage', 'food', 'food', 'رأس التيرانوصور'),
-  card('Robot Head', 'legendary', 'health', 'gear', 'coins', 'رأس الروبوت'),
+  card('Turtle Shell', 'common', 'health', 'shield', undefined, 'ترس من خشب الزيتون', "Olive-wood Shield"),
+  card('Camp Fire', 'common', 'health', 'meteor', undefined, 'جمر الموقد', "Hearth Embers"),
+  card('Dino Ribs', 'common', 'health', 'food', undefined, 'خبز الراعي', "Shepherd's Bread"),
+  card('Bandages', 'common', 'health', 'heart', undefined, 'لفائف الكتّان', "Linen Wraps"),
+  card('Canned Food', 'common', 'health', 'food', undefined, 'مرطبان المخلّل', "Jar of Pickles"),
+  card('Furnace', 'common', 'health', 'meteor', undefined, 'فرن الطابون', "Taboon Oven"),
+  card('Crop Seeds', 'common', 'health', 'evolution', undefined, 'حبّ القمح', "Wheat Seeds"),
+  card('Ancient Emblem', 'common', 'health', 'shield', undefined, 'ختم القرية', "Village Seal"),
+  card('Combat Dummy', 'common', 'damage', 'battle', undefined, 'فزّاعة القشّ', "Straw Scarecrow"),
+  card('Target', 'common', 'damage', 'battle', undefined, 'علامة الرامي', "Archer's Mark"),
+  card('Grind Stone', 'common', 'damage', 'gear', undefined, 'المِسَنّ', "Whetstone"),
+  card('Battle Horn', 'common', 'damage', 'sound', undefined, 'قرن الراعي', "Shepherd's Horn"),
+  card('War Banner', 'common', 'damage', 'flag', undefined, 'راية القرية', "Village Banner"),
+  card('Vial of Poison', 'common', 'damage', 'skills', undefined, 'الأعشاب المُرّة', "Bitter Herbs"),
+  card('Anvil', 'common', 'damage', 'gear', undefined, 'سندان الحدّاد', "Smith's Anvil"),
+  card('Weights', 'common', 'damage', 'battle', undefined, 'حجر الرحى', "Millstone"),
+  card('Red Rose', 'rare', 'damage', 'heart', undefined, 'الوردة الدمشقية', "Damask Rose"),
+  card('Gun Powder', 'rare', 'damage', 'meteor', undefined, 'زيت القنديل', "Lamp Oil"),
+  card('Sabre Cat Skull', 'rare', 'damage', 'battle', undefined, 'ناب الذئب', "Wolf's Tooth"),
+  card('Trojan Horse', 'rare', 'damage', 'battle', undefined, 'الجمل الخشبي', "Wooden Camel"),
+  card('Fountain of Life', 'rare', 'health', 'heart', undefined, 'ماء النبع', "Spring Water"),
+  card('Kevlar Thread', 'rare', 'health', 'shield', undefined, 'خيط الحرير', "Silk Thread"),
+  card('STEM-C5', 'rare', 'health', 'skills', undefined, 'بلسم العطّار', "Herbalist's Balm"),
+  card('Pestle and Mortar', 'rare', 'health', 'food', undefined, 'جرن البهار', "Spice Mortar"),
+  card('UAV-3.0', 'epic', 'damage', 'battle', 'base', 'حمامة الزاجل', "Messenger Pigeon"),
+  card('Cave Painting', 'epic', 'damage', 'flag', 'base', 'لفيفة الحكواتي', "Storyteller's Scroll"),
+  card('Obelisk', 'epic', 'health', 'shield', 'base', 'حجر البرج', "Watchtower Stone"),
+  card('Military Radio', 'epic', 'health', 'sound', 'base', 'طبل القرية', "Village Drum"),
+  card('T-Rex Head', 'legendary', 'damage', 'food', 'food', 'المنجل الذهبي', "Golden Sickle"),
+  card('Robot Head', 'legendary', 'health', 'gear', 'coins', 'الأسطرلاب النحاسي', "Brass Astrolabe"),
 ];
 
 function nonnegativeInteger(value: number): number {
@@ -90,8 +91,7 @@ export function cardBonuses(copies: number[]): { damage: number; health: number;
     const { initial, growth } = UNIT_BONUSES[definition.rarity];
     bonuses[definition.stat] *= initial * growth ** (level - 1);
     if (definition.secondary === 'base') bonuses.base *= 3 * 1.35 ** (level - 1);
-    // Legendary secondary curves are interpolated from the reference's rounded
-    // table; exact proprietary formulas are not available from that table.
+    // Legendary secondary curves: our own tuning (food and coin bonus growth per level).
     if (definition.secondary === 'food') bonuses.food *= 1.5 + 0.015 * (level - 1);
     if (definition.secondary === 'coins') bonuses.coins *= 1.5 * 1.0225 ** (level - 1);
   });
@@ -133,7 +133,7 @@ export function availableSummonOdds(draws: number, copies?: readonly number[]): 
 export function drawCard(draws: number, rarityRoll: number, cardRoll: number, copies?: readonly number[]): number {
   const odds = copies ? availableSummonOdds(draws, copies) : summonLevel(draws).odds;
   if (!odds.some(weight => weight > 0)) return -1;
-  // One rounded reference row totals 99.9%; normalize its weights instead of
+  // One rounded weight row totals 99.9%; normalize its weights instead of
   // incorrectly assigning the missing 0.1% to the rarest card category.
   const roll = normalizedRoll(rarityRoll) * odds.reduce((sum, chance) => sum + chance, 0);
   let cumulative = 0;

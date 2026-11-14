@@ -159,7 +159,7 @@ test('story group: English stays the default and unchanged after Arabic', () => 
   setLang('ar');setLang('en');
   assert.equal(chapterPresentation(0).title, 'First Fires');
   assert.equal(ROUTES[0].name, 'The old road');
-  assert.equal(CARD_DEFS[0].name, 'Turtle Shell');
+  assert.equal(CARD_DEFS[0].name, 'Olive-wood Shield');
   assert.equal(CARD_DEFS[0].id, 'turtle-shell');
   assert.equal(QUESTS[0].title, 'Defeat 10 enemies');
   assert.equal(ERAS[0].units[0].role, 'Melee');

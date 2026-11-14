@@ -3,7 +3,7 @@
 Use these when changing `DESIGN.md`, `UX-CONTRACT.md` or any player-facing behavior.
 
 ## Target player
-A casual-to-midcore phone player in short sessions, comfortable with lane battle games (We Are Warriors!-style loop) and light collection. Prefer readable feedback and learnable depth over hidden complexity.
+A casual-to-midcore phone player in short sessions, comfortable with lane battle games and light collection. Prefer readable feedback and learnable depth over hidden complexity.
 
 ## Principles
 1. **Mobile first.** One-thumb portrait play; controls at least 44px; the battlefield stays uncovered; landscape and desktop must not break.

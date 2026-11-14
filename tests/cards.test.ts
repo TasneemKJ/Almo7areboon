@@ -10,10 +10,10 @@ test('the reference collection has distinct cards in the supported rarity pools'
   assert.equal(CARD_DEFS.length, 30);
   assert.equal(new Set(CARD_DEFS.map(card => card.id)).size, 30);
   assert.deepEqual(['common', 'rare', 'epic', 'legendary'].map(rarity => CARD_DEFS.filter(card => card.rarity === rarity).length), [16, 8, 4, 2]);
-  assert.equal(CARD_DEFS[0].name, 'Turtle Shell');
-  assert.equal(CARD_DEFS[8].name, 'Combat Dummy');
-  assert.equal(CARD_DEFS[16].name, 'Red Rose');
-  assert.equal(CARD_DEFS[24].name, 'UAV-3.0');
+  assert.equal(CARD_DEFS[0].name, 'Olive-wood Shield');
+  assert.equal(CARD_DEFS[8].name, 'Straw Scarecrow');
+  assert.equal(CARD_DEFS[16].name, 'Damask Rose');
+  assert.equal(CARD_DEFS[24].name, 'Messenger Pigeon');
   assert.equal(CARD_DEFS[28].secondary, 'food');
   assert.equal(CARD_DEFS[29].secondary, 'coins');
 });
