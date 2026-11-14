@@ -351,3 +351,6 @@ Comparables: XCOM (named soldiers you grieve), Darkest Dungeon (scars), Clash Ro
 
 ## #22b «الجسر الخشبي»
 Some valleys have a wooden bridge across the middle lane. A torch card burns it, cutting that lane for both armies for the rest of the battle: a tempo trade drawn as orange storybook flames.
+- **The lost child (الطفل التائه), random stimulus #28:** once in a while, mid-battle, a village child wanders onto the field between the two armies, chasing a goat. Both lines slow and lower their weapons while the child is in the lane (a storybook hush; the drums stop). Drag the child back to your camp (a careful drag; the goat follows or doesn't) and the next village you reach greets you: one card is cheaper for that chapter, and the hakawati tells it at the fire. Ignore it and the rival may escort the child instead and win that village's favour. Never harmed, never a target: a pause that tests whether you keep your head. Line: «توقّفت الحرب دقيقة من أجل عنزة. كانت أفضل دقيقة في اليوم».
+- **Seasons on the field (فصول الوادي), #28b:** winter snow slows riders; summer noon drains momentum unless your camp has water; autumn leaves hide traps.
+- Comparables: Kingdom Two Crowns (villagers to protect), Clash Royale (lane tempo), Frostpunk (a moral pause inside pressure). Ours: mercy as a tactic, told by a storyteller.
