@@ -20,8 +20,17 @@ final class Almo7areboonConfigTests: XCTestCase {
         XCTAssertEqual(Catalog.fullGame.productID, "Tas.Almo7areboon.fullGame")
         XCTAssertEqual(Catalog.lamplighterMonthly.productID, "Tas.Almo7areboon.lamplighter.monthly")
         XCTAssertEqual(Catalog.lamplighterYearly.productID, "Tas.Almo7areboon.lamplighter.yearly")
-        XCTAssertNil(config.gameCenter)
         XCTAssertEqual(config.webRoot, "game")
+    }
+
+    /// The IDs exist in App Store Connect; never rename them after release.
+    func testGameCenterReportsTheSevenAchievementsAndTheLeaderboard() throws {
+        let gc = try XCTUnwrap(config.gameCenter)
+        XCTAssertEqual(gc.achievements.count, 7)
+        XCTAssertEqual(gc.achievements.first?.id, "almo.milestone.1_first_battle")
+        XCTAssertEqual(Set(gc.achievements.map(\.id)).count, 7)
+        XCTAssertEqual(gc.leaderboards.map(\.id), ["almo.rivals_turned_back"])
+        XCTAssertTrue(gc.progressScript.contains("almo7areboon.save.v1"), "reads the real save key")
     }
 
     func testTheGamesOwnMessagesParse() {

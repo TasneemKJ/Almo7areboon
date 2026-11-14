@@ -33,6 +33,28 @@ enum Catalog {
     static var productIDs: [String] { all.map(\.productID) }
 }
 
+/// Game Center: what the page's progress script reports, mapped to the IDs in App Store Connect.
+/// The script and the IDs come from ios/game-center/progress.js (its test checks this file matches).
+/// Nothing paid counts. A player signed in on the phone is recognised silently; nobody is asked to sign in during play.
+enum AlmoGameCenter {
+    /// Evaluated in the page beside the save copy; reads the save (almo7areboon.save.v1) and guards every field.
+    static let progressScript = "(function(){var o={achievements:{},scores:{}},s=null;try{s=JSON.parse(localStorage.getItem('almo7areboon.save.v1'));}catch(e){s=null;}var ob=function(v){return v&&typeof v==='object'&&!Array.isArray(v)?v:{};};var n=function(v){return typeof v==='number'&&isFinite(v)&&v>0?Math.floor(Math.min(v,1e12)):0;};s=ob(s);var a=o.achievements,u=Array.isArray(s.unlocked)?s.unlocked:[],m=ob(s.mastery),c=Array.isArray(m.chapters)?m.chapters:[];a.firstVictory=n(s.wins)>=1;a.oliveTerraces=n(s.furthestBattle)>=2;a.secondTroop=u[1]===true||u[2]===true;a.breadEnough=n(s.foodLevel)>=5;a.gateUnbroken=c.some(function(x){return (n(ob(x).earnedMask)&2)===2;});a.hundredBack=n(s.kills)>=100;a.lampsDoNotFight=n(ob(s.dusk).day)>=1;var k=n(s.kills);if(k>0)o.scores.rivalsTurnedBack=k;return o;})()"
+
+    static let config = TasGameCenterConfig(
+        progressScript: progressScript,
+        achievements: [
+            .init(key: "firstVictory", id: "almo.milestone.1_first_battle"),
+            .init(key: "oliveTerraces", id: "almo.milestone.2_olive_terraces"),
+            .init(key: "secondTroop", id: "almo.milestone.3_by_the_fire"),
+            .init(key: "breadEnough", id: "almo.milestone.4_bread_enough"),
+            .init(key: "gateUnbroken", id: "almo.milestone.5_gate_unbroken"),
+            .init(key: "hundredBack", id: "almo.milestone.6_a_hundred_turned_back"),
+            .init(key: "lampsDoNotFight", id: "almo.milestone.7_lamps_do_not_fight"),
+        ],
+        leaderboards: [.init(key: "rivalsTurnedBack", id: "almo.rivals_turned_back")]
+    )
+}
+
 extension TasGameConfig {
     static let almo7areboon = TasGameConfig(
         htmlFileName: "index.html",
@@ -50,7 +72,7 @@ extension TasGameConfig {
         primaryProductKey: Catalog.fullGame.key,
         ownedDefaultsKey: "store.owned",
         pricesDefaultsKey: "store.prices",
-        gameCenter: nil,
+        gameCenter: AlmoGameCenter.config,
         legalPages: ["terms": appleStandardEULA, "privacy": SiteLinks.privacy, "support": SiteLinks.support,
                      "subscriptions": URL(string: "https://apps.apple.com/account/subscriptions")!],
         launchColor: UIColor(named: "LaunchBackground") ?? UIColor(red: 0.07, green: 0.11, blue: 0.16, alpha: 1),
