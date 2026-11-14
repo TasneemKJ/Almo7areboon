@@ -9,7 +9,7 @@ test('Harbor Watch uses one coherent painted chapter across battlefield and UI',
  const art=storybookArt(2);
  assert.ok(art,'third chapter needs authored storybook art');
  assert.deepEqual(art.roles,['quay-guard','archer','quay-rider']);
- assert.equal(chapterLandscape(2),`${art.folder}/village.webp`);
+ assert.equal(chapterLandscape(2),`${art.folder}/village-hd.webp`);
  assert.equal(baseTexture(2,'enemy'),baseTexture(2,'player'));
  for(const kind of [0,1,2] as const){
   assert.equal(unitTexture(2,kind,'enemy'),unitTexture(2,kind,'player'));

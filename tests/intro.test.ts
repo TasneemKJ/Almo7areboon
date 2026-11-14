@@ -56,7 +56,7 @@ test('timing table: two or three beats, ten to twelve seconds, one short line pe
   }
   const html = introHtml(0);
   assert.equal((html.match(/<button\b/g) || []).length, 1); assert.match(html, /data-intro="skip">Skip</);
-  assert.match(html, /\/art\/storybook\/village\.webp/); assert.match(html, /pathkeeper-strip\.webp/);
+  assert.match(html, /\/art\/storybook\/village-hd\.webp/); assert.match(html, /pathkeeper-strip\.webp/);
   assert.doesNotMatch(html, /<video|\.mp4|\.webm/);
 });
 

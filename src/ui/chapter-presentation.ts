@@ -39,7 +39,8 @@ const landscapes=new Map<number,string>();
 /** Same authored landscape as the battlefield, cached by the browser. */
 export function chapterLandscape(age:number):string {
  const index=chapterIndex(age),art=storybookArt(index);
- if(art)return `${art.folder}/village.webp`;
+ // The DOM shows the HD copy exported from the original art (scripts/prepare-storybook-hd.cjs); the canvas keeps its packed texture.
+ if(art)return `${art.folder}/village-hd.webp`;
  let image=landscapes.get(index);
  if(!image){image=dataSvg(landscapeSvg(index,false));landscapes.set(index,image);}
  return image;

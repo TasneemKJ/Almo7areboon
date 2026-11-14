@@ -11,7 +11,7 @@ export function journalIllustration():string {
  return '<img src="/art/storybook/camp/journal.webp" alt="" width="512" height="468"/>';
 }
 export function campGateImage(age:number):string {
- const art=storybookArt(age);return art?`${art.folder}/shelter.webp`:dataSvg(baseSvg(age,'player'));
+ const art=storybookArt(age);return art?`${art.folder}/shelter-hd.webp`:dataSvg(baseSvg(age,'player'));
 }
 
 /**

@@ -10,7 +10,7 @@ test('Hillside Watch shares authored scenery, shelter and three troop atlases ac
  const art=storybookArt(4);assert.ok(art,'chapter five must use the painted art pipeline');
  assert.deepEqual(art.roles,['sentinel','scout','tank']);
  assert.equal(art.frameWidth,216,'narrow cells preserve the existing decoded texture budget');
- assert.equal(chapterLandscape(4),`${art.folder}/village.webp`);
+ assert.equal(chapterLandscape(4),`${art.folder}/village-hd.webp`);
  assert.equal(baseTexture(4,'player'),baseTexture(4,'enemy'));
  const assets=visualAssets();
  for(const kind of [0,1,2] as const){

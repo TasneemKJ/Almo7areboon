@@ -11,7 +11,7 @@ test('Courtyards Beyond completes six painted chapters with matching troop portr
  const art=storybookArt(5)!;
  assert.deepEqual(art.roles,['light-guard','trooper','sky-skimmer']);
  assert.equal(art.frameWidth,216);
- assert.equal(chapterLandscape(5),`${art.folder}/village.webp`);
+ assert.equal(chapterLandscape(5),`${art.folder}/village-hd.webp`);
  assert.equal(baseTexture(5,'player'),baseTexture(5,'enemy'));
  for(const kind of [0,1,2] as const){
   assert.equal(unitTexture(5,kind,'player'),unitTexture(5,kind,'enemy'));
