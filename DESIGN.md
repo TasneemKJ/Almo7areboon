@@ -282,3 +282,51 @@ No narration, ever shipped or planned: the ElevenLabs free plan grants no commer
 
 ## Backlog from random stimulus (2026-11-14)
 - **The Hakawati's Night (ليلة الحكواتي):** each battle is told live in a café; the player is the storyteller. The audience reacts in fusha with gentle humour («لا! ليس الفارس!»); their cheers give a short morale boost. Limited storytelling turns per chapter (each unit sent is a decision). A dabke formation: units walking the lane linked shoulder to shoulder fight better; breaking the line costs. Gives identity beyond the Age of War lane formula. Comparables: Age of War (lanes), Darkest Dungeon (narrator), Slay the Spire (every choice counts).
+
+## 1.3: lead the company in the field, not from a panel (2026-11-14)
+
+Owner direction: a battle must feel like play, not an app with menus and buttons. At 390x844 the bottom third of a
+battle was a control panel: a momentum bar, Advance (+20% strike) and Hold (−25% damage) buttons, three troop cards, a
+food line and a Gather button. The core verb, leading the company, now happens in the painted field.
+
+**Studied, not copied.**
+- *Clash Royale* keeps a short hand of cards along the bottom edge: portrait plus cost, nothing else, so the eye stays on
+  the arena. We keep our three troop cards for the same reason (deploying is genre-standard and fast) but slim them into
+  painted tokens on the field's own wooden board edge: a medallion portrait, the name, the cost, a brass rim when
+  affordable and a thin brass line filling with food. No role captions, no meter row, no second strip.
+- *Kingdom Rush* lets you rally troops by touching a flag on the map: the order is a place in the world. Ours is the
+  company banner (the game's own painted standard, `interface/standard.webp`, cut from the shipped icon atlas at full
+  resolution), planted in the field in front of the waiting company. Drag it forward, toward the rival gate, to Advance;
+  drag it back toward your gate to Hold. It stays where it was carried while the order runs, leaning into the push or
+  planted upright, and throws a small pool of gold (Advance) or lamp-teal (Hold) light on the ground.
+- *Monument Valley* teaches by direct manipulation: the thing you touch moves, and its movement says what it does. The
+  banner follows the finger a bounded 72px, a plate beside it names what releasing will do ("Advance · +20% strike",
+  "Hold · −25% damage", or "needs 60 momentum"), and the neutral zone (under 36px, or a mostly vertical drag) plants it
+  back with nothing spent. A tap shows both plates once.
+
+**How ours is its own.** Momentum is not a bar but the banner's cloth: as deploys and kills earn it, the painted cloth
+lights outward from the staff (furled-dark to full colour), and four brass rings on the staff count the quarters (a cue
+that does not depend on colour). At 60 the cloth is full, glows brass, stirs, and two brass chevrons at its foot say it
+can be carried. During an order the lit cloth burns back toward the staff with the ten seconds. Gather is a tap on your
+own camp, the gate shelter where the gathered company waits, with a small paper sign ("Gather" / «اجمع», then
+"Release 3/6" / «أطلق 3/6»). The old order pennant at the gate is no longer drawn in the field; there is one flag.
+Forward means world +x (the rival gate is always on the right), never reading direction, so Arabic and English carry
+the banner the same way.
+
+**What did not change.** The order is still admitted and applied only by `issueBattleOrder`: 60 momentum, 10 seconds,
+Advance ×1.2 strike and ×1.15 pace, Hold ×0.75 damage taken, one order at a time, nothing while paused. No balance,
+save field or reward changes. Food stays on the plate at the top-left of the field; Pause is the one corner control.
+
+**Accessibility.** The banner is `aria-hidden`; the native Advance and Hold buttons remain in `#order-banner` as
+visually hidden proxies with full labels (effect, cost, duration, momentum), reachable by VoiceOver and the keyboard,
+and they appear above the board when focused. The camp target is a native button with a live label. The banner and the
+camp are at least 44px; `touch-action:none` is on the banner only, so short screens still scroll.
+
+**Measured** (scripted competent player, WebKit with touch, 390x844, first three minutes of chapter 1, same policy on
+both builds; `docs/audits/2026-11-14-field-play.md`). See the audit for the numbers and their limits: deploying stays a
+card tap by design, so most taps still land on the board (world share 5.4% -> 20.7%, field plus board 79% -> 95%, other
+DOM taps 19 -> 4-5, visible battle controls 7 -> 4); every order, Gather and Supplies input now lands on the field.
+
+Checked against DESIGN_RULES.md (mobile first, combat clarity, teach by playing, accessible by default, saves sacred).
+The 2026-11-13 owner play-test rule "nothing invisible takes a tap" holds: the banner, its chevrons and the camp sign
+are drawn; the old invisible gate and recruit hit areas stay off.

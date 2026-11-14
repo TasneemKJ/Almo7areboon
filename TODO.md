@@ -26,6 +26,10 @@ Ordered tasks. Tick a task when it is done and never delete finished tasks. This
 - [x] Touch check `npm run review:mobile-touch` (320-412 portrait, 844x390, 4x CPU, #158 tap orders to a result)
 
 ## Next
+- [x] 1.3: lead the company in the field: board-edge troop tokens, the company banner carries Hold/Advance (drag), momentum as banner cloth, Gather on the camp; scripted-player measurement in `docs/audits/2026-11-14-field-play.md`.
+- [ ] 1.3: on a physical iPhone, check the banner drag (no page scroll, no accidental order), VoiceOver reaching the hidden Advance/Hold proxies and the camp, and the board at the home-indicator safe area.
+- [ ] Repaint the supply basket (still a flat vector shape) in the storybook style now that the field carries more of the play.
+- [ ] Consider a world deploy path (tap the road to send the last troop) only with an owner decision: it would move most taps onto the field but changes the 2026-11-13 "tap the troop below" rule.
 - [x] Opening tale on first launch: three beats, spring camera, Skip, Watch intro, reduced-motion stills, synthesized score (docs/audits/2026-10-10-opening-tale.md)
 - [ ] Opening tale: physical iPhone Safari check of the audio unlock and safe-area Skip; listening review of the score levels
 - [x] Opening tale: optional narrated line per beat: decided 2026-11-14, no narration (the ElevenLabs free plan grants no commercial licence); captions only
