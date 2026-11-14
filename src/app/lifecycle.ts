@@ -214,7 +214,8 @@ export function createLifecycle(deps: LifecycleDeps) {
     playCombatEvents(batch,sessionState.game.profile.sound&&playable()&&!dom.hidden()&&!sessionState.manualPaused&&!sessionState.game.state.paused&&ports.navState.activeTab==='battle'&&ports.navState.modal===null);
     if(batch.some(event=>event.type==='win')&&guardAction()){const receipt=sessionState.game.profile.pendingVictory,mask=receipt&&receipt.settlement==='mastery-v1'?receipt.newMask:0;sessionState.game.dispatch({type:'weekly-sync',week:weekId(localDay()),earned:(mask&1)+((mask>>1)&1)+((mask>>2)&1)});}
     if(batch.some(event=>event.type==='win'||event.type==='lose'))persist();
-    // The rating ask is owed only by a won climax (wonClimax); a defeat cancels it, and so does a purchase (below).
+    // The rating ask is owed only by a won climax, a chapter boss won (wonClimax); a defeat cancels it, and so does a
+    // purchase (onStoreChange above). A launch owes nothing: a restored result arrives without a battle batch.
     if(batch.some(event=>event.type==='lose'))sessionState.ratingDue=false;else if(batch.some(event=>event.type==='win')&&wonClimax(sessionState.game.profile,sessionState.game.state))sessionState.ratingDue=true;
   }
   return { playable, guardAction, sessionPresentation, acquireSession, rebuildArmy, toast, persist, syncPause, syncVillagePresentation, syncMarks, syncMotion, action, update, exportSave, adoptRestoredGame, suspendSession, events, sessionState: sessionState as Pick<SessionState, 'acquisitionVersion' | 'atmosphereEnabled' | 'audioMix' | 'game' | 'hasPlayed' | 'lastSavedAt' | 'manualPaused' | 'pagePresent' | 'resultShown' | 'resumeOwnership' | 'retriedSession' | 'savedWarning' | 'session' | 'sessionReady' | 'toastTimer' | 'villagePresentation'> };

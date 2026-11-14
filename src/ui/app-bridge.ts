@@ -72,19 +72,28 @@ export function lamplighterPlan(bridge: Pick<TasBridge, 'inApp' | 'owned'> = alm
   return bridge.owned[LAMPLIGHTER_YEARLY] === true ? LAMPLIGHTER_YEARLY : bridge.owned[LAMPLIGHTER_MONTHLY] === true ? LAMPLIGHTER_MONTHLY : null;
 }
 /**
- * The one place the game asks for a rating: a battle batch that holds a victory (a won chapter battle, or a dusk raid
- * turned back). Never a defeat, never a purchase or a menu; the app itself keeps it rare. Returns whether it asked.
+ * The one place the game asks for a rating: a battle batch that holds a victory, and only one the lifecycle has judged a
+ * won climax (wonClimax). Never a defeat, never a purchase, a launch or a menu; the app itself keeps it rare (at most once
+ * per 90 days, TasKit c87e8af). Returns whether it asked.
  */
 export function askForRatingAfter(batch: readonly { type: string }[], bridge: Pick<TasBridge, 'inApp' | 'requestReview'> = almoApp): boolean {
   return bridge.inApp && batch.some(event => event.type === 'win') && !batch.some(event => event.type === 'lose') && bridge.requestReview() === true;
 }
 /**
- * A won climax, the only moment the rating ask may follow: a chapter cleared for the first time in this timeline (the
- * victory's first seal is new), or a dusk raid turned back. A chapter won again, a defeat or a purchase is not one.
+ * A won climax, the only moment the rating ask may follow: a chapter boss won. On the chapter's own road that is the
+ * chapter battle cleared for the first time in this timeline (the victory's first seal is new); on a storybook
+ * expedition it is its finale, the Bell Keeper (stage 3 of 3), the first time one is beaten. Not a dusk raid (a side
+ * fight), not an expedition's earlier stages, not a chapter won again, a defeat or a purchase (1.3; the build before asked after
+ * a dusk raid turned back too).
  */
-export function wonClimax(p: { readonly pendingVictory: { readonly settlement: string; readonly newMask?: number } | null }, s: { readonly phase: string; readonly dusk?: unknown }): boolean {
-  if (s.phase !== 'won') return false;
-  if (s.dusk) return true;
+type ClimaxProfile = {
+  readonly pendingVictory: { readonly settlement: string; readonly newMask?: number } | null;
+  readonly chronicle?: { readonly expedition: { readonly stage: number } | null; readonly expeditionsWon: number };
+};
+export function wonClimax(p: ClimaxProfile, s: { readonly phase: string; readonly dusk?: unknown }): boolean {
+  if (s.phase !== 'won' || s.dusk) return false;
+  const run = p.chronicle?.expedition;
+  if (run) return run.stage === 2 && (p.chronicle?.expeditionsWon ?? 0) === 0;
   const v = p.pendingVictory;
   return !!v && v.settlement === 'mastery-v1' && ((v.newMask ?? 0) & 1) === 1;
 }

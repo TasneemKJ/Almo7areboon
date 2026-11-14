@@ -100,7 +100,7 @@ test('a raid turned back leaves a dusk banner on the village wall (a keepsake th
   assert.equal(campDuskHtml(veteran({ dusk: { day: DAY, sampled: true } }), DAY + 1, { lit: false, inApp: false }), '');
 });
 
-test('after a raid turned back: a held breath of 1.5 s, the banner settles, one line, and only then the rating ask', async () => {
+test('after a raid turned back: a held breath of 1.5 s, the banner settles, one line, and no rating ask (a side fight, not a chapter boss)', async () => {
   const { DUSK_HELD_BREATH_MS } = await import('../src/game/dusk-raid.ts');
   const { DUSK_AFTER_LINE } = await import('../src/ui/field-controller.ts');
   const { readFileSync } = await import('node:fs');
@@ -108,7 +108,9 @@ test('after a raid turned back: a held breath of 1.5 s, the banner settles, one 
   for (const line of Object.values(DUSK_AFTER_LINE)) assert.doesNotMatch(line, /!|لمس|ولادة|ميلاد|birth/);
   assert.equal(DUSK_AFTER_LINE.ar, 'صمدت القناديل، ورحل المغيرون.');
   const lifecycle = readFileSync(new URL('../src/app/lifecycle.ts', import.meta.url), 'utf8');
-  assert.match(lifecycle, /ports\.showResult\(\);if\(sessionState\.ratingDue&&s\.phase==='won'\)\{sessionState\.ratingDue=false;askForRatingAfter/, 'the ask follows the result, after the pause');
+  assert.match(lifecycle, /ports\.showResult\(\);if\(sessionState\.ratingDue&&s\.phase==='won'\)\{sessionState\.ratingDue=false;askForRatingAfter/, 'an ask, when owed, follows the result, after the pause');
+  const { wonClimax } = await import('../src/ui/app-bridge.ts');
+  assert.equal(wonClimax({ pendingVictory: null }, { phase: 'won', dusk: { lamps: [] } }), false, 'a raid turned back owes no rating ask (1.3)');
   assert.match(lifecycle, /if\(batch\.some\(event=>event\.type==='lose'\)\)sessionState\.ratingDue=false;else if\(batch\.some\(event=>event\.type==='win'\)&&wonClimax\(sessionState\.game\.profile,sessionState\.game\.state\)\)sessionState\.ratingDue=true/, 'only a won climax just played');
   const controller = readFileSync(new URL('../src/ui/field-controller.ts', import.meta.url), 'utf8');
   assert.match(controller, /const settling=!!s\.dusk&&s\.phase==='won';node\.hidden=!running&&!settling;/);
