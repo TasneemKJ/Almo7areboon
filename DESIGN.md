@@ -330,3 +330,13 @@ DOM taps 19 -> 4-5, visible battle controls 7 -> 4); every order, Gather and Sup
 Checked against DESIGN_RULES.md (mobile first, combat clarity, teach by playing, accessible by default, saves sacred).
 The 2026-11-13 owner play-test rule "nothing invisible takes a tap" holds: the banner, its chevrons and the camp sign
 are drawn; the old invisible gate and recruit hit areas stay off.
+
+## Backlog from random stimulus (2026-11-14, round 2)
+## Backlog from random stimulus (2026-11-14) — add to Almo7areboon DESIGN.md after the compliance agent finishes
+- **The Hakawati's Night (ليلة الحكواتي):** each battle is told live in a café; the player is the storyteller. The audience reacts in fusha with gentle humour («لا! ليس الفارس!»); their cheers give a short morale boost. Limited storytelling turns per chapter (each unit sent is a decision). A dabke formation: units walking the lane linked shoulder to shoulder fight better; breaking the line costs. Gives identity beyond the Age of War lane formula. Comparables: Age of War (lanes), Darkest Dungeon (narrator), Slay the Spire (every choice counts).
+
+## Random stimulus #9 (2026-11-14): «الخصم يتعلّم»
+Comparables: Age of War (fixed AI), Kingdom Rush (scripted waves), Clash Royale (human opponents adapt). Ours: a folk rival chief who copies you, alone and offline.
+- If the player sends the same card 3 times in a row, the enemy chief adopts it the next wave, shown in the world: his banner gets the same emblem, and a line appears once: «أعجبته فكرتك. سينفّذها أسوأ منك، لكن بعددٍ أكبر.» This stops one-card spam, rewards variety, and adds a mid-chapter difficulty step without bigger numbers.
+- Second idea: veterans keep their names. A unit that survives 3 battles gets a folk name, and if it falls, its name is stitched onto your banner. This adds real loss, and subscribers get extra stitch colours. (Cosmetic, worth keeping.)
+Next: add it after the 1.3 "play not menus" agent lands. Make it one rule in the enemy wave picker, tested with a 3-in-a-row spam replay.
