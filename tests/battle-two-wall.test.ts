@@ -2,7 +2,7 @@ import test from 'node:test';
 import assert from 'node:assert/strict';
 import { Game } from '../src/game/simulation.ts';
 import { defaultProfile, decodeSave } from '../src/game/save.ts';
-import { campCounsel, counselAction } from '../src/game/counsel.ts';
+import { campCounsel, counselAction, litCounsel } from '../src/game/counsel.ts';
 import { easesLoneCompany, encounterForAge, rallyLevel, rallyPower, RALLY_FOOD, LONE_COMPANY_DELAY } from '../src/game/encounters.ts';
 import { compactResultsHtml } from '../src/ui/results-screen.ts';
 import { campRootHtml, counselActLabel } from '../src/ui/camp-screen.ts';
@@ -55,8 +55,10 @@ test('battle 2 eases only for a lone company on the first timeline, read when th
 test('the pacing director: two defeats in a row quietly thin and weaken the next battle; a victory ends it; old saves load', () => {
   const game = new Game(chapterTwo({ unlocked: [true, true, false] }));
   const startFood = () => game.state.food;
+  game.dispatch({ type: 'start' }); game.dispatch({ type: 'retreat' }); assert.equal(game.profile.lossStreak, undefined, 'leaving is no fallen gate');
+  game.dispatch({ type: 'retry' });
   for (let loss = 1; loss <= 4; loss++) {
-    game.dispatch({ type: 'start' }); game.dispatch({ type: 'retreat' });
+    game.dispatch({ type: 'start' }); game.state.playerHp = 0; game.step(1 / 60); assert.equal(game.state.phase, 'lost');
     assert.equal(game.profile.lossStreak, loss);
     game.dispatch({ type: 'retry' });
     assert.equal(rallyLevel(game.profile), Math.min(3, Math.max(0, loss - 1)));
@@ -69,4 +71,14 @@ test('the pacing director: two defeats in a row quietly thin and weaken the next
   assert.equal(decodeSave(JSON.stringify(defaultProfile())).profile?.lossStreak, undefined);
   assert.equal(decodeSave(JSON.stringify({ ...defaultProfile(), lossStreak: 3 })).profile?.lossStreak, 3);
   assert.equal(decodeSave(JSON.stringify({ ...defaultProfile(), lossStreak: 'x' })).profile?.lossStreak, undefined);
+});
+
+test('later chapters light the counsel only after a defeat, and a defeat with coins to move camp makes Move camp the primary', () => {
+  const later = chapterTwo({ enemyAge: 2, furthestBattle: 2, coins: 600 });
+  assert.equal(litCounsel(later), null, 'no lantern that never goes out');
+  assert.deepEqual(litCounsel({ ...later, lossStreak: 1 }), { station: 'storehouse' });
+  const game = new Game(chapterTwo({ enemyAge: 2, furthestBattle: 2, coins: 3000 }));
+  game.dispatch({ type: 'start' }); game.state.playerHp = 0; game.step(1 / 60);
+  const primary = primaries(compactResultsHtml(game.profile, game.state, false, true));
+  assert.equal(primary.length, 1); assert.match(primary[0], /data-command="evolve"/);
 });

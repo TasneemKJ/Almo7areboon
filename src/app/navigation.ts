@@ -7,7 +7,7 @@ import type { Profile, LegacyChoice } from '../game/types.ts';
 import { type CampOwner } from '../ui/camp-owner.ts';
 import {campRootHtml,campFocusHtml,campGoalText} from '../ui/camp-screen.ts';
 import { localDay } from '../game/data.ts';
-import { campCounsel, counselAction } from '../game/counsel.ts';
+import { counselAction, litCounsel } from '../game/counsel.ts';
 import { pressFeedback } from '../ui/press-feedback.ts';
 import { canOwnCamp, isCampStation, campActionFromData, type CampFocus } from '../ui/camp-owner.ts';
 import { type StoryFollowUp } from '../ui/story-flow.ts';
@@ -243,7 +243,7 @@ export function createNavigation(deps: NavigationDeps) {
   }
   /** The lit place's in-world act: one purchase through the guarded dispatch, then the scene answers and the primary moves on. */
   function buyCounsel(){
-    const p=ports.sessionState.game.profile,counsel=p.furthestBattle<2?campCounsel(p):null;
+    const p=ports.sessionState.game.profile,counsel=litCounsel(p);
     if(!counsel||navState.modal||!ports.action(counselAction(counsel))||!ports.playable()||navState.modal)return;
     pressFeedback({sound:p.sound,kind:'press'});syncCamp();
     const place=root!.querySelector<HTMLElement>(`[data-camp-station="${counsel.station}"]`);

@@ -154,7 +154,7 @@ export class Game implements GamePort {
     if (this.state.phase !== 'running') return false;
     this.state.phase = 'lost';
     this.state.paused = false;
-    this.events.push({ type: 'lose' }); this.profile.lossStreak = Math.min(99, (this.profile.lossStreak ?? 0) + 1);
+    this.events.push({ type: 'lose' }); // a retreat is no fallen gate: it never feeds the pacing director's streak
     return true;
   }
 

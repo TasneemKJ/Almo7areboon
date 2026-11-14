@@ -76,6 +76,8 @@ export function compactResultsHtml(profile:Profile,state:BattleState,canShare=al
  if(run&&won){command=run.stage<2?'result-expedition':'story-continue';label=run.stage<2?tr('Choose help & continue','اختر العون وتابع'):tr('Bring the company home','أعِد السريّة إلى الديار');next=encounterDone(run.stage);}
  else if(advance.reason==='complete'){command='return-chapters';label=tr('Return to chapters','عُد إلى الفصول');next=tr('Your journey is complete. Your progress stays.','اكتملت رحلتك، وتقدّمك باقٍ.');}
  else if(!won&&counsel){const copy=counselCopy(counsel,profile.age,state.playerHp<=0&&profile.enemyAge<=1);command='result-counsel';extra=` data-counsel="${counselStation(counsel)}"`;label=copy.button;next=copy.line;}
+ // Coins enough to move camp (campCounsel then lights nothing, since moving resets what it would buy): that is the help.
+ else if(!won&&!run&&profile.age<ERAS.length-1&&profile.age<=profile.enemyAge&&profile.coins>=ERAS[profile.age].evolveCost&&!(evolutionNeedsFullJourney(profile.age)&&!journeyOpen)){command='evolve';label=tr(`Move camp · ${amount(ERAS[profile.age].evolveCost)} coins`,`انقل المخيّم · ${n(amount(ERAS[profile.age].evolveCost))} من النقود`);next=tr('Your coins can move the camp to a stronger age. Your seals and cards stay.','معك من النقود ما ينقل المخيّم إلى عصرٍ أقوى، وتبقى لك أختامك وبطاقاتك.');}
  else if(won&&advance.allowed&&advance.target==='battle'&&advance.nextBattle!==null&&advance.nextBattle>=FREE_AGES&&!journeyOpen){
   // The free road ends here for now: Camp is the primary (replays, records, the daily reward); the paid chapter is named
   // calmly and opens only on purpose. A Continue that can only open the sheet looped a declining player forever (1.0).

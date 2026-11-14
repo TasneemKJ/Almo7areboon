@@ -7,6 +7,7 @@ import { companyFilmHtml, mountCompanyFilm } from '../ui/company-film.ts';
 
 
 import { questRecords } from '../ui/quest-records.ts';
+import { litCounsel } from '../game/counsel.ts';
 import { storyFollowUp } from '../ui/story-flow.ts';
 import { battlefieldOrderFromGesture, fieldTapOrder } from '../ui/battlefield-orders.ts';
 import { bannerDragIntent, bannerDragOffset, bannerOrderFromDrag } from '../ui/banner-gesture.ts';
@@ -58,7 +59,7 @@ function openCounsel(ports:Pick<ShellApi,'action'|'closeModal'|'navState'|'playa
   if(!ports.action({type:'retry'})||!ports.playable()||(ports.navState.modal as string|null)==='session')return;
   ports.navState.evolutionFromResult=false;ports.closeModal(false);ports.sessionState.manualPaused=false;ports.switchTab('battle');ports.syncCamp();
   // The free chapters light the place in the camp scene itself, with its act hung on it (camp-screen.ts counselActLabel).
-  if(ports.sessionState.game.profile.furthestBattle<2){root?.querySelector<HTMLElement>('#camp-view [data-primary="true"]')?.focus({preventScroll:true});return;}
+  if(litCounsel(ports.sessionState.game.profile)){root?.querySelector<HTMLElement>('#camp-view [data-primary="true"]')?.focus({preventScroll:true});return;}
   ports.showCampFocus(recruit?{recruit:Number(recruit[1]) as UnitKind}:target as 'storehouse'|'gate');
 }
 
@@ -129,7 +130,7 @@ export function installListeners(deps: ListenersDeps): void {
     'upgrade-base':()=>{ports.action({type:'upgrade',stat:'base'});},
     'battles':()=>{ports.showModal('battles',battleSelectionHtml(ports.sessionState.game.profile,ports.sessionState.game.state));},
     'wave-help':()=>{if(ports.sessionState.game.state.phase==='running')ports.showModal('wave-help',waveInspectionHtml(ports.sessionState.game.waveStatus(),ports.sessionState.game.state.chronicle?.enabled?ports.sessionState.game.state.chronicle.objective:undefined));},
-    'evolve':()=>{if(ports.gateEvolution())return;const html=evolutionDialogHtml(ports.sessionState.game.profile,ports.sessionState.game.state);if(html){ports.navState.evolutionFromResult=ports.navState.modal==='result';ports.showModal('evolve',html);};},
+    'evolve':()=>{if(ports.gateEvolution())return;const html=evolutionDialogHtml(ports.sessionState.game.profile,ports.sessionState.game.state);if(html){ports.navState.evolutionFromResult=ports.navState.modal==='result'&&ports.sessionState.game.state.phase==='won';ports.showModal('evolve',html);};},
     'confirm-evolve':()=>{
       if(ports.gateEvolution())return;
       const returnToResult=ports.navState.evolutionFromResult,ok=ports.action({type:'evolve'});

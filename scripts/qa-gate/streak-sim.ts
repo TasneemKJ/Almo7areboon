@@ -1,10 +1,11 @@
 // The pacing director's check (STUDIO-BAR "non-boring and high retention"): a naive player's 30 battles by the game's own
-// rules, counting losses in a row. The player taps the first affordable troop like the audit bot, uses no skills, presses
-// the result's primary action (Continue after a win; after a loss either Retry only, or CAMP=counsel: buy what the lit
-// Camp place offers until the lamp goes out), and moves camp when Camp would offer nothing else.
+// rules (the web build, where nothing is sold), counting losses in a row. The player taps the first affordable troop like
+// the audit bot, uses no skills, and does only what a data-primary action leads to: Continue after a win; after a defeat
+// either Retry only (CAMP=0), or (CAMP=counsel) the Regroup primary: the lit Camp place's act, tapped until the lamp goes
+// out (litCounsel), or Move camp when that is what the coins can do.
 // Run: node --experimental-strip-types scripts/qa-gate/streak-sim.ts [seeds=20] [CAMP=0|counsel] [battles=30]
 import { Game } from '../../src/game/simulation.ts';
-import { campCounsel, followCounsel } from '../../src/game/counsel.ts';
+import { counselAction, litCounsel } from '../../src/game/counsel.ts';
 import { ERAS } from '../../src/game/data.ts';
 import type { UnitKind } from '../../src/game/types.ts';
 
@@ -25,9 +26,13 @@ for (let s = 1; s <= SEEDS; s++) {
   const rnd = seeded(s); Math.random = seeded(1000 + s);
   const game = new Game(); let streak = 0, max = 0, lost = 0;
   for (let b = 0; b < BATTLES; b++) {
-    if (CAMP === 'counsel') { followCounsel(game); const p = game.profile; if (!campCounsel(p) && p.age < ERAS.length - 1 && p.age <= p.enemyAge && p.coins >= ERAS[p.age].evolveCost) game.dispatch({ type: 'evolve' }); }
+    if (CAMP === 'counsel') for (let lit = litCounsel(game.profile), n = 0; lit && n < 60 && game.dispatch(counselAction(lit)); lit = litCounsel(game.profile), n++);
     if (fight(game, rnd)) { streak = 0; if (!game.dispatch({ type: 'next' })) game.dispatch({ type: 'retry' }); }
-    else { streak++; lost++; max = Math.max(max, streak); game.dispatch({ type: 'retry' }); }
+    else {
+      streak++; lost++; max = Math.max(max, streak); const p = game.profile;
+      if (CAMP === 'counsel' && !litCounsel(p) && p.age < ERAS.length - 1 && p.age <= p.enemyAge && p.coins >= ERAS[p.age].evolveCost) game.dispatch({ type: 'evolve' });
+      else game.dispatch({ type: 'retry' });
+    }
   }
   worst = Math.max(worst, max); streaks.push(max); chapters.push(game.profile.enemyAge); losses.push(lost);
 }

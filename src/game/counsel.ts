@@ -26,6 +26,14 @@ export function campCounsel(p: Readonly<Profile>): CampCounsel | null {
   return gate ? { station: 'gate' } : food ? { station: 'storehouse' } : null;
 }
 
+/**
+ * The counsel Camp lights for this player now: always in the free chapters, and later only after a defeat (while the
+ * pacing director's streak is live), so a lantern that never goes out does not become noise as coins pile up.
+ */
+export function litCounsel(p: Readonly<Profile>): CampCounsel | null {
+  return p.furthestBattle < 2 || (p.lossStreak ?? 0) > 0 ? campCounsel(p) : null;
+}
+
 /** The one action that buys what the lit place offers (Camp's in-world act and the bot both spend through this). */
 export function counselAction(counsel: CampCounsel): { type: 'upgrade'; stat: 'food' | 'base' } | { type: 'unlock'; kind: 1 | 2 } {
   return counsel.station === 'storehouse' ? { type: 'upgrade', stat: 'food' } : counsel.station === 'gate' ? { type: 'upgrade', stat: 'base' } : { type: 'unlock', kind: counsel.kind };
