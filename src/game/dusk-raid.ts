@@ -4,9 +4,9 @@ import type { BattleState, Profile } from './types.ts';
 /**
  * «غارة الغسق», the dusk raid (DESIGN.md #51): the Lamplighter lights the wall lamps and one extra battle a day comes
  * out of the dark. Before it starts the player hangs three lamps on the field; raiders show only inside lamplight
- * (presentation, see view/dusk-sight.ts). It is a different, harder fight, never a stronger army, and it pays nothing:
+ * (presentation: duskSight below). It is a different, harder fight, never a stronger army, and it pays nothing:
  * no coins, gems, kills, deployments, wins, seals or chapter progress, and no step of the pacing director. The profile
- * keeps only the day's stamp. Who may light the lamps is decided by the caller (the app's subscription, `lit`), never
+ * keeps only the day's stamp and, for a raid turned back, one more dusk banner on the village wall. Who may light the lamps is decided by the caller (the app's subscription, `lit`), never
  * stored: a player without the Lamplighter gets one raid as a sample.
  */
 export const DUSK_LAMPS = 3;
@@ -16,7 +16,8 @@ const FIELD_MIN = 90, FIELD_MAX = 910;
 /** Actions a raid in progress admits; everything that spends, earns or moves the road waits until it is over. */
 export const DUSK_ACTIONS: ReadonlySet<string> = new Set(['start', 'pause', 'retreat', 'retry', 'spawn', 'skill', 'order', 'rally', 'dusk-lamp', 'preference']);
 
-export interface DuskStamp { day: number; sampled?: true }
+/** `kept`: raids turned back, each a dusk banner kept on the village wall (a keepsake; it buys nothing). */
+export interface DuskStamp { day: number; sampled?: true; kept?: number }
 export interface DuskBattle { lamps: number[]; settled?: true }
 
 /** Whether the wall lamps can be lit today: once a day with the Lamplighter, once ever without him. */
@@ -29,7 +30,7 @@ export function duskAvailable(p: Readonly<Pick<Profile, 'dusk' | 'wins'>>, day: 
 /** Begins a raid on the ready field: stamps the day (and the sample) and marks the battle. */
 export function beginDusk(p: Profile, s: BattleState, day: number, lit: boolean): boolean {
   if (s.phase !== 'ready' || s.dusk || p.pendingVictory || p.chronicle?.expedition || !duskAvailable(p, day, lit)) return false;
-  p.dusk = { day, ...(lit && !p.dusk?.sampled ? {} : { sampled: true as const }) };
+  p.dusk = { day, ...(lit && !p.dusk?.sampled ? {} : { sampled: true as const }), ...(p.dusk?.kept ? { kept: p.dusk.kept } : {}) };
   s.dusk = { lamps: [] };
   return true;
 }
@@ -60,5 +61,6 @@ export function settleDusk(p: Profile, s: BattleState, snapshot: string): void {
   for (const key of Object.keys(p) as (keyof Profile)[]) delete p[key];
   Object.assign(p, before, keep);
   if (keep.introPending === undefined) delete p.introPending;
+  if (s.phase === 'won' && p.dusk) p.dusk = { ...p.dusk, kept: Math.min(999, (p.dusk.kept ?? 0) + 1) };
   s.earned = 0; s.dusk.settled = true;
 }

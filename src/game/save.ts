@@ -119,8 +119,8 @@ function readGoalsAndPreferences(data: Raw, clean: Profile): void {
   if (data.marks === true) clean.marks = true;
   // Optional: the opening intro is still owed. Only a first launch sets it, so a save without it never replays the intro.
   if (data.introPending === true) clean.introPending = true;
-  const dusk = data.dusk as { day?: unknown; sampled?: unknown } | undefined;
-  if (dusk && typeof dusk === 'object' && Number.isInteger(dusk.day) && (dusk.day as number) > 0 && (dusk.day as number) <= 1_000_000) clean.dusk = { day: dusk.day as number, ...(dusk.sampled === true ? { sampled: true as const } : {}) };
+  const dusk = data.dusk as { day?: unknown; sampled?: unknown; kept?: unknown } | undefined;
+  if (dusk && typeof dusk === 'object' && Number.isInteger(dusk.day) && (dusk.day as number) > 0 && (dusk.day as number) <= 1_000_000) clean.dusk = { day: dusk.day as number, ...(dusk.sampled === true ? { sampled: true as const } : {}), ...(Number.isInteger(dusk.kept) && (dusk.kept as number) > 0 ? { kept: Math.min(999, dusk.kept as number) } : {}) };
   if (Number.isInteger(data.lossStreak) && (data.lossStreak as number) > 0) clean.lossStreak = Math.min(99, data.lossStreak as number);
 }
 

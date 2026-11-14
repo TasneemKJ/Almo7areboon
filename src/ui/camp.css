@@ -65,3 +65,8 @@
 .camp-dusk-name{font-size:.75rem;line-height:1.2;font-weight:800;padding:2px 8px;border-radius:7px;background:#102c29c7;text-shadow:0 1px 3px #102c29;white-space:nowrap}
 .camp-dusk-lit .camp-dusk-name{background:#3a2a12e6;color:#ffdc92;box-shadow:0 0 0 1.5px #c7a773}
 @media(orientation:landscape) and (max-height:540px) and (min-width:600px){.camp-dusk{top:22%}}
+/* The dusk banner keepsake (camp-screen.ts campDuskHtml): the company banner, dusk-dimmed, hung on the wall cord, a knot per raid turned back. */
+.camp-dusk-banner{position:relative;display:block;width:30px;height:44px;margin:-6px 4px 0 -4px}
+.camp-dusk-banner img{width:100%;height:auto;display:block;filter:sepia(.35) saturate(.8) brightness(.85) drop-shadow(0 0 4px #ffd18a66);transform-origin:20% 0;animation:camp-lamp-sway 4.2s ease-in-out infinite}
+.camp-dusk-banner b{position:absolute;left:3px;width:5px;height:3px;border-radius:2px;background:#e3c27e;box-shadow:0 0 0 1px #24150b}
+.camp-dusk-banner b:nth-of-type(1){top:30px}.camp-dusk-banner b:nth-of-type(2){top:25px}.camp-dusk-banner b:nth-of-type(3){top:20px}.camp-dusk-banner b:nth-of-type(4){top:15px}.camp-dusk-banner b:nth-of-type(5){top:10px}

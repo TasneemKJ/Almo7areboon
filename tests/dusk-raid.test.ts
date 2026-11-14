@@ -84,3 +84,18 @@ test('the card describes the raid truthfully in both languages and keeps the leg
     } finally { setLang('en'); }
   }
 });
+
+test('a raid turned back leaves a dusk banner on the village wall (a keepsake that buys nothing); a lost raid leaves none', () => {
+  const won = new Game(veteran()); raid(won); won.state.enemyHp = 0; won.step(1 / 60);
+  assert.equal(won.state.phase, 'won'); assert.equal(won.profile.dusk?.kept, 1);
+  const lost = new Game(veteran()); raid(lost); lost.state.playerHp = 0; lost.step(1 / 60);
+  assert.equal(lost.profile.dusk?.kept, undefined);
+  won.dispatch({ type: 'retry' }); assert.ok(won.dispatch({ type: 'dusk', day: DAY + 1, lit: true }));
+  assert.equal(won.profile.dusk?.kept, 1, 'the next dusk keeps the banners already hung');
+  assert.equal(decodeSave(JSON.stringify(won.profile)).profile?.dusk?.kept, 1);
+  assert.equal(decodeSave(JSON.stringify({ ...defaultProfile(), dusk: { day: 3, kept: 'x' } })).profile?.dusk?.kept, undefined);
+  const html = campDuskHtml(veteran({ dusk: { day: DAY, sampled: true, kept: 7 } }), DAY + 1, { lit: false, inApp: false });
+  assert.match(html, /class="camp-dusk-banner" data-kept="5"/); assert.match(html, /7 raids turned back/);
+  assert.doesNotMatch(html, /<button/, 'on the web, after the sample, it is a picture on the wall, nothing to open');
+  assert.equal(campDuskHtml(veteran({ dusk: { day: DAY, sampled: true } }), DAY + 1, { lit: false, inApp: false }), '');
+});

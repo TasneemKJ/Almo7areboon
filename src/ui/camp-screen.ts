@@ -47,10 +47,15 @@ export function counselActLabel(p:Readonly<Profile>,counsel:CampCounsel):string 
  */
 export function campDuskHtml(p:Readonly<Profile>,day:number|undefined,store:{lit:boolean;inApp:boolean}):string {
  if(day===undefined||p.wins<1)return '';
- const lamps=(lit:boolean)=>`<span class="camp-dusk-lamps" aria-hidden="true">${[0,1,2].map(()=>`<i class="camp-dusk-lamp${lit?' lit':''}">${campLampIllustration()}</i>`).join('')}</span>`;
- if(duskAvailable(p,day,store.lit))return `<button class="camp-dusk camp-dusk-lit" data-command="camp-dusk" aria-label="${tr('Dusk raid. Hang three lamps on the field; raiders show only in their light. It earns nothing; it is a different fight.','غارة الغسق. علّق ثلاثة قناديل في الساحة، فلا يظهر المغيرون إلا في نورها. لا تكسب منها شيئاً، إنّما هي قتالٌ آخر.')}">${lamps(true)}<span class="camp-dusk-name">${tr('Dusk raid','غارة الغسق')}</span></button>`;
- if(store.inApp&&!store.lit)return `<button class="camp-dusk" data-command="lamplighter" aria-label="${tr('The wall lamps. The Lamplighter lights them each dusk.','قناديل السور. يُشعلها مُشعِل القناديل كلّ غروب.')}">${lamps(false)}<span class="camp-dusk-name">${tr('The wall lamps','قناديل السور')}</span></button>`;
- return '';
+ const kept=p.dusk?.kept??0;
+ // The keepsake: a dusk banner on the wall for the raids turned back, a knot on its staff for each up to five.
+ const banner=kept?`<span class="camp-dusk-banner" data-kept="${Math.min(5,kept)}" aria-hidden="true"><img src="/art/storybook/interface/standard.webp" alt="" width="259" height="258"/>${'<b></b>'.repeat(Math.min(5,kept))}</span>`:'';
+ const keptLabel=kept?tr(` The dusk banner: ${kept} ${kept===1?'raid':'raids'} turned back.`,` راية الغسق: الغارات المردودة ${n(kept)}.`):'';
+ const lamps=(lit:boolean)=>`<span class="camp-dusk-lamps" aria-hidden="true">${banner}${[0,1,2].map(()=>`<i class="camp-dusk-lamp${lit?' lit':''}">${campLampIllustration()}</i>`).join('')}</span>`;
+ if(duskAvailable(p,day,store.lit))return `<button class="camp-dusk camp-dusk-lit" data-command="camp-dusk" aria-label="${tr('Dusk raid. Hang three lamps on the field; raiders show only in their light. It earns nothing; it is a different fight.','غارة الغسق. علّق ثلاثة قناديل في الساحة، فلا يظهر المغيرون إلا في نورها. لا تكسب منها شيئاً، إنّما هي قتالٌ آخر.')}${keptLabel}">${lamps(true)}<span class="camp-dusk-name">${tr('Dusk raid','غارة الغسق')}</span></button>`;
+ if(store.inApp&&!store.lit)return `<button class="camp-dusk" data-command="lamplighter" aria-label="${tr('The wall lamps. The Lamplighter lights them each dusk.','قناديل السور. يُشعلها مُشعِل القناديل كلّ غروب.')}${keptLabel}">${lamps(false)}<span class="camp-dusk-name">${tr('The wall lamps','قناديل السور')}</span></button>`;
+ // Lamps unlit and nothing to open: the keepsake still hangs on the wall.
+ return kept?`<span class="camp-dusk" role="img" aria-label="${keptLabel.trim()}">${lamps(false)}<span class="camp-dusk-name">${tr('The wall lamps','قناديل السور')}</span></span>`:'';
 }
 export function campRootHtml(p:Readonly<Profile>,day?:number,store:{lit:boolean;inApp:boolean}={lit:false,inApp:false}):string {
  const chapter=chapterPresentation(p.age),destination=chapterPresentation(p.enemyAge),route=p.chronicle?.enabled?routeDefinition(p.chronicle.route).name:'';
