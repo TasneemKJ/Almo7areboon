@@ -78,6 +78,16 @@ export function lamplighterPlan(bridge: Pick<TasBridge, 'inApp' | 'owned'> = alm
 export function askForRatingAfter(batch: readonly { type: string }[], bridge: Pick<TasBridge, 'inApp' | 'requestReview'> = almoApp): boolean {
   return bridge.inApp && batch.some(event => event.type === 'win') && !batch.some(event => event.type === 'lose') && bridge.requestReview() === true;
 }
+/**
+ * A won climax, the only moment the rating ask may follow: a chapter cleared for the first time in this timeline (the
+ * victory's first seal is new), or a dusk raid turned back. A chapter won again, a defeat or a purchase is not one.
+ */
+export function wonClimax(p: { readonly pendingVictory: { readonly settlement: string; readonly newMask?: number } | null }, s: { readonly phase: string; readonly dusk?: unknown }): boolean {
+  if (s.phase !== 'won') return false;
+  if (s.dusk) return true;
+  const v = p.pendingVictory;
+  return !!v && v.settlement === 'mastery-v1' && ((v.newMask ?? 0) & 1) === 1;
+}
 /** Apple's own manage-subscriptions sheet (TasKit 040aa0e). */
 export function manageSubscriptions(bridge: TasBridge = almoApp): boolean { return bridge.post('manageSubscriptions'); }
 

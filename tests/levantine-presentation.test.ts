@@ -62,7 +62,7 @@ test('the original prices and troop action IDs survive every presentation-name s
    const unit=ERAS[age].units[kind],name=m.unitPresentationName(age,kind);
    assert.ok(targets.units.innerHTML.includes(`data-unit="${kind}"`));
    assert.ok(targets.units.innerHTML.includes(kind===0?`Deploy ${name}, ${unit.cost} food`:`Unlock ${name}, ${unlockCost(kind,g.profile)} coins`));
-   assert.ok(targets.units.innerHTML.includes(`<span class="unit-name">${name}</span>`));
+   assert.match(targets.units.innerHTML,new RegExp(`<span class="unit-name( long-name)?">${name}</span>`));
   }
   assert.equal(render(g.profile),false,'unchanged wallet ticks must preserve nodes');
  }

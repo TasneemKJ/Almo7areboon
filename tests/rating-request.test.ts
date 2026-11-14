@@ -20,3 +20,17 @@ test('the vendored bridge is the engine copy with requestReview, and the lifecyc
   assert.equal((lifecycle.match(/askForRatingAfter\(/g) ?? []).length, 1);
   assert.doesNotMatch(readFileSync(new URL('../src/app/store-flow.ts', import.meta.url), 'utf8'), /requestReview|askForRating/);
 });
+
+test('the ask is owed only by a won climax: a first clear or a dusk raid turned back, never a replay, defeat or purchase', async () => {
+  const { wonClimax } = await import('../src/ui/app-bridge.ts');
+  const first = { pendingVictory: { settlement: 'mastery-v1', newMask: 1 } }, again = { pendingVictory: { settlement: 'mastery-v1', newMask: 0 } };
+  assert.equal(wonClimax(first, { phase: 'won' }), true, 'a chapter cleared for the first time');
+  assert.equal(wonClimax({ pendingVictory: { settlement: 'mastery-v1', newMask: 6 } }, { phase: 'won' }), false, 'new seals on a chapter already cleared');
+  assert.equal(wonClimax(again, { phase: 'won' }), false, 'a replay won again');
+  assert.equal(wonClimax({ pendingVictory: { settlement: 'legacy' } }, { phase: 'won' }), false);
+  assert.equal(wonClimax({ pendingVictory: null }, { phase: 'won', dusk: { lamps: [] } }), true, 'a dusk raid turned back');
+  assert.equal(wonClimax(first, { phase: 'lost' }), false, 'never a defeat');
+  const lifecycle = readFileSync(new URL('../src/app/lifecycle.ts', import.meta.url), 'utf8');
+  assert.match(lifecycle, /onStoreChange\(\(\)=>\{sessionState\.ratingDue=false;\}\)/, 'a purchase drops an ask still owed');
+  assert.match(lifecycle, /function adoptRestoredGame\(restored:Game\)\{\n\s*sessionState\.game=restored;sessionState\.ratingDue=false;/, 'a restored save owes nothing');
+});

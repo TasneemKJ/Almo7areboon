@@ -109,7 +109,7 @@ test('after a raid turned back: a held breath of 1.5 s, the banner settles, one 
   assert.equal(DUSK_AFTER_LINE.ar, 'صمدت القناديل، ورحل المغيرون.');
   const lifecycle = readFileSync(new URL('../src/app/lifecycle.ts', import.meta.url), 'utf8');
   assert.match(lifecycle, /ports\.showResult\(\);if\(sessionState\.ratingDue&&s\.phase==='won'\)\{sessionState\.ratingDue=false;askForRatingAfter/, 'the ask follows the result, after the pause');
-  assert.match(lifecycle, /!batch\.some\(event=>event\.type==='lose'\)\)sessionState\.ratingDue=true/, 'only a battle just won in play');
+  assert.match(lifecycle, /if\(batch\.some\(event=>event\.type==='lose'\)\)sessionState\.ratingDue=false;else if\(batch\.some\(event=>event\.type==='win'\)&&wonClimax\(sessionState\.game\.profile,sessionState\.game\.state\)\)sessionState\.ratingDue=true/, 'only a won climax just played');
   const controller = readFileSync(new URL('../src/ui/field-controller.ts', import.meta.url), 'utf8');
   assert.match(controller, /const settling=!!s\.dusk&&s\.phase==='won';node\.hidden=!running&&!settling;/);
 });

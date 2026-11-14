@@ -1,4 +1,4 @@
-import { askForRatingAfter } from '../ui/app-bridge.ts';
+import { askForRatingAfter, onStoreChange, wonClimax } from '../ui/app-bridge.ts';
 import { DUSK_HELD_BREATH_MS } from '../game/dusk-raid.ts';
 import { BLADE_HOLD_MS, BLADE_LAST_MS, fieldBlades } from '../game/smithy.ts';
 import { createSaveSession, type SaveSession } from '../game/save-session.ts';
@@ -88,6 +88,8 @@ export function createLifecycle(deps: LifecycleDeps) {
     audioMix: loadAudioMix(),
     manualPaused: false,
   };
+  // Never after a purchase: any word from the store (a purchase, a restore, a renewal) drops an ask still owed.
+  onStoreChange(()=>{sessionState.ratingDue=false;});
   function playable(){return sessionState.sessionReady&&sessionState.pagePresent&&!lifetime.disposed&&(sessionState.session.status==='active'||sessionState.session.status==='temporary');}
   function guardAction(){return playable()&&sessionState.session.check();}
   function sessionPresentation(status:SaveSessionStatus){
@@ -197,7 +199,7 @@ export function createLifecycle(deps: LifecycleDeps) {
     }catch{toast(tr('The backup could not be exported. Your current progress was not changed.','تعذّر تصدير النسخة الاحتياطية، ولم يتغيّر تقدّمك الحاليّ.'));}
   }
   function adoptRestoredGame(restored:Game){
-    sessionState.game=restored;ports.navState.entryWelcome=null;ports.navState.entryEntered=false;ports.navState.entrySaved=hasPriorPlay(sessionState.game.profile);ports.navState.settingsOrigin=null;root!.dataset.fieldMode='field';sessionState.lastPhase=sessionState.game.state.phase;sessionState.resultDue=0;sessionState.manualPaused=false;sessionState.resultShown='';sessionState.savedWarning=false;ports.clearPrestigeContext();rebuildArmy();syncMotion();ports.closeModal(false);ports.switchTab('battle');
+    sessionState.game=restored;sessionState.ratingDue=false;ports.navState.entryWelcome=null;ports.navState.entryEntered=false;ports.navState.entrySaved=hasPriorPlay(sessionState.game.profile);ports.navState.settingsOrigin=null;root!.dataset.fieldMode='field';sessionState.lastPhase=sessionState.game.state.phase;sessionState.resultDue=0;sessionState.manualPaused=false;sessionState.resultShown='';sessionState.savedWarning=false;ports.clearPrestigeContext();rebuildArmy();syncMotion();ports.closeModal(false);ports.switchTab('battle');
   }
   function suspendSession(){
     // Save while still active, then deactivate synchronously before releasing the lock.
@@ -212,7 +214,8 @@ export function createLifecycle(deps: LifecycleDeps) {
     playCombatEvents(batch,sessionState.game.profile.sound&&playable()&&!dom.hidden()&&!sessionState.manualPaused&&!sessionState.game.state.paused&&ports.navState.activeTab==='battle'&&ports.navState.modal===null);
     if(batch.some(event=>event.type==='win')&&guardAction()){const receipt=sessionState.game.profile.pendingVictory,mask=receipt&&receipt.settlement==='mastery-v1'?receipt.newMask:0;sessionState.game.dispatch({type:'weekly-sync',week:weekId(localDay()),earned:(mask&1)+((mask>>1)&1)+((mask>>2)&1)});}
     if(batch.some(event=>event.type==='win'||event.type==='lose'))persist();
-    if(batch.some(event=>event.type==='win')&&!batch.some(event=>event.type==='lose'))sessionState.ratingDue=true;
+    // The rating ask is owed only by a won climax (wonClimax); a defeat cancels it, and so does a purchase (below).
+    if(batch.some(event=>event.type==='lose'))sessionState.ratingDue=false;else if(batch.some(event=>event.type==='win')&&wonClimax(sessionState.game.profile,sessionState.game.state))sessionState.ratingDue=true;
   }
   return { playable, guardAction, sessionPresentation, acquireSession, rebuildArmy, toast, persist, syncPause, syncVillagePresentation, syncMarks, syncMotion, action, update, exportSave, adoptRestoredGame, suspendSession, events, sessionState: sessionState as Pick<SessionState, 'acquisitionVersion' | 'atmosphereEnabled' | 'audioMix' | 'game' | 'hasPlayed' | 'lastSavedAt' | 'manualPaused' | 'pagePresent' | 'resultShown' | 'resumeOwnership' | 'retriedSession' | 'savedWarning' | 'session' | 'sessionReady' | 'toastTimer' | 'villagePresentation'> };
 }
