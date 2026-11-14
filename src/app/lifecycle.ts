@@ -1,3 +1,4 @@
+import { askForRatingAfter } from '../ui/app-bridge.ts';
 import { createSaveSession, type SaveSession } from '../game/save-session.ts';
 import type { Phase } from '../game/types.ts';
 import type { AudioMix } from '../game/audio-mix.ts';
@@ -204,6 +205,7 @@ export function createLifecycle(deps: LifecycleDeps) {
     playCombatEvents(batch,sessionState.game.profile.sound&&playable()&&!dom.hidden()&&!sessionState.manualPaused&&!sessionState.game.state.paused&&ports.navState.activeTab==='battle'&&ports.navState.modal===null);
     if(batch.some(event=>event.type==='win')&&guardAction()){const receipt=sessionState.game.profile.pendingVictory,mask=receipt&&receipt.settlement==='mastery-v1'?receipt.newMask:0;sessionState.game.dispatch({type:'weekly-sync',week:weekId(localDay()),earned:(mask&1)+((mask>>1)&1)+((mask>>2)&1)});}
     if(batch.some(event=>event.type==='win'||event.type==='lose'))persist();
+    if(playable())askForRatingAfter(batch);
   }
   return { playable, guardAction, sessionPresentation, acquireSession, rebuildArmy, toast, persist, syncPause, syncVillagePresentation, syncMarks, syncMotion, action, update, exportSave, adoptRestoredGame, suspendSession, events, sessionState: sessionState as Pick<SessionState, 'acquisitionVersion' | 'atmosphereEnabled' | 'audioMix' | 'game' | 'hasPlayed' | 'lastSavedAt' | 'manualPaused' | 'pagePresent' | 'resultShown' | 'resumeOwnership' | 'retriedSession' | 'savedWarning' | 'session' | 'sessionReady' | 'toastTimer' | 'villagePresentation'> };
 }

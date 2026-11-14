@@ -1,4 +1,3 @@
-/* Vendored from tas-engine web/tas-bridge.js at 79ba1e3 (TasKit v0.1.0). Do not edit here; update from the engine. */
 /* tas-bridge.js: the page side of TasKit (ios/) and a future Android shell.
  *
  * A classic script, no imports: inline it into the game's single HTML file before the game's own
@@ -62,6 +61,8 @@
       openPage(name) { return this.post('openURL', { page: String(name) }); },
       /** Hands a PNG data URL to the share sheet. */
       share(dataURL) { return this.post('share', { dataURL: String(dataURL) }); },
+      /** After a won climax (never a loss or a purchase): the app may ask for a rating, rarely. */
+      requestReview() { return this.post('requestReview'); },
 
       setStatus(s) { this.status = s; if (onStatus) { try { onStatus(this); } catch (e) { /* the game's own */ } } },
 

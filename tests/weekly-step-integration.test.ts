@@ -9,26 +9,26 @@ const code=ts.transpileModule(`this.step=${step.getText(ast)};${events.getText(a
 for(const origin of ['new-week','import-without-week','reset'])test(`actual pre-simulation owner counts the first new seals after ${origin}`,()=>{
  const game=new Game(),week=weekId(localDay());if(origin==='new-week')game.profile.weekly={week:week-1,baseSeals:0};if(origin==='reset')game.profile.weekly={week,baseSeals:8};
  game.dispatch({type:'start'});game.state.enemyHp=0;
- const context:any={game,weekId,localDay,document:{hidden:false},manualPaused:false,activeTab:'battle',modal:null,syncPause(){},playable:()=>true,guardAction:()=>true,playCombatEvents(){},persist(){}};
+ const context:any={askForRatingAfter(){return false;},game,weekId,localDay,document:{hidden:false},manualPaused:false,activeTab:'battle',modal:null,syncPause(){},playable:()=>true,guardAction:()=>true,playCombatEvents(){},persist(){}};
  runInApp(code,context);context.step(1/60);assert.equal(game.state.phase,'won');context.events(game.drainEvents());
  assert.equal(weeklyStatus(game.profile,week).progress,3,'the first win belongs to the current week, not its baseline');
 });
 for(const owner of ['paused','home','unowned'])test(`weekly pre-step baseline cannot advance a ${owner} battle`,()=>{
  const game=new Game(),week=weekId(localDay());game.dispatch({type:'start'});game.profile.weekly={week:week-1,baseSeals:0};
- const context:any={game,weekId,localDay,document:{hidden:false},manualPaused:false,activeTab:'battle',modal:null,syncPause(){if(owner!=='unowned')game.state.paused=true;},playable:()=>true,guardAction:()=>owner!=='unowned',playCombatEvents(){},persist(){}};
+ const context:any={askForRatingAfter(){return false;},game,weekId,localDay,document:{hidden:false},manualPaused:false,activeTab:'battle',modal:null,syncPause(){if(owner!=='unowned')game.state.paused=true;},playable:()=>true,guardAction:()=>owner!=='unowned',playCombatEvents(){},persist(){}};
  const before=JSON.stringify(game.profile);runInApp(code,context);context.step(1/60);
  assert.equal(game.state.time,0);assert.equal(JSON.stringify(game.profile),before);
 });
 test('win events cannot synchronize weekly progress after save ownership is lost',()=>{
  const game=new Game(),week=weekId(localDay());game.profile.weekly={week:week-1,baseSeals:0};
- const context:any={game,weekId,localDay,document:{hidden:false},manualPaused:false,activeTab:'battle',modal:null,syncPause(){},playable:()=>false,guardAction:()=>false,playCombatEvents(){},persist(){}};
+ const context:any={askForRatingAfter(){return false;},game,weekId,localDay,document:{hidden:false},manualPaused:false,activeTab:'battle',modal:null,syncPause(){},playable:()=>false,guardAction:()=>false,playCombatEvents(){},persist(){}};
  const before=JSON.stringify(game.profile);runInApp(code,context);context.events([{type:'win'}]);assert.equal(JSON.stringify(game.profile),before);
 });
 
 test('retained future week does not repeat guarded storage checks during active rollback frames',()=>{
  const game=new Game(),current=2858;game.dispatch({type:'start'});game.state.time=1;game.profile.weekly={week:current+1,baseSeals:0,claimed:true};
  let checks=0,syncs=0;const dispatch=game.dispatch.bind(game);game.dispatch=(action)=>{if(action.type==='weekly-sync')syncs++;return dispatch(action);};
- const context:any={game,weekId,localDay:()=>20003,syncPause(){},playable:()=>true,guardAction(){checks++;return true;}};runInApp(code,context);
+ const context:any={askForRatingAfter(){return false;},game,weekId,localDay:()=>20003,syncPause(){},playable:()=>true,guardAction(){checks++;return true;}};runInApp(code,context);
  for(let frame=0;frame<60;frame++)context.step(1/60);
  assert.equal(checks,0,'an earlier calendar does not require another storage ownership check each frame');assert.equal(syncs,0);
  assert.deepEqual(game.profile.weekly,{week:current+1,baseSeals:0,claimed:true});assert.ok(game.state.time>1,'normal combat still progresses');
@@ -39,7 +39,7 @@ for(const boundary of ['first-frame','reset','missing','forward'])test(`${bounda
  if(boundary==='reset')game.profile.weekly={week:current,baseSeals:8};
  if(boundary==='forward'){game.state.time=1;game.profile.weekly={week:current-1,baseSeals:0};}
  if(boundary==='missing')game.state.time=1;
- let checks=0;const context:any={game,weekId,localDay:()=>20003,syncPause(){},playable:()=>true,guardAction(){checks++;return true;},document:{hidden:false},manualPaused:false,activeTab:'battle',modal:null,playCombatEvents(){},persist(){}};runInApp(code,context);
+ let checks=0;const context:any={askForRatingAfter(){return false;},game,weekId,localDay:()=>20003,syncPause(){},playable:()=>true,guardAction(){checks++;return true;},document:{hidden:false},manualPaused:false,activeTab:'battle',modal:null,playCombatEvents(){},persist(){}};runInApp(code,context);
  context.step(1/60);assert.equal(checks,1);assert.deepEqual(game.profile.weekly,{week:current,baseSeals:0});
  context.step(1/60);assert.equal(checks,1,'matching established week does not check again');
  game.state.enemyHp=0;context.step(1/60);assert.equal(checks,1);context.events(game.drainEvents());assert.equal(weeklyStatus(game.profile,current).progress,3);
@@ -48,7 +48,7 @@ for(const boundary of ['first-frame','reset','missing','forward'])test(`${bounda
 test('actual win owner counts settled seals if Monday begins between pre-step and event drain',()=>{
  const game=new Game(),monday=20000-((20000+3)%7);let day=monday-1;
  game.dispatch({type:'start'});game.state.enemyHp=0;
- const context:any={game,weekId,localDay:()=>day,document:{hidden:false},manualPaused:false,activeTab:'battle',modal:null,syncPause(){},playable:()=>true,guardAction:()=>true,playCombatEvents(){},persist(){}};
+ const context:any={askForRatingAfter(){return false;},game,weekId,localDay:()=>day,document:{hidden:false},manualPaused:false,activeTab:'battle',modal:null,syncPause(){},playable:()=>true,guardAction:()=>true,playCombatEvents(){},persist(){}};
  runInApp(code,context);context.step(1/60);assert.equal(game.state.phase,'won');day=monday;context.events(game.drainEvents());
  assert.equal(weeklyStatus(game.profile,weekId(day)).progress,3);assert.equal(game.profile.weekly!.baseSeals,0);
 });

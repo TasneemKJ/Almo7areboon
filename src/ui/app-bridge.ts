@@ -21,6 +21,8 @@ export interface TasBridge {
   openPage(name: 'terms' | 'privacy' | 'support' | 'subscriptions'): boolean;
   share(dataURL: string): boolean;
   post(type: string, data?: unknown): boolean;
+  /** After a won climax only: the app may ask for a rating, at most once per 90 days (TasKit c87e8af). */
+  requestReview(): boolean;
   update(u: unknown): void;
 }
 
@@ -68,6 +70,13 @@ export function lamplighterWalks(bridge: Pick<TasBridge, 'inApp' | 'owned'> = al
 export function lamplighterPlan(bridge: Pick<TasBridge, 'inApp' | 'owned'> = almoApp): LamplighterPlan | null {
   if (!bridge.inApp) return null;
   return bridge.owned[LAMPLIGHTER_YEARLY] === true ? LAMPLIGHTER_YEARLY : bridge.owned[LAMPLIGHTER_MONTHLY] === true ? LAMPLIGHTER_MONTHLY : null;
+}
+/**
+ * The one place the game asks for a rating: a battle batch that holds a victory (a won chapter battle, or a dusk raid
+ * turned back). Never a defeat, never a purchase or a menu; the app itself keeps it rare. Returns whether it asked.
+ */
+export function askForRatingAfter(batch: readonly { type: string }[], bridge: Pick<TasBridge, 'inApp' | 'requestReview'> = almoApp): boolean {
+  return bridge.inApp && batch.some(event => event.type === 'win') && !batch.some(event => event.type === 'lose') && bridge.requestReview() === true;
 }
 /** Apple's own manage-subscriptions sheet (TasKit 040aa0e). */
 export function manageSubscriptions(bridge: TasBridge = almoApp): boolean { return bridge.post('manageSubscriptions'); }
