@@ -77,9 +77,12 @@
 /* Earlier recruits sit above later ones: a cost label under the next recruit's hit circle still taps its own troop (geometry gate, 375x667). */
 .recruit-hit[data-field-recruit="0"]{z-index:3}.recruit-hit[data-field-recruit="1"]{z-index:2}.recruit-hit[data-field-recruit="2"]{z-index:1}
 /* The first launch's one line of the tale over the live field (intro.ts playIntro), above the first-troop cue; it fades on its own. */
-.field-tale{position:absolute;top:calc(14% - 2.9em);left:56px;right:56px;margin:0;text-align:center;color:#f1d79a;font:italic 600 14px/1.4 Georgia,serif;text-shadow:0 2px 6px #0b251d,0 0 2px #0b251d;pointer-events:none;z-index:4;animation:field-tale 4.8s ease-in-out both}
+.field-tale{position:absolute;top:calc(env(safe-area-inset-top,0px) + 10px);left:56px;right:56px;margin:0;text-align:center;color:#f1d79a;font:italic 600 14px/1.4 Georgia,serif;text-shadow:0 2px 6px #0b251d,0 0 2px #0b251d;pointer-events:none;z-index:4;animation:field-tale 4.8s ease-in-out both}
 .field-tale[hidden]{display:none}
 #app[data-field-mode="camp"] .field-tale{display:none}
+/* The line takes the chapter title's place while it shows, so the two never overlap. */
+#app:has(.field-tale:not([hidden])) .stage h1{visibility:hidden}
+@media(max-width:359px){.field-tale{font-size:12.5px;left:58px;right:58px}#app:has(.field-tale:not([hidden])) .field-cue{top:calc(14% + 2.2em)}}
 @keyframes field-tale{0%{opacity:0}12%,78%{opacity:1}100%{opacity:0}}
 [data-motion=reduced] .field-tale{animation:none}
 /* The dusk raid (field-controller.ts syncDusk): the field is dark but for a pool of light at each hung lamp. */
