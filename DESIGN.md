@@ -451,3 +451,13 @@ Fixes Almo's lowest dimension: pay-to-progress. Coins need a sink that a free pl
   - Comparables, learned from but not copied: Slay the Spire (visible enemy intent), Into the Breach (the warning before the move), Clash Royale (counters). Almo's rival is a person with a notebook in a folktale, not a deck or an AI read-out.
 - **Second idea (backlog): the shadow-puppet night.** After a chapter's win, the camp holds a shadow-puppet show (خيال الظل): the battle you just won retold in silhouettes drawn in code, with your company's actual troops and the smith's named weapons, and the rival's notebook burnt in the last scene. It is a keepsake for the chronicle, and it gives the Full Journey's later chapters a reward you watch, not just a number.
 - Sim note: in the free-path sim, the first-card bot should lose its first try in chapters 3–6 more often with the learning rival. The in-turn bot should be unchanged (±1 battle), and no player should need the pacing director's rally to win after a counter is shown.
+
+## #73 (random-stimulus) «الدلو الأخير» — stimuli: a well rope · "win before the tea goes cold" · a flock of cranes
+- **Best idea: the last bucket (drought chapter, Full Journey 4–6).** The camp well gives water for only three of the company's five troop kinds. Before each battle the player drops the bucket by hand and chooses who drinks: watered troops march at full pace, the thirsty march slower in the first wave.
+  - The folktale voice asks it plainly: «في البئر ماءٌ لثلاثةٍ من خمسة. مَن يشرب قبل المعركة؟»
+  - It pairs with #66: the rival's notebook page says pikes are waiting for the Pathkeepers, so you water the archers instead. One readable decision, made against a visible threat (pillar 1).
+  - The camp remembers (pillar 2): a troop left thirsty twice in a row says so at the fire in one dry line, and drinks first by itself next time unless you take the rope.
+  - No purchase or subscription adds a bucket or fills the well.
+  - Comparables, learned from but not copied: The Banner Saga (caravan supply), FTL (triage of a scarce resource), Kingdom Two Crowns (resources you see in the world, not on a HUD). Almo's version is one rope and one well in a folktale.
+- **Second idea (backlog): the teapot on the hill.** In a boss battle a teapot steams on a stone at the field's corner; when the steam stops, the rival's horn calls his reserve. It is a clock you read from the world, with no timer bar, and it rewards a decisive plan over waiting.
+- Sim note: in the free-path sim, the bot that waters the troops the rival's page names should beat the bot that waters at random by at least one battle per chapter. If the two bots tie, the choice is cosmetic: cut it.
