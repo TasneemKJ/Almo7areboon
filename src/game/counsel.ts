@@ -6,12 +6,13 @@ import type { Profile } from './types.ts';
  * The one place in Camp worth a visit now, or null when nothing is affordable. Read-only; Camp lights that place and the
  * defeat card names it. Food comes first because it decides how many warriors reach the field: in the rules simulation
  * (scripts/qa-gate/chapter2-sim.ts) a slow tapper who spends on food wins chapter 2 on the first or second try, while
- * one who spends the same coins on troop unlocks or the gate never does. So: four
- * levels of bread, two of gate, then a waiting troop joins (an early fragile archer does not win chapter 2 by itself; a
+ * one who spends the same coins on troop unlocks or the gate never does. So: five
+ * levels of bread (five, not four, since the 2026-11-14 audit: a one-card player then clears chapter 2 on the second
+ * try in scripts/qa-gate/bot-sim.ts), two of gate, then a waiting troop joins (an early fragile archer does not win chapter 2 by itself; a
  * fuller storehouse does), then food up to three levels ahead of the gate, then whatever is affordable.
  */
 export type CampCounsel = { readonly station: 'storehouse' } | { readonly station: 'company'; readonly kind: 1 | 2 } | { readonly station: 'gate' };
-const FIRST_BREAD = 4, FIRST_BRACE = 2, FOOD_LEAD = 3, MAX_LEVEL = 100;
+const FIRST_BREAD = 5, FIRST_BRACE = 2, FOOD_LEAD = 3, MAX_LEVEL = 100;
 
 export function campCounsel(p: Readonly<Profile>): CampCounsel | null {
   // Evolution resets coins, upgrades and unlocks: when it is affordable, no lantern should send coins into what it wipes.
@@ -25,13 +26,16 @@ export function campCounsel(p: Readonly<Profile>): CampCounsel | null {
   return gate ? { station: 'gate' } : food ? { station: 'storehouse' } : null;
 }
 
+/** The one action that buys what the lit place offers (Camp's in-world act and the bot both spend through this). */
+export function counselAction(counsel: CampCounsel): { type: 'upgrade'; stat: 'food' | 'base' } | { type: 'unlock'; kind: 1 | 2 } {
+  return counsel.station === 'storehouse' ? { type: 'upgrade', stat: 'food' } : counsel.station === 'gate' ? { type: 'upgrade', stat: 'base' } : { type: 'unlock', kind: counsel.kind };
+}
+
 /** Spends as the counsel says until nothing is affordable (the QA bot's and the tests' model of a guided player). */
 export function followCounsel(game: Game, limit = 60): number {
   let bought = 0;
   for (let counsel = campCounsel(game.profile); counsel && bought < limit; counsel = campCounsel(game.profile)) {
-    const ok = counsel.station === 'storehouse' ? game.dispatch({ type: 'upgrade', stat: 'food' })
-      : counsel.station === 'gate' ? game.dispatch({ type: 'upgrade', stat: 'base' })
-      : game.dispatch({ type: 'unlock', kind: counsel.kind });
+    const ok = game.dispatch(counselAction(counsel));
     if (!ok) break;
     bought++;
   }

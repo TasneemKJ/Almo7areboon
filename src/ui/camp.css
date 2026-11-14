@@ -44,3 +44,13 @@
 .camp-lamp{position:absolute;z-index:2;top:-10%;inset-inline-end:4%;width:40%;max-width:64px;height:auto;pointer-events:none;transform-origin:50% 0;animation:camp-lamp-sway 3.6s ease-in-out infinite}
 @keyframes camp-lamp-sway{0%,100%{transform:rotate(-3deg)}50%{transform:rotate(3deg)}}
 .camp-counsel-note{margin:0 0 4px;font-size:.9rem;color:#5a4318}.camp-counsel-note::before{content:"";display:inline-block;width:.55em;height:.8em;margin-inline-end:.45em;vertical-align:-.05em;border-radius:2px 2px 3px 3px;background:#ffdc92;box-shadow:0 0 8px #ffd18a,0 0 0 2px #c7a773}
+/* The lit place's act hangs on the place itself, on the same lamp-lit plate as its name (camp-screen.ts counselActLabel). */
+.camp-counsel-act{position:relative;z-index:3;align-self:end;justify-self:center;min-height:44px;width:max-content;max-width:calc(100% + 24px);white-space:nowrap;margin:0;padding:6px 14px;border:1.5px solid #c7a773;border-radius:9px;background:#3a2a12f0;color:#ffdc92;font:700 .8125rem/1.2 Georgia,serif;box-shadow:0 2px 0 #1c110a88,0 0 14px #ffd18a40;cursor:pointer;touch-action:manipulation;transform:translateY(calc(100% + 8px))}
+.camp-counsel-act:focus-visible{outline:3px solid var(--gold);outline-offset:3px}
+.camp-counsel-act:active{transform:translateY(calc(100% + 9px));box-shadow:0 1px 0 #1c110a88}
+.camp-counsel-act-storehouse{grid-area:1/1}.camp-counsel-act-gate{grid-area:1/2}
+.camp-counsel-act-company{grid-area:2/1;align-self:start;transform:translateY(-60%)}
+.camp-counsel-act-company:active{transform:translateY(calc(-60% + 1px))}
+.camp-place-worked .camp-place-art{animation:camp-worked .6s ease-out}
+@keyframes camp-worked{0%{transform:translateY(0)}35%{transform:translateY(-5px)}100%{transform:translateY(0)}}
+@media(orientation:landscape) and (max-height:540px) and (min-width:600px){.camp-counsel-act,.camp-counsel-act:active{align-self:start;transform:none}.camp-counsel-act-company{grid-area:1/3}}

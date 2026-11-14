@@ -119,6 +119,7 @@ function readGoalsAndPreferences(data: Raw, clean: Profile): void {
   if (data.marks === true) clean.marks = true;
   // Optional: the opening intro is still owed. Only a first launch sets it, so a save without it never replays the intro.
   if (data.introPending === true) clean.introPending = true;
+  if (Number.isInteger(data.lossStreak) && (data.lossStreak as number) > 0) clean.lossStreak = Math.min(99, data.lossStreak as number);
 }
 
 function validate(value: unknown): Profile {

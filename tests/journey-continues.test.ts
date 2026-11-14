@@ -12,7 +12,7 @@ const wonChapter2 = () => { const p = defaultProfile(); Object.assign(p, { enemy
 test('a free player who won chapter 2 is sent to Camp, with the next chapter named as continuing in the Full Journey', () => {
   setLang('en');
   const g = wonChapter2(), html = compactResultsHtml(g.profile, g.state, false, false);
-  assert.match(html, /<button class="big-button green" data-command="result-camp">To Camp</);
+  assert.match(html, /<button class="big-button green" data-command="result-camp" data-primary="true">To Camp</);
   assert.doesNotMatch(html, /data-command="next"/, 'no Continue that can only open the sheet');
   assert.match(html, /Harbor Watch continues in the Full Journey/);
   assert.match(html, /class="result-journey" data-command="full-journey"/, 'the sheet is one quiet tap away, on purpose');

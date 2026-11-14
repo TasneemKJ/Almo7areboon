@@ -52,11 +52,13 @@ export interface ListenersDeps {
 }
 
 /** Defeat counsel: back to ready Camp with the lit place already open. It retries like Retry and spends nothing. */
-function openCounsel(ports:Pick<ShellApi,'action'|'closeModal'|'navState'|'playable'|'sessionState'|'switchTab'|'syncCamp'|'showCampFocus'>,target:string):void {
+function openCounsel(ports:Pick<ShellApi,'action'|'closeModal'|'navState'|'playable'|'sessionState'|'switchTab'|'syncCamp'|'showCampFocus'>,target:string,root:ParentNode|null):void {
   const recruit=/^company-([12])$/.exec(target);
   if(ports.navState.modal!=='result'||ports.sessionState.game.state.phase!=='lost'||!(recruit||target==='storehouse'||target==='gate'))return;
   if(!ports.action({type:'retry'})||!ports.playable()||(ports.navState.modal as string|null)==='session')return;
   ports.navState.evolutionFromResult=false;ports.closeModal(false);ports.sessionState.manualPaused=false;ports.switchTab('battle');ports.syncCamp();
+  // The free chapters light the place in the camp scene itself, with its act hung on it (camp-screen.ts counselActLabel).
+  if(ports.sessionState.game.profile.furthestBattle<2){root?.querySelector<HTMLElement>('#camp-view [data-primary="true"]')?.focus({preventScroll:true});return;}
   ports.showCampFocus(recruit?{recruit:Number(recruit[1]) as UnitKind}:target as 'storehouse'|'gate');
 }
 
@@ -138,7 +140,7 @@ export function installListeners(deps: ListenersDeps): void {
       if(advancement.allowed&&advancement.target==='battle'&&advancement.nextBattle!==null&&ports.gateBattle(advancement.nextBattle))return;
       if(ports.action({type:'next'})&&ports.playable()&&ports.navState.modal!=='session'){ports.navState.evolutionFromResult=false;ports.closeModal(false);ports.sessionState.manualPaused=false;ports.switchTab('battle');}
     },
-    'result-counsel':(button)=>{openCounsel(ports,button.dataset.counsel??'');},
+    'result-counsel':(button)=>{openCounsel(ports,button.dataset.counsel??'',root);},
     // After the last free chapter: back to ready Camp (replay, records, daily). Only from a won result.
     'result-camp':()=>{if(ports.navState.modal==='result'&&ports.sessionState.game.state.phase==='won'&&ports.action({type:'retry'})&&ports.playable()&&(ports.navState.modal as string|null)!=='session'){ports.navState.evolutionFromResult=false;ports.closeModal(false);ports.sessionState.manualPaused=false;ports.switchTab('battle');}},
     'retry':()=>{if(ports.action({type:'retry'})&&ports.playable()&&ports.navState.modal!=='session'){ports.navState.evolutionFromResult=false;ports.closeModal(false);ports.sessionState.manualPaused=false;ports.switchTab('battle');};},

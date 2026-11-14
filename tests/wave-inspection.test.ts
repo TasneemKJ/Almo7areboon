@@ -7,7 +7,7 @@ import { waveInspectionHtml } from '../src/ui/wave-inspection.ts';
 
 test('six real opponent schedules expose the actual next composition and battle-clock arrival',()=>{
  for(let age=0;age<6;age++){
-  const p=defaultProfile();p.enemyAge=age;p.baseLevel=100;const g=new Game(p);g.dispatch({type:'start'});
+  const p=defaultProfile();p.enemyAge=age;p.baseLevel=100;p.unlocked=[true,true,false];const g=new Game(p);g.dispatch({type:'start'});
   const wave=encounterForAge(age).waves[0],status=g.waveStatus(),before=JSON.stringify([p,g.state,status]);
   const html=waveInspectionHtml(status);
   assert.match(html,/Wave 1 of/);assert.ok(html.includes(`${Math.ceil(wave.time)} battle seconds`));assert.match(html,/staggered group/);

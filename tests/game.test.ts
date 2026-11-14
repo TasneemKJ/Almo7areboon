@@ -320,7 +320,7 @@ test('nominal launches expose delayed arrivals and freeze does not postpone them
 });
 
 test('final delayed member blocks clearance and capacity rejection is consumed exactly once',()=>{
-  const p=defaultProfile();p.enemyAge=1;
+  const p=defaultProfile();p.enemyAge=1;p.unlocked=[true,true,false]; // the full chapter, not the lone-company ease
   const g=new Game(p);g.dispatch({type:'start'});g.state.time=56;
   g.state.units=Array.from({length:60},(_,i)=>({...unit(100+i,'enemy',800),attackTimer:100}));
   g.step(1/60);assert.equal(g.state.wave,5);assert.equal(g.waveStatus().pendingEnemies,1);
@@ -331,7 +331,7 @@ test('final delayed member blocks clearance and capacity rejection is consumed e
 });
 
 test('early victory cancels arrivals while reconstructed victory reports completed waves',()=>{
-  const p=defaultProfile();p.enemyAge=1;
+  const p=defaultProfile();p.enemyAge=1;p.unlocked=[true,true,false];
   const g=new Game(p);g.dispatch({type:'start'});g.state.time=56;
   g.step(1/60);assert.equal(g.waveStatus().pendingEnemies,1);
   g.state.enemyHp=0;g.step(1/60);const before=JSON.stringify(g.state);advance(g,4);assert.equal(JSON.stringify(g.state),before);
@@ -340,7 +340,7 @@ test('early victory cancels arrivals while reconstructed victory reports complet
 });
 
 test('retry, next, evolve and selected battles rebuild encounter cursors',()=>{
-  const p=defaultProfile();p.enemyAge=1;p.furthestBattle=2;p.coins=10000;
+  const p=defaultProfile();p.enemyAge=1;p.furthestBattle=2;p.coins=10000;p.unlocked=[true,true,false];
   const g=new Game(p);g.dispatch({type:'start'});g.state.time=15;g.step(1/60);
   g.state.playerHp=0;g.step(1/60);assert.equal(g.dispatch({type:'retry'}),true);
   assert.equal(g.waveStatus().preview?.nextIn,4);assert.equal(g.waveStatus().pendingEnemies,0);
@@ -401,7 +401,7 @@ test('terminal wins and losses consume no additional arrivals or combat actions'
 });
 
 test('legacy victories without stats complete the scheduler while invalid victories start normally',()=>{
-  const legacy={...defaultProfile(),version:1,cards:[0,0,0,0,0,0],enemyAge:1,pendingVictory:{timeline:1,battle:1,earned:10,seconds:2,playerHp:100}};
+  const legacy={...defaultProfile(),version:1,cards:[0,0,0,0,0,0],enemyAge:1,unlocked:[true,true,false],pendingVictory:{timeline:1,battle:1,earned:10,seconds:2,playerHp:100}};
   const valid=loadProfile({getItem:()=>JSON.stringify(legacy)}),restored=new Game(valid);
   assert.equal(restored.state.phase,'won');assert.equal(restored.waveStatus().cleared,true);assert.equal(restored.waveStatus().pendingEnemies,0);assert.equal(restored.waveStatus().preview,null);
   assert.equal(restored.state.stats.kills,0);

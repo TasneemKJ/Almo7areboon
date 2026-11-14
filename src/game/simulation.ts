@@ -4,8 +4,7 @@ import { planChronicleAction } from './chronicle-actions.ts';
 import { createChronicleBattle, chronicleStartingFood, chronicleGateFactor, chronicleSpawn, toggleRally, chronicleDamage, chronicleBaseDamage, chronicleAfterHit, chronicleSkill, captainSkill, chronicleTick, chronicleOutcome, type ChronicleHost } from './chronicle-combat.ts';
 import { isLegacyChoice, legacyEffects, prestigePreview } from './prestige.ts';
 import { advanceStatus, canRetry, createMastery, masteryAward } from './mastery.ts';
-import { encounterForAge, scheduledSpawns } from './encounters.ts';
-import type { Encounter, ScheduledSpawn, WaveStatus } from './encounters.ts';
+import { companyEncounter, encounterForAge, rallyLevel, rallyPower, RALLY_FOOD, scheduledSpawns, type Encounter, type ScheduledSpawn, type WaveStatus } from './encounters.ts';
 import { resolveRoleHit, sweepTarget } from './role-traits.ts';
 import { battleStats } from './statistics.ts';
 import { advanceUnit } from './unit-movement.ts';
@@ -67,8 +66,7 @@ export class Game implements GamePort {
   private newBattle(): BattleState {
     this.events = [];
     this.profile.chronicle=normalizeChronicle(this.profile.chronicle,this.profile.timeline,this.profile.enemyAge);
-    this.encounter = chronicleEncounter(encounterForAge(this.profile.enemyAge),this.profile.chronicle,this.profile.enemyAge);
-    this.schedule = scheduledSpawns(this.encounter);
+    this.buildEncounter();
     this.nextSpawn = 0;
     this.nextId = 1;
     const playerHp = this.baseHealth();
@@ -78,9 +76,10 @@ export class Game implements GamePort {
     this.rewardRemainder = 0;
     this.playerLane = 0;
     this.enemyLane = 0;
-    return { orders: createBattleOrders(), chronicle: createChronicleBattle(this.profile), stats: battleStats(), phase: 'ready', paused: false, time: 0, food: Math.min(99,legacyEffects(this.profile.legacy).startingFood+chronicleStartingFood(this.profile)), playerHp, playerMaxHp: playerHp, enemyHp, enemyMaxHp: enemyHp, units: [], wave: 0, totalWaves: this.encounter.waves.length, earned: 0, freezeUntil: 0, skillsUsed: [] };
+    return { orders: createBattleOrders(), chronicle: createChronicleBattle(this.profile), stats: battleStats(), phase: 'ready', paused: false, time: 0, food: Math.min(99,legacyEffects(this.profile.legacy).startingFood+chronicleStartingFood(this.profile)+(rallyLevel(this.profile)?RALLY_FOOD:0)), playerHp, playerMaxHp: playerHp, enemyHp, enemyMaxHp: enemyHp, units: [], wave: 0, totalWaves: this.encounter.waves.length, earned: 0, freezeUntil: 0, skillsUsed: [] };
   }
 
+  private buildEncounter(): void { this.encounter = companyEncounter(this.profile, chronicleEncounter(encounterForAge(this.profile.enemyAge),this.profile.chronicle!,this.profile.enemyAge)); this.schedule = scheduledSpawns(this.encounter); if (this.state) this.state.totalWaves = this.encounter.waves.length; }
   private baseHealth(): number { return Math.round(180 * 1.65 ** this.profile.age * (1 + this.profile.baseLevel * 0.4) * this.bonuses().base * legacyEffects(this.profile.legacy).gateFactor * chronicleGateFactor(this.profile)); }
   private refreshBaseHealth(): void {
     const nextMaxHp = this.baseHealth();
@@ -143,6 +142,7 @@ export class Game implements GamePort {
 
   private doStart(action: ActionOf<'start'>): boolean {
     if (this.state.phase !== 'ready') return false;
+    if (this.state.time === 0 && this.nextSpawn === 0) this.buildEncounter(); // the lone-company ease is read at the start (encounters.ts)
     this.state.phase = 'running';
     this.profile.played = true;
     return true;
@@ -154,7 +154,7 @@ export class Game implements GamePort {
     if (this.state.phase !== 'running') return false;
     this.state.phase = 'lost';
     this.state.paused = false;
-    this.events.push({ type: 'lose' });
+    this.events.push({ type: 'lose' }); this.profile.lossStreak = Math.min(99, (this.profile.lossStreak ?? 0) + 1);
     return true;
   }
 
@@ -270,7 +270,7 @@ export class Game implements GamePort {
     const def = ERAS[age].units[kind];
     if (side === 'player') this.playerLane = lane + 1;
     else this.enemyLane = lane + 1;
-    const healthBonus = side === 'player' ? this.bonuses().health : this.timelinePower() * 0.94;
+    const healthBonus = side === 'player' ? this.bonuses().health : this.timelinePower() * 0.94 * rallyPower(this.profile);
     const hp = Math.round(def.hp * healthBonus);
     this.state.units.push({ id: this.nextId++, side, kind, age, x, lane, hp, maxHp: hp, attackTimer: 0, attacking: false, hitFlash: 0 });
     if(side==='enemy')chronicleSpawn(this.profile,this.state,this.state.units[this.state.units.length-1]);
@@ -370,7 +370,7 @@ export class Game implements GamePort {
   /** A completed attack: damage the target (and a sweep partner) or the enemy base, crediting the attacker. */
   private strike(unit: Unit, def: { interval: number; damage: number }, target: Unit | null, baseX: number): void {
     unit.attackTimer = def.interval;
-    const power = unit.side === 'player' ? this.bonuses().damage : this.timelinePower() * 0.94;
+    const power = unit.side === 'player' ? this.bonuses().damage : this.timelinePower() * 0.94 * rallyPower(this.profile);
     const damage = def.damage * power * (unit.side === 'player' && activeBattleOrder(this.state,this.state.time) === 'advance' ? ORDER_EFFECTS.advance.damage : 1);
     const source = { id: unit.id, x: unit.x, lane: unit.lane, side: unit.side, age: unit.age, kind: unit.kind };
     const hit = (targetUnit: Unit, secondary = false) => {
@@ -459,7 +459,7 @@ export class Game implements GamePort {
     if (outcome==='lost') {
       this.state.playerHp = Math.max(0,this.state.playerHp);
       this.state.phase = 'lost';
-      this.events.push({ type: 'lose' });
+      this.events.push({ type: 'lose' }); this.profile.lossStreak = Math.min(99, (this.profile.lossStreak ?? 0) + 1);
       return true;
     }
     if (outcome==='won') {
@@ -471,7 +471,7 @@ export class Game implements GamePort {
         this.state.chronicle.settled=true;
       }
       this.nextSpawn = this.schedule.length;
-      this.profile.wins++;
+      this.profile.wins++; delete this.profile.lossStreak;
       this.reward(120 * (1 + this.profile.enemyAge), 910);
       this.profile.gems = Math.min(1e7, this.profile.gems + 10);
       const award = masteryAward(this.profile,this.state);

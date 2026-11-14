@@ -15,8 +15,8 @@ test('counsel names the storehouse first: food is what wins the early chapters',
 });
 
 test('counsel moves on once food leads the gate, and never names what is already owned', () => {
-  assert.deepEqual(campCounsel(profileWith({ coins: 2_000, foodLevel: 4, baseLevel: 0 })), { station: 'gate' }, 'the gate follows the first bread');
-  const ahead = profileWith({ coins: 2_000, foodLevel: 4, baseLevel: 2 });
+  assert.deepEqual(campCounsel(profileWith({ coins: 2_000, foodLevel: 5, baseLevel: 0 })), { station: 'gate' }, 'the gate follows the first bread');
+  const ahead = profileWith({ coins: 2_000, foodLevel: 5, baseLevel: 2 });
   assert.deepEqual(campCounsel(ahead), { station: 'company', kind: 1 });
   ahead.unlocked = [true, true, true];
   assert.deepEqual(campCounsel(ahead), { station: 'storehouse' });

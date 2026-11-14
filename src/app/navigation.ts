@@ -7,6 +7,8 @@ import type { Profile, LegacyChoice } from '../game/types.ts';
 import { type CampOwner } from '../ui/camp-owner.ts';
 import {campRootHtml,campFocusHtml,campGoalText} from '../ui/camp-screen.ts';
 import { localDay } from '../game/data.ts';
+import { campCounsel, counselAction } from '../game/counsel.ts';
+import { pressFeedback } from '../ui/press-feedback.ts';
 import { canOwnCamp, isCampStation, campActionFromData, type CampFocus } from '../ui/camp-owner.ts';
 import { type StoryFollowUp } from '../ui/story-flow.ts';
 import { journeyScreenHtml } from '../ui/journey-screen.ts';
@@ -239,6 +241,15 @@ export function createNavigation(deps: NavigationDeps) {
     navState.campOwner={kind:'focus',focus,returnTarget};
     showModal('camp-focus',campFocusHtml(ports.sessionState.game,focus,ports.sessionState.session.status==='temporary'?temporarySessionText():ports.sessionState.savedWarning?tr('Saving is unavailable. Return Home, then open Settings to export a backup before closing.','الحفظ غير متاح الآن. عُد إلى الرئيسية وافتح الإعدادات لتصدّر نسخة احتياطية قبل الإغلاق.'):''),focusCommand);syncCamp();
   }
+  /** The lit place's in-world act: one purchase through the guarded dispatch, then the scene answers and the primary moves on. */
+  function buyCounsel(){
+    const p=ports.sessionState.game.profile,counsel=p.furthestBattle<2?campCounsel(p):null;
+    if(!counsel||navState.modal||!ports.action(counselAction(counsel))||!ports.playable()||navState.modal)return;
+    pressFeedback({sound:p.sound,kind:'press'});syncCamp();
+    const place=root!.querySelector<HTMLElement>(`[data-camp-station="${counsel.station}"]`);
+    if(place){place.classList.remove('camp-place-worked');void place.offsetWidth;place.classList.add('camp-place-worked');}
+    root!.querySelector<HTMLElement>('#camp-view [data-primary="true"]')?.focus({preventScroll:true});
+  }
   function returnToCamp(){
     if(!navState.campOwner||!ports.guardAction()||!canOwnCamp(ports.sessionState.game.profile,ports.sessionState.game.state)||navState.modal==='session')return;
     if(navState.campOwner.kind==='focus'&&typeof navState.campOwner.focus==='object'){showCampFocus('company');return;}
@@ -256,6 +267,7 @@ export function createNavigation(deps: NavigationDeps) {
     if(navState.campOwner.kind==='root'){
       if(isCampStation(button.dataset.campStation)){showCampFocus(button.dataset.campStation);return true;}
       if(command==='camp-home'){showHome();return true;}
+      if(command==='camp-counsel-act'){buyCounsel();return true;}
       if(command==='camp-battle'&&entryReady()&&!navState.modal){ports.sessionState.manualPaused=false;if(ports.action({type:'start'})&&ports.playable()&&navState.modal!=='session'){navState.campOwner=null;root!.dataset.fieldMode='field';switchTab('battle');$('world').focus({preventScroll:true});}return true;}
       return true;
     }
