@@ -8,5 +8,7 @@ export function icon(name:string, cls=''):string {
     close:'<path d="M7 7l18 18M25 7L7 25" fill="none" stroke="currentColor" stroke-width="4"/>',
     sound:'<path d="M3 12h7l8-7v22l-8-7H3z" fill="#f3eac9"/><path d="M23 10q8 6 0 12m3-18q13 12 0 24" fill="none" stroke="#f3eac9"/>',
   };
+  // The arrow means "go on": it points along the reading direction, so Arabic mirrors it (icon-arrow in style.css).
+  if(name==='arrow')cls=`icon-arrow ${cls}`.trim();
   return `<svg class="icon ${cls}" viewBox="0 0 32 32" aria-hidden="true" fill="none" stroke="#293039" stroke-width="1.8" stroke-linejoin="round" stroke-linecap="round">${paths[name]||''}</svg>`;
 }

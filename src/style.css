@@ -88,6 +88,7 @@ button,.game-shell { -webkit-user-select:none; -webkit-touch-callout:none; }
 .food-line { display:flex; justify-content:space-between; align-items:center; margin-bottom:8px; color:#dce8dd; font-size:11px; }
 .food-total { display:flex; align-items:center; gap:8px; }
 .food-total>.icon { width:28px; height:28px; transform:rotate(-9deg); }
+[dir="rtl"] .icon-arrow { transform:scaleX(-1); }
 .food-total strong { font-size:25px; line-height:1; min-width:28px; color:#ffebbd; font-variant-numeric:tabular-nums; }
 .food-meter { width:61px; height:6px; background:#123547; border-radius:5px; overflow:hidden; border:1px solid #92b5b247; }
 .food-meter i { display:block; height:100%; background:#f1c87c; }
