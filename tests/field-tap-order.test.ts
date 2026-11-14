@@ -26,3 +26,16 @@ test('field mode routes a tap through the simulation and answers a short momentu
   assert.match(listeners, /banner\.dataset\.wait='true';banner\.classList\.add\('wanting'\)/);
   assert.doesNotMatch(listeners, /pointerId\s*[<>]=?\s*0|pointerId\s*>=\s*0/);
 });
+
+test('a field tap sends a troop into the nearest lane when no order is ready, and the lane is the player\'s choice', async () => {
+  const { fieldTapIntent, fieldTapLane } = await import('../src/ui/battlefield-orders.ts');
+  const { arenaLayout } = await import('../src/view/visual-theme.ts');
+  assert.equal(fieldTapIntent(true, 0), 'order'); assert.equal(fieldTapIntent(false, 0), 'troop'); assert.equal(fieldTapIntent(false, undefined), 'nudge');
+  const a = arenaLayout(390, 764), y = (lane: number) => (a.groundY + lane * a.laneGap) * a.scale;
+  for (const lane of [0, 1, 2]) assert.equal(fieldTapLane(y(lane), 390, 764), lane);
+  assert.equal(fieldTapLane(10, 390, 764), 0); assert.equal(fieldTapLane(760, 390, 764), 2); assert.equal(fieldTapLane(NaN, 390, 764), 0);
+  const { Game } = await import('../src/game/simulation.ts');
+  const g = new Game(); g.dispatch({ type: 'start' }); g.state.food = 20;
+  assert.ok(g.dispatch({ type: 'spawn', kind: 0, lane: 2 })); assert.equal(g.state.units.at(-1)!.lane, 2);
+  assert.ok(g.dispatch({ type: 'spawn', kind: 0, lane: 9 }), 'a bad lane falls back to the usual turn'); 
+});

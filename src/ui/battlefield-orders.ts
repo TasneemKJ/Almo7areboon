@@ -57,3 +57,19 @@ export function fieldTapOrder(
 export function duskLampX(offsetX:number,width:number,height:number):number {
  return offsetX/(.45*arenaLayout(width,height).scale);
 }
+
+/**
+ * What a tap on the open field does (2026-11-14 first-30 strip: a new player tapped the field for 30 s and nothing
+ * went out). With the banner ready it plants the order; otherwise, if a troop is affordable, one runs out of camp into
+ * the lane nearest the tap (the cheapest the company can send); only when neither can happen does the banner lean and
+ * say what is missing.
+ */
+export function fieldTapIntent(orderReady:boolean,affordableKind:number|undefined):'order'|'troop'|'nudge' {
+ return orderReady?'order':affordableKind!==undefined?'troop':'nudge';
+}
+/** The lane nearest a tap's height on the field (lanes sit on the ground line, 12 world units apart). */
+export function fieldTapLane(offsetY:number,width:number,height:number):number {
+ const arena=arenaLayout(width,height);
+ if(!Number.isFinite(offsetY))return 0;
+ return Math.max(0,Math.min(2,Math.round((offsetY/arena.scale-arena.groundY)/arena.laneGap)));
+}

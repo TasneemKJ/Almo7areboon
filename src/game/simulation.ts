@@ -172,6 +172,7 @@ export class Game implements GamePort {
 
   private doSpawn(action: ActionOf<'spawn'>): boolean {
     if (!this.deploymentStatus(action.kind).allowed) return false;
+    if (Number.isInteger(action.lane) && action.lane! >= 0 && action.lane! < 3) this.playerLane = action.lane!; // a field tap picks its lane
     if (!this.spawn('player', action.kind)) return false;
     this.state.food -= ERAS[this.profile.age].units[action.kind].cost;
     chronicleSpawn(this.profile,this.state,this.state.units[this.state.units.length-1]);

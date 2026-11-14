@@ -9,7 +9,8 @@ import { companyFilmHtml, mountCompanyFilm } from '../ui/company-film.ts';
 import { questRecords } from '../ui/quest-records.ts';
 import { litCounsel } from '../game/counsel.ts';
 import { storyFollowUp } from '../ui/story-flow.ts';
-import { battlefieldOrderFromGesture, DIRECT_ORDER_MAX_TRAVEL, duskLampX, fieldTapOrder } from '../ui/battlefield-orders.ts';
+import { battlefieldOrderFromGesture, DIRECT_ORDER_MAX_TRAVEL, duskLampX, fieldTapIntent, fieldTapLane, fieldTapOrder } from '../ui/battlefield-orders.ts';
+import { canIssueOrder } from '../game/battle-orders.ts';
 import { DUSK_LAMPS } from '../game/dusk-raid.ts';
 import { bannerDragIntent, bannerDragOffset, bannerOrderFromDrag } from '../ui/banner-gesture.ts';
 import { journeyScreenHtml } from '../ui/journey-screen.ts';
@@ -241,7 +242,14 @@ export function installListeners(deps: ListenersDeps): void {
       // An open tactical choice closes first; otherwise the tap plants the banner (fieldTapOrder).
       if(fieldControls.isOpen()){fieldControls.clear();return;}
       const order=live?fieldTapOrder({startX:start!.x,startY:start!.y,endX:e.clientX,endY:e.clientY},{left:rect.left,top:rect.top,width:rect.width,height:rect.height}):null;
-      if(order)plantBanner(order);
+      if(!order)return;
+      const g=ports.sessionState.game,kind=([0,1,2] as const).find(k=>g.deploymentStatus(k).allowed);
+      if(fieldTapIntent(canIssueOrder(g.state,order),kind)==='troop'&&kind!==undefined){
+       const world=$('world'),box=world.getBoundingClientRect();
+       unlockAudio(g.profile.sound);
+       if(ports.action({type:'spawn',kind,lane:fieldTapLane(e.clientY-box.top,world.clientWidth,world.clientHeight)})){pressFeedback({sound:g.profile.sound,kind:'deploy'});return;}
+      }
+      plantBanner(order);
       return;
      }
      if(!live||!start)return;
