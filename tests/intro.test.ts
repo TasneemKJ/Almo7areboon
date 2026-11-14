@@ -4,7 +4,7 @@ import { readFileSync } from 'node:fs';
 import { Game } from '../src/game/simulation.ts';
 import { BACKUP_KEY, SAVE_KEY, decodeSave, defaultProfile, firstLaunchProfile, loadProfileWithStatus, saveProfile } from '../src/game/save.ts';
 import { startOverProfile } from '../src/game/reset.ts';
-import { INTRO_BEATS, INTRO_SETTLE_MS, introCues, introHtml, introLength } from '../src/ui/intro-screen.ts';
+import { FIELD_TALE, FIELD_TALE_MS, INTRO_BEATS, INTRO_SETTLE_MS, introCues, introHtml, introLength } from '../src/ui/intro-screen.ts';
 import { BEAT_FRAMES, HOME_FRAME, beatFrame, cameraSettled, coversScreen, createCamera, retarget, stepCamera, worldTransform } from '../src/ui/intro-camera.ts';
 import { SCORE_BEATS, SCORE_BED, SCORE_PEAK_LIMIT, SCORE_RESOLVE, SKIP_FADE, noteAttack, type ScoreNote } from '../src/view/intro-score.ts';
 import { preferencesHtml } from '../src/ui/preferences-screen.ts';
@@ -143,8 +143,8 @@ function element(): any {
 }
 function harness(profile = firstLaunchProfile()) {
   const timers = new Map<number, { at: number; run: () => void }>(); let clock = 0, id = 0;
-  const shell = element(), world = element(), battlefield = element(), layers: any[] = [];
-  const root = element(); root.lookup = (s: string) => s === '.game-shell' ? shell : s === '#battlefield' ? battlefield : null;
+  const shell = element(), world = element(), battlefield = element(), tale = element(), layers: any[] = [];
+  const root = element(); root.lookup = (s: string) => s === '.game-shell' ? shell : s === '#battlefield' ? battlefield : s === '#field-tale' ? tale : null;
   const game = new Game(profile), calls: string[] = [];
   const navState: any = { entryEntered: false, modal: null };
   const sessionState: any = { game, manualPaused: false, atmosphereEnabled: true };
@@ -156,26 +156,27 @@ function harness(profile = firstLaunchProfile()) {
     action(a: any) { calls.push(`action:${a.preference}:${a.value}`); return game.dispatch(a); }, enterWorld() { calls.push('enter'); navState.entryEntered = true; }, showFieldPause() { calls.push('pause'); } };
   const intro = createIntro({ dom, ports });
   const advance = (ms: number) => { clock += ms; for (const [key, timer] of [...timers].sort((a, b) => a[1].at - b[1].at)) if (timer.at <= clock && timers.has(key)) { timers.delete(key); timer.run(); } };
-  return { intro, layers, shell, game, calls, navState, sessionState, advance, world, battlefield };
+  return { intro, layers, shell, game, calls, navState, sessionState, advance, world, battlefield, tale };
 }
 
-test('first launch: Play opens the tale, Skip on frame 1 records it and enters play, a reload does not replay', () => {
+test('first launch: Play opens the live field at once with one line of the tale, records it, and a reload does not replay', () => {
   const h = harness();
-  assert.equal(h.intro.playIntro(), true); assert.equal(h.intro.introState.playing, true);
-  assert.equal(h.shell.inert, true, 'the page below is inert while the tale owns input');
-  assert.equal(h.layers[0].dataset.beat, 'dusk');
-  h.layers[0].dispatch('click', { target: { closest: () => ({}) }, stopPropagation() {}, preventDefault() {} });
-  assert.deepEqual(h.calls, ['action:intro:false', 'enter']); assert.equal(h.shell.inert, false);
-  assert.equal(h.layers[0].dataset.leaving, 'true', 'Skip dissolves the layer rather than cutting it');
+  assert.equal(h.intro.playIntro(), true); assert.equal(h.intro.introState.playing, false, 'no tale stands between Play and the field');
+  assert.equal(h.layers.length, 0);
+  assert.deepEqual(h.calls, ['action:intro:false', 'enter']);
+  assert.equal(h.tale.hidden, false); assert.equal(h.tale.textContent, FIELD_TALE.en);
+  assert.doesNotMatch(FIELD_TALE.en + FIELD_TALE.ar, /!|birth|born|ولادة|ميلاد|مولود/);
+  h.advance(FIELD_TALE_MS); assert.equal(h.tale.hidden, true, 'the line fades on its own');
   assert.equal('introPending' in h.game.profile, false);
   const reload = harness(decodeSave(JSON.stringify(h.game.profile)).profile!);
   assert.equal(reload.intro.playIntro(), false, 'a seen intro never replays');
 });
 
-test('the tale runs its beats on one clock and enters the field when it ends', () => {
-  const h = harness(); h.intro.playIntro();
+test('Watch intro from Home runs the beats on one clock and enters the field when it ends', () => {
+  const h = harness(); h.navState.modal = 'settings'; h.intro.watchIntro();
+  assert.equal(h.intro.introState.playing, true); assert.equal(h.layers[0].dataset.beat, 'dusk');
   const beats: string[] = []; for (let t = 0; t < introLength(); t += 100) { h.advance(100); if (h.layers[0].dataset.beat && beats.at(-1) !== h.layers[0].dataset.beat) beats.push(h.layers[0].dataset.beat); }
-  assert.deepEqual(beats, INTRO_BEATS.map(beat => beat.id)); assert.deepEqual(h.calls, ['action:intro:false', 'enter']);
+  assert.deepEqual(beats, INTRO_BEATS.map(beat => beat.id)); assert.deepEqual(h.calls, ['action:intro:true', 'action:intro:false', 'enter']);
   assert.ok(introLength() - INTRO_SETTLE_MS > INTRO_BEATS[0].ms + INTRO_BEATS[1].ms);
   assert.equal(h.layers[0].removed, true);
 });
@@ -196,7 +197,7 @@ test('only taps open the tale, and Settings offers Watch intro', () => {
   // The click handler unlocks audio before any command runs, so the score always follows a gesture.
   assert.ok(listeners.indexOf('unlockAudio(ports.sessionState.game.profile.sound);') < listeners.indexOf("if(command==='enter-world')"));
   const app = readFileSync(new URL('../src/app/intro.ts', import.meta.url), 'utf8');
-  assert.equal((app.match(/start\((false|replay)\)/g) || []).length, 2, 'the tale starts only from Play or Watch intro');
+  assert.equal((app.match(/start\((false|replay)\)/g) || []).length, 1, 'the whole tale starts only from Watch intro');
   assert.match(preferencesHtml(defaultProfile(), true, { effects: 100, atmosphere: 100 }, true, ''), /data-command="watch-intro">Watch intro</);
 });
 

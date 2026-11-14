@@ -1,4 +1,4 @@
-import { INTRO_BEATS, INTRO_SETTLE_MS, introCues, introHtml, introLength } from '../ui/intro-screen.ts';
+import { FIELD_TALE, FIELD_TALE_MS, INTRO_BEATS, INTRO_SETTLE_MS, introCues, introHtml, introLength } from '../ui/intro-screen.ts';
 import { BEAT_FRAMES, beatFrame, cameraSettled, createCamera, plateTransform, retarget, stepCamera, worldTransform, type IntroCamera } from '../ui/intro-camera.ts';
 import { beginIntroScore, endIntroScore, introScoreBeat } from '../view/audio.ts';
 import type { Runtime } from './runtime.ts';
@@ -163,11 +163,24 @@ export function createIntro(deps: IntroDeps) {
       if (introState.layer === layer) introState.layer = null;
     }, completed ? (reduced() ? STILL_FADE_MS : INTRO_SETTLE_MS) : 0);
   }
-  /** Play on a first launch: the entry's Play opens the tale instead of the field. Returns whether it took the tap. */
+  /**
+   * Play on a first launch: the field opens at once with the tale's one line over it, so the first troop can go out
+   * within seconds. The tale is recorded as seen through Game.dispatch; Settings › Watch intro still plays it whole.
+   * Returns whether it took the tap.
+   */
+  let taleTimer = 0;
   function playIntro(): boolean {
     if (introState.playing) return true;
     if (!ports.sessionState.game.profile.introPending || ports.navState.entryEntered || ports.navState.modal || !ports.guardAction() || !ports.entryReady()) return false;
-    start(false);
+    ports.action({ type: 'preference', preference: 'intro', value: false });
+    if (!ports.playable() || ports.navState.modal) return true;
+    ports.enterWorld();
+    const line = root.querySelector<HTMLElement>('#field-tale');
+    if (line && ports.navState.entryEntered) {
+      const language = lang();
+      line.textContent = FIELD_TALE[language]; line.lang = language; line.dir = language === 'ar' ? 'rtl' : 'ltr'; line.hidden = false;
+      dom.clearTimer(taleTimer); taleTimer = dom.setTimer(() => { line.hidden = true; }, FIELD_TALE_MS);
+    }
     return true;
   }
   /** Settings' "Watch intro": asks for the tale through Game.dispatch, then plays it from where the player is. */
@@ -184,6 +197,7 @@ export function createIntro(deps: IntroDeps) {
     start(replay);
   }
   lifetime.add(() => {
+    dom.clearTimer(taleTimer);
     for (const timer of introState.timers) dom.clearTimer(timer);
     introState.timers = []; introState.playing = false;
     stopCamera();
