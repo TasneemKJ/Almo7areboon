@@ -177,3 +177,22 @@ test('from Camp, Battle opens the ready field while blades lie there, so the def
   assert.match(nav, /command==='camp-battle'&&entryReady\(\)&&!navState\.modal&&fieldBlades\(ports\.sessionState\.game\.profile\)\.length&&ports\.sessionState\.game\.state\.phase==='ready'&&!ports\.sessionState\.game\.state\.dusk\)\{navState\.campOwner=null;root!\.dataset\.fieldMode='field';/);
   assert.match(nav, /\$\('battle-view'\)\.inert=false;/);
 });
+
+// 1.3 audit: on Camp the kept weapons hung in the sky above the hook beam, and the beam floated with nothing under it.
+test('the weapons are seated: the beam stands on posts down to the forge\'s ground, the kept ones stand in the rack\'s foot, hung ones hang by the grip', () => {
+  const css = readFileSync(new URL('../src/ui/camp.css', import.meta.url), 'utf8');
+  const rule = (selector: string) => css.match(new RegExp(`(?:^|\\})${selector.replace(/[.*+?^${}()|[\]\\]/g, '\\$&')}\\{([^}]*)\\}`, 'm'))?.[1] ?? '';
+  assert.match(rule('.camp-smithy-hooks'), /grid-row:1/, 'the beam and hooks are the rack\'s top');
+  assert.match(rule('.camp-smithy-wall'), /grid-row:2/, 'the kept weapons sit below the beam, not above it');
+  assert.match(rule('.camp-smithy-wall::after'), /inset:auto 0 0/, 'on a plank at the rack\'s foot');
+  assert.match(rule('.camp-smithy-wall'), /align-items:flex-end/, 'standing on it');
+  assert.match(rule('.camp-smithy-hooks::after'), /top:-3px;bottom:0/, 'two posts carry the beam');
+  assert.match(rule('.camp-smithy:has(.camp-smithy-wall) .camp-smithy-hooks::after'), /bottom:-32px/, 'down past the foot, to the ground');
+  assert.match(css, /\.camp-smithy-wall\{display:none\}\.camp-smithy:has\(\.camp-smithy-wall\) \.camp-smithy-hooks::after\{bottom:0\}/, 'landscape hides the foot and the posts stop at the beam row\'s ground');
+  assert.match(rule('.camp-smithy-forge'), /grid-row:1\/3;align-self:end/, 'the forge stands on the same ground');
+  const g = atRest(); g.profile.smithy = { next: 9, blades: [{ id: 5, chapter: 0, kind: 0, forged: true, hung: true }, { id: 6, chapter: 1, kind: 0, forged: true }] };
+  const html = campSmithyHtml(g.profile);
+  const hook = html.match(/<button class="camp-smithy-hook hung"[\s\S]*?<\/button>/)![0], wall = html.match(/<span class="camp-smithy-wall"[\s\S]*?<\/span>/)![0];
+  assert.match(hook, /<g transform="rotate\(180 12 32\)">/, 'a hung weapon is turned over: grip on the peg, point down');
+  assert.doesNotMatch(wall, /rotate\(180/, 'the kept ones stand point up');
+});

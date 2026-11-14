@@ -71,19 +71,27 @@
 .camp-dusk-banner b{position:absolute;left:3px;width:5px;height:3px;border-radius:2px;background:#e3c27e;box-shadow:0 0 0 1px #24150b}
 .camp-dusk-banner b:nth-of-type(1){top:30px}.camp-dusk-banner b:nth-of-type(2){top:25px}.camp-dusk-banner b:nth-of-type(3){top:20px}.camp-dusk-banner b:nth-of-type(4){top:15px}.camp-dusk-banner b:nth-of-type(5){top:10px}
 /* The smith (smithy-screen.ts campSmithyHtml, DESIGN.md #60): his corner by the village houses, opposite the wall lamps.
-   One compact row: the forge (anvil, brazier, the broken blades by it), then a beam with three hooks (one per troop
-   kind) under the wall of kept weapons. Narrow enough to clear the wall lamps at 375 and 390. */
+   The forge (anvil, brazier, the broken blades by it), then the weapon rack beside it, standing on the same ground: two
+   posts carry the beam with three hooks (one per troop kind), and the kept weapons stand point up in the rack's foot
+   between the posts. Nothing floats (1.3: the wall of kept weapons used to hang in the sky above the beam). Narrow
+   enough to clear the wall lamps at 375 and 390. */
 .camp-smithy{position:absolute;z-index:2;top:max(22%,8.4rem);inset-inline-start:3%;display:grid;grid-template-columns:auto auto;grid-template-rows:auto auto;align-items:end;gap:0 2px;isolation:isolate}
 .camp-smithy::before{content:"";position:absolute;z-index:-1;inset:-10px -14px -6px;border-radius:50%;background:radial-gradient(closest-side,#ffb35c38,#ffb35c14 60%,transparent);pointer-events:none}
-.camp-smithy-wall{grid-column:2;grid-row:1;justify-self:center;display:flex;align-items:flex-end;gap:2px;min-height:30px;max-width:132px;overflow:hidden;margin:0 0 2px;padding:3px 6px 2px;border-radius:6px 6px 3px 3px;background:linear-gradient(#6b5039,#46331f);box-shadow:inset 0 0 0 1.5px #243e4a,inset 0 3px 0 #ffffff14,0 2px 3px #102a2980}
-.camp-smithy-wall i{display:block;flex:none;width:9px;height:24px}.camp-smithy-wall i:nth-child(odd){transform:rotate(-6deg)}.camp-smithy-wall i:nth-child(even){transform:rotate(5deg)}
+/* The rack's foot: a low frame on the ground between the posts, a plank the weapons stand on and a rail they lean on. */
+.camp-smithy-wall{grid-column:2;grid-row:2;justify-self:stretch;position:relative;display:flex;justify-content:center;align-items:flex-end;gap:3px;height:32px;overflow:hidden;margin:0 6px;padding:0 4px 4px;background:linear-gradient(to bottom,transparent 9px,#6b4a2c 9px,#6b4a2c 13px,#243e4a 13px,#243e4a 14px,transparent 14px) no-repeat}
+.camp-smithy-wall::after{content:"";position:absolute;inset:auto 0 0;height:6px;border-radius:2px;background:#6b4a2c;box-shadow:inset 0 0 0 1.3px #243e4a,0 2px 2px #102a2966}
+.camp-smithy-wall i{position:relative;z-index:1;display:block;flex:none;width:9px;height:26px;margin-bottom:-2px}.camp-smithy-wall i:nth-child(odd){transform:rotate(-5deg)}.camp-smithy-wall i:nth-child(even){transform:rotate(4deg)}
 .camp-smithy-wall svg{width:100%;height:100%;display:block}
-.camp-smithy-wall b{flex:none;font-size:.625rem;line-height:1;color:#ffdc92;padding:0 1px 2px}
-.camp-smithy-hooks{grid-column:2;grid-row:2;position:relative;display:flex;align-items:flex-start;padding-top:6px}
-.camp-smithy-hooks::before{content:"";position:absolute;inset-inline:2px;top:2px;height:6px;border-radius:2px;background:#6b4a2c;box-shadow:inset 0 0 0 1.3px #243e4a,0 2px 2px #102a2966}
-.camp-smithy-hook{position:relative;width:44px;height:64px;min-width:44px;min-height:44px;padding:0;border:0;border-radius:8px;background:transparent;cursor:pointer;touch-action:manipulation;display:flex;justify-content:center;align-items:flex-start}
-.camp-smithy-peg{position:absolute;top:2px;left:50%;width:6px;height:9px;margin-left:-3px;border-radius:0 0 3px 3px;background:#c7a773;box-shadow:0 0 0 1px #243e4a}
-.camp-smithy-hook svg{width:20px;height:54px;margin-top:6px;transform-origin:50% 0;animation:camp-lamp-sway 4.6s ease-in-out infinite;filter:drop-shadow(0 2px 2px #102a2999)}
+.camp-smithy-wall b{position:relative;z-index:1;flex:none;align-self:center;font-size:.625rem;line-height:1;color:#ffdc92;padding:0 1px;text-shadow:0 1px 2px #102c29}
+.camp-smithy-hooks{grid-column:2;grid-row:1;position:relative;display:flex;align-items:flex-start;padding-top:6px}
+/* The beam rests on the posts' tops; the posts run down to the ground the forge stands on (past the rack's foot). */
+.camp-smithy-hooks::before{content:"";position:absolute;z-index:1;inset-inline:2px;top:2px;height:6px;border-radius:2px;background:#6b4a2c;box-shadow:inset 0 0 0 1.3px #243e4a,0 2px 2px #102a2966}
+.camp-smithy-hooks::after{content:"";position:absolute;z-index:-1;inset-inline:3px;top:-3px;bottom:0;pointer-events:none;background:linear-gradient(90deg,#243e4a 0 1.3px,#5d4027 1.3px 4.7px,#243e4a 4.7px 6px) left/6px 100% no-repeat,linear-gradient(90deg,#243e4a 0 1.3px,#5d4027 1.3px 4.7px,#243e4a 4.7px 6px) right/6px 100% no-repeat}
+.camp-smithy:has(.camp-smithy-wall) .camp-smithy-hooks::after{bottom:-32px}
+.camp-smithy-hook{position:relative;z-index:2;width:44px;height:64px;min-width:44px;min-height:44px;padding:0;border:0;border-radius:8px;background:transparent;cursor:pointer;touch-action:manipulation;display:flex;justify-content:center;align-items:flex-start}
+.camp-smithy-peg{position:absolute;z-index:1;top:2px;left:50%;width:6px;height:9px;margin-left:-3px;border-radius:0 0 3px 3px;background:#c7a773;box-shadow:0 0 0 1px #243e4a}
+/* A hung weapon's grip end sits on its peg (the art is turned over on a hook) and it sways from there. */
+.camp-smithy-hook svg{width:20px;height:54px;margin-top:4px;transform-origin:50% 4px;animation:camp-lamp-sway 4.6s ease-in-out infinite;filter:drop-shadow(0 2px 2px #102a2999)}
 .camp-smithy-hook:nth-child(2) svg{animation-delay:-1.5s}.camp-smithy-hook:nth-child(3) svg{animation-delay:-3s}
 .camp-smithy-hook[aria-disabled="true"]{cursor:default}
 .camp-smithy-forge{grid-column:1;grid-row:1/3;align-self:end;position:relative;width:72px;min-height:80px;padding:0 0 2px;border:0;border-radius:12px;background:transparent;color:var(--paper);font:inherit;cursor:pointer;touch-action:manipulation;display:flex;flex-direction:column;align-items:flex-start;justify-content:flex-end}
@@ -101,4 +109,4 @@
    hooks in the band between the heading and the places, and hides them while the lamp's plate hangs in that band. */
 .camp-ground:has(.camp-places[data-counsel]) .camp-smithy{opacity:.6;filter:saturate(.7)}
 @media (max-width:359px){.camp-smithy{top:max(27%,8rem);inset-inline-start:2%}.camp-smithy-wall,.camp-smithy-hooks{display:none}.camp-smithy-forge{min-height:64px}.camp-smithy-forge svg.smithy-forge{width:60px;height:45px}}
-@media(orientation:landscape) and (max-height:540px) and (min-width:600px){.camp-smithy{top:28%}.camp-smithy-wall{display:none}.camp-smithy-forge{min-height:64px}.camp-smithy-forge svg.smithy-forge{width:60px;height:45px}.camp-smithy-hook{height:56px}.camp-smithy-hook svg{height:46px}.camp-ground:has(.camp-places[data-counsel]) .camp-smithy{display:none}}
+@media(orientation:landscape) and (max-height:540px) and (min-width:600px){.camp-smithy{top:28%}.camp-smithy-wall{display:none}.camp-smithy:has(.camp-smithy-wall) .camp-smithy-hooks::after{bottom:0}.camp-smithy-forge{min-height:64px}.camp-smithy-forge svg.smithy-forge{width:60px;height:45px}.camp-smithy-hook{height:56px}.camp-smithy-hook svg{height:46px}.camp-ground:has(.camp-places[data-counsel]) .camp-smithy{display:none}}

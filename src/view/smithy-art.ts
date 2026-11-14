@@ -13,9 +13,14 @@ function weapon(kind: number): string {
   if (kind === 2) return `<path d="M12 2L14.5 20H9.5Z" fill="${STEEL}" stroke="${INK}" stroke-width="1.3"/><path d="M7 22H17L15 26H9Z" fill="${BRASS}" stroke="${INK}" stroke-width="1.2"/><path d="M12 26V62" stroke="${GRIP}" stroke-width="3" stroke-linecap="round"/><path d="M14 24C20 26 21 31 16 33" fill="#a3473a" stroke="${INK}" stroke-width=".9"/>`;
   return `<path d="M12 2L15 8V44H9V8Z" fill="${STEEL}" stroke="${INK}" stroke-width="1.3"/><path d="M12 6V42" stroke="${STEEL_DARK}" stroke-width="1"/><path d="M4 44H20" stroke="${BRASS}" stroke-width="3.2" stroke-linecap="round"/><path d="M12 46V57" stroke="${GRIP}" stroke-width="3.4"/><circle cx="12" cy="59.5" r="2.6" fill="${BRASS}" stroke="${INK}" stroke-width="1"/>`;
 }
-/** A reforged weapon for a hook or the wall. `glint` adds the fresh edge's light. */
-export function weaponIllustration(kind: number, glint = false): string {
-  return svg(`smithy-weapon smithy-weapon-${kind}`, '0 0 24 64', `${glint ? `<path d="M12 4V20" stroke="#fff6dc" stroke-width="1.4" stroke-linecap="round" opacity=".85"/>` : ''}${weapon(kind)}`);
+/**
+ * A reforged weapon for a hook or the wall. `glint` adds the fresh edge's light. On the wall rack it stands point up on
+ * the plank; on a hook (`hanging`) it is turned over so the grip end sits on the peg and the point hangs down, as a
+ * weapon on a hook does, rather than balancing on its tip.
+ */
+export function weaponIllustration(kind: number, glint = false, hanging = false): string {
+  const body = `${glint ? `<path d="M12 4V20" stroke="#fff6dc" stroke-width="1.4" stroke-linecap="round" opacity=".85"/>` : ''}${weapon(kind)}`;
+  return svg(`smithy-weapon smithy-weapon-${kind}`, '0 0 24 64', hanging ? `<g transform="rotate(180 12 32)">${body}</g>` : body);
 }
 /** A broken blade lying on the ground, in two pieces a little apart, with a warm glint so the eye finds it (64x32). */
 export function brokenBladeIllustration(kind: number): string {

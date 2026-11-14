@@ -57,7 +57,7 @@ function hookHtml(p:Readonly<Profile>,kind:UnitKind):string {
  const name=unitPresentationName(p.age,kind);
  const now=hung?`${weaponName(hung)}. ${temperLine(p,hung)}.`:tr(`No weapon on the ${name}'s hook.`,`لا سلاح على خطّاف ${name}.`);
  const act=spare?tr(` Tap to hang the ${weaponName(spare)}.`,` انقر لتعلّق ${weaponName(spare)}.`):hung?tr(' Tap to take it down to the wall.',` انقر لتنزل${it(hung!.kind)} إلى الجدار.`):'';
- return `<button class="camp-smithy-hook${hung?' hung':''}" data-command="smithy-hang"${target?` data-blade="${target.id}"`:' aria-disabled="true"'} data-kind="${kind}" aria-label="${attr(now+act)}"><i class="camp-smithy-peg" aria-hidden="true"></i>${hung?weaponIllustration(kind,true):''}</button>`;
+ return `<button class="camp-smithy-hook${hung?' hung':''}" data-command="smithy-hang"${target?` data-blade="${target.id}"`:' aria-disabled="true"'} data-kind="${kind}" aria-label="${attr(now+act)}"><i class="camp-smithy-peg" aria-hidden="true"></i>${hung?weaponIllustration(kind,true,true):''}</button>`;
 }
 /** The smithy in Camp, once the company has carried a blade home. */
 export function campSmithyHtml(p:Readonly<Profile>):string {
