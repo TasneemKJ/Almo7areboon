@@ -72,3 +72,13 @@ world deploy path (TODO, owner decision).
 
 Limits: one seeded-policy bot on a desktop WebKit with emulated touch (mouse-driven drag, not a finger); no physical
 iPhone, VoiceOver or Safari acceptance; screenshots prove only this environment.
+
+## Touch layout check (WebKit, touch, after 8 deploys)
+
+At 320x568, 360x640, 390x844, 412x915 and 844x390: no horizontal or page scroll, no visible control under 44px, no
+overlapping on-top controls (before had the camp standard over the enemy target at 320x568). Visible battle controls
+after: Pause, three tokens, plus the world objects (camp, basket, enemy ring, banner); before also the Gather button.
+`npm run review:mobile-touch` was not usable: it still taps the pre-tray `[data-field-recruit]` targets that the
+2026-11-13 tray hid, so it cannot reach a result on either build (TODO: port it to the board tokens and the banner).
+Hold verified by dragging the banner back (order reads `hold`). The measured "after" build predates three CSS/layout
+fixes (plate placement, landscape hit box, reduced-motion hint), none of which changes where or how often the bot taps.
