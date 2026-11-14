@@ -13,8 +13,9 @@ Branch `ios/taskit-1.3`. The App Store copy lives in `ios/store/listing.json`; t
   open (`tests/save-migration-1-2.test.ts`, raw 1.2 saves in `tests/fixtures/save-1.2-*.json`).
 - **The smith's weapons hang from a rack** that stands on the ground, and the kept weapons stand in it, instead of
   floating over Camp.
-- **The rating ask** follows only a chapter won for the first time in a timeline: never a defeat, a purchase, a launch,
-  a replay or a dusk raid.
+- **The rating ask** follows only a chapter boss won: a chapter cleared for the first time in a timeline, or the first
+  storybook expedition finale (the Bell Keeper). Never a defeat, a purchase, a launch, a replay, an expedition's earlier
+  stages or a dusk raid (the build before also asked after a raid). TasKit keeps it to once per 90 days.
 
 ## What's New
 
