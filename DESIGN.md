@@ -435,3 +435,13 @@ Fixes Almo's lowest dimension: pay-to-progress. Coins need a sink that a free pl
   timeline, and Start over begins without it. At most 60 blades: a full smithy gives the oldest blade still waiting by
   the anvil (else the oldest weapon on the wall, never a hung one) to the village, so a tap on the field always carries.
 - Not yet: the Thursday caravan «قافلة الخميس»; a sign of the hung weapon on the troops in battle.
+
+## #66 (random-stimulus) «القائد الذي يتعلّم» — stimuli: a shadow-puppet theatre (خيال الظل) · a broken compass · "what if the rival learned from you?"
+- **Best idea: the rival captain who learns.** Each chapter's rival keeps a small notebook on you. It watches the troop you send most and the lane you favour, and two battles later it answers: pikes for the Pathkeeper spam, a flanker on the lane you always leave open.
+  - Before each battle the camp shows one torn page from his notebook, in his own voice: «يرسلون حرّاس الدرب أوّلاً، دائماً. سنستقبلهم بالرماح.»
+  - The player now plays against a habit, their own. Mixing troops and lanes is rewarded, and the "first-card tapper" the free-path sim found stops winning on the director's help.
+  - Difficulty becomes readable: the page is the warning, so a loss is never a surprise.
+  - The Lamplighter subscription lights the page a battle earlier (one more turn to change), never the rival's whole plan.
+  - Comparables, learned from but not copied: Slay the Spire (visible enemy intent), Into the Breach (the warning before the move), Clash Royale (counters). Almo's rival is a person with a notebook in a folktale, not a deck or an AI read-out.
+- **Second idea (backlog): the shadow-puppet night.** After a chapter's win, the camp holds a shadow-puppet show (خيال الظل): the battle you just won retold in silhouettes drawn in code, with your company's actual troops and the smith's named weapons, and the rival's notebook burnt in the last scene. It is a keepsake for the chronicle, and it gives the Full Journey's later chapters a reward you watch, not just a number.
+- Sim note: in the free-path sim, the first-card bot should lose its first try in chapters 3–6 more often with the learning rival. The in-turn bot should be unchanged (±1 battle), and no player should need the pacing director's rally to win after a counter is shown.
