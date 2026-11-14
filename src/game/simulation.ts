@@ -6,7 +6,7 @@ import { isLegacyChoice, legacyEffects, prestigePreview } from './prestige.ts';
 import { advanceStatus, canRetry, createMastery, masteryAward } from './mastery.ts';
 import { spawnSpot } from './unit-movement.ts';
 import { beginDusk, DUSK_ACTIONS, duskEncounter, placeDuskLamp, settleDusk } from './dusk-raid.ts';
-import { companyEncounter, encounterForAge, rallyLevel, rallyPower, RALLY_FOOD, scheduledSpawns, type Encounter, type ScheduledSpawn, type WaveStatus } from './encounters.ts';
+import { companyEncounter, encounterForAge, rallyLevel, rallyPower, RALLY_FOOD, STALEMATE_SECONDS, scheduledSpawns, type Encounter, type ScheduledSpawn, type WaveStatus } from './encounters.ts';
 import { resolveRoleHit, sweepTarget } from './role-traits.ts';
 import { battleStats } from './statistics.ts';
 import { advanceUnit } from './unit-movement.ts';
@@ -73,7 +73,7 @@ export class Game implements GamePort {
     this.nextSpawn = 0;
     this.nextId = 1;
     const playerHp = this.baseHealth();
-    const enemyHp = Math.round(160 * 1.65 ** this.profile.enemyAge * this.timelinePower());
+    const enemyHp = Math.round(160 * 1.65 ** this.profile.enemyAge * this.timelinePower() * rallyPower(this.profile));
     this.accumulator = 0;
     this.damageEarnings = 0;
     this.rewardRemainder = 0;
@@ -160,7 +160,7 @@ export class Game implements GamePort {
     if (this.state.phase !== 'running') return false;
     this.state.phase = 'lost';
     this.state.paused = false;
-    this.events.push({ type: 'lose' }); // a retreat is no fallen gate: it never feeds the pacing director's streak
+    this.events.push({ type: 'lose' }); if (this.state.time >= STALEMATE_SECONDS) this.profile.lossStreak = Math.min(99, (this.profile.lossStreak ?? 0) + 1); // only a stalemate left, never an early exit, feeds the pacing director
     return true;
   }
 

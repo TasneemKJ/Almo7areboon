@@ -50,9 +50,11 @@ export function loneCompanyEncounter<T extends { readonly age: number; readonly 
 /**
  * The pacing director («قارئ الإيقاع», STUDIO-BAR "non-boring and high retention"): after two defeats in a row the next
  * battle is winnable but still tense, quietly, with no label. The rival's waves after the first thin (their trailing
- * members stay home), their troops are a tenth weaker and the camp starts with a little more bread; each further defeat
+ * members stay home), their troops are a tenth weaker (and an older company meets them nearer its own age) and the camp starts with a little more bread; each further defeat
  * in the streak thins one more member and takes another tenth, up to three steps. It ends with the next victory. Checked by scripts/qa-gate/streak-sim.ts (a naive player's 30 battles).
  */
+/** A retreat after this long is a stalemate (the gate held, the rival's did too): it counts like a fallen gate. */
+export const STALEMATE_SECONDS = 150;
 export const RALLY_AFTER_LOSSES = 2, RALLY_FOOD = 5, RALLY_WEAKEN = .1;
 /** 0 when no rally applies, else 1..3 by the length of the defeat streak. */
 export function rallyLevel(p: { readonly lossStreak?: number }): number {
@@ -60,7 +62,15 @@ export function rallyLevel(p: { readonly lossStreak?: number }): number {
   return streak >= RALLY_AFTER_LOSSES ? Math.min(3, streak - RALLY_AFTER_LOSSES + 1) : 0;
 }
 /** The rival's strength during a rally: a little less with each further defeat in the streak (1 when no rally applies). */
-export function rallyPower(p: { readonly lossStreak?: number }): number { return 1 - RALLY_WEAKEN * rallyLevel(p); }
+/**
+ * The rival's strength during a rally (1 when none applies): a tenth less for each step, and a company still in an
+ * older age than the rival (a player who has not moved camp) meets it half an age nearer at the first step and at its
+ * own age from the second. Applied to the rival's troops and to its gate.
+ */
+export function rallyPower(p: { readonly lossStreak?: number; readonly age?: number; readonly enemyAge?: number }): number {
+  const level = rallyLevel(p), gap = Math.max(0, (p.enemyAge ?? 0) - (p.age ?? 0));
+  return level ? (1 - RALLY_WEAKEN * level) * 1.65 ** (-gap * Math.min(1, level / 2)) : 1;
+}
 export function rallyEncounter<T extends { readonly age: number; readonly waves: readonly EncounterWave[] }>(encounter: T, level: number): { age: number; waves: EncounterWave[] } {
   return { age: encounter.age, waves: encounter.waves.map((wave, index) => index >= 1 && wave.members.length > 1 ? { ...wave, members: wave.members.slice(0, Math.max(1, wave.members.length - level)) } : wave) };
 }

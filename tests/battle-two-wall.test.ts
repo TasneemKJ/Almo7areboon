@@ -3,7 +3,7 @@ import assert from 'node:assert/strict';
 import { Game } from '../src/game/simulation.ts';
 import { defaultProfile, decodeSave } from '../src/game/save.ts';
 import { campCounsel, counselAction, litCounsel } from '../src/game/counsel.ts';
-import { easesLoneCompany, encounterForAge, rallyLevel, rallyPower, RALLY_FOOD, LONE_COMPANY_DELAY } from '../src/game/encounters.ts';
+import { easesLoneCompany, encounterForAge, rallyLevel, rallyPower, RALLY_FOOD, LONE_COMPANY_DELAY, STALEMATE_SECONDS } from '../src/game/encounters.ts';
 import { compactResultsHtml } from '../src/ui/results-screen.ts';
 import { campRootHtml, counselActLabel } from '../src/ui/camp-screen.ts';
 
@@ -64,7 +64,7 @@ test('the pacing director: two defeats in a row quietly thin and weaken the next
     assert.equal(rallyLevel(game.profile), Math.min(3, Math.max(0, loss - 1)));
   }
   assert.equal(startFood(), new Game(chapterTwo({ unlocked: [true, true, false] })).state.food + RALLY_FOOD);
-  assert.ok(Math.abs(rallyPower(game.profile) - .7) < 1e-9);
+  assert.ok(Math.abs(rallyPower(game.profile) - .7 / 1.65) < 1e-9, 'an older company meets the rival at its own age');
   game.dispatch({ type: 'start' }); game.state.enemyHp = 0; game.step(1 / 60);
   assert.equal(game.state.phase, 'won'); assert.equal(game.profile.lossStreak, undefined);
   assert.equal(rallyLevel({}), 0); assert.equal(rallyLevel({ lossStreak: 1 }), 0); assert.equal(rallyPower({}), 1);
@@ -81,4 +81,17 @@ test('later chapters light the counsel only after a defeat, and a defeat with co
   game.dispatch({ type: 'start' }); game.state.playerHp = 0; game.step(1 / 60);
   const primary = primaries(compactResultsHtml(game.profile, game.state, false, true));
   assert.equal(primary.length, 1); assert.match(primary[0], /data-command="evolve"/);
+});
+
+test('the chapter-3 wall for a player who never opens Camp: a rally closes the age gap, and a stalemate left late counts', () => {
+  const lone = { age: 0, enemyAge: 2 };
+  assert.equal(rallyPower({ ...lone, lossStreak: 1 }), 1);
+  assert.ok(Math.abs(rallyPower({ ...lone, lossStreak: 2 }) - .9 / 1.65) < 1e-9, 'half the gap at the first step');
+  assert.ok(Math.abs(rallyPower({ ...lone, lossStreak: 3 }) - .8 / 1.65 ** 2) < 1e-9, 'the whole gap from the second');
+  assert.ok(Math.abs(rallyPower({ age: 2, enemyAge: 2, lossStreak: 3 }) - .8) < 1e-9, 'a company of the rival\'s age gets no gap help');
+  const game = new Game(chapterTwo({ enemyAge: 2, furthestBattle: 2, unlocked: [true, true, false] }));
+  const full = game.state.enemyMaxHp;
+  for (let i = 0; i < 2; i++) { game.dispatch({ type: 'start' }); game.state.time = STALEMATE_SECONDS; game.dispatch({ type: 'retreat' }); game.dispatch({ type: 'retry' }); }
+  assert.equal(game.profile.lossStreak, 2, 'a stalemate left after 150 s is a defeat');
+  assert.ok(game.state.enemyMaxHp < full, 'the rival gate is part of the rally');
 });

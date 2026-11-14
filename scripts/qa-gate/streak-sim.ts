@@ -3,6 +3,7 @@
 // the audit bot, uses no skills, and does only what a data-primary action leads to: Continue after a win; after a defeat
 // either Retry only (CAMP=0), or (CAMP=counsel) the Regroup primary: the lit Camp place's act, tapped until the lamp goes
 // out (litCounsel), or Move camp when that is what the coins can do.
+// A battle still standing after 200 s is left (a stalemate retreat, which counts toward the streak after 150 s).
 // Run: node --experimental-strip-types scripts/qa-gate/streak-sim.ts [seeds=20] [CAMP=0|counsel] [battles=30]
 import { Game } from '../../src/game/simulation.ts';
 import { counselAction, litCounsel } from '../../src/game/counsel.ts';
@@ -14,7 +15,7 @@ function seeded(s: number) { let seed = s >>> 0 || 1; return () => { seed = (see
 function fight(game: Game, rnd: () => number): boolean {
   if (!game.dispatch({ type: 'start' }) && game.state.phase !== 'running') return false;
   let next = 1;
-  for (let t = 0; game.state.phase === 'running' && t < 300; t += 0.1) {
+  for (let t = 0; game.state.phase === 'running' && t < 200; t += 0.1) {
     if (t >= next) { for (const kind of [0, 1, 2] as UnitKind[]) if (game.profile.unlocked[kind] && game.dispatch({ type: 'spawn', kind })) break; next += 1.15 * (0.95 + rnd() * 0.8); }
     game.step(0.1); game.drainEvents();
   }
