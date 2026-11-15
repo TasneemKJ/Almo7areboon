@@ -61,13 +61,13 @@ export function duskLampX(offsetX:number,width:number,height:number):number {
 /**
  * What a tap on the open field does (2026-11-14 first-30 strip: a new player tapped the field for 30 s and nothing
  * went out). If a troop is affordable, one runs out of camp into the lane nearest the tap (the cheapest the company can
- * send); otherwise, with the banner ready, the tap plants the order; only when neither can happen does the banner lean
- * and say what is missing.
+ * send); otherwise the banner leans and says what is missing. A tap never issues an order.
  */
-export function fieldTapIntent(orderReady:boolean,affordableKind:number|undefined):'order'|'troop'|'nudge' {
- // A soldier first (2026-11-15 touch pass): a deploying player's next tap must never spend 60 momentum on an order
- // they did not ask for. The order is the banner's (drag it); a field tap plants it only when no soldier can go.
- return affordableKind!==undefined?'troop':orderReady?'order':'nudge';
+export function fieldTapIntent(orderReady:boolean,affordableKind:number|undefined):'troop'|'nudge' {
+ // 2026-11-15 device pass: a field tap never spends momentum. Orders are the banner's (drag it, as the game teaches);
+ // a tap sends a soldier, or the banner leans toward the tap (its plate names the order a drag would give).
+ void orderReady;
+ return affordableKind!==undefined?'troop':'nudge';
 }
 /** The lane nearest a tap's height on the field (lanes sit on the ground line, 12 world units apart). */
 export function fieldTapLane(offsetY:number,width:number,height:number):number {

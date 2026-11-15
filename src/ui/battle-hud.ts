@@ -78,7 +78,7 @@ export function foodIsPiling(profile: Profile, state: BattleState): boolean {
 /** A single contextual instruction, not an onboarding panel over the battlefield. */
 export function battleGuidance(profile: Profile, state: BattleState, preview?: WavePreview | null, melee?: Readonly<DeploymentStatus>): string {
   if (state.phase === 'ready') return profile.wins===0?tr('Tap Battle, then spend food on warriors. They fight automatically.','انقر على «المعركة»، ثم أنفق المؤونة على المحاربين. سيقاتلون وحدهم.'):`${chapterScouting(profile.enemyAge).opening} ${tr('Tap Battle to begin.','انقر على «المعركة» لتبدأ.')}`;
-  if (state.phase === 'won') return tr('Victory! Continue to the next battle when you are ready.', 'نصر! تابع إلى المعركة التالية متى كنت مستعدّاً.');
+  if (state.phase === 'won') return tr('Victory. Continue to the next battle when you are ready.', 'نصر. تابع إلى المعركة التالية متى كنت مستعدّاً.');
   if (state.phase === 'lost') return `${tr('Your coins are safe.','نقودك في أمان.')} ${masteryAdvice(profile,state)}`;
   if (state.paused) return tr('Battle paused. Resume to deploy your army.', 'المعركة متوقّفة. تابع لترسل جيشك.');
   if (state.playerHp / state.playerMaxHp <= 0.3) return `${GUIDE.danger()} ${tr('Deploy reinforcements or use a skill.','أرسل المدد أو استعمل مهارة.')}`;

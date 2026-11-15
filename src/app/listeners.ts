@@ -74,11 +74,13 @@ function fieldBanner({dom:{$,lifetime,setTimer,clearTimer},ports}:Pick<Listeners
   const banner=$('field-banner');let timer=0;
   lifetime.add(()=>clearTimer(timer));
   return order=>{
-    const sound=ports.sessionState.game.profile.sound;unlockAudio(sound);
-    if(ports.action({type:'order',order})){pressFeedback({sound,kind:'press'});return;}
+    // A tap never issues an order (2026-11-15 device pass: with food out and momentum full, field taps fired an
+    // Advance nobody dragged). The banner leans toward the tap and its plate says what the drag would do.
+    unlockAudio(ports.sessionState.game.profile.sound);
     if(banner.classList.contains('dragging'))return;
+    const ready=canIssueOrder(ports.sessionState.game.state,order);
     clearTimer(timer);banner.classList.remove('wanting');void banner.offsetWidth;
-    banner.dataset.intent=order;banner.dataset.wait='true';banner.classList.add('wanting');
+    banner.dataset.intent=order;banner.dataset.wait=ready?'false':'true';banner.classList.add('wanting');
     timer=setTimer(()=>{banner.classList.remove('wanting');if(!banner.classList.contains('dragging')){banner.dataset.intent='none';banner.dataset.wait='false';}},1400);
   };
 }
@@ -239,7 +241,7 @@ export function installListeners(deps: ListenersDeps): void {
       return;
      }
      if(root!.dataset.fieldMode==='field'){
-      // An open tactical choice closes first; otherwise the tap sends a soldier, and plants the banner (fieldTapOrder) only when none can go.
+      // An open tactical choice closes first; otherwise the tap sends a soldier, or the banner leans and says what is missing.
       if(fieldControls.isOpen()){fieldControls.clear();return;}
       const order=live?fieldTapOrder({startX:start!.x,startY:start!.y,endX:e.clientX,endY:e.clientY},{left:rect.left,top:rect.top,width:rect.width,height:rect.height}):null;
       if(!order)return;
