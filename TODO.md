@@ -309,3 +309,8 @@ Combined-main camp/cinema acceptance:1464tests/build pass; six-size native touch
 - [ ] Real-touch check on iOS of carrying a blade before the result card
 - [ ] Owner decision: a free path to chapter 6 in the app would need Full Journey to sell something other than chapters 3-6
 - [x] 1.3: chapter 3 is free; Full Journey opens chapters 4-6 and the harder timeline. Camp's footer names the wall before it is met; 1.2 saves load unchanged (tests/save-migration-1-2.test.ts); free-path sim STORE=app reaches the chapter 3 win in 5-7 battles
+
+## 1.3: More from Tas, Start over in the app (2026-11-15)
+- [x] More from Tas: tas-engine's `more-games.js` and catalogue (ffcf5bc, byte for byte, pinned by hash in `tests/more-from-tas.test.ts`), a quiet Preferences row, the sheet (`ui/more-games-screen.ts`), `moreGames` in `Almo7areboonConfig.swift`, the page bridge synced (`openStoreProduct`).
+- [x] Start over sticks in the app: the TasKit vault (flush, copy, restore only when no `almo7areboon` key exists) never brings the old save back (`tests/start-over-vault.test.ts`).
+- [ ] Build the app against tas-engine ffcf5bc and check the store sheet opens for each live game on a phone (owner, Xcode).

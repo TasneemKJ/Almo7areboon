@@ -16,6 +16,8 @@ test('a rating is asked only after a victory, in the app', () => {
 test('the vendored bridge is the engine copy with requestReview, and the lifecycle asks only from the battle batch', () => {
   const vendored = readFileSync(new URL('../src/vendor/tas-bridge.js', import.meta.url), 'utf8');
   assert.match(vendored, /requestReview\(\) \{ return this\.post\('requestReview'\); \}/);
+  // Synced to tas-engine ffcf5bc (More from Tas: openStoreProduct); tests/more-from-tas.test.ts pins it byte for byte.
+  assert.match(vendored, /openStoreProduct\(id, campaign\)/);
   const lifecycle = readFileSync(new URL('../src/app/lifecycle.ts', import.meta.url), 'utf8');
   assert.equal((lifecycle.match(/askForRatingAfter\(/g) ?? []).length, 1);
   assert.doesNotMatch(readFileSync(new URL('../src/app/store-flow.ts', import.meta.url), 'utf8'), /requestReview|askForRating/);

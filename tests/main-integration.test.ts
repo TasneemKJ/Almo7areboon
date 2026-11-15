@@ -45,11 +45,12 @@ import { createModalTapGuard } from '../src/ui/modal-tap-guard.ts';
 import { campCounsel, counselAction, litCounsel } from '../src/game/counsel.ts';
 import { BLADE_HOLD_MS, BLADE_LAST_MS, fieldBlades } from '../src/game/smithy.ts';
 import { wonClimax } from '../src/ui/app-bridge.ts';
+import { moreGamesHtml } from '../src/ui/more-games-screen.ts';
 
 // Execute the app's actual functions with a clock and minimal DOM boundary; no browser/debug hooks.
 const source = mainSource();
 const ast = ts.createSourceFile('main.ts', source, ts.ScriptTarget.Latest, true, ts.ScriptKind.TS);
-const names = new Set(['openCounsel','buyCounsel','switchTab','showModal','syncCamp','showCampFocus','returnToCamp','handleCampInput','playable', 'guardAction', 'action', 'persist', 'update', 'renderScreen', 'sessionPresentation', 'showResult', 'acquireSession', 'dismissModal', 'returnToChapters', 'clearPrestigeContext', 'openPrestige', 'refreshPrestige', 'returnFromPrestige', 'questSaveNotice', 'refreshQuestRecord', 'claimQuestRecord', 'showQuests', 'showSettings', 'showSaveRecovery', 'preferenceNotice', 'showFieldPause', 'showLeaveBattle', 'leaveBattle', 'enterCamp', 'entryReady', 'syncEntry', 'enterWorld', 'showResultDetails', 'showHome', 'continueWithProvision', 'adoptRestoredGame', 'syncWeek', 'showStoryFollowUp', 'claimQuestRecord', 'routeDataAction']);
+const names = new Set(['openCounsel','buyCounsel','switchTab','showModal','syncCamp','showCampFocus','returnToCamp','handleCampInput','playable', 'guardAction', 'action', 'persist', 'update', 'renderScreen', 'sessionPresentation', 'showResult', 'acquireSession', 'dismissModal', 'returnToChapters', 'clearPrestigeContext', 'openPrestige', 'refreshPrestige', 'returnFromPrestige', 'questSaveNotice', 'refreshQuestRecord', 'claimQuestRecord', 'showQuests', 'showSettings', 'showSaveRecovery', 'showMoreGames', 'preferenceNotice', 'showFieldPause', 'showLeaveBattle', 'leaveBattle', 'enterCamp', 'entryReady', 'syncEntry', 'enterWorld', 'showResultDetails', 'showHome', 'continueWithProvision', 'adoptRestoredGame', 'syncWeek', 'showStoryFollowUp', 'claimQuestRecord', 'routeDataAction']);
 const functions = flatStatements(ast).filter(node => ts.isFunctionDeclaration(node) && node.name && names.has(node.name.text));
 assert.equal(functions.length, names.size);
 const click=flatStatements(ast).find(node=>ts.isExpressionStatement(node)&&ts.isCallExpression(node.expression)&&node.expression.expression.getText(ast)==='lifetime.listen'&&node.expression.arguments[0]?.getText(ast)==='root'&&node.expression.arguments[1]?.getText(ast)==="'click'") as ts.ExpressionStatement;
@@ -84,7 +85,7 @@ function harness(motion = 'full') {
     questSelection:null,questCalendarDay:null,questClaimCheck,claimableWeek,syncBattleHud,storyFollowUp,questRecords,selectedQuestRecord,questRecordAction,questRecordLabel,questRecordsHtml,questRecordDetailHtml,lastSavedAt:0,campOwner:null,campRenderKey:'',focusFrame:0,modalVersion:0,focusBefore:null,settingsOrigin:null,acquiring: null, acquisitionVersion: 0, hasPlayed: true, entryWelcome:null,entryEntered: true, entrySaved: true, resultDetailsOpen:false, atmosphereEnabled:true,audioMix:{effects:100,atmosphere:100}, manualPaused: false, savedWarning: false, pendingImport: null, modal: null, evolutionFromResult: false, modalPointerSequence: false,prestigeOrigin:null,prestigeDraft:null,prestigeExpectedTimeline:null,
     lastUpdate: 0, lastSave: 100, lastPhase: 'ready', resultDue: 0, resultShown: '', activeTab: 'battle', cardQuantity:1, root,
     window:{cancelAnimationFrame(){}},requestAnimationFrame(){return 0;},performance: { now: () => now }, document: { documentElement: { dataset: { motion } } },
-    cardPackPreview,cardsScreenHtml,summonedCardsHtml,isEditingTarget,campRootHtml,campFocusHtml,campGoalText,canOwnCamp,isCampStation,campActionFromData,campCounsel,counselAction,litCounsel,BLADE_HOLD_MS,BLADE_LAST_MS,fieldBlades,wonClimax,onStoreChange:()=>()=>{},pressFeedback(){},lamplighterWalks:()=>false,ownsFullJourney:()=>true,almoApp:{inApp:false},fieldControls:{update(){},clear(){},select(){}},blockModalTap:createModalTapGuard(),startCountUp,welcomeBackLine,restoreBackupWithSave,startOverProfile,syncWeekly,weekId,weeklyStatus,foodIsPiling,Date:class extends Date{static now(){return 1_800_000_000_000;}},journeyScreenHtml,updateOrderBanner,entryCopy,hasPriorPlay,entrySecondary,preferencesHtml,saveRecoveryHtml,chapterLandscape,
+    cardPackPreview,cardsScreenHtml,summonedCardsHtml,isEditingTarget,campRootHtml,campFocusHtml,campGoalText,canOwnCamp,isCampStation,campActionFromData,campCounsel,counselAction,litCounsel,BLADE_HOLD_MS,BLADE_LAST_MS,fieldBlades,wonClimax,onStoreChange:()=>()=>{},pressFeedback(){},lamplighterWalks:()=>false,ownsFullJourney:()=>true,almoApp:{inApp:false},fieldControls:{update(){},clear(){},select(){}},blockModalTap:createModalTapGuard(),startCountUp,welcomeBackLine,restoreBackupWithSave,startOverProfile,syncWeekly,weekId,weeklyStatus,foodIsPiling,Date:class extends Date{static now(){return 1_800_000_000_000;}},journeyScreenHtml,updateOrderBanner,entryCopy,hasPriorPlay,entrySecondary,preferencesHtml,saveRecoveryHtml,moreGamesHtml,openMoreGame:(key:string)=>{context.moreGameOpened.push(key);return 'page';},moreGameOpened:[],chapterLandscape,
     $: (id: string) => { if (!elements.has(id)) {const element:any=['quest-goal','card-quantity'].includes(id)?new BoundarySelect(id,id==='card-quantity'?'1':''):node();if(id==='battlefield')element.dataset={renderer:'ready'};elements.set(id,element);} return elements.get(id); },
     chronicleScreenHtml,chronicleActionFromData,chronicleGuidance,CAPTAINS,routeDefinition,advanceStatus, battleSelectionHtml, evolutionDialogHtml, ERAS, QUESTS, foodRate, unlockCost, dailyReward, localDay, battleGuidance, baseHealthDisplay, compactNumber, waveLabel, waveAccessibleLabel, chapterPresentation, unitPresentationName, compactResultsHtml, expeditionChoiceHtml, resultsHtml,isLegacyChoice,legacyEffects,prestigePreview,prestigeDetailsHtml,prestigeDialogHtml,legacyCurrentHtml,evolutionScreenHtml,saveSessionDialogHtml,temporarySessionNotice,temporarySessionText,savingUnavailableText,skillCue,troopUnlockMessage,nextGoalLabel, waveInspectionHtml,
     earlierChapter,storybookArt: () => false, money: String, coin: String, icon:()=>'',textIfChanged(target:any,value:string){target.textContent=value;},htmlIfChanged(target:any,value:string){target.innerHTML=value;},unlockAudio() {}, suspendAudio() {}, playIntro() { return false; }, watchIntro() {}, playSummonAudio() {}, saveAtmosphere() {}, syncMarks() {}, syncPause() {}, rebuildArmy() {}, syncMotion() {}, isolateModal(){}, toast() {},
@@ -549,12 +550,29 @@ test('explicit field Resume releases a manual pause without restarting the battl
  assert.equal(c.manualPaused,false);assert.equal(c.modal,null);assert.equal(JSON.stringify([c.game.profile,c.game.state]),before);
 });
 
-test('Preferences is eight native fields (Language first) and five direct actions, with no nested catalogue',()=>{
+test('Preferences is eight native fields (Language first), five direct actions and the quiet More from Tas row, with no nested catalogue',()=>{
  const h=harness(),c=h.context;h.click('settings');
- assert.equal((c.dialogHtml.match(/<button\b/g)||[]).length,5,'off the app there is nothing to buy, so no store entries');
+ assert.equal((c.dialogHtml.match(/<button\b/g)||[]).length,6,'off the app there is nothing to buy, so no store entries');
+ assert.match(c.dialogHtml,/<button class="preferences-more-games" data-command="more-games">More from Tas<\/button>/);
  assert.equal((c.dialogHtml.match(/<input\b|<select\b/g)||[]).length,8);
  for(const label of ['Sound','Atmosphere','Effects','Battle speed','Motion','Troop shapes','Watch intro','Watch film','Save &amp; recovery','Start over','Done'])assert.match(c.dialogHtml,new RegExp(label));
  assert.doesNotMatch(c.dialogHtml,/<details|data-command="retreat"|data-command="export"|data-command="import"/);
+});
+test('More from Tas opens over Preferences, a row opens that game, and every way back lands on the row',()=>{
+ const h=harness(),c=h.context;h.click('settings');h.click('more-games');
+ assert.equal(c.modal,'more-games');assert.match(c.dialogHtml,/<h2 id="dialog-title">More from Tas<\/h2>/);
+ h.clickData({moreGame:'souq'});assert.deepEqual(c.moreGameOpened,['souq']);assert.equal(c.modal,'more-games','the sheet stays; Apple\'s sheet closes back to it');
+ h.click('close');assert.equal(c.modal,'settings');assert.equal(c.focusCommand,'more-games','Back returns focus to the row');
+ h.click('more-games');c.api.dismissModal();assert.equal(c.modal,'settings');assert.equal(c.focusCommand,'more-games','Escape and the close key do too');
+ h.click('close');assert.equal(c.modal,null);
+ h.clickData({moreGame:'souq'});assert.deepEqual(c.moreGameOpened,['souq'],'a row is live only on its own sheet');
+});
+test('More from Tas never appears during a battle, even in Preferences from the field pause',()=>{
+ const h=harness(),c=h.context;c.game.dispatch({type:'start'});c.manualPaused=true;
+ h.click('field-pause');h.click('settings');assert.equal(c.modal,'settings');
+ assert.doesNotMatch(c.dialogHtml,/more-games|More from Tas/);
+ h.click('more-games');assert.equal(c.modal,'settings','the command is refused while the battle is live');
+ h.click('close');assert.equal(c.modal,'field-pause');
 });
 test('Settings Done returns to the paused surface without clearing manual pause',()=>{
  const h=harness(),c=h.context;c.game.dispatch({type:'start'});c.manualPaused=true;

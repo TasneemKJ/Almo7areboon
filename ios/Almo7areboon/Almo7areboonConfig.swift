@@ -1,6 +1,6 @@
 //
 //  Almo7areboonConfig.swift
-//  Everything the shared iOS shell (TasKit, ../../tas-engine/ios, built against 040aa0e) needs to know about المحاربون.
+//  Everything the shared iOS shell (TasKit, ../../tas-engine/ios, synced to ffcf5bc: More from Tas) needs to know about المحاربون.
 //  The names below are persisted on players' phones (the almo7areboon:// origin holds the save,
 //  the UserDefaults keys hold the cached purchase): never rename them after release.
 //
@@ -78,6 +78,9 @@ extension TasGameConfig {
         launchColor: UIColor(named: "LaunchBackground") ?? UIColor(red: 0.07, green: 0.11, blue: 0.16, alpha: 1),
         ambientAudio: true, // the silent switch silences the game
         shareDownloadedPNGs: true,
-        debugJSDefaultsKey: "almoDebugJS" // `simctl launch … -almoDebugJS "…"`
+        debugJSDefaultsKey: "almoDebugJS", // `simctl launch … -almoDebugJS "…"`
+        // More from Tas: every other game in tas-engine's web/more-games/catalog.json (ffcf5bc), live or not yet,
+        // never Almo7areboon itself (6834161789). The page shows only the live ones (src/ui/more-games-screen.ts).
+        moreGames: ["6832737533", "6834160063", "6834160769", "6834161557", "6834162759", "6834806309"]
     )
 }

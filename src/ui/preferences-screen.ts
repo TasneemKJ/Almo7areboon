@@ -2,6 +2,7 @@ import type {Profile} from '../game/types.ts';
 import type {AudioMix} from './audio-preferences.ts';
 import {lang,n,tr} from './i18n.ts';
 import {almoApp} from './app-bridge.ts';
+import {moreGamesRowHtml} from './more-games-screen.ts';
 
 declare const __GAME_VERSION__: string | undefined;
 /** The release version (package.json, injected by Vite); '0.0.0' in node tests. */
@@ -9,7 +10,8 @@ export const GAME_VERSION = typeof __GAME_VERSION__ === 'string' ? __GAME_VERSIO
 
 /** Seven independent preference fields; navigation/destruction are separate actions. */
 /** `store.inApp`: the iPhone app sells Full Journey and the Lamplighter; their cards open from here. Off the app nothing is sold. */
-export function preferencesHtml(p:Profile,atmosphere:boolean,mix:AudioMix,canWrite:boolean,notice:string,store:{inApp:boolean}=almoApp):string {
+/** `shelf`: the quiet More from Tas row, never while a battle is live (the field pause also opens Preferences). */
+export function preferencesHtml(p:Profile,atmosphere:boolean,mix:AudioMix,canWrite:boolean,notice:string,store:{inApp:boolean}=almoApp,shelf=false):string {
  const check=(id:string,label:string,checked:boolean,description='')=>`<label class="preference-check" for="preference-${id}"><input id="preference-${id}" data-preference="${id}" type="checkbox" ${checked?'checked':''}${description?` aria-describedby="${id}-description"`:''}><span>${label}</span></label>`;
  const range=(id:string,label:string,value:number)=>`<div class="audio-volume"><div class="audio-volume-label"><label for="${id}-volume">${label}</label><output id="${id}-volume-value" for="${id}-volume">${n(`${value}%`)}</output></div><input id="${id}-volume" type="range" min="0" max="100" step="5" value="${value}" aria-valuetext="${value}%"></div>`;
  return `<h2 id="dialog-title">${tr('Preferences','الإعدادات')}</h2>
@@ -24,6 +26,7 @@ export function preferencesHtml(p:Profile,atmosphere:boolean,mix:AudioMix,canWri
  <p id="preference-status" class="save-note" role="status">${notice}</p>
  ${store.inApp?`<div class="preferences-store"><button class="big-button secondary" data-command="full-journey">${tr('Full Journey','الرحلة كاملة')}</button><button class="big-button secondary" data-command="lamplighter">${tr('The Lamplighter','مُشعِل القناديل')}</button></div>`:''}
  <div class="preferences-actions"><button class="big-button secondary" data-command="watch-intro">${tr('Watch intro','شاهد المقدّمة')}</button><button class="big-button secondary" data-command="watch-film">${tr('Watch film','شاهد الفيلم')}</button><button class="big-button secondary" data-command="save-recovery">${tr('Save &amp; recovery','الحفظ والاستعادة')}</button><button class="big-button secondary" data-command="reset" ${canWrite?'':'disabled'}>${tr('Start over…','ابدأ من جديد…')}</button><button class="big-button green" data-command="close">${tr('Done','تمّ')}</button></div>
+ ${shelf?moreGamesRowHtml():''}
  ${store.inApp?`<p class="full-journey-legal"><button class="link-button" data-command="open-support">${tr('Support','الدعم')}</button> · <button class="link-button" data-command="open-privacy">${tr('Privacy','الخصوصية')}</button></p>`:''}
  <p class="preferences-about">${tr('Almo7areboon','المحاربون')} ${n(GAME_VERSION)} · ${tr('A game by Tas Games','لعبة من Tas Games')}</p>`;
 }

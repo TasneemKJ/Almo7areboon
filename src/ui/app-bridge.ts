@@ -23,6 +23,8 @@ export interface TasBridge {
   post(type: string, data?: unknown): boolean;
   /** After a won climax only: the app may ask for a rating, at most once per 90 days (TasKit c87e8af). */
   requestReview(): boolean;
+  /** More from Tas: one of the studio's other games in Apple's in-app store sheet; only IDs in TasGameConfig.moreGames open (TasKit ffcf5bc). */
+  openStoreProduct(id: string, campaign: string): boolean;
   update(u: unknown): void;
 }
 

@@ -550,3 +550,14 @@ Ours stays ours: a folktale company, where a name is earned at the fire and spok
 - **Age rating (D10):** no blood and no visible wound beyond a cloth bandage, so it stays 9+ Infrequent/Mild.
 - **Art:** the kneeling is one sprite frame (a dropped helmet, a hand on the ground); the carrying is the two figures walking with an arm over a shoulder. No new panel.
 - **Second idea (backlog):** a shepherd's whistle that signals a wave before it appears. It is close to #46 (the rival's drums), so it is kept as a variant of it.
+
+## More from Tas (1.3, 2026-11-15)
+
+Preferences gains one quiet row under the footer actions, **More from Tas** («ألعاب أخرى من Tas»): a ruled line in muted ink,
+not a button among the others. It opens a small sheet on the same paper panel, with one line of lead and one native button
+per other live Tas game: its own icon, its name in the current language, its one-line hook and its age rating (the VoiceOver
+label reads all three), then Back. A tap opens Apple's in-app store sheet in the app, or the App Store page on the web; Back,
+the close key and Escape return focus to the row. No price, badge or call to buy, never a pop-up, and never during a battle:
+the row is absent from Preferences opened from the field pause. The rule and the catalogue are tas-engine's (ffcf5bc),
+copied byte for byte into `src/vendor/` and bundled, never fetched (`ui/more-games-screen.ts`); the icons ship in
+`public/more-games/`. `Almo7areboonConfig.swift` allows exactly the catalogue's other six IDs.

@@ -1,7 +1,8 @@
 # المحاربون · Almo7areboon for iPhone
 
 A thin native shell around the web game, on **TasKit** (`../../tas-engine/ios`, the shared Tas Games engine,
-built and tested against tas-engine `040aa0e` (branch feat/web-root: folder mode and live subscriptions)). The game is the Vite build in `dist/`; the "Copy the game" build
+built and tested against tas-engine `040aa0e` (branch feat/web-root: folder mode and live subscriptions); synced to `ffcf5bc` for
+More from Tas (`moreGames` in `Almo7areboonConfig.swift`, `openStoreProduct` in the page bridge), not yet built here). The game is the Vite build in `dist/`; the "Copy the game" build
 phase copies it into the app as the folder `game/` (without the service worker, the web manifest and the web icons),
 and TasKit's folder mode serves it offline at `almo7areboon://app/`.
 

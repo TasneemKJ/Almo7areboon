@@ -1,0 +1,117 @@
+{
+ "_note": "More from Tas: our games, generated from App Store Connect (names, ratings, live state) on 2026-11-15. A game shows only entries with live:true and never itself. Regenerate when a game goes live.",
+ "games": [
+  {
+   "key": "souq",
+   "appStoreId": "6832737533",
+   "name": {
+    "en": "Souq Al-Layl",
+    "ar": "سوق الليل"
+   },
+   "hook": {
+    "en": "Keep a night market lit",
+    "ar": "سوقٌ ليليّ تُبقي فوانيسه مضاءة"
+   },
+   "age": "9+",
+   "live": true,
+   "icon": "more-games/souq.png",
+   "url": "https://apps.apple.com/app/id6832737533"
+  },
+  {
+   "key": "ejar",
+   "appStoreId": "6834160063",
+   "name": {
+    "en": "Al Ejar",
+    "ar": "الإيجار"
+   },
+   "hook": {
+    "en": "An old house and the people in its windows",
+    "ar": "بيتٌ قديم، ولكلّ نافذة ساكنها"
+   },
+   "age": "4+",
+   "live": true,
+   "icon": "more-games/ejar.png",
+   "url": "https://apps.apple.com/app/id6834160063"
+  },
+  {
+   "key": "bayyara",
+   "appStoreId": "6834160769",
+   "name": {
+    "en": "Al Bayyara",
+    "ar": "البيّارة"
+   },
+   "hook": {
+    "en": "A family orchard through its seasons",
+    "ar": "بيّارة العائلة على مدار الفصول"
+   },
+   "age": "4+",
+   "live": true,
+   "icon": "more-games/bayyara.png",
+   "url": "https://apps.apple.com/app/id6834160769"
+  },
+  {
+   "key": "nafitha",
+   "appStoreId": "6834161557",
+   "name": {
+    "en": "Al-Nafitha",
+    "ar": "النافذة"
+   },
+   "hook": {
+    "en": "One window during a siege",
+    "ar": "نافذة واحدة في زمن الحصار"
+   },
+   "age": "12+",
+   "live": true,
+   "icon": "more-games/nafitha.png",
+   "url": "https://apps.apple.com/app/id6834161557"
+  },
+  {
+   "key": "almo",
+   "appStoreId": "6834161789",
+   "name": {
+    "en": "Almo7areboon",
+    "ar": "المحاربون"
+   },
+   "hook": {
+    "en": "A village company from a folktale",
+    "ar": "سريّة قرية من حكاية شعبية"
+   },
+   "age": "9+",
+   "live": true,
+   "icon": "more-games/almo.png",
+   "url": "https://apps.apple.com/app/id6834161789"
+  },
+  {
+   "key": "bait",
+   "appStoreId": "6834162759",
+   "name": {
+    "en": "Bait Al-Dumiah",
+    "ar": "بيت الدمية"
+   },
+   "hook": {
+    "en": "A dollhouse that keeps its secrets",
+    "ar": "بيت دمى يحفظ أسراره"
+   },
+   "age": "9+",
+   "live": false,
+   "icon": "more-games/bait.png",
+   "url": "https://apps.apple.com/app/id6834162759"
+  },
+  {
+   "key": "ghurza",
+   "appStoreId": "6834806309",
+   "name": {
+    "en": "Ghurza",
+    "ar": "غرزة"
+   },
+   "hook": {
+    "en": "A village's tatreez, one stitch at a time",
+    "ar": "تطريز القرية غرزةً بعد غرزة"
+   },
+   "age": "4+",
+   "live": false,
+   "icon": "more-games/ghurza.png",
+   "url": "https://apps.apple.com/app/id6834806309"
+  }
+ ]
+}

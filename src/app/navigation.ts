@@ -23,6 +23,7 @@ import { chapterLandscape } from '../ui/chapter-presentation.ts';
 import { entryCopy, hasPriorPlay, entrySecondary, journeyPathHtml } from '../ui/entry-screen.ts';
 import { almoApp, lamplighterWalks, ownsFullJourney } from '../ui/app-bridge.ts';
 import { preferencesHtml, saveRecoveryHtml } from '../ui/preferences-screen.ts';
+import { moreGamesHtml } from '../ui/more-games-screen.ts';
 import { evolutionScreenHtml } from '../ui/evolution-screen.ts';
 import { icon } from '../view/icons.ts';
 import { cardsScreenHtml, type CardQuantity } from '../ui/cards-screen.ts';
@@ -155,8 +156,8 @@ export function createNavigation(deps: NavigationDeps) {
     if(!replacing)navState.focusBefore=dom.activeElement() as HTMLElement;
     navState.modal=id;navState.modalVersion++;const version=navState.modalVersion;
     const dismissButton=`<button class="close-button" data-command="close" aria-label="${tr('Close','إغلاق')}">${icon('close')}</button>`;
-    const dismissMarkup=['film','quests','camp-focus','field-pause','settings','save-recovery','reset','import','leave-battle','result','result-expedition','session'].includes(id)?'':id==='chronicle'?dismissButton:`<div class="dialog-dismiss">${dismissButton}</div>`;
-    layer.hidden=false;layer.innerHTML=`<section class="dialog ${(id==='result'||id==='result-expedition')?'result-dialog':id==='session'?'session-dialog':id==='camp-focus'?'camp-dialog':id==='film'?'film-dialog':id==='settings'?'preferences-dialog':id==='quests'?'quest-record-dialog':id==='prestige'?'prestige-dialog':id==='chronicle'?'chronicle-dialog':''}" role="dialog" tabindex="-1" aria-modal="true" aria-labelledby="dialog-title">${dismissMarkup}${html}</section>`;
+    const dismissMarkup=['film','quests','camp-focus','field-pause','settings','save-recovery','more-games','reset','import','leave-battle','result','result-expedition','session'].includes(id)?'':id==='chronicle'?dismissButton:`<div class="dialog-dismiss">${dismissButton}</div>`;
+    layer.hidden=false;layer.innerHTML=`<section class="dialog ${(id==='result'||id==='result-expedition')?'result-dialog':id==='session'?'session-dialog':id==='camp-focus'?'camp-dialog':id==='film'?'film-dialog':id==='settings'?'preferences-dialog':id==='more-games'?'more-games-dialog':id==='quests'?'quest-record-dialog':id==='prestige'?'prestige-dialog':id==='chronicle'?'chronicle-dialog':''}" role="dialog" tabindex="-1" aria-modal="true" aria-labelledby="dialog-title">${dismissMarkup}${html}</section>`;
     isolateModal(true);ports.syncPause();dom.cancelFrame(navState.focusFrame);
     navState.focusFrame=dom.requestFrame(()=>{
       if(lifetime.disposed||layer.hidden||version!==navState.modalVersion)return;
@@ -370,7 +371,7 @@ export function createNavigation(deps: NavigationDeps) {
     if(navState.campOwner?.kind==='advanced'&&['chronicle','journey','quests','battles'].includes(navState.modal??'')){returnToCamp();return;}
     if(navState.modal==='settings'){const origin=navState.settingsOrigin;navState.settingsOrigin=null;if(origin==='field-pause'){showFieldPause('settings');return;}closeModal();return;}
     if(navState.modal==='film'){showSettings('watch-film');return;}
-    if(navState.modal==='save-recovery'||navState.modal==='reset'){showSettings(navState.modal==='reset'?'reset':'save-recovery');return;}
+    if(navState.modal==='save-recovery'||navState.modal==='reset'||navState.modal==='more-games'){showSettings(navState.modal);return;}
     if(navState.modal==='import'){navState.pendingImport=null;showSaveRecovery('import');return;}
     if((navState.modal==='chronicle'||navState.modal==='journey'||navState.modal==='quests')&&(ports.sessionState.game.state.phase==='won'||ports.sessionState.game.state.phase==='lost')){showResult();return;}
     if(navState.modal==='prestige'){returnFromPrestige();return;}
@@ -385,8 +386,14 @@ export function createNavigation(deps: NavigationDeps) {
   }
   function preferenceNotice(){return ports.sessionState.session.status==='temporary'?temporarySessionText():ports.sessionState.savedWarning?tr('Saving is unavailable. Export a backup before closing.','الحفظ غير متاح الآن. صدّر نسخة احتياطية قبل الإغلاق.'):`${tr('Progress saves on this device. Export keeps a separate copy.','يُحفظ تقدّمك على هذا الجهاز، والتصدير يحتفظ بنسخة منفصلة.')}${ports.sessionState.lastSavedAt?` ${tr('Last saved','آخر حفظ')} ${clockTime(ports.sessionState.lastSavedAt)}.`:''}`;}
   function showSettings(focusCommand?:string){
-    if(!['film','settings','save-recovery','reset','import'].includes(navState.modal??''))navState.settingsOrigin=navState.modal==='field-pause'?'field-pause':null;
-    showModal('settings',preferencesHtml(ports.sessionState.game.profile,ports.sessionState.atmosphereEnabled,ports.sessionState.audioMix,ports.sessionState.session.status==='active',preferenceNotice()),focusCommand);
+    if(!['film','settings','save-recovery','reset','import','more-games'].includes(navState.modal??''))navState.settingsOrigin=navState.modal==='field-pause'?'field-pause':null;
+    // More from Tas stays out of a live battle: the field pause opens Preferences too.
+    showModal('settings',preferencesHtml(ports.sessionState.game.profile,ports.sessionState.atmosphereEnabled,ports.sessionState.audioMix,ports.sessionState.session.status==='active',preferenceNotice(),undefined,ports.sessionState.game.state.phase!=='running'),focusCommand);
+  }
+  /** More from Tas, over Preferences only; Back, the close key and Escape return to its row (dismissModal). */
+  function showMoreGames(){
+    if(!ports.guardAction()||navState.modal!=='settings'||ports.sessionState.game.state.phase==='running')return;
+    showModal('more-games',moreGamesHtml());
   }
   function showSaveRecovery(focusCommand?:string){
     if(!ports.guardAction()||!['settings','import','save-recovery'].includes(navState.modal??''))return;
@@ -406,5 +413,5 @@ export function createNavigation(deps: NavigationDeps) {
     };
     screens[kind]();
   }
-  return { entryReady, syncEntry, enterWorld, switchTab, renderScreen, showModal, closeModal, showResult, showResultDetails, showHome, enterCamp, syncCamp, showCampFocus, returnToCamp, handleCampInput, showFieldPause, showLeaveBattle, leaveBattle, continueWithProvision, clearPrestigeContext, openPrestige, refreshPrestige, returnFromPrestige, returnToChapters, dismissModal, preferenceNotice, showSettings, showSaveRecovery, showStoryFollowUp, navState: navState as Pick<NavState, 'activeTab' | 'cardQuantity' | 'campOwner' | 'entryEntered' | 'entrySaved' | 'entryWelcome' | 'evolutionFromResult' | 'focusFrame' | 'modal' | 'modalVersion' | 'pendingImport' | 'prestigeDraft' | 'prestigeExpectedTimeline' | 'prestigeOrigin' | 'settingsOrigin'> };
+  return { entryReady, syncEntry, enterWorld, switchTab, renderScreen, showModal, closeModal, showResult, showResultDetails, showHome, enterCamp, syncCamp, showCampFocus, returnToCamp, handleCampInput, showFieldPause, showLeaveBattle, leaveBattle, continueWithProvision, clearPrestigeContext, openPrestige, refreshPrestige, returnFromPrestige, returnToChapters, dismissModal, preferenceNotice, showSettings, showSaveRecovery, showMoreGames, showStoryFollowUp, navState: navState as Pick<NavState, 'activeTab' | 'cardQuantity' | 'campOwner' | 'entryEntered' | 'entrySaved' | 'entryWelcome' | 'evolutionFromResult' | 'focusFrame' | 'modal' | 'modalVersion' | 'pendingImport' | 'prestigeDraft' | 'prestigeExpectedTimeline' | 'prestigeOrigin' | 'settingsOrigin'> };
 }

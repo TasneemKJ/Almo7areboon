@@ -38,6 +38,7 @@ import { textIfChanged } from '../ui/dom-state.ts';
 import { STORE_COMMANDS } from './store-flow.ts';
 import { journeyHeld } from '../ui/app-bridge.ts';
 import { pressFeedback } from '../ui/press-feedback.ts';
+import { openMoreGame } from '../ui/more-games-screen.ts';
 import type { Runtime } from './runtime.ts';
 import type { ShellApi } from './shell.ts';
 
@@ -51,7 +52,7 @@ export interface InputState {
 /** What the listeners module needs: its slice of state, DOM handles and sibling operations. */
 export interface ListenersDeps {
   dom: Pick<Runtime, '$' | 'blockModalTap' | 'clearTimer' | 'fieldControls' | 'lifetime' | 'money' | 'motionQuery' | 'root' | 'activeElement' | 'hidden' | 'now' | 'pageEvents' | 'reload' | 'setTimer' | 'viewEvents'>;
-  ports: Pick<ShellApi, 'acquireSession' | 'action' | 'gateBattle' | 'gateEvolution' | 'handleStoreCommand' | 'adoptRestoredGame' | 'claimQuestRecord' | 'clearPrestigeContext' | 'closeModal' | 'continueWithProvision' | 'dismissModal' | 'enterCamp' | 'enterWorld' | 'exportSave' | 'guardAction' | 'handleCampInput' | 'leaveBattle' | 'navState' | 'openPrestige' | 'persist' | 'playable' | 'playIntro' | 'watchIntro' | 'preferenceNotice' | 'questState' | 'rebuildArmy' | 'refreshPrestige' | 'refreshQuestRecord' | 'renderScreen' | 'returnToCamp' | 'returnToChapters' | 'syncCamp' | 'showCampFocus' | 'sessionState' | 'showFieldPause' | 'showHome' | 'showLeaveBattle' | 'showModal' | 'showQuests' | 'showResult' | 'showResultDetails' | 'showSaveRecovery' | 'showSettings' | 'showStoryFollowUp' | 'suspendSession' | 'switchTab' | 'syncMarks' | 'syncMotion' | 'syncPause' | 'syncWeek' | 'toast' | 'update'>;
+  ports: Pick<ShellApi, 'acquireSession' | 'action' | 'gateBattle' | 'gateEvolution' | 'handleStoreCommand' | 'adoptRestoredGame' | 'claimQuestRecord' | 'clearPrestigeContext' | 'closeModal' | 'continueWithProvision' | 'dismissModal' | 'enterCamp' | 'enterWorld' | 'exportSave' | 'guardAction' | 'handleCampInput' | 'leaveBattle' | 'navState' | 'openPrestige' | 'persist' | 'playable' | 'playIntro' | 'watchIntro' | 'preferenceNotice' | 'questState' | 'rebuildArmy' | 'refreshPrestige' | 'refreshQuestRecord' | 'renderScreen' | 'returnToCamp' | 'returnToChapters' | 'syncCamp' | 'showCampFocus' | 'sessionState' | 'showFieldPause' | 'showHome' | 'showLeaveBattle' | 'showModal' | 'showQuests' | 'showResult' | 'showResultDetails' | 'showSaveRecovery' | 'showMoreGames' | 'showSettings' | 'showStoryFollowUp' | 'suspendSession' | 'switchTab' | 'syncMarks' | 'syncMotion' | 'syncPause' | 'syncWeek' | 'toast' | 'update'>;
 }
 
 /** Defeat counsel: back to ready Camp with the lit place already open. It retries like Retry and spends nothing. */
@@ -202,6 +203,9 @@ export function installListeners(deps: ListenersDeps): void {
     if(button.dataset.unit!==undefined){const kind=Number(button.dataset.unit) as UnitKind;if(!ports.sessionState.game.profile.unlocked[kind]){if(ports.action({type:'unlock',kind})&&ports.playable()&&!ports.sessionState.savedWarning)ports.toast(troopUnlockMessage(ports.sessionState.game.profile,ports.sessionState.game.state.phase,kind,ports.sessionState.game.deploymentStatus(kind)),7000);}else ports.action({type:'spawn',kind});return true;}
     if(button.dataset.skill){if(ports.action({type:'skill',skill:button.dataset.skill as Skill}))fieldControls.clear();return true;}
     if(command==='quest-claim'){ports.claimQuestRecord(button);return true;}
+    // More from Tas: the sheet opens over Preferences; a row opens Apple's store sheet (the App Store page on the web).
+    if(command==='more-games'){ports.showMoreGames();return true;}
+    if(button.dataset.moreGame!==undefined){if(ports.navState.modal==='more-games')openMoreGame(button.dataset.moreGame);return true;}
     if(button.dataset.weekly){
       // A previously rendered claim cannot settle an expired or future local week. Rejection never syncs.
       const week=claimableWeek(button.dataset.weekly,weekId(localDay()));

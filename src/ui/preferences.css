@@ -14,3 +14,23 @@
 .preferences-actions .big-button{min-height:44px;min-width:0;padding:9px 8px;font-size:13px;letter-spacing:0;white-space:normal}
 .recovery-actions{display:grid;gap:10px}
 @media(forced-colors:active){.preferences-fields input:focus-visible,.preferences-fields select:focus-visible{outline-color:Highlight}}
+/* More from Tas: a quiet row under the footer actions, and the small sheet it opens (ui/more-games-screen.ts).
+   The paper panel and its ruled rows, as the Journey goals; the icons are each game's own. */
+.preferences-more-games{display:block;width:100%;min-height:44px;margin-top:12px;padding:10px 8px;border:0;border-top:1px solid var(--paper-edge);border-bottom:1px solid var(--paper-edge);background:none;color:var(--muted);font:inherit;font-size:13px;cursor:pointer}
+.preferences-more-games::after{content:" ›";color:var(--craft-brass,#b7955f)}
+:root[dir="rtl"] .preferences-more-games::after{content:" ‹"}
+.more-games-dialog h2{margin-top:0}
+.more-games-lead{margin:0 0 6px;font-size:13px;line-height:1.5;color:var(--muted)}
+.more-games-list{list-style:none;margin:0 0 14px;padding:0;text-align:start}
+.more-games-list li+li{border-top:1px solid var(--paper-edge)}
+.more-game{display:flex;align-items:center;gap:12px;width:100%;min-height:72px;padding:8px 2px;border:0;border-radius:10px;background:none;color:var(--ink);font:inherit;text-align:start;cursor:pointer;touch-action:manipulation}
+.more-game:active{background:#e3e6d4}
+.more-game:focus-visible,.preferences-more-games:focus-visible{outline:3px solid var(--blue);outline-offset:2px}
+.more-game-icon{flex:0 0 56px;width:56px;height:56px;border-radius:13px;box-shadow:0 0 0 1px #9bad9b,0 2px 0 #a2b2a1}
+.more-game-text{flex:1 1 auto;min-width:0;display:flex;flex-direction:column;gap:2px}
+.more-game-text strong{font-family:Georgia,serif;font-size:15px;line-height:1.25}
+:root[lang="ar"] .more-game-text strong{font-family:"Almo Arabic",Georgia,serif}
+.more-game-text span{font-size:12px;line-height:1.45;color:var(--muted);overflow-wrap:anywhere}
+.more-game-age{flex:0 0 auto;padding:2px 7px;border:1px solid #9bad9b;border-radius:999px;font-size:11px;color:var(--muted)}
+.more-games-back{width:100%;min-height:44px}
+@media(forced-colors:active){.more-game:focus-visible,.preferences-more-games:focus-visible{outline-color:Highlight}}

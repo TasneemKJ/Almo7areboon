@@ -3,6 +3,7 @@ import assert from 'node:assert/strict';
 import { LANGUAGE_KEY, dir, lang, pickLanguage, plural, setLang, tr } from '../src/game/locale.ts';
 import { n, saveLanguage } from '../src/ui/i18n.ts';
 import { preferencesHtml, saveRecoveryHtml } from '../src/ui/preferences-screen.ts';
+import { moreGamesHtml } from '../src/ui/more-games-screen.ts';
 import { defaultProfile } from '../src/game/save.ts';
 
 test('a saved choice wins, then the device language, then English', () => {
@@ -41,13 +42,16 @@ test('the language choice is stored under the app prefix, outside the save', () 
 test('Preferences is one language per screen, with a bilingual language picker', () => {
   const mix = { version: 1, effects: 80, atmosphere: 60 } as never;
   setLang('ar');
-  const ar = preferencesHtml(defaultProfile(), true, mix, true, '') + saveRecoveryHtml(true, '');
+  // With the quiet More from Tas row and its sheet (shown whenever no battle is live).
+  const ar = preferencesHtml(defaultProfile(), true, mix, true, '', undefined, true) + saveRecoveryHtml(true, '') + moreGamesHtml();
+  assert.match(ar, /ألعاب أخرى من Tas</);
   const withoutPicker = ar.replace(/<label class="preference-select preference-language"[\s\S]*?<\/label>/, '').replace(/<kbd[^>]*>[^<]*<\/kbd>/g, '');
-  assert.doesNotMatch(withoutPicker.replace(/<[^>]+>/g, ' ').replace(/Tas Games/g, ''), /[A-Za-z]{3,}/, 'no English words outside the picker in Arabic (the studio name is always written in Latin letters, owner 2026-11-15)');
+  assert.doesNotMatch(withoutPicker.replace(/<[^>]+>/g, ' ').replace(/Tas Games|\bTas\b/g, ''), /[A-Za-z]{3,}/, 'no English words outside the picker in Arabic (the studio name is always written in Latin letters, owner 2026-11-15)');
   assert.match(ar, /لعبة من Tas Games/, 'the studio name stays in Latin letters in Arabic');
   assert.match(ar, /value="ar" lang="ar" selected/);
   setLang('en');
-  const en = preferencesHtml(defaultProfile(), true, mix, true, '');
+  const en = preferencesHtml(defaultProfile(), true, mix, true, '', undefined, true) + moreGamesHtml();
+  assert.match(en, />More from Tas</);
   assert.doesNotMatch(en.replace(/<label class="preference-select preference-language"[\s\S]*?<\/label>/, ''), /[؀-ۿ]/, 'no Arabic outside the picker in English');
   assert.match(en, /value="en" lang="en" selected/);
 });

@@ -63,6 +63,10 @@
       share(dataURL) { return this.post('share', { dataURL: String(dataURL) }); },
       /** After a won climax (never a loss or a purchase): the app may ask for a rating, rarely. */
       requestReview() { return this.post('requestReview'); },
+      /** "More from Tas": one of our other games in Apple's in-app store sheet. `id` is its App Store ID
+       *  (only those in TasGameConfig.moreGames open); `campaign` names the game it came from. Off the app
+       *  it returns false, and the game opens the App Store page instead (moreGamesURL). */
+      openStoreProduct(id, campaign) { return this.post('openStoreProduct', { id: String(id), campaign: String(campaign || '') }); },
 
       setStatus(s) { this.status = s; if (onStatus) { try { onStatus(this); } catch (e) { /* the game's own */ } } },
 
