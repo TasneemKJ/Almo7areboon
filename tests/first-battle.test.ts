@@ -98,3 +98,11 @@ test('the drag lesson and the tactical hints share the line in six-second turns,
   const src = (await import('node:fs')).readFileSync(new URL('../src/ui/field-guidance.ts', import.meta.url), 'utf8');
   assert.match(src, /canCast&&!\(\(s\.stats\.ordersCast\?\?0\)>0\)&&\(!hint\|\|dragTurn\(s\.time\)\)\)return drag;/, 'a due hint gets the odd slices');
 });
+
+test('a first victory without an order names the banner on its card (the drag lesson lives on the first Victory card)', () => {
+  setLang('en');
+  const g = fresh(); g.state.stats.deployed = 8; g.state.enemyHp = 0; g.step(1 / 60); assert.equal(g.state.phase, 'won');
+  assert.ok(firstBattleTale(g.profile, g.state).some(l => /The banner stayed planted all battle/.test(l)), 'no order given: the banner lesson is shown');
+  const h = fresh(); h.state.stats.deployed = 8; h.state.stats.ordersCast = 1; h.state.enemyHp = 0; h.step(1 / 60);
+  assert.ok(!firstBattleTale(h.profile, h.state).some(l => /banner stayed planted/.test(l)), 'an order given: no banner lesson');
+});
