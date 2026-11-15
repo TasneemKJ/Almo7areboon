@@ -239,7 +239,7 @@ export function installListeners(deps: ListenersDeps): void {
       return;
      }
      if(root!.dataset.fieldMode==='field'){
-      // An open tactical choice closes first; otherwise the tap plants the banner (fieldTapOrder).
+      // An open tactical choice closes first; otherwise the tap sends a soldier, and plants the banner (fieldTapOrder) only when none can go.
       if(fieldControls.isOpen()){fieldControls.clear();return;}
       const order=live?fieldTapOrder({startX:start!.x,startY:start!.y,endX:e.clientX,endY:e.clientY},{left:rect.left,top:rect.top,width:rect.width,height:rect.height}):null;
       if(!order)return;
@@ -251,6 +251,7 @@ export function installListeners(deps: ListenersDeps): void {
         // A ripple where the tap sent him (first-battle.ts): the world answers in the spot that was touched.
         const ring=$('field-tap-ripple');ring.hidden=true;void ring.offsetWidth;ring.setAttribute('style',`left:${e.clientX-box.left-30}px;top:${e.clientY-box.top-12}px;width:60px;height:24px`);ring.hidden=false;
         return;}
+       return; // a refused soldier is not an order: the tap never falls through to spending momentum
       }
       plantBanner(order);
       return;

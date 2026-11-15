@@ -39,3 +39,11 @@ test('a field tap sends a troop into the nearest lane when no order is ready, an
   assert.ok(g.dispatch({ type: 'spawn', kind: 0, lane: 2 })); assert.equal(g.state.units.at(-1)!.lane, 2);
   assert.ok(g.dispatch({ type: 'spawn', kind: 0, lane: 9 }), 'a bad lane falls back to the usual turn'); 
 });
+
+test('a refused soldier is not an order: a deploy tap never falls through to the banner (2026-11-15 touch pass)', async () => {
+  const { readFileSync } = await import('node:fs');
+  const src = readFileSync(new URL('../src/app/listeners.ts', import.meta.url), 'utf8');
+  const troop = src.indexOf("==='troop'&&kind!==undefined"), plant = src.indexOf('plantBanner(order);', troop);
+  assert.ok(troop > 0 && plant > troop);
+  assert.match(src.slice(troop, plant), /return;\s*\/\/ a refused soldier is not an order/);
+});
