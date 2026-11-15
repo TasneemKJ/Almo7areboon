@@ -94,11 +94,11 @@
       "localizations": {
         "en-US": {
           "displayName": "The Lamplighter, Monthly",
-          "description": "Lanterns lit at your gate in every battle"
+          "description": "A dusk raid each day, and lanterns at your gate"
         },
         "ar-SA": {
           "displayName": "مُشعِل القناديل شهرياً",
-          "description": "قناديل مضاءة عند بوّابتك في كلّ معركة"
+          "description": "غارة غسق كلّ يوم، وقناديل عند بوّابتك"
         }
       },
       "reviewScreenshot": "review/lamplighter-card.png"
@@ -115,11 +115,11 @@
       "localizations": {
         "en-US": {
           "displayName": "The Lamplighter, Yearly",
-          "description": "Lanterns lit at your gate in every battle"
+          "description": "A dusk raid each day, and lanterns at your gate"
         },
         "ar-SA": {
           "displayName": "مُشعِل القناديل سنوياً",
-          "description": "قناديل مضاءة عند بوّابتك في كلّ معركة"
+          "description": "غارة غسق كلّ يوم، وقناديل عند بوّابتك"
         }
       },
       "reviewScreenshot": "review/lamplighter-card.png"
