@@ -4,7 +4,7 @@ export const COMPANY_FILMS = Object.freeze({en:'./film/company-en.mp4',ar:'./fil
 /** The film's own chrome and transcript, in one language: the game's at first, then the film's when the player picks one. */
 const FILM_COPY={
  en:{title:'Those who walk together',close:'Close',picker:'Film language',video:'Those who walk together — English film',play:'Play film',ready:'Press Play film when you are ready.',transcript:'At dusk, one lamp becomes a promise. No one has to hold the road alone. From quiet doorways, a company gathers. Over the hills, courage travels on foot. When the distant footsteps answer… we stand together.'},
- ar:{title:'الذين يسيرون معًا',close:'إغلاق',picker:'لغة الفيلم',video:'الذين يسيرون معًا — فيلم بالعربية',play:'شاهد الفيلم',ready:'اضغط «شاهد الفيلم» عندما تكون مستعدًا.',transcript:'عند الغروب، يصبح ضوء القنديل وعدًا. لن يحرس أحدٌ الطريق وحده. من عتبات هادئة، تجتمع السريّة. فوق التلال، تمضي الشجاعة على الأقدام. وحين تجيب الخطوات البعيدة، نقف معًا.'},
+ ar:{title:'الذين يسيرون معًا',close:'إغلاق',picker:'لغة الفيلم',video:'الذين يسيرون معًا — فيلم بالعربية',play:'شاهد الفيلم',ready:'انقر «شاهد الفيلم» عندما تكون مستعدًا.',transcript:'عند الغروب، يصبح ضوء القنديل وعدًا. لن يحرس أحدٌ الطريق وحده. من عتبات هادئة، تجتمع السريّة. فوق التلال، تمضي الشجاعة على الأقدام. وحين تجيب الخطوات البعيدة، نقف معًا.'},
 } as const;
 /** "Film EN / AR · Game English": both film languages, and the language the game itself is in. */
 const filmNote=(film:'en'|'ar')=>film==='ar'?`الفيلم بالعربية والإنجليزية · اللعبة ${lang()==='ar'?'بالعربية':'بالإنجليزية'}`:`Film EN / AR · Game ${lang()==='ar'?'Arabic':'English'}`;
@@ -47,7 +47,7 @@ export function mountCompanyFilm(layer:HTMLElement,sound:boolean,volume:number):
  const playClick=(event:Event)=>{if(video.getAttribute('src')&&!video.error)video.currentTime=0;void start(event);};
  const error=()=>{actions.hidden=false;message('The film could not load. Check your connection and try again, or Close.','تعذّر تحميل الفيلم. تحقّق من الاتصال وحاول مجددًا، أو أغلقه.');play.textContent=ar()?'حاول مجددًا':'Try again';video.removeAttribute('src');};
  const ended=()=>{actions.hidden=false;message('The tale ends here. Your company is waiting.','انتهت الحكاية. سريّتك تنتظرك.');play.textContent=ar()?'شاهد مجددًا':'Watch again';};
- const visibility=()=>{if(document.hidden){video.pause();message('Paused. Press play when you return.','متوقف مؤقتًا. اضغط التشغيل عند العودة.');}};
+ const visibility=()=>{if(document.hidden){video.pause();message('Paused. Press play when you return.','متوقف مؤقتًا. انقر زرّ التشغيل عند العودة.');}};
  play.addEventListener('click',playClick);language.addEventListener('change',reset);video.addEventListener('error',error);video.addEventListener('ended',ended);document.addEventListener('visibilitychange',visibility);
  const observer=new MutationObserver(()=>{if(!video.isConnected)dispose();});observer.observe(layer,{childList:true,subtree:true});
  function dispose(){if(disposed)return;disposed=true;revision++;observer.disconnect();focusEnd.removeEventListener('focus',wrapFocus);document.removeEventListener('visibilitychange',visibility);video.removeEventListener('error',error);video.removeEventListener('ended',ended);play.removeEventListener('click',playClick);language.removeEventListener('change',reset);video.pause();video.removeAttribute('src');video.load();}
