@@ -120,7 +120,9 @@ final class StoreTests: XCTestCase {
         XCTAssertEqual(monthly.subscriptionPeriod.value, 1)
         XCTAssertEqual(yearly.subscriptionPeriod.unit, .year)
         XCTAssertEqual(yearly.subscriptionPeriod.value, 1)
-        XCTAssertLessThan(yearly.groupLevel, monthly.groupLevel, "yearly ranks above monthly: moving to it is an upgrade")
+        if #available(iOS 16.4, *) {
+            XCTAssertLessThan(yearly.groupLevel, monthly.groupLevel, "yearly ranks above monthly: moving to it is an upgrade")
+        }
     }
 
     func testSubscribingBringsTheLamplighterAndNothingElse() async {
