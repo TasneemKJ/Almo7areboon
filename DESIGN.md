@@ -534,3 +534,19 @@ Ours stays ours: a folktale company, where a name is earned at the fire and spok
 - **D9:** free for everyone. The Lamplighter gets no protection for the banner and no extra patch.
 - **Art:** the patches are drawn in code on the existing cloth, at 4–6 px a motif and in the village's colours. A tear is a dark notch that ripples in the wind. No new panel.
 - **Second idea (backlog):** a ford that rises halfway through the battle and cuts the middle lane for 10 s. It is close to #86's weather, so it is kept as a variant of #86.
+
+## #106 (random-stimulus, 2026-11-15) «حملُ الرفيق»: stimuli: a door taken off its hinges to carry a man home · a shepherd's whistle across the hills · "no one is left in the field"
+**Kernel:** a fallen soldier does not fade at once. He kneels for four seconds, his helmet on the ground, and a comrade may run out to lift him back to the gate. He does not die (there is no blood in the game; a fall is a fade). The one carried back returns to camp and keeps his name (#92, every soldier earns a name), but two soldiers leave the line for those seconds.
+- **Play (D11: a drag, never a tap):** drag from a soldier who is standing to the one kneeling, and the comrade runs to him and they go back together. Do nothing and he fades as now. The deployment cards are unchanged.
+- **The decision (pillar 1):** lift a veteran now and the line thins at the worst moment, or hold the line and lose him. The rival who learns (#66) aims at the gap the lift opens. The bot sim must show that lifting under pressure loses more battles, and that lifting in the calm before a wave keeps the veterans without losing.
+- **The camp remembers (pillar 2):** the one carried back appears in camp with a bandage on his arm, and the chronicle tells his name and who carried him, «حمله يوسف من عند البوّابة الثانية». Whoever carries three of his comrades earns a mark of his own.
+- **A folktale voice (pillar 3):** «في هذا الوادي لا يُترَك أحدٌ في الساحة، ولو تأخّر العشاء».
+- **Comparables (learn, not copy):**
+  - Kingdom Two Crowns loses whoever falls;
+  - Bad North brings units back between islands;
+  - Clash Royale has no memory for a unit.
+  - None makes saving a comrade a decision in the middle of the fight with a known price, nor keeps a name for the one who was saved.
+- **D9:** free for everyone. The Lamplighter gives no protection and no free lift.
+- **Age rating (D10):** no blood and no visible wound beyond a cloth bandage, so it stays 9+ Infrequent/Mild.
+- **Art:** the kneeling is one sprite frame (a dropped helmet, a hand on the ground); the carrying is the two figures walking with an arm over a shoulder. No new panel.
+- **Second idea (backlog):** a shepherd's whistle that signals a wave before it appears. It is close to #46 (the rival's drums), so it is kept as a variant of it.
