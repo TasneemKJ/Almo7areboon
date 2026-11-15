@@ -570,3 +570,5 @@ copied byte for byte into `src/vendor/` and bundled, never fetched (`ui/more-gam
 - **Subscription rule (owner, 2026-11-15):** nothing to do with the Lamplighter; it never promises new content.
 - **Art:** the stone drawn as a worn basalt disc with its square axle hole; its path leaves crushed grass and olive leaves; the press stands empty after.
 - **Second idea (backlog):** tug-of-war as the momentum bar's shape: a rope drawn between the two companies that both sides pull, never a number.
+
+next to build: #92 «لكلّ جنديّ اسم» because it answers the owner's latest call (attachment, grief, morality, consequences) with the game's own loop. A soldier who came home three times earns a name at the fire, a named one who falls is gone for good and is cut into the gate stones, and sending Salem to the front becomes a real choice between winning now and keeping him. It needs no new panel (a word on the card, a line at the fire, a wall at camp), and it supersedes #22. Checked: no named-soldier code exists yet. (random-stimulus tick 2026-11-16; 20 stimulus entries in the backlog, so no new idea was added.)
