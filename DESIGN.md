@@ -517,3 +517,4 @@ Ours stays ours: a folktale company, where a name is earned at the fire and spok
   - A sim where the player protects named soldiers wins chapter bosses at least as often as one that spends them freely, and loses named soldiers less than half as often.
   - The steadiness bonus stays within a 5% win-rate change.
   - The names come from a fusha list and are never gendered toward the player.
+- **Note (11:4x):** #92 restates #22 «المحاربون القدامى» (2026-11-14), which is not built (only the "veteran" achievement exists). When it is built, #92 supersedes #22 on one point: #22 had the Lamplighter subscription tend wounded veterans so they are ready by dawn. That is a power for pay and breaks D9 (owner, 2026-11-15). Wounded veterans rest the same for every player.
