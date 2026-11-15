@@ -36,8 +36,9 @@ export function battlefieldOrderFromGesture(
 }
 
 /**
- * Field mode (2026-11-14 audit: only 4% of a new player's taps reached the world). A tap on the open field plants the
- * company banner there: the rival's half of the field Advances, your own half Holds. "Toward the rival" is world x (the
+ * Field mode (2026-11-14 audit: only 4% of a new player's taps reached the world). Which half of the open field a tap
+ * landed on: the rival's half reads as Advance, your own half as Hold. Since 2026-11-15 this only aims the banner's lean
+ * (a tap never issues an order; see fieldTapIntent). "Toward the rival" is world x (the
  * rival gate is always on the right), so the mapping is the same in Arabic and English. A drag longer than a tap, or a
  * tap outside the field, is not an order. The simulation still admits the order and charges its momentum.
  */

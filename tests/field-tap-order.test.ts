@@ -47,3 +47,11 @@ test('a refused soldier is not an order: a deploy tap never falls through to the
   assert.ok(troop > 0 && plant > troop);
   assert.match(src.slice(troop, plant), /return;\s*\/\/ a refused soldier is not an order/);
 });
+
+test('a tap never issues an order: neither the banner lean nor the open field dispatches one (device pass 2026-11-15)', async () => {
+  const { readFileSync } = await import('node:fs');
+  const src = readFileSync(new URL('../src/app/listeners.ts', import.meta.url), 'utf8');
+  const lean = src.slice(src.indexOf('function fieldBanner'), src.indexOf('function listenBanner'));
+  assert.ok(lean.length > 0); assert.doesNotMatch(lean, /type:'order'/);
+  assert.doesNotMatch(src, /battlefieldOrderFromGesture\(/, 'the edge-tap order is gone from the shell');
+});

@@ -9,7 +9,7 @@ import { companyFilmHtml, mountCompanyFilm } from '../ui/company-film.ts';
 import { questRecords } from '../ui/quest-records.ts';
 import { litCounsel } from '../game/counsel.ts';
 import { storyFollowUp } from '../ui/story-flow.ts';
-import { battlefieldOrderFromGesture, DIRECT_ORDER_MAX_TRAVEL, duskLampX, fieldTapIntent, fieldTapLane, fieldTapOrder } from '../ui/battlefield-orders.ts';
+import { DIRECT_ORDER_MAX_TRAVEL, duskLampX, fieldTapIntent, fieldTapLane, fieldTapOrder } from '../ui/battlefield-orders.ts';
 import { canIssueOrder } from '../game/battle-orders.ts';
 import { DUSK_LAMPS } from '../game/dusk-raid.ts';
 import { bannerDragIntent, bannerDragOffset, bannerOrderFromDrag } from '../ui/banner-gesture.ts';
@@ -258,9 +258,7 @@ export function installListeners(deps: ListenersDeps): void {
       plantBanner(order);
       return;
      }
-     if(!live||!start)return;
-     const order=battlefieldOrderFromGesture({startX:start.x,startY:start.y,endX:e.clientX,endY:e.clientY},{left:rect.left,top:rect.top,width:rect.width,height:rect.height});
-     if(order)ports.action({type:'order',order});
+     // Outside field mode a tap is not an order either (2026-11-15): orders come from the banner drag or the gate buttons.
     });
     listenBanner(deps);
     lifetime.listen(dom.viewEvents(),'blur',()=>{inputState.battlefieldPointer=null;});
