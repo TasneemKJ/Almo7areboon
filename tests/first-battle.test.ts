@@ -84,3 +84,12 @@ test('the food sack glow uses its own class, never the shell\'s .ready (which po
   assert.match(controller, /food\.classList\.toggle\('sack-ready',teach\.foodReady\)/);
   assert.doesNotMatch(readFileSync(new URL('../src/ui/world-play.css', import.meta.url), 'utf8'), /\.field-food\.ready/);
 });
+
+test('with momentum ready and no order yet this battle, the drag lesson outranks tactical hints (orders are dragged)', () => {
+  setLang('en');
+  const later = new Game(Object.assign(defaultProfile(), { wins: 1, enemyAge: 1, furthestBattle: 1 })); later.dispatch({ type: 'start' });
+  later.step(.5); later.state.stats.deployed = 5; later.state.orders!.charge = 60;
+  assert.match(fieldGuidance(later), /Drag the banner forward to advance, back to hold/);
+  later.state.stats.ordersCast = 1;
+  assert.doesNotMatch(fieldGuidance(later), /^Momentum ready\. Drag/, 'after the first order the hints take their turn again');
+});
