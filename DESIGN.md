@@ -478,3 +478,23 @@ This targets Almo's lowest dimension on the scorecard: text density in the first
 
 ### #79 shipped (2026-11-15)
 The first battle (chapter 1, first timeline, never won) opens with «كان يا ما كان، في وادٍ بعيد، قريةٌ لا تملك إلا بابها.» and nothing else; the world teaches (the food sack glows, a ripple where a tap would send, dust and a horn before a stronger wave, the gate's cracks); one short line returns after 8 s with nothing sent; the storyteller's chronicle on the result carries the lessons in lines that name the troops and the village, never the player. First-30 text changes 13 -> 1 (EN; 14 -> 1 AR), first soldier 2.2 s both, battle 1 won by every simulated new player before and after (scripts/qa-gate/battle1-sim.ts).
+
+## #86 (random-stimulus, 2026-11-15) «طقس الوادي»: stimuli: a weathervane on the gate tower · morning fog over the river · "the battlefield remembers"
+Comparables, learned from but not copied:
+- Into the Breach: every threat readable before you act.
+- Bad North: wordless tactics on a small map.
+- Kingdom Two Crowns: weather felt, never explained.
+
+Ours stays ours: the valley has one weather per battle, read from the world alone, in the folktale's quiet. #79 taught with the world; this keeps teaching.
+- **Idea (best): the valley's weather.** Each battle from chapter 2 on has one condition, shown only in the scene. Reading it is the battle's decision (pillar 1).
+  - **Wind:** the banner on the gate tower and the smoke from the chimneys lean one way. Arrows and thrown stones carry further with the wind and fall short against it, so the Throwers are strong on a downwind day and weak upwind.
+  - **Fog:** it rolls off the river at dawn. The rival's company is seen only by their lanterns until close, so the player counts lanterns to guess what is coming. Riders lose their charge in fog, while Pathkeepers hold their ground.
+  - **Rain:** the road turns to mud. Lizard Riders slow, and food carried to the line takes longer.
+  - **One line at most:** the storyteller says the weather once, in the folktale voice: «هبّت الريح من الجبل، فطالت السهام.» / «نزل الضباب من النهر، ولا يُرى العدوّ إلا بقناديله.»
+  - **Fair:** the weather works the same on both sides, every player sees the same signs, and no purchase or subscription changes it. The chapter's win rate in the bot sim must stay within the current band.
+  - **Mood:** each weather changes the light, the sound (wind in the cypresses, the hush of fog, rain on the shields) and the colour of the field.
+- **Second idea (backlog): the field remembers.** A battle site keeps its marks: a fallen banner where the line broke, scorched grass, and the next season a row of small white flowers where the Pathkeepers stood. Coming back to a field for a later battle, the player sees their own history on it, wordless, the camp's memory (pillar 2) carried out to the field.
+- **Tests:**
+  - A bot that matches troops to the weather wins at least 15% more of chapter 2–3's weather battles than one that ignores it. Both bots still win at least half.
+  - Each weather's signs are visible in the first 3 s at 375 pt, in EN and AR.
+  - The weather lines pass the fusha check and name no player gender.
