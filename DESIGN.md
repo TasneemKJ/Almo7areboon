@@ -561,3 +561,12 @@ the close key and Escape return focus to the row. No price, badge or call to buy
 the row is absent from Preferences opened from the field pause. The rule and the catalogue are tas-engine's (ffcf5bc),
 copied byte for byte into `src/vendor/` and bundled, never fetched (`ui/more-games-screen.ts`); the icons ship in
 `public/more-games/`. `Almo7areboonConfig.swift` allows exactly the catalogue's other six IDs.
+
+## #114 (random-stimulus, 2026-11-15) «حجر الرحى»: stimuli: an olive millstone · a children's tug-of-war · "what if the gate could move?"
+**Kernel:** on the olive-terrace maps, the village press has one millstone. Two of your fighters can leave the line to push it off the upper terrace: it rolls down the slope the map draws, scatters what it meets, and where it stops it stays, a round stone wall that reshapes the field for the rest of the battle.
+- **Play:** drag from the press to choose the push (the stone follows the terrace contours, not your finger, so you read the slope); the two pushers are out of the fight for 6 s.
+- **Challenge, a real trade-off:** the stone is spent for the chapter (the press grinds less, so the next battle starts with less provision); and a stone stopped in the wrong place walls in your own line. The bot sim must show the stone wins close battles when placed well and loses them when rolled early.
+- **Comparables (learn, not copy):** Clash Royale's Log is an instant spell that clears a lane and vanishes; Kingdom Rush has hero spells; Plants vs. Zombies has fixed lanes. Ours costs people and a future, follows real terrain, and leaves a wall you built by accident or by plan.
+- **Subscription rule (owner, 2026-11-15):** nothing to do with the Lamplighter; it never promises new content.
+- **Art:** the stone drawn as a worn basalt disc with its square axle hole; its path leaves crushed grass and olive leaves; the press stands empty after.
+- **Second idea (backlog):** tug-of-war as the momentum bar's shape: a rope drawn between the two companies that both sides pull, never a number.
