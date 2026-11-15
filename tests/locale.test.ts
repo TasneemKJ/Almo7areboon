@@ -43,7 +43,8 @@ test('Preferences is one language per screen, with a bilingual language picker',
   setLang('ar');
   const ar = preferencesHtml(defaultProfile(), true, mix, true, '') + saveRecoveryHtml(true, '');
   const withoutPicker = ar.replace(/<label class="preference-select preference-language"[\s\S]*?<\/label>/, '').replace(/<kbd[^>]*>[^<]*<\/kbd>/g, '');
-  assert.doesNotMatch(withoutPicker.replace(/<[^>]+>/g, ' '), /[A-Za-z]{3,}/, 'no English words outside the picker in Arabic');
+  assert.doesNotMatch(withoutPicker.replace(/<[^>]+>/g, ' ').replace(/Tas Games/g, ''), /[A-Za-z]{3,}/, 'no English words outside the picker in Arabic (the studio name is always written in Latin letters, owner 2026-11-15)');
+  assert.match(ar, /لعبة من Tas Games/, 'the studio name stays in Latin letters in Arabic');
   assert.match(ar, /value="ar" lang="ar" selected/);
   setLang('en');
   const en = preferencesHtml(defaultProfile(), true, mix, true, '');
