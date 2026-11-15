@@ -65,7 +65,7 @@ test('terminal preview cannot offer a reset while final result and cleared picke
   assert.match(resultsHtml(g.profile,g.state),/Preview the next timeline/);
   g.profile.pendingVictory=null;g.profile.mastery.chapters[5].earnedMask=1;const ready=new Game(g.profile);
   assert.match(battleSelectionHtml(ready.profile,ready.state),/Preview the next timeline/);
-  ready.state.phase='lost';assert.match(resultsHtml(ready.profile,ready.state),/Preview the next timeline/);assert.doesNotMatch(resultsHtml(ready.profile,ready.state),/Timeline complete!/);
+  ready.state.phase='lost';assert.match(resultsHtml(ready.profile,ready.state),/Preview the next timeline/);assert.doesNotMatch(resultsHtml(ready.profile,ready.state),/Timeline complete\./);
   g.profile.timeline=1000;g.profile.mastery.timeline=1000;
   assert.doesNotMatch(ui.prestigeDialogHtml(g.profile,preview),/confirm-prestige|type="radio"|Begin timeline/);
   assert.doesNotMatch(resultsHtml(g.profile,g.state),/data-command="next"|confirm-prestige/);
