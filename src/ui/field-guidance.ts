@@ -5,11 +5,14 @@ import {orderStatus} from './battle-orders.ts';
 import {skillCue} from './skill-cues.ts';
 import {GUIDE,secondsShort} from './battle-hud.ts';
 import {tr} from './i18n.ts';
+import {isFirstBattle,quietGuidance} from './first-battle.ts';
 export {fieldAnnouncement} from './field-announcement.ts';
 
 /** Preserve the canonical decision priority, with one physical instruction owner. */
-export function fieldGuidance(game:Game):string {
+export function fieldGuidance(game:Game,idleSeconds=0):string {
  const p=game.profile,s=game.state;
+ // The first battle teaches through the world (first-battle.ts, DESIGN.md #79).
+ if(isFirstBattle(p,s))return quietGuidance(game,idleSeconds);
  if(s.dusk&&s.phase==='ready')return tr(`Tap the field to hang a lamp (${s.dusk.lamps.length+1} of 3). Raiders show only in their light.`,`انقر على الساحة لتعلّق قنديلاً (${s.dusk.lamps.length+1} من 3). لا يظهر المغيرون إلا في نوره.`);
  if(s.phase!=='running')return '';
  const status=game.deploymentStatus(0),support=skillCue(p,s,'food',game.canUseSkill('food')).label.split(' · ')[0];

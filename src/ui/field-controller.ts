@@ -18,6 +18,8 @@ import {secondsShort} from './battle-hud.ts';
 import {tr} from './i18n.ts';
 import {bannerView} from './banner-gesture.ts';
 import {LAMP_REACH,duskSight} from '../game/dusk-raid.ts';
+import {worldTeaching} from './first-battle.ts';
+import {playHornAudio} from '../view/audio.ts';
 import {lang} from '../game/locale.ts';
 import {syncFieldBlades} from './field-blades.ts';
 
@@ -93,11 +95,13 @@ function syncDusk(veil:HTMLElement,tale:HTMLElement,s:Game['state'],arena:Return
 /** Presentation ownership only. Every mutation still goes through main's guarded dispatch. */
 export function createFieldController(root:HTMLElement){
  const find=(id:string)=>root.querySelector<HTMLElement>(`#${id}`)!;
- const veil=find('dusk-veil'),tale=find('field-tale'),world=find('world'),context=find('field-context'),cue=find('field-cue'),food=find('field-food'),announcement=find('field-announcement'),cover=find('field-cover');
+ const ripple=find('field-ripple'),dust=find('field-dust'),veil=find('dusk-veil'),tale=find('field-tale'),world=find('world'),context=find('field-context'),cue=find('field-cue'),food=find('field-food'),announcement=find('field-announcement'),cover=find('field-cover');
  const recruits=Array.from(root.querySelectorAll<HTMLButtonElement>('[data-field-recruit]'));
  const gates=Array.from(root.querySelectorAll<HTMLButtonElement>('[data-field-gate]'));
  const bladeLayer=find('field-blades'),banner=find('field-banner'),standard=find('field-standard') as HTMLButtonElement,supplies=find('field-supplies') as HTMLButtonElement,enemy=find('field-enemy') as HTMLButtonElement;
  let selected:number|'supplies'|'cover'|null=null,contextKey='',origin:HTMLElement|null=null;
+ // The world's teaching (first-battle.ts): battle seconds since the last soldier went out, and the last horn sounded.
+ let lastDeployed=-1,lastDeployAt=0,lastHorn:number|null=null;
  const pause=root.querySelector<HTMLElement>('[data-command="field-pause"]')!;
  const place=placeBox;
  const clear=()=>{selected=null;releaseFieldContext(context,origin,pause);enemy.classList.remove('selected');cover.classList.remove('selected');};
@@ -147,7 +151,14 @@ export function createFieldController(root:HTMLElement){
    context.querySelectorAll<HTMLButtonElement>('[data-skill]').forEach(button=>{const skill=button.dataset.skill as Skill;button.disabled=!game.canUseSkill(skill);const label=skillCue(p,s,skill,!button.disabled).label;button.setAttribute('aria-label',label);if(skill==='food')textIfChanged(button,label.split(' · ')[0]);});
    syncDusk(veil,tale,s,arena);
    syncFieldBlades(bladeLayer,tale,p,s,arena,w,h);
-   const message=fieldGuidance(game);textIfChanged(cue,message);cue.hidden=!message;
+   if(s.time<lastDeployAt||s.phase==='ready'){lastDeployed=-1;lastHorn=null;}
+   if(s.stats.deployed!==lastDeployed){lastDeployed=s.stats.deployed;lastDeployAt=s.time;}
+   const idle=s.time-lastDeployAt,teach=worldTeaching(game,idle);
+   food.classList.toggle('ready',teach.foodReady);
+   ripple.hidden=!teach.ripple;if(teach.ripple)place(ripple,{x:w*.27-30,y:(arena.groundY+arena.laneGap)*arena.scale-12,width:60,height:24});
+   dust.hidden=!teach.dust;if(teach.dust)place(dust,{x:Math.min(w-120,411*arena.scale-110),y:arena.groundY*arena.scale-46,width:120,height:52});
+   if(teach.horn!==null&&teach.horn!==lastHorn){lastHorn=teach.horn;playHornAudio(p.sound&&!document.hidden);}
+   const message=fieldGuidance(game,idle);textIfChanged(cue,message);cue.hidden=!message;
    textIfChanged(announcement,fieldAnnouncement(message));
    const readout=fieldFoodReadout(s.food);food.hidden=!running;textIfChanged(food.querySelector<HTMLElement>('span')!,readout.text);
    if(food.getAttribute('aria-label')!==readout.label)food.setAttribute('aria-label',readout.label);food.classList.toggle('full',readout.full);

@@ -12,7 +12,8 @@ import {compactResultsHtml} from '../src/ui/results-screen.ts';
 import {fieldDom} from './helpers/field-dom.ts';
 
 function harness(route?:RouteId){
- const p=defaultProfile();if(route){p.chronicle=createChronicle(1,0);p.chronicle.route=route;}
+ const p=defaultProfile();p.wins=1; // a battle after the first: the first teaches through the world (first-battle.ts)
+ if(route){p.chronicle=createChronicle(1,0);p.chronicle.route=route;}
  const game=new Game(p);game.dispatch({type:'start'});
  const dom=fieldDom(),controller=createFieldController(dom.root as any);
  return {...dom,game,controller,update:()=>controller.update(game)};

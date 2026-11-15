@@ -17,7 +17,7 @@ export const INTRO_BEATS:readonly IntroBeat[]=Object.freeze([
  * A first launch no longer waits on the tale (2026-11-14 audit: 12 s before the first touch). It opens on the live field
  * with this one line over it, and the full tale stays in Settings › Watch intro.
  */
-export const FIELD_TALE={en:'At dusk a rival company marches on the valley. Hold the gate.',ar:'عند الغروب تزحف سريّةٌ منافسة نحو الوادي. احمِ البوّابة.'} as const;
+export const FIELD_TALE={en:'Once upon a time, in a far valley, there was a village that had nothing but its gate.',ar:'كان يا ما كان، في وادٍ بعيد، قريةٌ لا تملك إلا بابها.'} as const;
 export const FIELD_TALE_MS=4800;
 /** The fade that hands the last frame to the live field. */
 export const INTRO_SETTLE_MS=700;

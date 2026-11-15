@@ -475,3 +475,6 @@ This targets Almo's lowest dimension on the scorecard: text density in the first
   - Lines return only for a player who stands still: if nothing is sent for 8 s, one short line appears and then goes.
   - **Check:** the first-30 strip shows at most 2 text changes (from about 5), the time to the first soldier is no slower, and a new-player bot sim wins battle 1 at least as often as now.
 - **Second idea (backlog): the ripple as a skill.** Later chapters keep the ripple, but it shows only where a troop would arrive in time. Reading it well becomes the skill, so the hint does not become a crutch.
+
+### #79 shipped (2026-11-15)
+The first battle (chapter 1, first timeline, never won) opens with «كان يا ما كان، في وادٍ بعيد، قريةٌ لا تملك إلا بابها.» and nothing else; the world teaches (the food sack glows, a ripple where a tap would send, dust and a horn before a stronger wave, the gate's cracks); one short line returns after 8 s with nothing sent; the storyteller's chronicle on the result carries the lessons in lines that name the troops and the village, never the player. First-30 text changes 13 -> 1 (EN; 14 -> 1 AR), first soldier 2.2 s both, battle 1 won by every simulated new player before and after (scripts/qa-gate/battle1-sim.ts).

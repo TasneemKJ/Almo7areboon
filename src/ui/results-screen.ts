@@ -15,6 +15,7 @@ import { almoApp, evolutionNeedsFullJourney, FREE_AGES, ownsFullJourney, type Ta
 import { lockedEvolveLabel } from './evolution-screen.ts';
 import { counselCopy, counselStation } from './counsel-copy.ts';
 import { nextGoalLabel } from './next-goal.ts';
+import { firstBattleTale } from './first-battle.ts';
 import { localDay } from '../game/data.ts';
 import { n, tr } from './i18n.ts';
 
@@ -69,6 +70,12 @@ export function resultsHtml(profile: Profile, state: BattleState, bridge: TasBri
  ${!won&&advance.target==='timeline'?`<p>${timelineResetCopy()}</p>`:''}${chronicleResultHtml(profile,state)}${continuation}${retry}${evolve}${journeyButton(profile)}${terminal?`<button class="big-button blue" data-command="return-chapters">${tr('Return to chapters','عُد إلى الفصول')}</button>`:''}`;
 }
 
+/** The storyteller's chronicle of the first battle (first-battle.ts, DESIGN.md #79): the guide's lessons, told after. */
+function firstBattleTaleHtml(profile:Profile,state:BattleState):string {
+ const lines=firstBattleTale(profile,state);
+ return lines.length?`<section class="result-tale" aria-label="${tr('The storyteller','الحكواتي')}">${lines.map(line=>`<p>${line}</p>`).join('')}</section>`:'';
+}
+
 /** Ordinary completion is a short decision. The full receipt stays optional. */
 export function compactResultsHtml(profile:Profile,state:BattleState,canShare=almoApp.inApp,journeyOpen=!almoApp.inApp||ownsFullJourney()):string {
  const won=state.phase==='won',advance=advanceStatus(profile,state),run=profile.chronicle?.expedition,counsel=state.phase==='lost'&&!run?campCounsel(profile):null;
@@ -87,7 +94,7 @@ export function compactResultsHtml(profile:Profile,state:BattleState,canShare=al
   journey=`<button class="result-journey" data-command="full-journey">${tr('The Full Journey','الرحلة كاملة')}</button>`;}
  else if(won&&advance.allowed){const title=chapterPresentation(advance.nextBattle??0).title;command='next';label=advance.target==='timeline'?tr('Preview next timeline','اطّلع على الخطّ الزمنيّ التالي'):tr('Continue','تابع');next=advance.target==='timeline'?tr('Review the next timeline before changing your progress.','راجع الخطّ الزمنيّ التالي قبل أن يتغيّر تقدّمك.'):tr(`${title} is next.`,`التالي: ${title}.`);}
  const gems=won&&profile.pendingVictory?.settlement==='mastery-v1'?profile.pendingVictory.masteryGems:0;
- return `<div class="compact-result" data-outcome="${won?'won':'lost'}"><div class="result-landscape" aria-hidden="true"><img alt="" src="${chapterLandscape(profile.enemyAge)}"/></div><span class="eyebrow">${state.dusk?tr('THE DUSK RAID','غارة الغسق'):won?tr('THE BATTLE IS YOURS','المعركة لك'):tr('THE ROAD CONTINUES','الطريق مستمرّ')}</span><h2 id="dialog-title" tabindex="-1" data-initial-focus>${state.dusk?(won?tr('Turned back','رُدّت الغارة'):tr('Into the dark','إلى الظلام')):won?tr('Victory','نصر'):tr('Regroup','لُمَّ الشمل')}</h2><p class="compact-result-reward" aria-label="${tr(`${amount(state.earned)} coins earned`,`ربحت ${amount(state.earned)} من النقود`)}${gems?tr(` · ${amount(gems)} mastery gems`,` · ${amount(gems)} من جواهر الإتقان`):``}">${tr('','ربحت ')}<span data-count-to="${state.earned}" aria-hidden="true" dir="ltr">${amount(state.earned)}</span>${tr(' coins earned',' من النقود')}${gems?tr(` · ${amount(gems)} mastery gems`,` · ${n(amount(gems))} من جواهر الإتقان`):''}</p>${won&&state.earned>0?`<p class="compact-result-settled">${tr('Already added to your total.','أُضيفت إلى رصيدك.')}</p>`:''}<p class="compact-result-next">${next}</p>${journey}${won&&!run&&!state.dusk&&canShare?`<button class="result-postcard" data-command="share-postcard">${tr('Send a postcard home','أرسل بطاقةً إلى الديار')}</button>`:''}<div class="compact-result-actions"><button class="big-button green" data-command="${command}"${extra} data-primary="true">${label}</button><button class="big-button secondary" data-command="result-details">${tr('Details','التفاصيل')}</button><button class="big-button secondary" data-command="home">${tr('Home','الرئيسية')}</button></div></div>`;
+ return `<div class="compact-result" data-outcome="${won?'won':'lost'}"><div class="result-landscape" aria-hidden="true"><img alt="" src="${chapterLandscape(profile.enemyAge)}"/></div><span class="eyebrow">${state.dusk?tr('THE DUSK RAID','غارة الغسق'):won?tr('THE BATTLE IS YOURS','المعركة لك'):tr('THE ROAD CONTINUES','الطريق مستمرّ')}</span><h2 id="dialog-title" tabindex="-1" data-initial-focus>${state.dusk?(won?tr('Turned back','رُدّت الغارة'):tr('Into the dark','إلى الظلام')):won?tr('Victory','نصر'):tr('Regroup','لُمَّ الشمل')}</h2><p class="compact-result-reward" aria-label="${tr(`${amount(state.earned)} coins earned`,`ربحت ${amount(state.earned)} من النقود`)}${gems?tr(` · ${amount(gems)} mastery gems`,` · ${amount(gems)} من جواهر الإتقان`):``}">${tr('','ربحت ')}<span data-count-to="${state.earned}" aria-hidden="true" dir="ltr">${amount(state.earned)}</span>${tr(' coins earned',' من النقود')}${gems?tr(` · ${amount(gems)} mastery gems`,` · ${n(amount(gems))} من جواهر الإتقان`):''}</p>${won&&state.earned>0?`<p class="compact-result-settled">${tr('Already added to your total.','أُضيفت إلى رصيدك.')}</p>`:''}<p class="compact-result-next">${next}</p>${firstBattleTaleHtml(profile,state)}${journey}${won&&!run&&!state.dusk&&canShare?`<button class="result-postcard" data-command="share-postcard">${tr('Send a postcard home','أرسل بطاقةً إلى الديار')}</button>`:''}<div class="compact-result-actions"><button class="big-button green" data-command="${command}"${extra} data-primary="true">${label}</button><button class="big-button secondary" data-command="result-details">${tr('Details','التفاصيل')}</button><button class="big-button secondary" data-command="home">${tr('Home','الرئيسية')}</button></div></div>`;
 }
 
 /** Both existing provision choices are explicit; neither is selected by rendering. */

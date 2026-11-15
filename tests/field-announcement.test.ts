@@ -17,7 +17,7 @@ test('visible field countdowns remain inspectable without a live role and have a
  assert.match(html,/<p id="field-announcement"[^>]*class="sr-only"[^>]*role="status"[^>]*aria-live="polite"/);
 });
 test('actual controller speaks a food decision once while its visible seconds count down, then announces danger',()=>{
- const h=fieldHarness(),changes=spoken(h);h.game.profile.wins=0;h.game.state.time=1;
+ const h=fieldHarness(),changes=spoken(h);h.game.profile.wins=1;h.game.state.time=1;
  for(const food of [0,.8,1.6,2.4]){h.game.state.food=food;h.update();}
  assert.match(h.node('field-cue').textContent,/wait 1s/);
  assert.equal(changes.length,1);assert.match(changes[0],/Supplies.*Food Drop.*10.*once per battle/);

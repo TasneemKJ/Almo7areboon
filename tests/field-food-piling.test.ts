@@ -18,7 +18,7 @@ class Node {
 function harness(){
  const root=new Node(),recruits=[0,1,2].map(k=>{const n=new Node();n.dataset.fieldRecruit=String(k);return n;});
  const query=root.querySelector.bind(root);root.querySelectorAll=((selector:string)=>selector==='[data-field-recruit]'?recruits:[]) as any;
- const controller=createFieldController(root as any),g=new Game();g.dispatch({type:'start'});g.state.stats.deployed=1;g.state.food=26;g.state.time=30;
+ const controller=createFieldController(root as any),g=new Game();g.profile.wins=1;g.dispatch({type:'start'});g.state.stats.deployed=1;g.state.food=26;g.state.time=30;
  g.state.units=[{id:1,side:'player',hp:10},{id:2,side:'enemy',hp:10,x:800,lane:0},{id:3,side:'enemy',hp:10,x:850,lane:1},{id:4,side:'enemy',hp:10,x:900,lane:2}] as Unit[];
  return {g,recruits,cue:query('#field-cue'),update(){controller.update(g);}};
 }
@@ -34,7 +34,7 @@ test('physical piling cue and ring obey the canonical threshold, phase, pause, a
   if(condition==='below')h.g.state.food=ERAS[0].units[0].cost*8-0.01;
   if(condition==='paused')h.g.state.paused=true;if(condition==='ready')h.g.state.phase='ready';if(condition==='experienced')h.g.profile.wins=3;
   if(condition==='army')h.g.state.units.push({...h.g.state.units[0],id:5},{...h.g.state.units[0],id:6});
-  if(condition==='no-enemy')h.g.state.units=h.g.state.units.filter(u=>u.side==='player');if(condition==='undeployed')h.g.state.stats.deployed=0;
+  if(condition==='no-enemy')h.g.state.units=h.g.state.units.filter(u=>u.side==='player');if(condition==='undeployed'){h.g.state.stats.deployed=0;h.g.profile.wins=0;}
   h.update();assert.doesNotMatch(h.cue.textContent,/Food is piling up/,condition);
   assert.equal(h.recruits[0].classes.has('teach'),condition==='undeployed',condition);
  }

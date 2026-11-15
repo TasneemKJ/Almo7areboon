@@ -75,6 +75,8 @@ interface CueDefinition {readonly wave:OscillatorType;readonly duration:number;r
 // Original short contours; these initial levels await perceptual/device review.
 const definitions:Readonly<Record<CombatCueId,CueDefinition>>={
  // A press: a soft, dry wooden tick, quieter than any combat cue.
+ // The far hill's horn before a stronger wave (first-battle.ts): a low, breathy two-note call.
+ horn:{wave:'triangle',duration:1.2,frequency:[[0,174.6],[.28,196],[.85,196],[1.2,174.6]],envelope:[[.09,.05],[.3,.04],[.85,.038],[1.2,0]]},
  press:{wave:'triangle',duration:.06,frequency:[[0,520],[.06,380]],envelope:[[.002,.014],[.02,.004],[.06,0]]},
  // A dry gate tap / muted brass rise, softened by a short cloth-like tail.
  'order-hold':{wave:'triangle',duration:.24,frequency:[[0,180],[.035,90],[.09,150],[.24,110]],envelope:[[.003,.026],[.035,.004],[.075,.012],[.12,.006],[.16,.009],[.24,0]]},
@@ -151,6 +153,10 @@ export function playCombatEvents(events:readonly GameEvent[],enabled:boolean):vo
 }
 export function playPressAudio(enabled:boolean):void {
  playSelectedCues([{id:'press',eventIndex:0,priority:0,critical:false,cooldown:null}],enabled);
+}
+/** The horn from the far hill: a stronger wave is near (the first battle's world teaching). */
+export function playHornAudio(enabled:boolean):void {
+ playSelectedCues([{id:'horn',eventIndex:0,priority:2,critical:false,cooldown:null}],enabled);
 }
 export function playSummonAudio(enabled:boolean):void {
  playSelectedCues([{id:'summon',eventIndex:0,priority:1,critical:false,cooldown:null}],enabled);

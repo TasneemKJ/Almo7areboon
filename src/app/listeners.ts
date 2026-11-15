@@ -247,7 +247,10 @@ export function installListeners(deps: ListenersDeps): void {
       if(fieldTapIntent(canIssueOrder(g.state,order),kind)==='troop'&&kind!==undefined){
        const world=$('world'),box=world.getBoundingClientRect();
        unlockAudio(g.profile.sound);
-       if(ports.action({type:'spawn',kind,lane:fieldTapLane(e.clientY-box.top,world.clientWidth,world.clientHeight)})){pressFeedback({sound:g.profile.sound,kind:'deploy'});return;}
+       if(ports.action({type:'spawn',kind,lane:fieldTapLane(e.clientY-box.top,world.clientWidth,world.clientHeight)})){pressFeedback({sound:g.profile.sound,kind:'deploy'});
+        // A ripple where the tap sent him (first-battle.ts): the world answers in the spot that was touched.
+        const ring=$('field-tap-ripple');ring.hidden=true;void ring.offsetWidth;ring.setAttribute('style',`left:${e.clientX-box.left-30}px;top:${e.clientY-box.top-12}px;width:60px;height:24px`);ring.hidden=false;
+        return;}
       }
       plantBanner(order);
       return;
