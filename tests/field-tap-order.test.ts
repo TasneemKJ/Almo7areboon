@@ -30,7 +30,7 @@ test('field mode routes a tap through the simulation and answers a short momentu
 test('a field tap sends a troop into the nearest lane when no order is ready, and the lane is the player\'s choice', async () => {
   const { fieldTapIntent, fieldTapLane } = await import('../src/ui/battlefield-orders.ts');
   const { arenaLayout } = await import('../src/view/visual-theme.ts');
-  assert.equal(fieldTapIntent(true, 0), 'order'); assert.equal(fieldTapIntent(false, 0), 'troop'); assert.equal(fieldTapIntent(false, undefined), 'nudge');
+  assert.equal(fieldTapIntent(true, 0), 'troop', 'a deploying tap never spends momentum on an unasked order'); assert.equal(fieldTapIntent(true, undefined), 'order'); assert.equal(fieldTapIntent(false, 0), 'troop'); assert.equal(fieldTapIntent(false, undefined), 'nudge');
   const a = arenaLayout(390, 764), y = (lane: number) => (a.groundY + lane * a.laneGap) * a.scale;
   for (const lane of [0, 1, 2]) assert.equal(fieldTapLane(y(lane), 390, 764), lane);
   assert.equal(fieldTapLane(10, 390, 764), 0); assert.equal(fieldTapLane(760, 390, 764), 2); assert.equal(fieldTapLane(NaN, 390, 764), 0);
