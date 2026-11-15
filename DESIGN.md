@@ -518,3 +518,19 @@ Ours stays ours: a folktale company, where a name is earned at the fire and spok
   - The steadiness bonus stays within a 5% win-rate change.
   - The names come from a fusha list and are never gendered toward the player.
 - **Note (11:4x):** #92 restates #22 «المحاربون القدامى» (2026-11-14), which is not built (only the "veteran" achievement exists). When it is built, #92 supersedes #22 on one point: #22 had the Lamplighter subscription tend wounded veterans so they are ready by dawn. That is a power for pay and breaks D9 (owner, 2026-11-15). Wounded veterans rest the same for every player.
+
+## #99 (random-stimulus, 2026-11-15) «الراية المرقّعة»: stimuli: a torn banner the village women stitch back · a river ford that rises mid-battle · "what you lead with can be taken"
+**Kernel:** the company banner is the player's only order control (drag forward for Advance, back for Hold, 0a0f53a), so make it a stake. Carried forward, it stands closer to the rival. If a rival soldier reaches it, he tears off a strip: the lit momentum is lost, and the Advance stops for that battle. A banner that comes home whole after a win earns a patch the village women stitch on, one small emblem per chapter (a flame, an olive, a bridge), kept on the cloth for the rest of the journey.
+- **The decision (pillar 1, a readable choice):** Advance strikes harder but puts the banner forward; Hold keeps it home and safe. The rival's fast units (#66, the rival who learns) start aiming for a banner carried forward too often, so the threat rises with your own habit.
+- **The camp remembers (pillar 2):** the patches are drawn on the cloth itself in battle and in camp, so the banner's history is visible without a menu. A tear stays as a mended seam that reads «رُتقت بعد الوادي» in the chronicle.
+- **The difference from #34 (seizing the rival's banner):** #34 is an attack on his flag. #99 makes your own order control the thing you risk, so every Advance carries a price.
+- **Challenge, measured:** the bot sim (the D6 method) must show that Advance-always loses its banner in at least 30% of hard battles, and that the reader who advances when the lane is clear wins faster than both Advance-always and Hold-always.
+- **Gentle dark humour:** «الراية لا تقاتل، لكنها تعرف تماماً من تركها وحدها».
+- **Comparables (learn, not copy):**
+  - Kingdom Two Crowns loses the run with the crown;
+  - Clash Royale guards its king tower;
+  - Total War's standards break morale.
+  - None makes the order control itself the stake, nor stitches its history onto the cloth.
+- **D9:** free for everyone. The Lamplighter gets no protection for the banner and no extra patch.
+- **Art:** the patches are drawn in code on the existing cloth, at 4–6 px a motif and in the village's colours. A tear is a dark notch that ripples in the wind. No new panel.
+- **Second idea (backlog):** a ford that rises halfway through the battle and cuts the middle lane for 10 s. It is close to #86's weather, so it is kept as a variant of #86.
