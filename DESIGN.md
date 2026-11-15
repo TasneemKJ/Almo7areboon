@@ -498,3 +498,22 @@ Ours stays ours: the valley has one weather per battle, read from the world alon
   - A bot that matches troops to the weather wins at least 15% more of chapter 2–3's weather battles than one that ignores it. Both bots still win at least half.
   - Each weather's signs are visible in the first 3 s at 375 pt, in EN and AR.
   - The weather lines pass the fusha check and name no player gender.
+
+## #92 (random-stimulus, 2026-11-15) «لكلّ جنديّ اسم»: stimuli: a grandmother's lullaby · a name carved on a shield · "every soldier has a name"
+Comparables, learned from but not copied:
+- XCOM: soldiers you grow attached to.
+- The Banner Saga: losses the story remembers.
+- Darkest Dungeon: veterans with quirks.
+
+Ours stays ours: a folktale company, where a name is earned at the fire and spoken once in the chronicle. No numbers.
+- **Idea (best): every soldier earns a name.**
+  - **Earning it.** A troop who comes home from three battles is given a name at the camp fire by the storyteller: «سُمّي حارسُ الدرب الذي ثبت ثلاث مرّات: سالم.» The card shows it in place of the unit type, with one small, true trait from those battles ("held the gate twice", "first to the bridge").
+  - **A real choice in battle.** Named soldiers are worth a little more (a calm that steadies the line beside them), but a named soldier who falls is gone for good. The storyteller says so, in one line at the fire. The player weighs sending Salem to the front against keeping him for the boss.
+  - **The camp remembers (pillar 2):** fallen names are cut into the gate stones at camp, a wall that grows with the journey. At the end of the tale the storyteller reads the wall.
+  - **No number spam:** the bonus is shown as a word on the card («ثابت», "steady"), never as a percentage.
+  - **Fair:** names come only from play. No purchase or subscription names a soldier or brings one back; the dusk raid (D9) earns no names, so the stream never changes odds.
+- **Second idea (backlog): the lullaby.** Before the hardest battle of each chapter, a grandmother at the camp sings a short lullaby (code-made melody, no words) that the player can listen to or skip. Its tune returns, faint, in that battle's quietest moment.
+- **Tests:**
+  - A sim where the player protects named soldiers wins chapter bosses at least as often as one that spends them freely, and loses named soldiers less than half as often.
+  - The steadiness bonus stays within a 5% win-rate change.
+  - The names come from a fusha list and are never gendered toward the player.
