@@ -77,3 +77,10 @@ test('after the first battle the storyteller tells it: a few lines naming the tr
   const later = new Game(Object.assign(defaultProfile(), { wins: 4, enemyAge: 1, furthestBattle: 1 })); later.dispatch({ type: 'start' }); later.state.playerHp = 0; later.step(1 / 60);
   assert.doesNotMatch(compactResultsHtml(later.profile, later.state, false, true), /result-tale/);
 });
+
+test('the food sack glow uses its own class, never the shell\'s .ready (which positions the start panel)', async () => {
+  const { readFileSync } = await import('node:fs');
+  const controller = readFileSync(new URL('../src/ui/field-controller.ts', import.meta.url), 'utf8');
+  assert.match(controller, /food\.classList\.toggle\('sack-ready',teach\.foodReady\)/);
+  assert.doesNotMatch(readFileSync(new URL('../src/ui/world-play.css', import.meta.url), 'utf8'), /\.field-food\.ready/);
+});

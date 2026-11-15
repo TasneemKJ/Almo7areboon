@@ -154,8 +154,8 @@ export function createFieldController(root:HTMLElement){
    if(s.time<lastDeployAt||s.phase==='ready'){lastDeployed=-1;lastHorn=null;}
    if(s.stats.deployed!==lastDeployed){lastDeployed=s.stats.deployed;lastDeployAt=s.time;}
    const idle=s.time-lastDeployAt,teach=worldTeaching(game,idle);
-   food.classList.toggle('ready',teach.foodReady);
-   ripple.hidden=!teach.ripple;if(teach.ripple)place(ripple,{x:w*.27-30,y:(arena.groundY+arena.laneGap)*arena.scale-12,width:60,height:24});
+   food.classList.toggle('sack-ready',teach.foodReady);
+   ripple.hidden=!teach.ripple;if(teach.ripple)place(ripple,{x:w*.27-45,y:(arena.groundY+arena.laneGap)*arena.scale-17,width:90,height:34});
    dust.hidden=!teach.dust;if(teach.dust)place(dust,{x:Math.min(w-120,411*arena.scale-110),y:arena.groundY*arena.scale-46,width:120,height:52});
    if(teach.horn!==null&&teach.horn!==lastHorn){lastHorn=teach.horn;playHornAudio(p.sound&&!document.hidden);}
    const message=fieldGuidance(game,idle);textIfChanged(cue,message);cue.hidden=!message;

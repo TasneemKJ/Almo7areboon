@@ -114,7 +114,7 @@
 .field-dust i:nth-child(1){left:8%;width:56%;height:60%}.field-dust i:nth-child(2){left:38%;width:52%;height:78%;animation-delay:-.8s}.field-dust i:nth-child(3){left:62%;width:40%;height:52%;animation-delay:-1.6s}
 @keyframes field-dust{0%,100%{transform:translateX(0) scale(1);opacity:.75}50%{transform:translateX(-14px) scale(1.12);opacity:1}}
 /* The food sack glows when a soldier can be paid for. */
-.field-food.ready{box-shadow:0 0 0 1px #f0ce8799,0 0 14px #f0ce8766}
-.field-food.ready .icon{animation:field-food-breathe 1.8s ease-in-out infinite}
+.field-food.sack-ready{box-shadow:0 0 0 1px #f0ce8799,0 0 14px #f0ce8766}
+.field-food.sack-ready .icon{animation:field-food-breathe 1.8s ease-in-out infinite}
 @keyframes field-food-breathe{0%,100%{filter:drop-shadow(0 0 0 #ffd27a00)}50%{filter:drop-shadow(0 0 6px #ffd27acc)}}
-[data-motion=reduced] .field-ripple,[data-motion=reduced] .field-dust i,[data-motion=reduced] .field-food.ready .icon{animation:none;opacity:.8}
+[data-motion=reduced] .field-ripple,[data-motion=reduced] .field-dust i,[data-motion=reduced] .field-food.sack-ready .icon{animation:none;opacity:.8}
