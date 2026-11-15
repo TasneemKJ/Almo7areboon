@@ -157,3 +157,21 @@ body:has(.field-banner.hinting,.field-banner.dragging) #field-standard .world-ta
    they rise above it again, where the finger does not cover them. */
 @media (min-width:360px){html[lang="en"] #app[data-field-mode="field"][data-entry="play"] .deployment .unit-card .unit-name.long-name{font-size:10px;letter-spacing:-.4px}}
 @media (orientation:portrait){.field-banner:not(.dragging) .banner-plate{bottom:auto;top:calc(100% + 4px)}}
+/* Card names sit on one line, clear of the portrait ring, with room below the line for the dots of a final ي
+   (a clamped, overflow-hidden two-line box cut them off, so «الرامي» read «الرامى»). Phones up to 430 pt wide give
+   the name a few more pixels with a slightly smaller ring. Measured in tests/card-names-browser.test.ts. */
+#app[data-field-mode="field"][data-entry="play"] .deployment .unit-card .unit-name{display:block;white-space:nowrap;overflow:visible;-webkit-line-clamp:unset;line-height:1.45;top:4px}
+@media (max-width:430px){
+ #app[data-field-mode="field"][data-entry="play"] .deployment .unit-card::before{width:40px;height:40px;top:10px}
+ #app[data-field-mode="field"][data-entry="play"] .deployment .unit-card img{width:44px!important;height:40px!important;top:7px!important}
+ [dir="rtl"] #app[data-field-mode="field"][data-entry="play"] .deployment .unit-card::before{right:3px}
+ #app[data-field-mode="field"][data-entry="play"] .deployment .unit-card .unit-name,#app[data-field-mode="field"][data-entry="play"] .deployment .unit-card .unit-price{left:48px;right:2px}
+ [dir="rtl"] #app[data-field-mode="field"][data-entry="play"] .deployment .unit-card .unit-name,[dir="rtl"] #app[data-field-mode="field"][data-entry="play"] .deployment .unit-card .unit-price{left:2px;right:48px}
+ #app[data-field-mode="field"][data-entry="play"] .deployment .unit-card .unit-fill{left:51px}
+ [dir="rtl"] #app[data-field-mode="field"][data-entry="play"] .deployment .unit-card .unit-fill{left:12px;right:51px}
+ html[lang="en"] #app[data-field-mode="field"][data-entry="play"] .deployment .unit-card .unit-name{font-size:10px;letter-spacing:-.3px}
+ html[lang="ar"] #app[data-field-mode="field"][data-entry="play"] .deployment .unit-card .unit-name{font-size:10.5px}
+}
+/* Below 360 pt the token is too narrow for the longest names on one line: they take two short lines, still unclipped. */
+@media (max-width:359px){#app[data-field-mode="field"][data-entry="play"] .deployment .unit-card .unit-name{white-space:normal;line-height:1.3;font-size:9.5px!important;hyphens:auto;-webkit-hyphens:auto}}
+@media (max-width:359px){html[lang="en"] #app[data-field-mode="field"][data-entry="play"] .deployment .unit-card .unit-name{font-size:9px!important;letter-spacing:-.4px}}
