@@ -461,3 +461,17 @@ Fixes Almo's lowest dimension: pay-to-progress. Coins need a sink that a free pl
   - Comparables, learned from but not copied: The Banner Saga (caravan supply), FTL (triage of a scarce resource), Kingdom Two Crowns (resources you see in the world, not on a HUD). Almo's version is one rope and one well in a folktale.
 - **Second idea (backlog): the teapot on the hill.** In a boss battle a teapot steams on a stone at the field's corner; when the steam stops, the rival's horn calls his reserve. It is a clock you read from the world, with no timer bar, and it rewards a decisive plan over waiting.
 - Sim note: in the free-path sim, the bot that waters the troops the rival's page names should beat the bot that waters at random by at least one battle per chapter. If the two bots tie, the choice is cosmetic: cut it.
+
+## #79 (random-stimulus, 2026-11-15) «سطرٌ واحد»: stimuli: a coffeehouse storyteller (الحكواتي) · a ripple spreading on a pond · "the first minute may hold one sentence"
+This targets Almo's lowest dimension on the scorecard: text density in the first 30 seconds (the strip at 06:5x shows the guide line changing about every 6 s). Comparables: Kingdom Two Crowns (taught with no words), Journey (the world shows the way), the first battle of Clash Royale (one hand, one arrow). Ours stays ours: the storyteller speaks once, and the battle teaches the rest; his words come after, in the chronicle.
+- **Idea (best): one sentence, then the world teaches.**
+  - The first battle opens with the storyteller's single line and nothing else: «كان يا ما كان، في وادٍ بعيد، قريةٌ لا تملك إلا بابها.»
+  - From then on the battle teaches without words:
+    - the food sack breathes with a warm glow when a soldier can be paid for;
+    - a ripple spreads on the field where a tap would send him;
+    - a horn from the far hill and a dust cloud on the road say a stronger wave is coming;
+    - the gate's stones darken and crack when it is hurt.
+  - The lines the guide says today move to after the battle: the storyteller tells what the player did, in the chronicle. «أرسلتَ ثلاثةً قبل أن يبلغ الغبارُ البوابة. ثبتوا.» The teaching becomes the story's memory, not instructions.
+  - Lines return only for a player who stands still: if nothing is sent for 8 s, one short line appears and then goes.
+  - **Check:** the first-30 strip shows at most 2 text changes (from about 5), the time to the first soldier is no slower, and a new-player bot sim wins battle 1 at least as often as now.
+- **Second idea (backlog): the ripple as a skill.** Later chapters keep the ripple, but it shows only where a troop would arrive in time. Reading it well becomes the skill, so the hint does not become a crutch.
