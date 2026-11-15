@@ -90,6 +90,11 @@ test('with momentum ready and no order yet this battle, the drag lesson outranks
   const later = new Game(Object.assign(defaultProfile(), { wins: 1, enemyAge: 1, furthestBattle: 1 })); later.dispatch({ type: 'start' });
   later.step(.5); later.state.stats.deployed = 5; later.state.orders!.charge = 60;
   assert.match(fieldGuidance(later), /Drag the banner forward to advance, back to hold/);
-  later.state.stats.ordersCast = 1;
-  assert.doesNotMatch(fieldGuidance(later), /^Momentum ready\. Drag/, 'after the first order the hints take their turn again');
+});
+
+test('the drag lesson and the tactical hints share the line in six-second turns, so neither is hidden for the battle', async () => {
+  const { dragTurn } = await import('../src/ui/field-guidance.ts');
+  assert.equal(dragTurn(0), true); assert.equal(dragTurn(5.9), true); assert.equal(dragTurn(6), false); assert.equal(dragTurn(11.9), false); assert.equal(dragTurn(12), true);
+  const src = (await import('node:fs')).readFileSync(new URL('../src/ui/field-guidance.ts', import.meta.url), 'utf8');
+  assert.match(src, /canCast&&!\(\(s\.stats\.ordersCast\?\?0\)>0\)&&\(!hint\|\|dragTurn\(s\.time\)\)\)return drag;/, 'a due hint gets the odd slices');
 });
