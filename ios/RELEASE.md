@@ -24,7 +24,7 @@ xcodebuild -exportArchive -archivePath Almo7areboon-<ver>b<n>.xcarchive -exportO
 ## Review notes
 The full text is `ios/store/listing.json` → `reviewNotes`. Chapters 4 to 6 (`fullGame`, called Full Journey through 1.3):
 chapters 1 to 3 are free (1.3; through 1.2 it was chapters 1 and 2). Play the first three chapters (or open
-**Settings → Chapters 4 to 6**); going on to chapter 4 or
+**Settings → Chapters 4–6**); going on to chapter 4 or
 moving camp past chapter 3 shows the card with the price, Restore purchases, Terms of Use and Privacy. The Lamplighter: **Settings → The Lamplighter** (lengths, prices, renewal and
 cancel line, Restore, Terms, Privacy; Manage subscription while subscribed). The game has no accounts and collects no
 data. IAP review screenshots: `ios/store/review/store-card.png`, `ios/store/review/lamplighter-card.png`.

@@ -97,7 +97,8 @@ game. Changed lines:
 
 | Where | English | Arabic |
 |---|---|---|
-| Product name (App Store Connect, card eyebrow, Settings row, victory card button) | Chapters 4 to 6 | الفصول من الرابع إلى السادس |
+| Product name (App Store Connect, card eyebrow, victory card button) | Chapters 4 to 6 | الفصول من الرابع إلى السادس |
+| Settings row (half-width button) | Chapters 4–6 | الفصول 4–6 |
 | Product description (App Store Connect) | Chapters 4 to 6 and the harder timeline | الفصول من الرابع إلى السادس والخطّ الأصعب |
 | Card, owned; toast on purchase | Chapters 4 to 6 are yours, with the harder timeline. | الفصول من الرابع إلى السادس لك، ومعها الخطّ الزمني الأصعب. |
 | Card, opened early | The first three chapters are free. Here is what the Chapters 4 to 6 purchase opens. | الفصول الثلاثة الأولى مجّانية. وهذا ما يفتحه شراء «الفصول من الرابع إلى السادس». |
