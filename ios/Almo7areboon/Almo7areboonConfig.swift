@@ -20,7 +20,7 @@ enum SiteLinks {
 }
 
 enum Catalog {
-    /// The whole journey: every chapter after the second, and the harder timeline.
+    /// Chapters 4 to 6 (called Full Journey through 1.3): chapters 4 to 6 and the harder timeline; chapters 1 to 3 are free.
     static let fullGame = TasCatalogItem(key: "fullGame", productID: "Tas.Almo7areboon.fullGame", kind: .nonConsumable)
 
     /// The Lamplighter (مُشعِل القناديل): a row of lanterns lit at your gate in every battle, only while

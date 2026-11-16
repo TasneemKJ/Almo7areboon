@@ -22,8 +22,9 @@ xcodebuild -exportArchive -archivePath Almo7areboon-<ver>b<n>.xcarchive -exportO
 ```
 
 ## Review notes
-The full text is `ios/store/listing.json` → `reviewNotes`. Full Journey: chapters 1 to 3 are free (1.3; through 1.2 it
-was chapters 1 and 2). Play the first three chapters (or open **Settings → Full Journey**); going on to chapter 4 or
+The full text is `ios/store/listing.json` → `reviewNotes`. Chapters 4 to 6 (`fullGame`, called Full Journey through 1.3):
+chapters 1 to 3 are free (1.3; through 1.2 it was chapters 1 and 2). Play the first three chapters (or open
+**Settings → Chapters 4 to 6**); going on to chapter 4 or
 moving camp past chapter 3 shows the card with the price, Restore purchases, Terms of Use and Privacy. The Lamplighter: **Settings → The Lamplighter** (lengths, prices, renewal and
 cancel line, Restore, Terms, Privacy; Manage subscription while subscribed). The game has no accounts and collects no
 data. IAP review screenshots: `ios/store/review/store-card.png`, `ios/store/review/lamplighter-card.png`.
@@ -34,15 +35,17 @@ subtitle and keywords. Make tas-games match `ios/store/listing.json`:
 - `store/almo7areboon/listing.json`: en-US `name` → "Almo7areboon: The Warriors"; both `subtitle`s and `keywords`;
   the description's "No ads, no timers, nothing else to buy." / «ولا شيء آخر للشراء» (add the Lamplighter paragraph
   and the renewal line); `iap` → a list with the two subscriptions and the group «مُشعِل القناديل» / The Lamplighter;
-  Full Journey en description "Every later chapter and the harder timeline"; `reviewNotes` (the subscription, native
+  the purchase's name and description → "Chapters 4 to 6" / «الفصول من الرابع إلى السادس», "Chapters 4 to 6 and the
+  harder timeline" / «الفصول من الرابع إلى السادس والخطّ الأصعب» (1.4; was Full Journey, chapters 3 to 6); `reviewNotes` (the subscription, native
   features); `ageRating` → 9+ expected.
 - `almo7areboon/index.html`: "Price: Free, with one optional purchase: Full Journey" / «مع شراء واحد اختياري» and
-  "Full Journey is one optional purchase…" → mention the optional Lamplighter subscription.
+  "Full Journey is one optional purchase…" → mention the optional Lamplighter subscription, and name the purchase
+  Chapters 4 to 6 / «الفصول من الرابع إلى السادس» once 1.4 is live.
 - `almo7areboon/support.html`: add "How do I cancel the Lamplighter?" (Settings → The Lamplighter → Manage
   subscription, or the Apple Account's Subscriptions) and Restore for subscriptions.
 - `almo7areboon/privacy.html`: unchanged in substance (purchases and subscriptions are handled by Apple).
 
 ## Before external testing
-First ten minutes on a real iPhone in Arabic and English; buy Full Journey with a sandbox account; Restore; Ask to
+First ten minutes on a real iPhone in Arabic and English; buy Chapters 4 to 6 with a sandbox account; Restore; Ask to
 Buy (approve and decline); airplane-mode relaunch; Export and Import a save; delete and reinstall (the vault restores
 the save on the first launch only when iOS cleared every `almo7areboon.*` key).

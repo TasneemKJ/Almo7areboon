@@ -18,18 +18,18 @@
       "internalID": "6790710001",
       "localizations": [
         {
-          "description": "كل الفصول بعد الثاني، والخط الزمني الأصعب",
-          "displayName": "الرحلة كاملة",
+          "description": "الفصول من الرابع إلى السادس والخطّ الأصعب",
+          "displayName": "الفصول من الرابع إلى السادس",
           "locale": "ar"
         },
         {
-          "description": "Every later chapter and the harder timeline",
-          "displayName": "Full Journey",
+          "description": "Chapters 4 to 6 and the harder timeline",
+          "displayName": "Chapters 4 to 6",
           "locale": "en_US"
         }
       ],
       "productID": "Tas.Almo7areboon.fullGame",
-      "referenceName": "Full Journey",
+      "referenceName": "Chapters 4 to 6",
       "type": "NonConsumable"
     }
   ],

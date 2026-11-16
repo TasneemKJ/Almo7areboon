@@ -118,7 +118,7 @@ export function createStoreFlow(deps: StoreFlowDeps, bridge: TasBridge = almoApp
     if (open() && ports.playable()) render();
     // The evolve control under the card shows a lock and the price until Full Journey is owned: redraw it with the store.
     if (ports.playable() && ports.navState.activeTab === 'evolution') ports.renderScreen();
-    if (unlockedNow && ports.playable()) ports.toast(tr('Full Journey is yours. Every chapter is open.', 'الرحلة كاملة لك. كلّ الفصول مفتوحة.'), 6000);
+    if (unlockedNow && ports.playable()) ports.toast(tr('Chapters 4 to 6 are yours, with the harder timeline.', 'الفصول من الرابع إلى السادس لك، ومعها الخطّ الزمني الأصعب.'), 6000);
   });
   deps.dom.lifetime.add(stop);
   installSaveFlush(() => ports.persist());

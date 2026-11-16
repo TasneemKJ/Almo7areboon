@@ -22,18 +22,18 @@ test('a free player at the end of chapter 3 sees a lock and the store price on E
     const game = gameAt(2, coins), button = evolveButton(evolutionScreenHtml(game.profile, game.state, appBridge()));
     assert.match(button, /data-locked="full-journey"/);
     assert.match(button, /<bdi dir="ltr">\$4\.99<\/bdi>/, 'the App Store price, isolated left to right like the card');
-    assert.match(button, /aria-label="MOVE CAMP\. Locked\. Opens with Full Journey, \$4\.99"/);
+    assert.match(button, /aria-label="MOVE CAMP\. Locked\. Opens with the Chapters 4 to 6 purchase, \$4\.99"/);
     assert.doesNotMatch(button, /170k|disabled/, 'no coin cost, and it can always be tapped to open the card');
   }
   const game = gameAt(2, 5), html = evolutionScreenHtml(game.profile, game.state, appBridge());
   assert.doesNotMatch(html, /camp-shortfall|Needs [\d,]+ more/, 'no coin shortfall toward a wall');
-  assert.match(html, /This chapter opens with Full Journey, bought once\. Moving camp then costs 170,000 coins\./, 'both costs are said plainly');
+  assert.match(html, /This chapter opens with the Chapters 4 to 6 purchase, bought once\. Moving camp then costs 170,000 coins\./, 'both costs are said plainly');
 });
 
-test('before the store has answered the lock names Full Journey instead of a price', () => {
+test('before the store has answered the lock names Chapters 4–6 instead of a price', () => {
   const game = gameAt(2, 0), button = evolveButton(evolutionScreenHtml(game.profile, game.state, appBridge({}, {})));
   assert.match(button, /data-locked="full-journey"/);
-  assert.match(button, /<span>Full Journey<\/span>/);
+  assert.match(button, /<span>Chapters 4–6<\/span>/);
   assert.doesNotMatch(button, /undefined|\$|disabled/);
 });
 

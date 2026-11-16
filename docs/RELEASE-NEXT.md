@@ -1,4 +1,36 @@
-# Next release (1.3): drafts for App Store Connect
+# Next release (1.4): drafts for App Store Connect
+
+The App Store copy lives in `ios/store/listing.json` (`app.version` 1.4); 1.3 below is the version in review.
+
+## What changed for the player
+
+- **The purchase is named for what it opens.** Full Journey / «الرحلة كاملة» is now **Chapters 4 to 6** /
+  «الفصول من الرابع إلى السادس»: the same product (`Tas.Almo7areboon.fullGame`), the same price and the same gate
+  (chapters 4 to 6 and the harder timeline). The card, Settings row, victory card, Move camp lock, journey path, Camp
+  footer, import warning, App Store description and review notes all say it. Owners lose nothing.
+
+## What's New
+
+**English (en-US)**
+
+> The one-time purchase is now called by what it opens: Chapters 4 to 6, with the harder timeline. If you already own
+> it, nothing changes, and your save carries on exactly where it was.
+
+**Arabic (ar-SA)**
+
+> صار الشراء لمرّةٍ واحدة يُسمّى بما يفتحه: «الفصول من الرابع إلى السادس»، ومعها الخطّ الزمني الأصعب. وإن كان لك
+> من قبل فلا يتغيّر شيء، ويبقى حفظك حيث تركته.
+
+## In-app purchase (App Store Connect)
+
+| | en-US | ar-SA |
+|---|---|---|
+| Display name | Chapters 4 to 6 | الفصول من الرابع إلى السادس |
+| Description | Chapters 4 to 6 and the harder timeline | الفصول من الرابع إلى السادس والخطّ الأصعب |
+
+The IAP review screenshot (`ios/store/review/store-card.png`) still shows the old name: retake it on the 1.4 build.
+
+# Release 1.3 (in review): drafts for App Store Connect
 
 Branch `ios/taskit-1.3`. The App Store copy lives in `ios/store/listing.json`; these are the drafts for this version.
 

@@ -6,10 +6,10 @@ import { fullJourneyHtml, fullJourneyStatus } from '../src/ui/full-journey-scree
 const store = (owned: boolean, status = '', price = '$4.99') => ({ owns: () => owned, status, prices: (price ? { fullGame: price } : {}) as Record<string, string>, price: '' });
 
 test('the card offers the price, Restore, Terms and Privacy together, and every state has words', () => {
-  const html = fullJourneyHtml(store(false), 'Harbor Watch');
+  const html = fullJourneyHtml(store(false), 'Lantern Quarter');
   for (const command of ['buy-full-journey', 'restore-purchases', 'open-terms', 'open-privacy', 'close']) assert.match(html, new RegExp(`data-command="${command}"`));
   assert.match(html, /<bdi dir="ltr">\$4\.99<\/bdi>/);
-  assert.match(html, /aria-label="Buy Full Journey for \$4\.99"/);
+  assert.match(html, /aria-label="Buy Chapters 4 to 6 for \$4\.99"/);
   assert.match(fullJourneyHtml(store(false, 'buying'), 'x'), /data-command="buy-full-journey"[^>]*disabled/);
   assert.doesNotMatch(fullJourneyHtml(store(true), 'x'), /buy-full-journey/);
   for (const status of ['buying', 'pending', 'failed', 'unavailable', 'nothing']) assert.ok(fullJourneyStatus(store(false, status)).length > 10, status);
@@ -22,7 +22,7 @@ test('in Arabic the card is all Arabic but the price', () => {
   setLang('ar');
   try {
     for (const status of ['', 'buying', 'pending', 'failed', 'unavailable', 'nothing']) {
-      const html = fullJourneyHtml(store(false, status), 'حراسة الميناء');
+      const html = fullJourneyHtml(store(false, status), 'حيّ الفوانيس');
       const visible = html.replace(/<bdi[^>]*>[^<]*<\/bdi>/g, '').replace(/<[^>]+>/g, ' ') + ' ' + [...html.matchAll(/aria-label="([^"]*)"/g)].map(m => m[1].replace('$4.99', '')).join(' ');
       assert.doesNotMatch(visible, /[A-Za-z]{3,}/, status);
     }
@@ -48,5 +48,18 @@ test('1.3: the card sells chapters 4 to 6, with their true count of chapters and
     assert.match(ar, /تسعة جنود جدد/);
     assert.match(ar, /الفصول الثلاثة الأولى مجّانية/);
     assert.doesNotMatch(ar, /الفصلان الأوّلان|الفصلين الأوّلين|اثنا عشر/);
+  } finally { setLang('en'); }
+});
+
+test('the purchase is named for what it opens, Chapters 4 to 6, never the whole game', () => {
+  const owned = fullJourneyStatus(store(true)), card = fullJourneyHtml(store(false), 'Lantern Quarter');
+  assert.equal(owned, 'Chapters 4 to 6 are yours, with the harder timeline.');
+  assert.match(card, /<span class="eyebrow">CHAPTERS 4 TO 6<\/span>/);
+  for (const text of [owned, card]) assert.doesNotMatch(text, /Full Journey|every chapter|all chapters|rest of the tale/i);
+  setLang('ar');
+  try {
+    const ownedAr = fullJourneyStatus(store(true)), cardAr = fullJourneyHtml(store(false), 'حيّ الفوانيس');
+    assert.equal(ownedAr, 'الفصول من الرابع إلى السادس لك، ومعها الخطّ الزمني الأصعب.');
+    for (const text of [ownedAr, cardAr]) assert.doesNotMatch(text, /الرحلة كاملة|كلّ الفصول|كل الفصول|بقيّة الحكاية|!|لمس|المس/);
   } finally { setLang('en'); }
 });

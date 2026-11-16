@@ -72,8 +72,8 @@ export function campRoadNote(p:Readonly<Pick<Profile,'timeline'|'age'|'enemyAge'
  if(p.timeline>1||p.age>=FREE_AGES)return '';
  const last=chapterPresentation(FREE_AGES-1).title,first=chapterPresentation(FREE_AGES).title;
  return p.furthestBattle<FREE_AGES
-  ?tr(`${last} is the last free chapter. Full Journey opens the three after it, and the harder timeline.`,`${last} آخر الفصول المجّانية. و«الرحلة كاملة» تفتح الفصول الثلاثة التي بعدها، والخطّ الزمني الأصعب.`)
-  :tr(`The free chapters stay yours to replay. Full Journey opens ${first} and the two chapters after it.`,`الفصول المجّانية باقية لك تعيدها متى شئت. و«الرحلة كاملة» تفتح ${first} والفصلين اللذين يليانه.`);
+  ?tr(`${last} is the last free chapter. The Chapters 4 to 6 purchase opens the three after it, and the harder timeline.`,`${last} آخر الفصول المجّانية. وشراء «الفصول من الرابع إلى السادس» يفتح الفصول الثلاثة التي بعدها، والخطّ الزمني الأصعب.`)
+  :tr(`The free chapters stay yours to replay. The Chapters 4 to 6 purchase opens ${first} and the two chapters after it.`,`الفصول المجّانية باقية لك تعيدها متى شئت. وشراء «الفصول من الرابع إلى السادس» يفتح ${first} والفصلين اللذين يليانه.`);
 }
 export function campRootHtml(p:Readonly<Profile>,day?:number,store:CampStore={lit:false,inApp:false}):string {
  const chapter=chapterPresentation(p.age),destination=chapterPresentation(p.enemyAge),route=p.chronicle?.enabled?routeDefinition(p.chronicle.route).name:'';

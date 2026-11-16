@@ -40,7 +40,7 @@ export function journeyPathHtml(chapterIndex:number,locked:boolean):string {
  const dots=Array.from({length:6},(_,i)=>`<li class="${i<here?'path-done':i===here?'path-here':locked&&i>=FREE_AGES?'path-locked':'path-ahead'}"></li>`).join('');
  const label=tr(`Chapter ${here+1} of 6`,`الفصل ${here+1} من 6`);
  const note=locked
-  ?`<button class="entry-path-note" data-command="full-journey">${tr('Chapters 1–3 free · 4–6 with Full Journey',`الفصول ${n('1–3')} مجّاناً · ${n('4–6')} مع الرحلة كاملة`)}</button>`
+  ?`<button class="entry-path-note" data-command="full-journey">${tr('Chapters 1–3 free · 4–6 with one purchase',`الفصول ${n('1–3')} مجّاناً · ${n('4–6')} بشراءٍ واحد`)}</button>`
   :`<span class="entry-path-note">${tr(`Chapter ${n(here+1)} of ${n(6)}`,`الفصل ${n(here+1)} من ${n(6)}`)}</span>`;
  return `<ol class="entry-path" aria-label="${label}">${dots}</ol>${note}`;
 }

@@ -4,7 +4,7 @@ import { n, tr } from './i18n.ts';
 
 /** The one line under the buttons for the store's state. */
 export function fullJourneyStatus(bridge: Pick<TasBridge, 'status' | 'owns'>): string {
-  if (bridge.owns(FULL_JOURNEY)) return tr('Full Journey is yours. Every chapter is open.', 'الرحلة كاملة لك. كلّ الفصول مفتوحة.');
+  if (bridge.owns(FULL_JOURNEY)) return tr('Chapters 4 to 6 are yours, with the harder timeline.', 'الفصول من الرابع إلى السادس لك، ومعها الخطّ الزمني الأصعب.');
   switch (bridge.status) {
     case 'buying': return tr('Opening the App Store…', 'جارٍ فتح متجر التطبيقات…');
     case 'pending': return tr('Waiting for approval. The chapters open as soon as it is approved.', 'بانتظار الموافقة. تُفتح الفصول حالما تتمّ الموافقة.');
@@ -16,10 +16,10 @@ export function fullJourneyStatus(bridge: Pick<TasBridge, 'status' | 'owns'>): s
 }
 
 /**
- * Full Journey: chapters 4 to 6 and the harder timeline after them, bought once (1.3: chapters 1 to 3 are free). Shown
+ * Chapters 4 to 6 (product fullGame, called Full Journey through 1.3): chapters 4 to 6 and the harder timeline after them, bought once (1.3: chapters 1 to 3 are free). Shown
  * when a player who does not own it goes on past chapter 3 or moves camp into chapter 4, and from Settings. Restore, Terms and Privacy sit on the same card (App Review).
  */
-/** The App Store's own price text for Full Journey ('' until the store has answered). */
+/** The App Store's own price text for Chapters 4 to 6 ('' until the store has answered). */
 export function fullJourneyPrice(bridge: Pick<TasBridge, 'prices' | 'price'>): string { return bridge.prices[FULL_JOURNEY] || bridge.price || ''; }
 
 /**
@@ -32,15 +32,15 @@ export function fullJourneyHtml(bridge: Pick<TasBridge, 'status' | 'owns' | 'pri
   const price = fullJourneyPrice(bridge);
   const busy = bridge.status === 'buying';
   const buyLabel = price ? tr(`Continue the journey · ${n(price)}`, `تابع الرحلة · ${n(price)}`) : tr('Continue the journey', 'تابع الرحلة');
-  const buyAria = price ? tr(`Buy Full Journey for ${price}`, `اشترِ الرحلة كاملة بسعر ${price}`) : tr('Buy Full Journey', 'اشترِ الرحلة كاملة');
+  const buyAria = price ? tr(`Buy Chapters 4 to 6 for ${price}`, `اشترِ الفصول من الرابع إلى السادس بسعر ${price}`) : tr('Buy Chapters 4 to 6', 'اشترِ الفصول من الرابع إلى السادس');
   const items = [
     tr(`${chapterName} and the two chapters after it`, `${chapterName} والفصلان اللذان يليانه`),
     tr('Nine new troops in new wardrobes', 'تسعة جنود جدد بأزياء جديدة'),
     tr('The harder timeline after the last chapter', 'الخطّ الزمني الأصعب بعد الفصل الأخير'),
     tr('Bought once and yours to keep. No ads, no timers.', 'تشتريها مرّة واحدة وتبقى لك. بلا إعلانات ولا انتظار.'),
   ];
-  return `<span class="eyebrow">${tr('FULL JOURNEY', 'الرحلة كاملة')}</span><h2 id="dialog-title">${owned ? tr('The road is open', 'الطريق مفتوح') : tr('The road goes on', 'الطريق يمتدّ')}</h2>
- <p>${held && !owned ? tr('This save is past the free chapters. It is kept exactly as it is, and Full Journey opens it.', 'هذا الحفظ تجاوز الفصول المجّانية. يبقى محفوظاً كما هو، و«الرحلة كاملة» تفتحه.') : heldFree ? tr('Your company has held the three free chapters. Full Journey opens the rest of the tale.', 'صمدت سريّتك في الفصول الثلاثة المجّانية. الرحلة كاملة تفتح بقيّة الحكاية.') : tr('The first three chapters are free. Full Journey opens the rest of the tale.', 'الفصول الثلاثة الأولى مجّانية. الرحلة كاملة تفتح بقيّة الحكاية.')}</p>
+  return `<span class="eyebrow">${tr('CHAPTERS 4 TO 6', 'الفصول من الرابع إلى السادس')}</span><h2 id="dialog-title">${owned ? tr('The road is open', 'الطريق مفتوح') : tr('The road goes on', 'الطريق يمتدّ')}</h2>
+ <p>${held && !owned ? tr('This save is past the free chapters. It is kept exactly as it is, and the Chapters 4 to 6 purchase opens it.', 'هذا الحفظ تجاوز الفصول المجّانية. يبقى محفوظاً كما هو، وشراء «الفصول من الرابع إلى السادس» يفتحه.') : heldFree ? tr('Your company has held the three free chapters. Here is what the Chapters 4 to 6 purchase opens.', 'صمدت سريّتك في الفصول الثلاثة المجّانية. وهذا ما يفتحه شراء «الفصول من الرابع إلى السادس».') : tr('The first three chapters are free. Here is what the Chapters 4 to 6 purchase opens.', 'الفصول الثلاثة الأولى مجّانية. وهذا ما يفتحه شراء «الفصول من الرابع إلى السادس».')}</p>
  <ul class="full-journey-list">${items.map(item => `<li>${item}</li>`).join('')}</ul>
  <p id="full-journey-status" class="save-note" role="status">${fullJourneyStatus(bridge)}</p>
  <div class="full-journey-actions">${owned

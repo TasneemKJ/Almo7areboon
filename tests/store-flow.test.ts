@@ -51,7 +51,7 @@ test('buying, restoring, legal pages and manage go to the app; the card redraws 
   assert.deepEqual(s.posted.slice(-4).map(p => p.type), ['buy', 'restore', 'openURL', 'openURL']);
   s.bridge.update({ owned: { fullGame: true }, status: '' });
   assert.match(s.last.html, /The road is open/, 'the open card redraws as owned');
-  assert.ok(s.calls.some(c => c.startsWith('toast:Full Journey is yours')));
+  assert.ok(s.calls.some(c => c.startsWith('toast:Chapters 4 to 6 are yours')));
   s.flow.handleStoreCommand('lamplighter');
   s.flow.handleStoreCommand('buy-lamplighter-yearly');
   assert.deepEqual(s.posted.at(-1), { type: 'buy', data: { id: 'lamplighterYearly' } });

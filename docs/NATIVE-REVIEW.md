@@ -89,3 +89,26 @@ Chapters 1 to 3 are free; Full Journey opens chapters 4 to 6 and the harder time
 | Camp footer, after chapter 3 is won | The free chapters stay yours to replay. Full Journey opens Lantern Quarter and the two chapters after it. | الفصول المجّانية باقية لك تعيدها متى شئت. و«الرحلة كاملة» تفتح حيّ الفوانيس والفصلين اللذين يليانه. |
 | App Store description | The first three chapters are free. Full Journey … opens chapters four to six … | الفصول الثلاثة الأولى مجّانية. «الرحلة كاملة» … يفتح الفصول من الرابع إلى السادس … |
 | Full Journey product description (App Store Connect) | Every later chapter and the harder timeline | الفصول من الرابع إلى السادس والخطّ الأصعب |
+
+## 5. The purchase named for what it opens (1.4)
+
+Full Journey / «الرحلة كاملة» is now Chapters 4 to 6 / «الفصول من الرابع إلى السادس»: the purchase names the piece it opens, never the whole
+game. Changed lines:
+
+| Where | English | Arabic |
+|---|---|---|
+| Product name (App Store Connect, card eyebrow, Settings row, victory card button) | Chapters 4 to 6 | الفصول من الرابع إلى السادس |
+| Product description (App Store Connect) | Chapters 4 to 6 and the harder timeline | الفصول من الرابع إلى السادس والخطّ الأصعب |
+| Card, owned; toast on purchase | Chapters 4 to 6 are yours, with the harder timeline. | الفصول من الرابع إلى السادس لك، ومعها الخطّ الزمني الأصعب. |
+| Card, opened early | The first three chapters are free. Here is what the Chapters 4 to 6 purchase opens. | الفصول الثلاثة الأولى مجّانية. وهذا ما يفتحه شراء «الفصول من الرابع إلى السادس». |
+| Card, after chapter 3 is won | Your company has held the three free chapters. Here is what the Chapters 4 to 6 purchase opens. | صمدت سريّتك في الفصول الثلاثة المجّانية. وهذا ما يفتحه شراء «الفصول من الرابع إلى السادس». |
+| Card, held save | This save is past the free chapters. It is kept exactly as it is, and the Chapters 4 to 6 purchase opens it. | هذا الحفظ تجاوز الفصول المجّانية. يبقى محفوظاً كما هو، وشراء «الفصول من الرابع إلى السادس» يفتحه. |
+| Buy button (screen reader) | Buy Chapters 4 to 6 for … | اشترِ الفصول من الرابع إلى السادس بسعر … |
+| Entry, journey path | Chapters 1–3 free · 4–6 with one purchase | الفصول 1–3 مجّاناً · 4–6 بشراءٍ واحد |
+| Move camp lock, no price yet | Chapters 4–6 | الفصول 4–6 |
+| Move camp lock (screen reader) | Locked. Opens with the Chapters 4 to 6 purchase, … | مقفل. يُفتح بشراء «الفصول من الرابع إلى السادس»، … |
+| Line under the lock | This chapter opens with the Chapters 4 to 6 purchase, bought once. Moving camp then costs … coins. | هذا الفصل يُفتح بشراء «الفصول من الرابع إلى السادس» مرّةً واحدة. ثم يكلّف نقل المخيّم … من النقود. |
+| Camp footer, in chapter 3 | Harbor Watch is the last free chapter. The Chapters 4 to 6 purchase opens the three after it, and the harder timeline. | حراسة الميناء آخر الفصول المجّانية. وشراء «الفصول من الرابع إلى السادس» يفتح الفصول الثلاثة التي بعدها، والخطّ الزمني الأصعب. |
+| Camp footer, after chapter 3 is won | The free chapters stay yours to replay. The Chapters 4 to 6 purchase opens Lantern Quarter and the two chapters after it. | الفصول المجّانية باقية لك تعيدها متى شئت. وشراء «الفصول من الرابع إلى السادس» يفتح حيّ الفوانيس والفصلين اللذين يليانه. |
+| Victory card after chapter 3 | The journey goes on to Lantern Quarter in Chapters 4 to 6. Your free chapters stay yours to replay. | تمضي الرحلة إلى حيّ الفوانيس في «الفصول من الرابع إلى السادس». وفصولك المجّانية باقية لك تعيدها متى شئت. |
+| Import warning | … it cannot be played until the Chapters 4 to 6 purchase is yours. | … لكن لا يمكن اللعب به قبل أن يصير شراء «الفصول من الرابع إلى السادس» لك. |

@@ -157,24 +157,28 @@ The optional film uses one source-coordinate camera for scenery, company and pla
 ### Waiting company legibility (13 October 2026)
 Waiting recruits use a shared48–72 CSS-pixel height bounded by neighbour spacing and combat clearance. Authored sprite, contact shadow and native hit region scale together; small/short layouts preserve the quiet foreground and all existing actions. See `docs/audits/2026-10-13-waiting-company.md`.
 
-## iPhone app: Full Journey and the Lamplighter — owner override (2026-11-13)
+## iPhone app: Chapters 4 to 6 and the Lamplighter — owner override (2026-11-13)
 
 Owner override (2026-11-13): the iPhone app (ios/, TasKit) sells two things; the web build sells nothing and stays fully open.
 
-- **Full Journey** (`Tas.Almo7areboon.fullGame`, non-consumable, US$4.99) opens more game, never power: chapters 4 to 6
+- **Chapters 4 to 6** / «الفصول من الرابع إلى السادس» (`Tas.Almo7areboon.fullGame`, non-consumable, US$4.99; called
+  Full Journey / «الرحلة كاملة» through 1.3, renamed in 1.4 so the purchase names the one piece it opens, never "the
+  whole game") opens more game, never power: chapters 4 to 6
   and the harder timeline since 1.3 (through 1.2 it also opened chapter 3). Chapters 1 to 3 are the free arc. The gate is asked of StoreKit at the moment of use
-  (`src/app/store-flow.ts` `gateEvolution`): choosing Evolve at the end of chapter 2 opens the Full Journey card instead
-  of the evolution dialog. Ownership is never written to the save. The card also opens from Settings → Full Journey.
-  **1.3 (2026-11-15): chapter 3 is free.** Chapters 1 to 3 are the free arc (`FREE_AGES = 3`); Full Journey opens
+  (`src/app/store-flow.ts` `gateEvolution`): choosing Evolve at the end of chapter 2 opens the Chapters 4 to 6 card instead
+  of the evolution dialog. Ownership is never written to the save. The card also opens from Settings → Chapters 4 to 6.
+  **The gate is generic:** `pastFreeArc` (`src/ui/app-bridge.ts`) asks this one product for every chapter at
+  `FREE_AGES` or beyond and for every later timeline, so a future pack needs its own product and its own gate.
+  **1.3 (2026-11-15): chapter 3 is free.** Chapters 1 to 3 are the free arc (`FREE_AGES = 3`); the purchase opens
   chapters 4 to 6 and the harder timeline, same product and price. Every "chapter 2" below now reads "chapter 3". The
   free player sees the wall coming: once the company reaches chapter 3, Camp's footer line (the calm line above Battle,
   `camp-screen.ts` `campRoadNote`) says «حراسة الميناء آخر الفصول المجّانية…» / "Harbor Watch is the last free chapter…",
-  and after chapter 3 is won that the free chapters stay to replay and what Full Journey opens next. Text in the scene,
+  and after chapter 3 is won that the free chapters stay to replay and what the purchase opens next. Text in the scene,
   no dialog and nothing to tap; owners and the web keep the usual line. Saves written by 1.2 load unchanged.
   **1.1 (2026-11-13):** a save already past chapter 2 (imported, pasted or from the web) no longer keeps playing where
   it is; that let an import walk around the purchase. It is *held*: `gateStart` (asked in `lifecycle.ts` `action`, the
   one way into a battle) opens the card instead of starting while the chosen battle, the army's chapter or the timeline
-  is past the free arc and StoreKit has not said Full Journey is owned. The save is never clamped or rewritten, in
+  is past the free arc and StoreKit has not said Chapters 4 to 6 is owned. The save is never clamped or rewritten, in
   memory or on disk, so a late StoreKit answer, a Restore or a purchase opens exactly what was imported. The card says
   so, can be declined, and offers "Play the free chapters" (a battle choice back to chapter 2) when the save's own army
   is still a free one; the import dialog warns before a playable save is replaced by a held one. Storybook routes and
@@ -190,8 +194,8 @@ Owner override (2026-11-13): the iPhone app (ios/, TasKit) sells two things; the
   auto-renew and cancel line, and offers Manage subscription (Apple's sheet) while subscribed. Both languages.
 - Copy that said "nothing else to buy" now says "Bought once and yours to keep".
 - **Journey path (council, 2026-11-13):** the entry shows six lamps under the chapter name (where you are of six). In
-  the app, once the player has won a battle and while Full Journey is not owned, chapters 4-6 are a dashed stretch with
-  "Chapters 1–3 free · 4–6 with Full Journey" (1.3; it was 1–2 and 3–6), which opens the card. Never before the first win, so the store is not
+  the app, once the player has won a battle and while Chapters 4 to 6 is not owned, chapters 4-6 are a dashed stretch with
+  "Chapters 1–3 free · 4–6 with one purchase" (1.4; 1.3 said "with Full Journey", earlier 1–2 and 3–6), which opens the card. Never before the first win, so the store is not
   the first thing a new player sees.
 - **Touch and sound on every press (studio gate):** a short Taptic tap (navigator.vibrate, mapped to the Taptic Engine
   by TasKit; iOS's system haptics setting governs it) and a soft wooden tick when sound is on; recruits a firmer tap
