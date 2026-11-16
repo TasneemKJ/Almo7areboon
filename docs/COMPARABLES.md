@@ -55,3 +55,58 @@ Sources:
 - [App Store: The Battle Cats](https://apps.apple.com/gb/app/the-battle-cats/id850057092)
 - [Siliconera: Battle Cats Unite](https://www.siliconera.com/review-the-battle-cats-unite-entertains-when-you-have-energy/)
 - [App Store: Stick War Legacy](https://apps.apple.com/us/app/-/id1001780528)
+
+## 2026-11-16 (round 2): five lane, wave and night-raid games
+
+### Mushroom Wars 2 (Zillion Whales, 2017)
+**Loop:** send troops between villages and towers in short battles. Easy to learn, with "a surprising amount of depth" on mobile.
+**Art:** a bright cartoon mushroom kingdom. The armies read at a glance.
+**Story and onboarding:** the campaign is called "by the numbers". Multiplayer is where reviewers say it shines.
+**Players:** praise the quick, intense battles and the easy start. They complain about the price for mobile and a weak single-player campaign. A Metacritic user score of 5.9 comes from only 10 ratings, so it is a thin sample.
+**Earns:** premium on console and PC. On mobile there is a free version reviewers say avoids ads and hooks, with paid content (exact products not verified).
+
+### The Bonfire 2: Uncharted Shores (Xigma Games, 2020)
+**Loop:** build a village by day; at night a beast comes for the villagers. The night changes how the day is spent.
+**Art:** simple silhouettes against firelight. The bonfire is the heart of every screen.
+**Story and onboarding:** almost wordless. Reviewers call the early game "sluggish".
+**Players:** Pocket Gamer calls it "a masterpiece" held back by a slow start; others find the short day window tedious. Steam reviews are Mixed (354).
+**Earns:** $4.99 premium on iOS. On Android it is free up to day 10, then one in-app purchase unlocks the full game. Steam $11.99. These are 2020 launch prices.
+
+### Grow Castle (Raon Games, 2016)
+**Loop:** defend the castle against waves, upgrade heroes and the castle, repeat. A plain loop that has lasted ten years.
+**Art:** small pixel heroes, readable at a glance.
+**Story and onboarding:** none. The upgrade path is the guide.
+**Players:** App Store 4.5. They like the large hero pool and the clear upgrade paths; some find it slow.
+**Earns:** free, with in-app purchases that speed progress and optional ads (an aggregator page counts many complaints about monetization; not verified).
+
+### Dead Ahead: Zombie Warfare (Chillingo / Mobirate, 2016)
+**Loop:** deploy survivors from a bus into a lane of zombies, one wave after another.
+**Art:** gritty pixel art with a good spread of enemy types.
+**Story and onboarding:** thin. Critics call the waves "the same format throughout".
+**Players:** mobile users rate it about 4.5 (aggregator, not verified). Console critics say "the money-making exercise" takes over the fun, and found the unit AI and the UI weak.
+**Earns:** free with heavy in-app purchases on mobile; $19.99 on console.
+
+### Iron Marines Invasion (Ironhide, 2023)
+**Loop:** squad strategy with heroes, from the makers of Kingdom Rush.
+**Art:** Ironhide's polished cartoon style.
+**Story and onboarding:** light sci-fi missions.
+**Players:** Steam "Mixed", 236 positive and 103 negative; OpenCritic 73. I did not verify why players were let down.
+**Earns:** $14.99 on Steam, often 50–70% off.
+
+## What we take (round 2, principles made our own)
+1. **The night shapes the day** (Bonfire 2). Dread works when the coming night changes what the player does in daylight, not when it is a separate mode. Almo's dusk raid (#51) and the eve feast (#40) should change the morning's choices: which troops rest, who is fed. They should not be a level of their own.
+2. **Sell at a natural boundary, never at a wall** (Bonfire 2 on Android: free to day 10, then one unlock). The offer belongs at a chapter's end in the hakawati's book, after a win or a story page. It should never come after a loss. This repeats in other words the round-1 rule "never sell the way out of a loss".
+3. **A battle is short; the campaign carries the meaning** (Mushroom Wars 2, Dead Ahead). Both are praised for quick battles and faulted for campaigns that are the same wave over and over. Almo's campaign has to change between chapters: a new enemy habit, a named soldier who is gone, a village that remembers. That is #92's case, and it stays next to build.
+
+No backlog item this round: more than 20 entries are unbuilt, and #92 is next.
+
+Sources:
+- [Pocket Gamer: Mushroom Wars 2](https://www.pocketgamer.com/mushroom-wars-2/review/)
+- [OpenCritic: Mushroom Wars 2](https://opencritic.com/game/4979/mushroom-wars-2)
+- [Pocket Gamer: The Bonfire 2](https://www.pocketgamer.com/articles/083939/the-bonfire-2-review-sleep-with-one-eye-open/)
+- [TouchArcade: Bonfire 2 price](https://toucharcade.com/2020/08/11/the-bonfire-2-uncharted-shores-release-date-price-ios-steam-xigma-games/)
+- [Droid Gamers: Bonfire 2 Android](https://www.droidgamers.com/2020/11/18/the-bonfire-2-uncharted-shores-arrives-on-the-google-play-store-in-early-access/)
+- [App Store: Grow Castle](https://apps.apple.com/gb/app/grow-castle/id1133478462)
+- [Way Too Many Games: Dead Ahead](https://waytoomany.games/2018/04/06/review-dead-ahead-zombie-warfare-xbox-one/)
+- [Xbox Tavern: Dead Ahead](https://www.xboxtavern.com/dead-ahead-zombie-warfare-review)
+- [IsThereAnyDeal: Iron Marines Invasion](https://isthereanydeal.com/game/iron-marines-invasion/info/)
