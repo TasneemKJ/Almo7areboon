@@ -1,22 +1,14 @@
 import Phaser from 'phaser';
-import {campRenderProjection,campRecruits} from './world-camp.ts';
-import {drawTroop} from './art';
+import {campRenderProjection} from './world-camp.ts';
 import type {ArmyHost,ArmyLayers} from './battlefield-army.ts';
 import type {ImageOrFallback} from './battlefield-types.ts';
 
-/** The field camp: recruit actors at their projected feet, the standard and the supply basket (and review evidence). */
+/** The field camp: standard and supply basket (recruit tray owns card deployment). */
 export function paintFieldCamp(host:ArmyHost,layers:ArmyLayers,campActors:readonly ImageOrFallback[]):void {
  const visible=host.game.state.phase==='running'&&host.element.closest<HTMLElement>('#app')?.dataset.fieldMode==='field';
  const {plan,cssScale:scale}=campRenderProjection(host.scene.scale.width,host.scene.scale.height,host.pixelRatio),g=layers.campProps.clear();
- const unlocked=campRecruits(host.game.profile);
- campActors.forEach((actor,kind)=>{
-  actor.setVisible(visible&&unlocked.includes(kind as 0|1|2));
-  if(!visible)return;
-  const target=plan.recruits[kind],x=target.footX/scale,y=target.footY/scale;
-  actor.setPosition(x,y).setDepth(y);
-  if(actor instanceof Phaser.GameObjects.Image)actor.setScale(plan.recruitHeight/(actor.height*scale)).setFlipX(false);
-  else {actor.setScale(.75*(plan.recruitHeight/48)/scale);drawTroop(actor,host.game.profile.age,kind as 0|1|2,'player',0,false);}
-  if(unlocked.includes(kind as 0|1|2)){layers.shadows.fillStyle(0x192c25,.3);layers.shadows.fillEllipse(x,y+2/scale,plan.recruitHeight*.58/scale,plan.recruitHeight*.145/scale);}
+ campActors.forEach((actor)=>{
+  actor.setVisible(false);
  });
  if(navigator.webdriver){
   const rendered=campActors.flatMap((actor,kind)=>{if(!actor.visible||!(actor instanceof Phaser.GameObjects.Image))return [];const b=actor.getBounds();return [{kind,bounds:{left:b.left/host.pixelRatio,top:b.top/host.pixelRatio,right:b.right/host.pixelRatio,bottom:b.bottom/host.pixelRatio,width:b.width/host.pixelRatio,height:b.height/host.pixelRatio}}];});

@@ -48,7 +48,7 @@ export function troopUnlockMessage(profile: Readonly<Profile>, phase: Phase, kin
     : status.reason === 'blocked' ? tr(`Deployment area full; wait for space. Costs ${cost} food.`, `ساحة الإرسال ممتلئة؛ انتظر مكاناً. كلفته ${cost} من المؤونة.`)
     : status.reason === 'capacity' ? tr(`Army full; wait for a place. Costs ${cost} food.`, `الجيش مكتمل؛ انتظر مكاناً. كلفته ${cost} من المؤونة.`)
     : tr(`Tap it again to deploy: ${cost} food.`, `انقره مرّة أخرى لترسله: ${cost} من المؤونة.`);
-  return `${tr(`${name} unlocked!`, `انضمّ ${name}!`)} ${troopSpecialty(kind).effect} ${next}`;
+  return `${tr(`${name} unlocked!`, `انضمّ ${name}.`)} ${troopSpecialty(kind).effect} ${next}`;
 }
 type MarkupTarget = Pick<HTMLElement, 'innerHTML'>;
 

@@ -454,6 +454,15 @@ test('closing Quests over a loss restores Regroup while ready-state Quests still
  loss.click('journey');loss.click('quests');c.api.dismissModal();assert.equal(c.modal,'result');assert.match(c.dialogHtml,/Regroup/i);
  const readyState=harness();readyState.context.modal='quests';readyState.context.api.dismissModal();assert.equal(readyState.context.modal,null);
 });
+test('dismissing Move camp or Preferences opened over a loss restores the result instead of softlocking the battlefield',()=>{
+ const h=harness(),c=h.context;c.game.profile.coins=ERAS[0].evolveCost;c.game.dispatch({type:'start'});c.game.dispatch({type:'retreat'});c.resultShown='lost';c.modal='result';
+ h.click('evolve');assert.equal(c.modal,'evolve');assert.equal(c.evolutionFromResult,true);
+ h.click('close');assert.equal(c.modal,'result');assert.match(c.dialogHtml,/Regroup/i);
+ h.click('evolve');c.api.dismissModal();assert.equal(c.modal,'result');
+ h.click('settings');assert.equal(c.modal,'settings');
+ h.click('close');assert.equal(c.modal,'result');assert.match(c.dialogHtml,/Regroup/i);
+ h.click('settings');c.api.dismissModal();assert.equal(c.modal,'result');
+});
 
 // Home is a presentation boundary, not an automatic start or reward claim.
 test('Home holds a pending result until Continue without mutating its state',()=>{

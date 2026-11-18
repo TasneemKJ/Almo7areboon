@@ -112,7 +112,12 @@ export function recordChronicleWin(c: ChronicleProgress, context: ChronicleConte
   }
   const count=distinctVictories(next);
   next.restoration|=(count>=1?1:0)|(count>=3?2:0)|(count>=6?4:0);
-  next.veterans=next.veterans.map((wins,index)=>Math.min(99,wins+((victory.deployedByKind[index]??0)>0&&victory.survivingRoles[index]?1:0))) as [number,number];
+  const perilous=next.route==='watch'||next.route==='bell';
+  next.veterans=next.veterans.map((wins,index)=>{
+    if((victory.deployedByKind[index]??0)<=0)return wins;
+    if(victory.survivingRoles[index])return Math.min(99,wins+1);
+    return perilous?Math.max(0,wins-1):wins;
+  }) as [number,number];
   next.tutorial=4;
   if(next.expedition)next.expedition.reserve=finite(victory.food,0,0,12);
   return next;

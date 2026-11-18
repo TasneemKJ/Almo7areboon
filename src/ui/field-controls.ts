@@ -7,6 +7,11 @@ export function fieldFoodReadout(food:number):{text:string;label:string;full:boo
  return {text:String(amount),label:tr(`Food: ${amount}${full?', storage full':''}. Recruits cost food.`,`المؤونة: ${amount}${full?'، المخزن ممتلئ':''}. التجنيد يكلّف مؤونة.`),full};
 }
 
+export function fieldGoalSummary(coins:number,enemyHp:number,enemyMaxHp:number,momentumLabel:string):string {
+ const hp=Math.max(0,Math.ceil(enemyHp)), max=Math.max(1,Math.ceil(enemyMaxHp));
+ return tr(`Coins ${Math.floor(coins)} · Gate ${hp}/${max} · ${momentumLabel}`,`النقود ${Math.floor(coins)} · البوّابة ${hp}/${max} · ${momentumLabel}`);
+}
+
 /** Native semantic targets lie over the matching painted world objects. */
 export function fieldControlsHtml():string{return `<div id="field-targets" class="field-targets">
 ${[0,1,2].map(kind=>`<button class="world-hit recruit-hit" data-field-recruit="${kind}" data-unit="${kind}" hidden><span class="troop-mark troop-mark-${kind}" aria-hidden="true"></span><span class="recruit-cost" aria-hidden="true"></span></button>`).join('')}
@@ -18,7 +23,7 @@ ${fieldBannerHtml()}
 <button id="field-supplies" class="world-hit" data-field-context="supplies" aria-label="${tr('Inspect supplies','افحص المؤن')}" hidden><span class="world-target-name">${tr('Supplies','المؤن')}</span></button>
 <button id="field-enemy" class="world-hit enemy-hit" data-field-context="enemy" aria-label="${tr('Select enemy for a tactical skill','اختر عدوّاً لمهارة تكتيكية')}" hidden><span class="world-target-name">${tr('Select enemy','اختر عدوّاً')}</span></button>
 <button id="field-cover" class="world-hit cover-hit" data-field-context="cover" aria-label="${tr('Select road shelter for Meteor to break cover','اختر ملجأ الطريق ليحطّمه «النيزك»')}" hidden><span class="world-target-name">${tr('Break cover','حطّم الملجأ')}</span></button>
-</div><p id="field-food" class="field-food" hidden>${icon('food')}<span aria-hidden="true">0</span></p><span id="field-ripple" class="field-ripple" aria-hidden="true" hidden></span><span id="field-tap-ripple" class="field-ripple field-tap-ripple" aria-hidden="true" hidden></span><span id="field-dust" class="field-dust" aria-hidden="true" hidden><i></i><i></i><i></i></span><div id="dusk-veil" class="dusk-veil" aria-hidden="true" hidden></div><p id="field-tale" class="field-tale" hidden></p><p id="field-cue" class="field-cue"></p><p id="field-announcement" class="sr-only" role="status" aria-live="polite" aria-atomic="true"></p><div class="field-chrome"><button class="field-pause" data-command="field-pause" aria-label="${tr('Pause','إيقاف مؤقّت')}"><svg width="18" height="18" viewBox="0 0 18 18" aria-hidden="true" focusable="false" fill="currentColor"><rect x="4" y="3" width="3" height="12" rx="1"/><rect x="11" y="3" width="3" height="12" rx="1"/></svg></button><div id="field-context" hidden></div></div>`;}
+</div><p id="field-food" class="field-food" hidden>${icon('food')}<span aria-hidden="true">0</span></p><p id="field-goal-pill" class="field-goal-pill" hidden></p><span id="field-ripple" class="field-ripple" aria-hidden="true" hidden></span><span id="field-tap-ripple" class="field-ripple field-tap-ripple" aria-hidden="true" hidden></span><span id="field-dust" class="field-dust" aria-hidden="true" hidden><i></i><i></i><i></i></span><div id="dusk-veil" class="dusk-veil" aria-hidden="true" hidden></div><p id="field-tale" class="field-tale" hidden></p><p id="field-cue" class="field-cue"></p><p id="field-announcement" class="sr-only" role="status" aria-live="polite" aria-atomic="true"></p><div class="field-chrome"><button class="field-pause" data-command="field-pause" aria-label="${tr('Pause','إيقاف مؤقّت')}"><svg width="18" height="18" viewBox="0 0 18 18" aria-hidden="true" focusable="false" fill="currentColor"><rect x="4" y="3" width="3" height="12" rx="1"/><rect x="11" y="3" width="3" height="12" rx="1"/></svg></button><div id="field-context" hidden></div></div>`;}
 
 /** The company banner, planted in the field: drag it forward to Advance, back to Hold (see banner-gesture.ts). It is
  * hidden from assistive technology because the native Advance/Hold buttons in #order-banner are its proxies. */

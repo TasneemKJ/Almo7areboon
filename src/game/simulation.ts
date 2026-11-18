@@ -406,7 +406,7 @@ export class Game implements GamePort {
         earnMomentum(this.state,8);
         if (!this.state.dusk) this.profile.kills++;
         this.state.stats.kills++;
-        this.reward(Math.round((12 + unit.kind * 9) * (1 + unit.age * 0.5)), unit.x);
+        this.reward(Math.round((12 + unit.kind * 9) * (1 + unit.age * 0.25)), unit.x);
       }
     }
     return actual;
@@ -426,7 +426,7 @@ export class Game implements GamePort {
       const actual = Math.min(this.state.enemyHp, damage);
       this.state.enemyHp = Math.max(0, this.state.enemyHp - actual);
       this.state.stats.damageDealt += actual;
-      this.damageEarnings += actual * 0.3;
+      this.damageEarnings += (actual * 0.3) / 1.65 ** this.profile.enemyAge;
       const coins = Math.floor(this.damageEarnings);
       this.damageEarnings -= coins;
       if (coins) this.reward(coins, 910);
@@ -471,7 +471,7 @@ export class Game implements GamePort {
       }
       this.nextSpawn = this.schedule.length;
       this.profile.wins++; delete this.profile.lossStreak;
-      this.reward(120 * (1 + this.profile.enemyAge), 910);
+      this.reward(Math.round(120 * (1 + this.profile.enemyAge * 0.4)), 910);
       this.profile.gems = Math.min(1e7, this.profile.gems + 10);
       const award = masteryAward(this.profile,this.state);
       this.state.earned = Math.min(1e9,this.state.earned + award.coins);

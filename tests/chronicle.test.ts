@@ -53,3 +53,11 @@ test('commanders transform finite waves deterministically without mutating the s
 });
 test('the three discovered fragments open a separate optional encounter',()=>{let c=createChronicle();assert.equal(routeAvailable(c,'whisper' as never,0,0),false);for(const id of ['door','roof','cat'] as const)c=discover(c,id,true)!;assert.equal(routeAvailable(c,'whisper' as never,0,0),true);});
 test('earned insignia keeps each recurring veteran named',()=>{assert.match(veteranName(0,3),/Rima/);assert.match(veteranName(1,3),/Nabil/);});
+test('perilous routes (watch, bell) cost veteran standing when a deployed veteran falls',()=>{
+ let c=recordChronicleWin(createChronicle(),context,victory);
+ c=recordChronicleWin(c,context,victory);
+ assert.deepEqual(c.veterans,[2,2]);
+ c=chooseRoute(c,'watch',0,0)!;
+ c=recordChronicleWin(c,context,{deployedByKind:[1,1,0],survivingRoles:[false,true]});
+ assert.deepEqual(c.veterans,[1,3]);
+});

@@ -25,7 +25,7 @@ export function entryScreenHtml(profile:Profile):string {
  const copy=entryCopy(profile,false);
  return `<section id="entry-screen" class="entry-screen" aria-labelledby="entry-title">
  <img id="entry-art" class="entry-art" src="${chapterLandscape(profile.enemyAge)}" alt=""/>
- <div class="entry-copy"><p class="entry-kicker">${tr('A LEVANTINE FOLKTALE','حكاية من بلاد الشام')}</p><h1 id="entry-title">${tr('ALMO7AREBOON','المحاربون')}</h1><p id="entry-chapter">${copy.chapter}</p><p id="entry-subtitle">${copy.subtitle}</p><div id="entry-path">${journeyPathHtml(profile.enemyAge,false)}</div></div>
+ <div class="entry-copy"><p class="entry-kicker">${tr('A LEVANTINE FOLKTALE','حكاية من بلاد الشام')}</p><h1 id="entry-title">${tr('Almohareboon','المحاربون')}</h1><p id="entry-chapter">${copy.chapter}</p><p id="entry-subtitle">${copy.subtitle}</p><div id="entry-path">${journeyPathHtml(profile.enemyAge,false)}</div></div>
  <div class="entry-actions"><button id="entry-play" class="big-button green" data-command="enter-world" disabled>${tr('Play','العب')}</button><button id="entry-secondary" class="entry-settings" data-command="home-camp" hidden disabled>${tr('Camp','المخيّم')}</button><button id="entry-settings" class="entry-settings" data-command="settings" disabled>${tr('Settings','الإعدادات')}</button></div>
  </section>`;
 }

@@ -18,7 +18,7 @@ export function mountBattlefield(element:HTMLElement,game:GamePort,onFrame:(forc
  }catch(error){loading.textContent=tr('The battlefield could not start. Reload or try another browser.','تعذّر فتح ساحة المعركة. أعد التحميل أو جرّب متصفّحاً آخر.');throw error;}
  if(navigator.webdriver)installReviewHooks(renderer);
  renderer.canvas.setAttribute('role','img');renderer.canvas.setAttribute('aria-label',tr('Illustrated battlefield. Blue warriors attack the red enemy base.','ساحة معركة مرسومة. المحاربون الزُّرق يهاجمون حصن العدوّ الأحمر.'));
- const fit=()=>{if(!disposed&&element.clientWidth>0&&element.clientHeight>0)renderer.scale.resize(Math.round(element.clientWidth*pixelRatio),Math.round(element.clientHeight*pixelRatio));};
+ const fit=()=>{if(!disposed&&element.clientWidth>0&&element.clientHeight>0){renderer.scale.resize(Math.round(element.clientWidth*pixelRatio),Math.round(element.clientHeight*pixelRatio));renderer.canvas.style.width=`${element.clientWidth}px`;renderer.canvas.style.height=`${element.clientHeight}px`;}};
  const observer=new ResizeObserver(fit);observer.observe(element);
  // A quiet step-down only past 20 ms frames (render-resolution.ts): the same picture, half a density lighter.
  renderer.events.on('step',(_time:number,delta:number)=>{const next=governor.frame(delta);if(next===null||disposed)return;pixelRatio=next;renderer.scale.setZoom(1/pixelRatio);fit();});

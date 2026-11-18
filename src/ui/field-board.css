@@ -4,7 +4,7 @@
    your own camp. The native Advance/Hold buttons stay in #order-banner as visually hidden proxies for VoiceOver and
    the keyboard (they appear above the board when focused). */
 #app[data-field-mode="field"][data-entry="play"] .battle-view>.deployment{
- position:relative;padding:9px 12px max(9px,env(safe-area-inset-bottom));border-top:0;
+ position:relative;padding:9px max(12px,env(safe-area-inset-right)) max(9px,env(safe-area-inset-bottom)) max(12px,env(safe-area-inset-left));border-top:0;
  background:
   linear-gradient(180deg,#e9cf9466 0,#e9cf9466 1px,#2a1a10 1px,#2a1a10 3px,transparent 3px),
   repeating-linear-gradient(90deg,#0000 0 19px,#2a1a1014 19px 21px,#0000 21px 47px,#f3d9a60c 47px 49px),
@@ -21,7 +21,7 @@
 #app[data-field-mode="field"][data-entry="play"] .deployment .order-banner:focus-within{width:auto;height:auto;overflow:visible;clip-path:none;left:12px;right:12px;bottom:calc(100% + 8px);display:flex;gap:8px;padding:6px;border-radius:10px;background:#16394bf2;z-index:20}
 
 /* Troop tokens: a painted medallion and the cost, on the board. */
-#app[data-field-mode="field"][data-entry="play"] .deployment .unit-cards{gap:8px}
+#app[data-field-mode="field"][data-entry="play"] .deployment .unit-cards{gap:8px;max-width:640px;margin-inline:auto}
 #app[data-field-mode="field"][data-entry="play"] .deployment .unit-card{
  height:62px!important;min-height:44px;display:block;overflow:visible;border-radius:31px 14px 14px 31px;border:1.5px solid #9c7c4c;
  background:radial-gradient(ellipse 80% 120% at 70% 0,#4a3220,#2e1d11 80%);box-shadow:0 3px 0 #1c110a,inset 0 1px 0 #f3d9a62e;
@@ -55,7 +55,8 @@
 [dir="rtl"] #app[data-field-mode="field"][data-entry="play"] .deployment .unit-card .unit-name,[dir="rtl"] #app[data-field-mode="field"][data-entry="play"] .deployment .unit-card .unit-price{left:3px;right:53px}
 [dir="rtl"] #app[data-field-mode="field"][data-entry="play"] .deployment .unit-card .troop-mark{left:auto;right:2px}
 #app[data-field-mode="field"][data-entry="play"] .deployment .unit-card .troop-mark{position:absolute;top:2px;left:2px;right:auto;z-index:3}
-#app[data-field-mode="field"][data-entry="play"] .deployment .unit-card.affordable{border-color:#f0ce87;box-shadow:0 3px 0 #1c110a,0 0 0 1px #f0ce8755,0 0 12px #f0ce8740,inset 0 1px 0 #f3d9a64d}
+#app[data-field-mode="field"][data-entry="play"] .deployment .unit-card.affordable{border-color:#f0ce87;box-shadow:0 3px 0 #1c110a,0 0 0 1px #f0ce8755,0 0 12px #f0ce8740,inset 0 1px 0 #f3d9a64d;transition:transform .12s cubic-bezier(.2,1.4,.4,1),box-shadow .14s ease}
+#app[data-field-mode="field"][data-entry="play"] .deployment .unit-card.affordable:active{transform:translateY(2px) scale(.96,.94)}
 #app[data-field-mode="field"][data-entry="play"] .deployment .unit-card.affordable::before{border-color:#f0ce87}
 #app[data-field-mode="field"][data-entry="play"] .deployment .unit-card:disabled:not(.locked){border-color:#7a6040}
 #app[data-field-mode="field"][data-entry="play"] .deployment .unit-card:disabled:not(.locked) img{opacity:.72;filter:saturate(.6)}
@@ -109,8 +110,12 @@
 [data-motion=reduced] .field-banner.hinting .banner-plate{animation:none!important;opacity:1}
 
 /* Your camp (the gate shelter on the left) takes the Gather tap; its name hangs on it like a small sign. */
-.camp-hit{border-radius:14px}
-.camp-hit .world-target-name{opacity:1;bottom:-12px;top:auto;left:4px;right:auto;transform:none;padding:2px 8px;border:1px solid #b7955f;background:#f5efdaee;color:#24414b;font:700 12px/1.3 Georgia,serif;box-shadow:0 2px 0 #1c110a55}
+.camp-hit{border-radius:14px;transition:transform .08s ease-out}
+.camp-hit:active,.gate-hit:active{transform:scale(.96)}
+.camp-hit .world-target-name{opacity:1;bottom:-12px;top:auto;inset-inline-start:max(8px,env(safe-area-inset-left));transform:none;padding:2px 8px;border:1px solid #b7955f;background:#f5efdaee;color:#24414b;font:700 12px/1.3 Georgia,serif;box-shadow:0 2px 0 #1c110a55}
+[data-motion="reduced"] .camp-hit,[data-motion="reduced"] .gate-hit{transition:none}
+[data-motion="reduced"] .camp-hit:active,[data-motion="reduced"] .gate-hit:active{transform:none}
+@media(prefers-reduced-motion:reduce){.camp-hit,.gate-hit{transition:none}.camp-hit:active,.gate-hit:active{transform:none}}
 .camp-hit[aria-pressed="true"] .world-target-name{background:#e3c27e;color:#2a1a10}
 .camp-hit[aria-disabled="true"] .world-target-name{opacity:.6}
 

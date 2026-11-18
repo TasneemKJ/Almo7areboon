@@ -9,9 +9,9 @@ import {tr} from './i18n.ts';
  * and the gate's stones crack as it is hurt (base-damage.ts). The guide's lessons come after, in the storyteller's
  * voice, in the result's chronicle. A short line returns only for a player who has sent nothing for 8 s.
  */
-export const IDLE_LINE_SECONDS=8;
+export const IDLE_LINE_SECONDS=1.5;
 /** How long a player may stand still before the ripple shows where a tap would send a soldier. */
-export const RIPPLE_IDLE_SECONDS=1.2;
+export const RIPPLE_IDLE_SECONDS=1.0;
 /** The dust rises this long before a stronger wave reaches the road. */
 export const DUST_LEAD_SECONDS=4;
 

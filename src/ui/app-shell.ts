@@ -9,7 +9,7 @@ export function appShellHtml(profile:Profile):string {
  return `
 <main class="game-shell" aria-label="${tr('Almo7areboon','المحاربون')}">
   ${entryScreenHtml(profile)}
-  <header class="resources"><div class="currency">${icon('coin')}<span id="coins">0</span></div><button class="currency gems" data-command="quests" aria-label="${tr('Gems and quests','الجواهر والمهمّات')}">${icon('gem')}<span id="gems">100</span></button><div class="game-wordmark">${tr('ALMO7AREBOON','المحاربون')}</div></header>
+  <header class="resources"><div class="currency">${icon('coin')}<span id="coins">0</span></div><button class="currency gems" data-command="quests" aria-label="${tr('Gems and quests','الجواهر والمهمّات')}">${icon('gem')}<span id="gems">100</span></button><div class="game-wordmark">${tr('Almohareboon','المحاربون')}</div></header>
   <div id="battle-view" class="battle-view">
     <section id="world" class="world" tabindex="-1" aria-label="${tr('Battlefield','ساحة المعركة')}">
       <div id="battlefield"></div>

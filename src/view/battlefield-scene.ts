@@ -209,10 +209,14 @@ class Battlefield extends Phaser.Scene {
    const host=this.ctx,{game}=host;
    this.villageMuster=rememberVillageMuster(this.villageMuster,e,game.state.time);
    const x=xAt(e.x??500),y=this.yAt(e.lane??1);
-   if(e.type==='order'){this.effects.floatText(106,this.layout.groundY-58,e.order==='advance'?tr('ADVANCE','تقدّموا!'):tr('HOLD THE LINE','اثبُتوا!'),e.order==='advance'?'#f0ce87':'#a9dfdc',false);return;}
+   if(e.type==='order'){
+    this.effects.ring(106,this.layout.groundY-14,e.order==='advance'?0xf0ce87:0xa9dfdc,28);
+    this.effects.emit(106,this.layout.groundY-18,10,e.order==='advance'?0xf6dca8:0xa9dfdc,false,.45);
+    this.effects.floatText(106,this.layout.groundY-58,e.order==='advance'?tr('ADVANCE','تقدّموا'):tr('HOLD THE LINE','اثبُتوا'),e.order==='advance'?'#f0ce87':'#a9dfdc',false);return;
+   }
    if(e.type==='win'||e.type==='lose')this.aftermath={phase:e.type==='win'?'won':'lost',at:this.clock};
    if(e.storyCue){
-    const words:Partial<Record<NonNullable<GameEvent['storyCue']>,string>>={'bell-warning':tr('THE BELL WAKES','الجرس يستيقظ'),'bell-stilled':tr('STILLED','سكت الجرس'),shatter:tr('SHATTER','تحطّم!'),captain:game.profile.chronicle?.captain==='gatekeeper'?tr('STAND TOGETHER','كتفاً إلى كتف'):tr('BORROWED DAWN','فجرٌ مستعار'),rally:tr('TOGETHER','معاً'),rescued:tr('COME HOME','عُد إلى البيت')};
+    const words:Partial<Record<NonNullable<GameEvent['storyCue']>,string>>={'bell-warning':tr('THE BELL WAKES','الجرس يستيقظ'),'bell-stilled':tr('STILLED','سكت الجرس'),shatter:tr('SHATTER','تحطّم'),captain:game.profile.chronicle?.captain==='gatekeeper'?tr('STAND TOGETHER','كتفاً إلى كتف'):tr('BORROWED DAWN','فجرٌ مستعار'),rally:tr('TOGETHER','معاً'),rescued:tr('COME HOME','عُد إلى البيت')};
     if(words[e.storyCue])this.effects.floatText(x,y-50,words[e.storyCue]!,'#e5d4ad',e.storyCue==='captain');
     this.effects.ring(x,y-10,e.storyCue==='shatter'?0xacc9c5:0xd5bd89,18);
     if((e.amount??0)<=0)return;
@@ -243,23 +247,25 @@ class Battlefield extends Phaser.Scene {
     this.effects.cameraKick(70,.0016,2);
     return;
    }
-   if(e.type==='death'){this.effects.emit(x,y-12,9,e.side==='player'?0x82cce8:0xe6b388,true,.52,e.lane??1);this.effects.flare(x,y-14,18,e.side==='player'?0x5ccfff:0xff8a50,.3);}
+   if(e.type==='death'){this.effects.emit(x,y-12,9,e.side==='player'?0x82cce8:0xe6b388,true,.52,e.lane??1);this.effects.flare(x,y-14,18,e.side==='player'?0x5ccfff:0xff8a50,.3);this.effects.ring(x,y-8,e.side==='player'?0x82cce8:0xe6b388,15);}
    if(e.type==='coin'&&e.amount){this.marks.recordCoin(e,this.effects.floatText(x,y-51,`+${compactNumber(e.amount)}`,'#ffdf7f'));}
    if(e.type==='win'&&game.state.chronicle&&['escort','hold','rescue'].includes(game.state.chronicle.objective)){this.effects.floatText(225,this.layout.groundY-70,tr('THE COMPANY RETURNS','السريّة تعود'),'#e5d4ad',true);this.effects.ring(110,this.layout.groundY-12,0xd5bd89,24);return;}
-   if(e.type==='win'){this.effects.emit(408,this.layout.groundY-27,40,0xffd373,false,1.25);this.effects.flare(411,this.layout.groundY-30,120,0xffd27a,1.1);if(!this.reduce){this.effects.cameraKick(100,.0015,4);this.cameras.main.flash(260,255,226,170);}}
+   if(e.type==='win'){this.effects.emit(408,this.layout.groundY-27,40,0xffd373,false,1.25);this.effects.flare(411,this.layout.groundY-30,120,0xffd27a,1.1);this.effects.ring(408,this.layout.groundY-27,0xffe49c,65);if(!this.reduce){this.effects.cameraKick(100,.0015,4);this.cameras.main.flash(260,255,226,170);}}
    if(e.type==='lose')this.effects.emit(39,this.layout.groundY-10,20,0xb6a484,true,.8);
    if(e.type==='evolve')this.effects.ring(225,this.layout.groundY,0xd2f9d8,200);
    if(e.type==='skill'){
-    if(e.skill==='food'){this.effects.floatText(225,this.layout.groundY-85,`+${Number((e.amount??10).toFixed(1))}${tr(' FOOD',' مؤونة')}`,'#fff0ae',true);this.effects.ring(119,this.layout.groundY,0xc6ef9f,55);}
+    if(e.skill==='food'){this.effects.floatText(225,this.layout.groundY-85,`+${Number((e.amount??10).toFixed(1))}${tr(' FOOD',' مؤونة')}`,'#fff0ae',true);this.effects.ring(119,this.layout.groundY,0xc6ef9f,55);this.effects.flare(119,this.layout.groundY-12,36,0xffe49c,.45);}
     if(e.skill==='freeze'){
-     this.effects.floatText(225,this.layout.groundY-90,tr('FROZEN','تجمّدوا!'),'#d6fcff',true);
+     this.effects.floatText(225,this.layout.groundY-90,tr('FROZEN','تجمّدوا'),'#d6fcff',true);
+     this.effects.ring(225,this.layout.groundY-24,0xb8f4ff,95);
      if(!this.reduce)this.cameras.main.flash(220,170,240,255);
      for(const view of this.army.units.values())if(view.side==='enemy'){this.effects.ring(view.x,view.y-18,0xa4efff,35);this.effects.emit(view.x,view.y-25,12,0xd8fbff,false,.8);this.effects.flare(view.x,view.y-20,34,0x9ff4ff,.6);}
     }
     if(e.skill==='meteor'){
      const targets=[...this.army.units.values()].filter(v=>v.side==='enemy').slice(0,6);
-     if(this.reduce){this.effects.floatText(225,this.layout.groundY-85,tr('METEOR','النيزك!'),'#ffd6a5',true);for(const v of targets){this.effects.meteorLanding(v.x,v.y-15);this.marks.remember({kind:'meteor',x:v.x,lane:v.lane,side:'player'});}return;}
-     for(const v of targets.length?targets:[{x:310,y:this.layout.groundY,lane:1}]){const memory:BattlefieldMemoryInput={kind:'meteor',x:v.x,lane:v.lane,side:'player'};this.effects.pushBolt({from:{x:v.x-70,y:v.y-150},to:{x:v.x,y:v.y-15},life:.4,max:.4,arc:0,age:0,kind:2,side:'player',heavy:true,damage:0,meteor:true,memory:targets.length?memory:undefined},false);}
+     const meteorDamage=Math.round(36*1.65**game.profile.age);
+     if(this.reduce){this.effects.floatText(225,this.layout.groundY-85,tr('METEOR','النيزك'),'#ffd6a5',true);for(const v of targets){this.effects.meteorLanding(v.x,v.y-15);this.marks.remember({kind:'meteor',x:v.x,lane:v.lane,side:'player'});}return;}
+     for(const v of targets.length?targets:[{x:310,y:this.layout.groundY,lane:1}]){const memory:BattlefieldMemoryInput={kind:'meteor',x:v.x,lane:v.lane,side:'player'};this.effects.pushBolt({from:{x:v.x-70,y:v.y-150},to:{x:v.x,y:v.y-15},life:.4,max:.4,arc:0,age:0,kind:2,side:'player',heavy:true,damage:targets.length?meteorDamage:0,meteor:true,memory:targets.length?memory:undefined},false);}
      this.effects.cameraKick(180,.0025,3);this.cameras.main.flash(180,255,190,120);
     }
    }

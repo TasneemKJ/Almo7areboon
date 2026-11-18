@@ -47,7 +47,12 @@ export function createBattlefieldEffects(host:EffectsHost,layers:{fx:Phaser.Game
   }
  function impact(x:number,y:number,amount:number,age:number,kind:Unit['kind'],side:Side,heavy=kind===2):void {
    cues.pushImpactCue({x,y,age,kind,side,life:heavy?.3:.24,max:heavy?.3:.24});
-   flare(x,y,heavy?22:13,side==='player'?0xbfefff:0xffc890,heavy?.26:.18);
+   emit(x,y+4,heavy?8:4,side==='player'?0xf6dca8:0xff9b71,true,heavy?.38:.24);
+   if(!host.reduce()){
+    if(heavy){ring(x,y+2,0xffe49c,17);answers.cameraKick(42,.0009,1);}
+    else ring(x,y+2,side==='player'?0xf6e6b8:0xffb38a,10);
+   }
+   flare(x,y,heavy?24:14,side==='player'?0xbfefff:0xffc890,heavy?.26:.18);
    if(amount>0)floatText(x,y-15,compactNumber(amount),'#fff1c8',false,heavy);
   }
  function step(dt:number):void {

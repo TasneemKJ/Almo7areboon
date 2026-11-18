@@ -29,14 +29,14 @@ test('only the first battle of a new company is quiet; later battles keep their 
   assert.equal(isFirstBattle(g.profile, g.state), true, 'its result is still the first battle');
 });
 
-test('in the first battle the guide is silent, and one short line returns only after 8 s with nothing sent', () => {
+test('in the first battle the guide starts quiet briefly, and returns promptly after 1.5 s with nothing sent', () => {
   const g = fresh();
-  for (let t = 0; t < 30; t += .5) { g.step(.5); g.drainEvents(); assert.equal(quietGuidance(g, Math.min(t, IDLE_LINE_SECONDS - .5)), '', `quiet at ${t}s`); }
+  for (let t = 0; t < 1.2; t += .5) { g.step(.5); g.drainEvents(); assert.equal(quietGuidance(g, Math.min(t, IDLE_LINE_SECONDS - .2)), '', `quiet at ${t}s`); }
   assert.ok(g.deploymentStatus(0).allowed);
   const line = quietGuidance(g, IDLE_LINE_SECONDS);
   assert.match(line, /^Tap the field/); assert.ok(line.length < 60, 'a short line');
   setLang('ar'); try { assert.match(quietGuidance(g, IDLE_LINE_SECONDS), /^انقر على الساحة/); } finally { setLang('en'); }
-  assert.equal(fieldGuidance(g, 3), '', 'fieldGuidance follows the quiet rule in the first battle');
+  assert.equal(fieldGuidance(g, 0.5), '', 'fieldGuidance follows the brief opening in the first battle');
   assert.equal(fieldGuidance(g, IDLE_LINE_SECONDS), line);
 });
 

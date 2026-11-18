@@ -15,7 +15,7 @@
 #entry-subtitle{font-size:12px;line-height:1.5;margin:0}
 .entry-actions{width:min(100%,290px);margin-inline:auto;display:grid;gap:8px}
 .entry-actions .big-button{min-height:54px;width:100%;font-size:18px}
-.entry-settings{min-height:44px;background:transparent;border:1px solid #d8bb7777;border-radius:12px;color:#fff1d0;font:inherit;font-size:13px;cursor:pointer}
+.entry-settings{min-height:44px;background:linear-gradient(180deg,rgba(46,32,20,.86),rgba(28,19,12,.92));border:1px solid #d5ab6688;box-shadow:inset 0 1px 0 #ffe9ad26,0 4px 12px #00000044;border-radius:12px;color:#fff1d0;font:inherit;font-size:13px;font-weight:600;cursor:pointer}
 .entry-actions button:focus-visible{outline:3px solid #fff5d6;outline-offset:3px}
 #app[data-entry="home"] .session-notice{position:absolute;bottom:0;inset-inline:0;z-index:2;height:auto;min-height:28px}
 #app[data-entry="home"][data-save-session="temporary"] .entry-screen{padding-bottom:calc(max(24px,env(safe-area-inset-bottom)) + 28px)}

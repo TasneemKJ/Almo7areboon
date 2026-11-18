@@ -43,14 +43,14 @@ export type TemperKey = 'heavy-edge' | 'light-edge' | 'long-reach' | 'quick-hand
 export interface Temper { readonly key: TemperKey; readonly kind: UnitKind; readonly mul: Readonly<Partial<Record<'hp' | 'damage' | 'speed' | 'range' | 'interval', number>>> }
 export const TEMPERS: Readonly<Record<TemperKey, Temper>> = Object.freeze({
   // Swords: hits harder but swings slower, or swings quicker but lighter.
-  'heavy-edge': { key: 'heavy-edge', kind: 0, mul: { damage: 1.15, interval: 1.12 } },
-  'light-edge': { key: 'light-edge', kind: 0, mul: { interval: 0.88, damage: 0.88 } },
+  'heavy-edge': { key: 'heavy-edge', kind: 0, mul: { damage: 1.28, interval: 1.12 } },
+  'light-edge': { key: 'light-edge', kind: 0, mul: { interval: 0.78, damage: 0.88 } },
   // Javelins: reach further but throw slower, or throw quicker from closer in.
-  'long-reach': { key: 'long-reach', kind: 1, mul: { range: 1.2, interval: 1.15 } },
-  'quick-hand': { key: 'quick-hand', kind: 1, mul: { interval: 0.87, range: 0.8 } },
+  'long-reach': { key: 'long-reach', kind: 1, mul: { range: 1.32, interval: 1.12 } },
+  'quick-hand': { key: 'quick-hand', kind: 1, mul: { interval: 0.78, range: 0.85 } },
   // Lances: the charge arrives first but turns back sooner, or holds longer and arrives later.
-  'first-charge': { key: 'first-charge', kind: 2, mul: { speed: 1.18, hp: 0.88 } },
-  'steady': { key: 'steady', kind: 2, mul: { hp: 1.12, speed: 0.85 } },
+  'first-charge': { key: 'first-charge', kind: 2, mul: { speed: 1.3, hp: 0.88 } },
+  'steady': { key: 'steady', kind: 2, mul: { hp: 1.25, speed: 0.88 } },
 });
 const BY_KIND: readonly [[TemperKey, TemperKey], [TemperKey, TemperKey], [TemperKey, TemperKey]] = [['heavy-edge', 'light-edge'], ['long-reach', 'quick-hand'], ['first-charge', 'steady']];
 export function temperOf(blade: Pick<Blade, 'kind' | 'lost'>): Temper { return TEMPERS[BY_KIND[blade.kind][blade.lost ? 1 : 0]]; }

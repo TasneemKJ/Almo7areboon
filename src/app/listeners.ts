@@ -135,7 +135,7 @@ export function installListeners(deps: ListenersDeps): void {
     'upgrade-base':()=>{ports.action({type:'upgrade',stat:'base'});},
     'battles':()=>{ports.showModal('battles',battleSelectionHtml(ports.sessionState.game.profile,ports.sessionState.game.state));},
     'wave-help':()=>{if(ports.sessionState.game.state.phase==='running')ports.showModal('wave-help',waveInspectionHtml(ports.sessionState.game.waveStatus(),ports.sessionState.game.state.chronicle?.enabled?ports.sessionState.game.state.chronicle.objective:undefined));},
-    'evolve':()=>{if(ports.gateEvolution())return;const html=evolutionDialogHtml(ports.sessionState.game.profile,ports.sessionState.game.state);if(html){ports.navState.evolutionFromResult=ports.navState.modal==='result'&&ports.sessionState.game.state.phase==='won';ports.showModal('evolve',html);};},
+    'evolve':()=>{if(ports.gateEvolution())return;const html=evolutionDialogHtml(ports.sessionState.game.profile,ports.sessionState.game.state);if(html){ports.navState.evolutionFromResult=ports.navState.modal==='result'&&(ports.sessionState.game.state.phase==='won'||ports.sessionState.game.state.phase==='lost');ports.showModal('evolve',html);};},
     'confirm-evolve':()=>{
       if(ports.gateEvolution())return;
       const returnToResult=ports.navState.evolutionFromResult,ok=ports.action({type:'evolve'});
