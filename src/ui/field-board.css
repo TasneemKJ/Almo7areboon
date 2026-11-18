@@ -122,12 +122,12 @@
 /* Phone landscape: the board is a narrow upright plank beside the field, one token per row. */
 @media (orientation:landscape) and (max-height:540px) and (min-width:600px){
  #app[data-field-mode="field"][data-entry="play"] .game-shell{--rail:clamp(176px,24vw,212px)}
- #app[data-field-mode="field"][data-entry="play"] .battle-view>.deployment{display:flex!important;flex-direction:column;justify-content:center;padding:10px max(10px,env(safe-area-inset-right)) 10px 12px;border-left:0;
+ #app[data-field-mode="field"][data-entry="play"] .battle-view>.deployment{display:flex!important;flex-direction:column;justify-content:center;align-items:stretch;padding:10px max(10px,env(safe-area-inset-right)) 10px 12px;border-left:0;
   background:
    linear-gradient(90deg,#2a1a10 0,#2a1a10 2px,#e9cf9466 2px,#e9cf9466 3px,transparent 3px),
    repeating-linear-gradient(0deg,#0000 0 19px,#2a1a1014 19px 21px,#0000 21px 47px,#f3d9a60c 47px 49px),
    linear-gradient(90deg,#6d4a2e 0,#5a3b23 45%,#452c19 100%);box-shadow:-6px 0 14px #0b1a1466}
- #app[data-field-mode="field"][data-entry="play"] .deployment .unit-cards{grid-template-columns:minmax(0,1fr)!important;gap:10px}
+ #app[data-field-mode="field"][data-entry="play"] .deployment .unit-cards{width:100%;grid-template-columns:minmax(0,1fr)!important;gap:10px}
 }
 /* While an order runs, the carried banner throws a small pool of its colour on the ground. */
 .field-banner[data-order="advance"] .banner-shadow{background:#f0ce87;opacity:.6;filter:blur(5px);width:52px;left:-16px;height:12px}
