@@ -14,7 +14,7 @@ export function paintBaseDamage(g:Phaser.GameObjects.Graphics,game:GamePort,layo
    g.clear();
    const state=game.state,ground=layout.groundY+12;
    for(const side of ['player','enemy'] as const){
-    const x=side==='player'?39:411;
+    const x=side==='player'?54:396;
     const hp=side==='player'?state.playerHp:state.enemyHp,maxHp=side==='player'?state.playerMaxHp:state.enemyMaxHp;
     const age=side==='player'?game.profile.age:game.profile.enemyAge;
     for(const mark of baseDamageFrame(age,side,hp,maxHp,clock,reduce)){
@@ -46,7 +46,7 @@ export function paintBaseDamage(g:Phaser.GameObjects.Graphics,game:GamePort,layo
 /** Base and troop health bars, optional role marks, and the freeze band. */
 export function paintHealthBars(bars:Phaser.GameObjects.Graphics,baseText:Phaser.GameObjects.Text[],game:GamePort,layout:Layout,yAt:(lane:number)=>number):void {
    const g=bars,s=game.state;g.clear();
-   for(const [i,x,hp,max,color]of [[0,39,s.playerHp,s.playerMaxHp,0x68c9ee],[1,411,s.enemyHp,s.enemyMaxHp,0xf19d75]]){
+   for(const [i,x,hp,max,color]of [[0,54,s.playerHp,s.playerMaxHp,0x68c9ee],[1,396,s.enemyHp,s.enemyMaxHp,0xf19d75]]){
     const age=i===0?game.profile.age:game.profile.enemyAge;
     const y=layout.groundY-(storybookArt(age)?65:85),fill=59*Math.max(0,Math.min(1,hp/max));
     g.fillStyle(0x132d3c,.88);g.fillRoundedRect(x-33,y-4,66,19,7);

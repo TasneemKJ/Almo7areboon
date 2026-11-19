@@ -55,8 +55,8 @@ export function createBattlefieldArmy(host:ArmyHost,layers:ArmyLayers,effects:Re
    let aftermathElapsed=aftermath?Math.max(0,host.clock()-aftermath.at):0;aftermathElapsed=Math.min(1.3,aftermathElapsed);
    const aftermathCounts={triumph:0,withdraw:0,roles:[0,0,0],maxForward:0,maxLift:0,maxAngle:0};
    // A shared ground-plane sort lets rear-lane troops pass behind buildings.
-   playerBase.setPosition(39,groundY+12).setDepth(groundY+12);
-   enemyBase.setPosition(411,groundY+12).setDepth(groundY+12);
+   playerBase.setPosition(54,groundY+12).setDepth(groundY+12);
+   enemyBase.setPosition(396,groundY+12).setDepth(groundY+12);
    paintWaveSignal(host,layers.arrivalSignal,groundY);
    layers.baseDamage.setDepth(groundY+12.1);
    for(let lane=0;lane<3;lane++)layers.groundFx[lane].clear().setDepth(groundEffectDepth(groundY,lane,host.layout().laneGap));

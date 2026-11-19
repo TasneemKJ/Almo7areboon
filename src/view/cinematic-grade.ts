@@ -102,8 +102,8 @@ export function stageGlow(age:number,groundY:number,time:number,reduced:boolean,
     marks.push({x,y:groundY-30,rx:58,ry:66,color,alpha:strength*.55});
     marks.push({x,y:groundY+12,rx:62,ry:15,color,alpha:strength});
   };
-  beacon(39,0x4fc8ff,playerHpRatio,0);
-  beacon(411,0xff7a45,enemyHpRatio,1.7);
+  beacon(54,0x4fc8ff,playerHpRatio,0);
+  beacon(396,0xff7a45,enemyHpRatio,1.7);
   return marks;
 }
 

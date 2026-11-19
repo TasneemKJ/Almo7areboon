@@ -129,6 +129,7 @@
    repeating-linear-gradient(0deg,#0000 0 19px,#2a1a1014 19px 21px,#0000 21px 47px,#f3d9a60c 47px 49px),
    linear-gradient(90deg,#6d4a2e 0,#5a3b23 45%,#452c19 100%);box-shadow:-6px 0 14px #0b1a1466}
  #app[data-field-mode="field"][data-entry="play"] .deployment .unit-cards{width:100%;grid-template-columns:minmax(0,1fr)!important;gap:10px}
+ #app[data-field-mode="field"][data-entry="play"] .deployment .unit-card{height:62px!important;min-height:62px}
 }
 /* While an order runs, the carried banner throws a small pool of its colour on the ground. */
 .field-banner[data-order="advance"] .banner-shadow{background:#f0ce87;opacity:.6;filter:blur(5px);width:52px;left:-16px;height:12px}
