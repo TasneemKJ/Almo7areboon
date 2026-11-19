@@ -73,26 +73,22 @@
 .field-banner{position:absolute;z-index:6;pointer-events:auto;touch-action:none;user-select:none;-webkit-user-select:none;-webkit-touch-callout:none;cursor:grab}
 .field-banner[hidden]{display:none!important}
 .field-banner.dragging{cursor:grabbing}
-.banner-carry{position:absolute;left:0;right:0;bottom:0;aspect-ratio:64/90;pointer-events:none;transform:translateX(calc(var(--drag,0px) + var(--carried,0px))) rotate(var(--lean,0deg));transform-origin:12% 100%;transition:transform .5s cubic-bezier(.2,.9,.25,1.15)}
+.banner-carry{position:absolute;left:0;right:0;bottom:0;aspect-ratio:1;pointer-events:none;transform:translateX(calc(var(--drag,0px) + var(--carried,0px))) rotate(var(--lean,0deg));transform-origin:12% 100%;transition:transform .5s cubic-bezier(.2,.9,.25,1.15)}
 .field-banner.dragging .banner-carry{transition:none}
 .field-banner[data-order="advance"]{--carried:30px;--lean:7deg}
 .field-banner[data-order="hold"]{--carried:-22px;--lean:-3deg}
 .field-banner.dragging[data-intent="advance"]{--lean:9deg}
 .field-banner.dragging[data-intent="hold"]{--lean:-5deg}
-.banner-shadow{position:absolute;left:-4px;bottom:-3px;width:34px;height:8px;border-radius:50%;background:#0b1712;opacity:.45;filter:blur(1.5px)}
-.banner-staff{position:absolute;left:5px;width:6px;top:56%;bottom:0;border-radius:3px;background:linear-gradient(90deg,#3d2312,#9a6a3e 45%,#5e3b20);box-shadow:0 0 0 1.2px #24150b}
-.banner-cloth{position:absolute;left:0;top:0;width:100%;height:auto;aspect-ratio:1;pointer-events:none;transform-origin:10% 60%}
-.banner-furled{filter:grayscale(.65) brightness(.5) saturate(.6);opacity:.95}
-.banner-lit{clip-path:inset(0 calc((1 - var(--cloth,0)) * 80%) 0 0);transition:clip-path .4s ease-out}
-.field-banner[data-ready="true"] .banner-lit{filter:drop-shadow(0 0 5px #f0ce87) drop-shadow(0 0 1px #fff3cf)}
+.banner-shadow{position:absolute;left:1px;bottom:-2px;width:22px;height:6px;border-radius:50%;background:#0b1712;opacity:.45;filter:blur(1.5px)}
+.banner-staff,.banner-steps{display:none}
+.banner-cloth{position:absolute;left:0;top:0;width:100%;height:100%;object-fit:contain;pointer-events:none;transform-origin:10% 60%}
+.banner-furled{filter:saturate(.55) brightness(.72);opacity:1}
+.banner-lit{opacity:var(--cloth,0);transition:opacity .4s ease-out}
+.field-banner[data-ready="true"] .banner-lit{filter:drop-shadow(0 0 6px #f0ce87) drop-shadow(0 0 2px #fff3cf)}
 .field-banner[data-ready="true"] .banner-cloth,.field-banner[data-order="advance"] .banner-cloth,.field-banner[data-order="hold"] .banner-cloth{animation:banner-stir 2.6s ease-in-out infinite}
-.field-banner[data-order="advance"] .banner-lit{filter:drop-shadow(0 0 6px #f0ce87) sepia(.25) saturate(1.25)}
+.field-banner[data-order="advance"] .banner-lit{filter:drop-shadow(0 0 6px #f0ce87) sepia(.2) saturate(1.25)}
 .field-banner[data-order="hold"] .banner-lit{filter:drop-shadow(0 0 6px #a9dfdc)}
 @keyframes banner-stir{0%,100%{transform:skewY(0) scaleX(1)}50%{transform:skewY(-2.5deg) scaleX(.97)}}
-.banner-steps{position:absolute;left:3px;bottom:9%;width:10px;height:36%;display:flex;flex-direction:column-reverse;justify-content:space-between;pointer-events:none}
-.banner-steps b{display:block;width:8px;height:3px;margin-left:1px;border-radius:2px;background:#5a4029;box-shadow:0 0 0 1px #24150bcc}
-.field-banner[data-steps="1"] .banner-steps b:nth-child(-n+1),.field-banner[data-steps="2"] .banner-steps b:nth-child(-n+2),
-.field-banner[data-steps="3"] .banner-steps b:nth-child(-n+3),.field-banner[data-steps="4"] .banner-steps b{background:#e3c27e}
 /* Two brass chevrons at the foot say "this can be carried" once momentum is ready. */
 .field-banner[data-ready="true"]::before,.field-banner[data-ready="true"]::after{content:"";position:absolute;bottom:4px;width:9px;height:9px;border:solid #f0ce87;border-width:0 2.5px 2.5px 0;filter:drop-shadow(0 1px 1px #0b1712);animation:banner-beckon 1.6s ease-in-out infinite}
 .field-banner[data-ready="true"]::before{left:-14px;transform:rotate(135deg)}
