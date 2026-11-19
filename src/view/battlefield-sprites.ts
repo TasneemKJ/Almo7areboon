@@ -17,7 +17,7 @@ export function createBaseSprite(scene:Phaser.Scene,age:number,side:Side):ImageO
   const key=baseTexture(age,side);
   if(scene.textures.exists(key)){
     const image=scene.add.image(0,0,key).setOrigin(.5,140/160);
-    return image.setScale(.62*160/image.width).setFlipX(!!storybookArt(age)&&side==='enemy');
+    return image.setScale(.78*160/image.width).setFlipX(!!storybookArt(age)&&side==='enemy');
   }
   const graphic=scene.add.graphics();drawBase(graphic,age,side);return graphic;
 }

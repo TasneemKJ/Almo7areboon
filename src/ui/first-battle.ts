@@ -24,7 +24,7 @@ export function isFirstBattle(p:Readonly<Profile>,s:Readonly<BattleState>):boole
 export function quietGuidance(game:Game,idleSeconds:number):string {
  const s=game.state;
  if(s.phase!=='running'||s.paused||!(idleSeconds>=IDLE_LINE_SECONDS)||!game.deploymentStatus(0).allowed)return '';
- return tr('Tap the field to send a soldier.','انقر على الساحة لترسل جندياً.');
+ return tr('Tap a troop card below to send a soldier.','اختر بطاقة مقاتل في الأسفل لترسل جندياً.');
 }
 
 export interface WorldTeaching {foodReady:boolean;ripple:boolean;dust:boolean;/** The wave the horn announces, once. */horn:number|null}
