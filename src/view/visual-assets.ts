@@ -18,6 +18,7 @@ export const PROP_ASSETS:readonly [string,string][]=[
  ['proj-cannonball','/art/storybook/props/proj-cannonball.webp'],
  ['proj-shell','/art/storybook/props/proj-shell.webp'],
  ['proj-meteor','/art/storybook/props/proj-meteor.webp'],
+ ['supplies','/art/storybook/camp/storehouse.webp'],
 ];
 export interface VisualAsset {key:string;url:string;width:number;height:number;frames?:number;format?:'image'}
 let cached:readonly VisualAsset[]|undefined;
