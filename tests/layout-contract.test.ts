@@ -102,8 +102,8 @@ test('muted body copy and blue button gradients keep AA contrast on their surfac
  const ratio=(a:string,b:string)=>(Math.max(lum(a),lum(b))+0.05)/(Math.min(lum(a),lum(b))+0.05);
  assert.ok(ratio(hex('muted'),hex('paper'))>=5.5,'muted copy on paper');
  assert.ok(ratio(hex('muted'),'#e1e7cd')>=4.5,'muted copy on the tinted panels');
- for(const top of css.match(/linear-gradient\(#3[0-9a-f]{5},#244d64\)/g)??[])assert.ok(ratio('#fff3d7',top.slice(16,23))>=4.5,top);
- assert.equal((css.match(/linear-gradient\(#326a86,#244d64\)/g)??[]).length,2,'both blue button surfaces use the darker gradient');
+ for(const top of css.match(/linear-gradient\(#2[0-9a-f]{5},#1c4157\)/g)??[])assert.ok(ratio('#fff3d7',top.slice(16,23))>=4.5,top);
+ assert.equal((css.match(/linear-gradient\(#2b5f7a,#1c4157\)/g)??[]).length,2,'both blue button surfaces use the darker gradient');
 });
 
 

@@ -9,6 +9,16 @@ export const unitTexture=(age:number,kind:UnitKind,side:Side)=>`army-${age}-${ki
 export const baseTexture=(age:number,side:Side)=>`base-${age}-${storybookArt(age)?'player':side}`;
 export const landscapeTexture=(age:number)=>`landscape-${age}`;
 export const foregroundTexture=(age:number)=>`foreground-${age}`;
+export const propTexture=(name:string)=>`prop-${name}`;
+export const PROP_ASSETS:readonly [string,string][]=[
+ ['lantern','/art/storybook/props/lantern.webp'],
+ ['spoils-coin','/art/storybook/props/spoils-coin.webp'],
+ ['proj-stone','/art/storybook/props/proj-stone.webp'],
+ ['proj-arrow','/art/storybook/props/proj-arrow.webp'],
+ ['proj-cannonball','/art/storybook/props/proj-cannonball.webp'],
+ ['proj-shell','/art/storybook/props/proj-shell.webp'],
+ ['proj-meteor','/art/storybook/props/proj-meteor.webp'],
+];
 export interface VisualAsset {key:string;url:string;width:number;height:number;frames?:number;format?:'image'}
 let cached:readonly VisualAsset[]|undefined;
 export function visualAssets():readonly VisualAsset[] {

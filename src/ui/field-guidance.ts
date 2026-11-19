@@ -18,7 +18,7 @@ export function fieldGuidance(game:Game,idleSeconds=0):string {
  const status=game.deploymentStatus(0),support=skillCue(p,s,'food',game.canUseSkill('food')).label.split(' · ')[0];
  const hint=physicalFieldCue(p,s,game.waveStatus().preview,status,support);
  if(s.paused||hint.startsWith(GUIDE.danger()))return hint;
- if(s.stats.deployed===0)return tr(`Tap the field to send your first troop. ${ERAS[p.age].units[0].cost} food.`,`انقر على الساحة لترسل جنديّك الأوّل. كلفته ${ERAS[p.age].units[0].cost} من المؤونة.`);
+ if(s.stats.deployed===0)return tr(`Tap a troop card to send your first troop. ${ERAS[p.age].units[0].cost} food.`,`اختر بطاقة مقاتل لترسل جنديّك الأوّل. كلفته ${ERAS[p.age].units[0].cost} من المؤونة.`);
  // Orders are dragged (2026-11-15: a tap never orders). Until this battle's first order the drag lesson shares the
  // line with tactical hints, six seconds each, so neither goes unseen; danger and pause (above) still come first.
  const drag=tr('Momentum ready. Drag the banner forward to advance, back to hold.','الزخم جاهز. اسحب الراية إلى الأمام لتتقدّم، وإلى الخلف لتثبت.');

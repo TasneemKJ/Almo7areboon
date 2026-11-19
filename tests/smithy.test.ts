@@ -193,6 +193,6 @@ test('the weapons are seated: the beam stands on posts down to the forge\'s grou
   const g = atRest(); g.profile.smithy = { next: 9, blades: [{ id: 5, chapter: 0, kind: 0, forged: true, hung: true }, { id: 6, chapter: 1, kind: 0, forged: true }] };
   const html = campSmithyHtml(g.profile);
   const hook = html.match(/<button class="camp-smithy-hook hung"[\s\S]*?<\/button>/)![0], wall = html.match(/<span class="camp-smithy-wall"[\s\S]*?<\/span>/)![0];
-  assert.match(hook, /<g transform="rotate\(180 12 32\)">/, 'a hung weapon is turned over: grip on the peg, point down');
+  assert.match(hook, /class="smithy-weapon[^"]*hanging"|<g transform="rotate\(180 12 32\)">/, 'a hung weapon is turned over: grip on the peg, point down');
   assert.doesNotMatch(wall, /rotate\(180/, 'the kept ones stand point up');
 });

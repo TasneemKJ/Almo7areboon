@@ -10,7 +10,7 @@ import {ensureVillageLight,villageOrderHudChanged,type VillageViewport} from './
 import {type VillageMoodSnapshot} from './village-mood.ts';
 import {createVillageMuster,rememberVillageMuster,villageMusterFrame} from './village-muster.ts';
 import {lanePresentation,projectileLift} from './lane-perspective.ts';
-import {foregroundTexture,landscapeTexture,visualAssets} from './visual-assets.ts';
+import {foregroundTexture,landscapeTexture,PROP_ASSETS,propTexture,visualAssets} from './visual-assets.ts';
 import {waveArrivalForPort,type WaveArrivalFrame} from './wave-arrival.ts';
 import {battlefieldMemoryIntentForHit,type BattlefieldMemoryInput} from './battlefield-memory.ts';
 import {compactNumber} from '../game/format.ts';
@@ -70,6 +70,7 @@ class Battlefield extends Phaser.Scene {
   private halos!:Phaser.GameObjects.Graphics;
   private lanternBody!:Phaser.GameObjects.Graphics;
   private lanternGlow!:Phaser.GameObjects.Graphics;
+  private lanternSprites:Phaser.GameObjects.Image[]=[];
   private lanternsLit=false;
   private glow!:Phaser.GameObjects.Graphics;
   private mist!:Phaser.GameObjects.Container;
@@ -94,13 +95,14 @@ class Battlefield extends Phaser.Scene {
    this.ctx=ctx;
    const {element,game}=ctx;
    this.hud=createHudMeasure(element,()=>this.game.canvas,()=>this.layout);
-   this.marks=createBattlefieldMarks({ambience:()=>this.ambience,fx:()=>this.fx,canvas:()=>this.game.canvas,layout:()=>this.layout,yAt:lane=>this.yAt(lane),reduce:()=>this.reduce,paused:()=>game.state.paused,measureHud:()=>this.hud.regions()});
+   this.marks=createBattlefieldMarks({ambience:()=>this.ambience,fx:()=>this.fx,canvas:()=>this.game.canvas,layout:()=>this.layout,yAt:lane=>this.yAt(lane),reduce:()=>this.reduce,paused:()=>game.state.paused,measureHud:()=>this.hud.regions(),scene:()=>this,world:()=>this.world});
   }
   preload():void {
    for(const asset of visualAssets()){
     if(asset.format==='image')this.load.image(asset.key,asset.url);
     else this.load.svg(asset.key,asset.url);
    }
+   for(const [name,url] of PROP_ASSETS)this.load.image(propTexture(name),url);
    this.load.on('loaderror',()=>{this.failed=true;});
   }
   create():void {
@@ -293,8 +295,21 @@ class Battlefield extends Phaser.Scene {
    this.waveArrival=waveArrivalForPort(game,this.reduce);
    const phaseHudChanged=this.villageHudPhase!==game.state.phase,orderHudChanged=villageOrderHudChanged(this.villageHudPaused,game.state.paused,!!this.orderFrame?.answer,!!this.waveArrival,!!this.musterFrame);
    if(phaseHudChanged||orderHudChanged){const world=element.closest<HTMLElement>('.world');if(world?.dataset.phase!==game.state.phase||orderHudChanged)onFrame(true);this.villageHudPhase=game.state.phase;this.cacheVillageViewport();}
-   if(options.lamplighter?.()===true){paintGateLanterns(this.lanternBody,this.lanternGlow,gateLanternPlan(this.layout.groundY,game.state.time,this.reduce));this.lanternsLit=true;}
-   else if(this.lanternsLit){this.lanternBody.clear();this.lanternGlow.clear();this.lanternsLit=false;}
+   if(options.lamplighter?.()===true){
+    const plan=gateLanternPlan(this.layout.groundY,game.state.time,this.reduce),tex=propTexture('lantern');
+    if(this.textures.exists(tex)){
+     this.lanternBody.clear();this.lanternGlow.clear();
+     for(let i=0;i<plan.length;i++){
+      const l=plan[i];
+      for(const [radius,alpha] of [[34,.10],[22,.16],[12,.24]] as const){this.lanternGlow.fillStyle(0xffd18a,alpha*l.glow);this.lanternGlow.fillCircle(l.x,l.y,radius*l.scale);}
+      let img=this.lanternSprites[i];
+      if(!img){img=this.add.image(0,0,tex).setOrigin(.5,.2);this.world.addAt(img,this.world.getIndex(this.lanternBody)+1);this.lanternSprites[i]=img;}
+      const sway=this.reduce?0:Math.sin(game.state.time*1.6+i*1.9)*2.5;
+      img.setPosition(l.x,l.y-10*l.scale).setScale((28*l.scale)/Math.max(1,img.height)).setAngle(sway).setAlpha(.45+.55*l.lit).setVisible(true);
+     }
+    }else paintGateLanterns(this.lanternBody,this.lanternGlow,plan);
+    this.lanternsLit=true;
+   }else if(this.lanternsLit){this.lanternBody.clear();this.lanternGlow.clear();for(const img of this.lanternSprites)img.setVisible(false);this.lanternsLit=false;}
    this.atmosphere.draw();paintBaseDamage(this.baseDamage,game,this.layout,this.clock,this.reduce,side=>this.effects.baseHit(side));this.army.draw();paintOrders(this.shadows,this.orderFrame,()=>this.game.canvas,this.reduce);paintHealthBars(this.bars,this.baseText,game,this.layout,lane=>this.yAt(lane));this.effects.step(game.state.paused?0:dt);onFrame();
   }
 }

@@ -33,7 +33,7 @@ test('battlefield launches from the numeric cue with capped painted geometry',as
  assert.match(source,/paintSpoilsToken\(host\.fx\(\),frame\)/);
  assert.match(source,/spoils\.slice\(0,SPOILS_HOMECOMING_CAP\)/);
  assert.doesNotMatch(source,/spoilsTokens/);
- assert.doesNotMatch(source,/spoils-coin|coin-token\.webp/);
+ assert.match(source,/propTexture\('spoils-coin'\)/);
  assert.match(source,/let spoilsOrder=0/);
  assert.match(source,/rememberSpoilsHomecoming\(spoils,\{\.\.\.intent,x:floater\.text\.x,y:floater\.startY\},\+\+spoilsOrder,host\.layout\(\)\.height\)/);
  assert.match(source,/this\.marks\.restartOrder\(\);this\.effects\.reset\(\)/);

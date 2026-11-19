@@ -19,7 +19,7 @@ test('in battle the deployment tray is shown under the field, and the invisible 
 test('the first instruction points at the field itself, not at a defender on the grass or a menu', async () => {
   const src = readFileSync(new URL('../src/ui/field-guidance.ts', import.meta.url), 'utf8') + readFileSync(new URL('../src/ui/battle-hud.ts', import.meta.url), 'utf8');
   assert.doesNotMatch(src, /waiting defender|المدافع المنتظر/);
-  assert.match(src, /Tap the field to send your first troop/);
+  assert.match(src, /Tap a troop card to send your first troop/);
 });
 
 test('the tray cards show the painted troop portraits, not the old vector icons', () => {

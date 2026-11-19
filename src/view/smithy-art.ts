@@ -19,6 +19,7 @@ function weapon(kind: number): string {
  * weapon on a hook does, rather than balancing on its tip.
  */
 export function weaponIllustration(kind: number, glint = false, hanging = false): string {
+  if (kind === 0) return `<img class="smithy-weapon smithy-weapon-0${glint ? ' glint' : ''}${hanging ? ' hanging' : ''}" src="/art/storybook/props/smithy-sword.webp" alt="" width="60" height="256" aria-hidden="true"/>`;
   const body = `${glint ? `<path d="M12 4V20" stroke="#fff6dc" stroke-width="1.4" stroke-linecap="round" opacity=".85"/>` : ''}${weapon(kind)}`;
   return svg(`smithy-weapon smithy-weapon-${kind}`, '0 0 24 64', hanging ? `<g transform="rotate(180 12 32)">${body}</g>` : body);
 }
@@ -38,5 +39,5 @@ export function brokenBladeIllustration(kind: number): string {
 }
 /** The forge: an anvil on a stump and a brazier whose embers glow while there is something to reforge. */
 export function forgeIllustration(lit: boolean): string {
-  return svg(`smithy-forge${lit ? ' lit' : ''}`, '0 0 96 72', `<defs><radialGradient id="smithy-ember"><stop stop-color="#ffb35c" stop-opacity=".95"/><stop offset=".55" stop-color="#e5672c" stop-opacity=".55"/><stop offset="1" stop-color="#e5672c" stop-opacity="0"/></radialGradient></defs><ellipse cx="48" cy="67" rx="44" ry="5" fill="#102a29" opacity=".5"/>${lit ? `<ellipse class="smithy-glow" cx="74" cy="40" rx="22" ry="20" fill="url(#smithy-ember)"/>` : ''}<path d="M64 46H86L82 66H68Z" fill="#4b3a2e" stroke="${INK}" stroke-width="1.8"/><path d="M63 46H87" stroke="${BRASS}" stroke-width="2"/><path d="M68 46C70 40 74 43 75 38 77 42 81 40 82 46Z" fill="${lit ? '#f08a3a' : '#5d4a3c'}" stroke="${INK}" stroke-width="1"/>${lit ? `<path class="smithy-spark" d="M76 34V30M71 36L69 33M80 35L83 32" stroke="#ffdc92" stroke-width="1.4" stroke-linecap="round"/>` : ''}<path d="M18 50H44L41 66H21Z" fill="#7a5638" stroke="${INK}" stroke-width="1.8"/><path d="M20 55H42M22 60H40" stroke="#5c3f28" stroke-width="1"/><path d="M8 34H50C50 38 46 40 40 40L38 46H24L22 40H16C12 40 8 38 8 34Z" fill="#3d4f57" stroke="${INK}" stroke-width="1.8"/><path d="M9 34H50" stroke="#93a6ab" stroke-width="1.6"/><path d="M50 30L58 24 61 27 54 33Z" fill="${GRIP}" stroke="${INK}" stroke-width="1.2"/><path d="M57 21H65V28H57Z" fill="#3d4f57" stroke="${INK}" stroke-width="1.3"/>`);
+  return `<span class="smithy-forge${lit ? ' lit' : ''}" aria-hidden="true"><img class="smithy-forge-img" src="/art/storybook/props/smithy-forge.webp" alt="" width="256" height="199"/></span>`;
 }

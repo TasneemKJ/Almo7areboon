@@ -1,6 +1,7 @@
 import type Phaser from 'phaser';
 import {BATTLEFIELD_MEMORY_CAP,battlefieldMemoryAfterReset,battlefieldMemoryFrame,battlefieldMemoryNeedsHudMeasurement,battlefieldMemoryRegionClearOf,rememberBattlefieldMark,stepBattlefieldMemory,type BattlefieldMemoryInput,type BattlefieldMemoryMark,type BattlefieldMemoryRegion} from './battlefield-memory.ts';
 import {SPOILS_HOMECOMING_CAP,rememberSpoilsHomecoming,spoilsHomecomingFrame,spoilsHomecomingIntentForEvent,spoilsRewardEvidence,stepSpoilsHomecoming,type SpoilsHomecomingMark} from './spoils-homecoming.ts';
+import {propTexture} from './visual-assets.ts';
 import type {GameEvent} from '../game/types';
 import type {Floater,Layout} from './battlefield-types.ts';
 
@@ -26,6 +27,8 @@ export interface MarksHost {
  reduce():boolean;
  paused():boolean;
  measureHud():BattlefieldMemoryRegion[];
+ scene?:()=>Phaser.Scene;
+ world?:()=>Phaser.GameObjects.Container;
 }
 
 /** Lasting battlefield marks (where blows landed) and the coins carried home; owns their state and their painting. */
@@ -35,6 +38,7 @@ export function createBattlefieldMarks(host:MarksHost){
  let spoils:readonly SpoilsHomecomingMark[]=[];
  let spoilsReward:Floater|null=null;
  let spoilsOrder=0;
+ const coinPool:Phaser.GameObjects.Image[]=[];
  const drawMemory=():void=>{
    if(!battlefieldMemoryNeedsHudMeasurement(memory)){if(navigator.webdriver)delete host.canvas().dataset.battlefieldMemory;return;}
    hudBounds=host.measureHud();
@@ -52,11 +56,19 @@ export function createBattlefieldMarks(host:MarksHost){
  };
  const drawSpoils=():void=>{
    const diagnostics:{order:number;amount:number;age:number;x:number;y:number;alpha:number}[]=[];
+   const sc=host.scene?.(),wr=host.world?.(),tex=propTexture('spoils-coin'),hasTex=!!(sc&&wr&&sc.textures.exists(tex));
+   let used=0;
    for(const mark of spoils.slice(0,SPOILS_HOMECOMING_CAP)){
     const frame=spoilsHomecomingFrame(mark,host.layout().groundY,host.reduce());if(!frame)continue;
-    paintSpoilsToken(host.fx(),frame);
+    if(hasTex){
+     let img=coinPool[used];
+     if(!img){img=sc.add.image(0,0,tex).setDepth(920);wr.add(img);coinPool.push(img);}
+     img.setPosition(frame.x,frame.y).setScale(frame.size/Math.max(1,img.width)).setAngle(frame.angle).setAlpha(frame.alpha).setVisible(true);
+     used++;
+    }else paintSpoilsToken(host.fx(),frame);
     diagnostics.push({order:mark.order,amount:mark.amount,age:mark.age,x:frame.x,y:frame.y,alpha:frame.alpha});
    }
+   for(let i=used;i<coinPool.length;i++)coinPool[i].setVisible(false);
    if(navigator.webdriver&&diagnostics.length)host.canvas().dataset.spoilsHomecoming=JSON.stringify({count:diagnostics.length,cap:SPOILS_HOMECOMING_CAP,height:host.layout().height,marks:diagnostics,reduced:host.reduce(),paused:host.paused()});
    else if(navigator.webdriver)delete host.canvas().dataset.spoilsHomecoming;
  };
