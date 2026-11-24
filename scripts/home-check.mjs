@@ -22,8 +22,9 @@ process.on('exit',()=>server?.kill());
 const MIN=4.5;
 const sizes=[[375,667],[390,844],[430,932],[768,1024],[820,1180],[1024,1366],[1366,1024]];
 const quick=process.env.HOME_CHECK_QUICK==='1';
-const base={version:2,timeline:1,furthestBattle:2,coins:1800,gems:400,foodLevel:3,baseLevel:3,cards:Array(30).fill(0).map((_,i)=>i%3),summonCount:4,summonSeed:4242,pendingVictory:null,kills:140,wins:9,deployed:210,claimed:[],dailyDay:0,dailyStreak:0,sound:false,speed:1,motion:'system',played:true};
-const returning=(age)=>({...base,age:Math.max(0,age-1),enemyAge:age,furthestBattle:age,unlocked:[true,true,age>0]});
+const base={version:2,timeline:1,furthestBattle:2,coins:1800,gems:400,foodLevel:6,baseLevel:3,cards:Array(30).fill(0).map((_,i)=>i%3),summonCount:4,summonSeed:4242,pendingVictory:null,kills:140,wins:9,deployed:210,claimed:[],dailyDay:0,dailyStreak:0,sound:false,speed:1,motion:'system',played:true};
+// lastSeen two and a half days ago: a returning player meets the longer welcome-back line under the chapter name.
+const returning=(age)=>({...base,lastSeen:Date.now()-60*60*60*1000,age:Math.max(0,age-1),enemyAge:age,furthestBattle:age,unlocked:[true,true,age>0]});
 const cases=[];
 for(const [w,h] of sizes){if(quick&&!((w===390&&h===844)||(w===1024&&h===1366)))continue;for(const lang of ['en','ar']){
  cases.push({w,h,lang,who:'new',save:null,app:false});
@@ -87,6 +88,14 @@ for(const c of cases){
    if(title<52)problems.push(`tablet title ${title}px`);if(play<20)problems.push(`tablet Play ${play}px`);
    const sub=parseFloat(getComputedStyle(document.getElementById('entry-subtitle')).fontSize);if(sub<16)problems.push(`tablet subtitle ${sub}px`);
   }
+  // The scene stands between the words and the actions, inside the screen (its art boxes, less their empty headroom).
+  const lastWord=[...document.querySelectorAll('.entry-copy p,.entry-copy h1,.entry-copy .entry-path-note,.entry-copy ol')].filter(vis).reduce((m,e)=>Math.max(m,e.getBoundingClientRect().bottom),0);
+  const firstAction=Math.min(...controls.filter(k=>k.closest('.entry-actions')).map(k=>k.getBoundingClientRect().top));
+  const landscapeShort=innerHeight<=540&&innerWidth>innerHeight;
+  for(const art of [...document.querySelectorAll('.entry-gate,.entry-troop')].filter(vis)){const r=art.getBoundingClientRect(),head=art.classList.contains('entry-gate')?r.height*.08:r.height*.05;
+   if(r.left<-1||r.right>innerWidth+1)problems.push(`scene art off screen (${art.className})`);
+   if(!landscapeShort&&r.top+head<lastWord-1)problems.push(`scene art under the words (${art.className})`);
+   if(!landscapeShort&&r.bottom-r.height*.13>firstAction+1)problems.push(`scene art under the actions (${art.className})`);}
   const rtl=document.documentElement.dir==='rtl';if(rtl!==(document.documentElement.lang==='ar'))problems.push('dir does not follow lang');
   return problems;});
  for(const pr of layout)failures.push(`${label}: ${pr}`);
@@ -105,6 +114,13 @@ for(const c of cases){
    if(document.documentElement.scrollWidth>innerWidth+1)problems.push('field scrolls sideways');
    return problems;});
   for(const pr of play)failures.push(`${label} field: ${pr}`);
+  // Mid-battle: send troops until the banner charges, then the HUD must still be in place (the goal pill once became a disc).
+  for(let i=0;i<16;i++){for(const k of [0,1,2])await p.tap(`.deployment [data-unit="${k}"]`,{timeout:500,force:true}).catch(()=>{});await p.waitForTimeout(450);}
+  const mid=await p.evaluate(()=>{const problems=[];const g=document.getElementById('field-goal-pill');const r=g.getBoundingClientRect();
+   if(!g.hidden&&(r.height>60||r.left<-1||r.right>innerWidth+1))problems.push(`goal pill ${Math.round(r.width)}x${Math.round(r.height)} at ${Math.round(r.left)}`);
+   const food=document.querySelector('.field-food')?.getBoundingClientRect();if(food&&!g.hidden&&r.left<food.right-1&&food.left<r.right-1&&r.top<food.bottom-1&&food.top<r.bottom-1)problems.push('goal pill over the food');
+   return problems;});
+  for(const pr of mid)failures.push(`${label} mid-battle: ${pr}`);
  }
  await ctx.close();
 }

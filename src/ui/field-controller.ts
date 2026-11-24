@@ -166,7 +166,7 @@ export function createFieldController(root:HTMLElement){
    if(running){
     const mom=orders.canCast?tr('Banner ready','الراية جاهزة'):orders.active?tr(orders.active==='advance'?'Advance':'Hold',orders.active==='advance'?'تقدّم':'ثبات'):`${orders.charge}/60`;
     textIfChanged(goal,fieldGoalSummary(p.coins,s.enemyHp,s.enemyMaxHp,mom));
-    goal.classList.toggle('ready',orders.canCast);
+    goal.classList.toggle('goal-ready',orders.canCast);
    }
   },
  };

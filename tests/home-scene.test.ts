@@ -38,6 +38,7 @@ test('the scrim sits only behind the words, and the scene stands on the plate\'s
   assert.doesNotMatch(css, /\.entry-screen::before\{[^}]*linear-gradient\(180deg,rgba\(5,22,23,\.66\)/, 'the old full-height top veil is gone');
   assert.match(css, /--foot:min\(calc\(\(100dvh - var\(--plate\)\) \/ 2 \+ \.68 \* var\(--plate\)\),calc\(100dvh - var\(--act\)\)\)/);
   assert.match(css, /\.entry-art\{[^}]*object-position:50% 50%/, 'cover centred, so the 68% ground line holds');
+  assert.doesNotMatch(css, /\.entry-troop\{[^}]*animation/, 'no looping sine on the troops (nothing robotic)');
 });
 
 test('a tablet Home fills the screen with tablet type, never a phone column', () => {
@@ -46,6 +47,14 @@ test('a tablet Home fills the screen with tablet type, never a phone column', ()
   assert.match(block, /\.entry-copy h1\{font-size:clamp\(60px/);
   assert.match(block, /#entry-subtitle\{font-size:19px\}/);
   assert.match(block, /\.entry-actions \.big-button\{min-height:66px;font-size:24px/);
+});
+
+test('a tall tablet frame is the whole screen, so Home and the field (sized at 100dvh) are never cut off', () => {
+  assert.match(readFileSync('src/style.css', 'utf8'), /@media\(min-width:600px\) and \(min-height:930px\) \{ #app \{height:100dvh;max-height:none;\}/);
+});
+
+test('Home troops are <img> frames that load with the gate, not late background images', () => {
+  assert.match(entryStageHtml({ age: 0, unlocked: [true, false, false] }), /<i class="entry-troop"[^>]*><img src="\/art\/storybook\/pathkeeper-strip\.webp" alt=""\/><\/i>/);
 });
 
 test('the field grows on a tablet: HUD, pause and tray type, loaded before the phone landscape rail', () => {
@@ -66,4 +75,9 @@ test('the iOS app runs on iPad in portrait, full screen', () => {
   assert.equal(ipad.length, 2, 'Debug and Release');
   for (const o of ipad) assert.equal(o, 'UIInterfaceOrientationPortrait UIInterfaceOrientationPortraitUpsideDown');
   assert.equal([...project.matchAll(/INFOPLIST_KEY_UIRequiresFullScreen = YES;/g)].length, 2);
+});
+
+test('the goal pill marks a ready banner with its own class, never the shell\'s .ready (which made it a screen-sized disc)', () => {
+  assert.doesNotMatch(readFileSync('src/ui/world-play.css', 'utf8'), /\.field-goal-pill\.ready\b/);
+  assert.doesNotMatch(readFileSync('src/ui/field-controller.ts', 'utf8'), /goal\.classList\.toggle\('ready'/);
 });

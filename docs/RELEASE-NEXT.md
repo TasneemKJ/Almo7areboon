@@ -4,6 +4,9 @@ The App Store copy lives in `ios/store/listing.json` (`app.version` 1.4); 1.3 be
 
 ## What changed for the player
 
+- **Home is a scene of your own company** (2026-11-24): your gate and unlocked troops on the next battle's ground; the
+  game runs on iPad (portrait) with tablet type on Home and the field; a new icon (the stone hut and banner on teal).
+
 - **The purchase is named for what it opens.** Full Journey / «الرحلة كاملة» is now **Chapters 4 to 6** /
   «الفصول من الرابع إلى السادس»: the same product (`Tas.Almo7areboon.fullGame`), the same price and the same gate
   (chapters 4 to 6 and the harder timeline). The card, Settings row, victory card, Move camp lock, journey path, Camp
@@ -13,13 +16,16 @@ The App Store copy lives in `ios/store/listing.json` (`app.version` 1.4); 1.3 be
 
 **English (en-US)**
 
-> The one-time purchase is now called by what it opens: Chapters 4 to 6, with the harder timeline. If you already own
-> it, nothing changes, and your save carries on exactly where it was.
+> A new home screen: your own gate and the troops you have gathered stand on the ground of your next battle. The game
+> now plays on iPad too, with larger text and controls, and it has a new icon. The one-time purchase is now called by
+> what it opens: Chapters 4 to 6, with the harder timeline. If you already own it, nothing changes, and your save
+> carries on exactly where it was.
 
 **Arabic (ar-SA)**
 
-> صار الشراء لمرّةٍ واحدة يُسمّى بما يفتحه: «الفصول من الرابع إلى السادس»، ومعها الخطّ الزمني الأصعب. وإن كان لك
-> من قبل فلا يتغيّر شيء، ويبقى حفظك حيث تركته.
+> شاشة بداية جديدة: بوّابتك والجنود الذين جمعتهم يقفون على أرض معركتك القادمة. وصارت اللعبة تُلعب على iPad أيضاً،
+> بنصوص وأزرار أكبر، ولها أيقونة جديدة. وصار الشراء لمرّةٍ واحدة يُسمّى بما يفتحه: «الفصول من الرابع إلى السادس»،
+> ومعها الخطّ الزمني الأصعب. وإن كان لك من قبل فلا يتغيّر شيء، ويبقى حفظك حيث تركته.
 
 ## In-app purchase (App Store Connect)
 

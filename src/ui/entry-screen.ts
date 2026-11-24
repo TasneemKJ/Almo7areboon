@@ -60,6 +60,6 @@ export function entryStageParts(profile:Pick<Profile,'age'|'unlocked'>):{gate:st
 export function entryStageHtml(profile:Pick<Profile,'age'|'unlocked'>):string {
  const parts=entryStageParts(profile);
  // Melee stands nearest the road; ranged and riders wait behind, toward the gate.
- const troops=parts.troops.map((t,i)=>`<i class="entry-troop" data-role="${t.role}" style="--strip:url('${t.strip}');--fw:${t.frame};--i:${i}"></i>`).reverse().join('');
+ const troops=parts.troops.map((t,i)=>`<i class="entry-troop" data-role="${t.role}" style="--fw:${t.frame};--i:${i}"><img src="${t.strip}" alt=""/></i>`).reverse().join('');
  return `<div class="entry-scene" data-troops="${parts.troops.length}"><span class="entry-light"></span><img class="entry-gate" src="${parts.gate}" alt=""/><span class="entry-company">${troops}</span></div>`;
 }
