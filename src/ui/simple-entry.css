@@ -1,28 +1,73 @@
 /* Home owns its own scene. The battle chrome is absent, not dimmed behind a CTA. */
-#app[data-entry="home"] .game-shell{display:block;height:100dvh;min-height:0;max-height:none;padding:0;position:relative}
+#app[data-entry="home"] .game-shell{display:block;height:100dvh;min-height:0;max-height:none;max-width:none;width:100%;margin:0;padding:0;position:relative}
 #app[data-entry="home"] .resources,
 #app[data-entry="home"] .battle-view,
 #app[data-entry="home"] .bottom-nav,
 #app[data-entry="home"] .secondary-screen{display:none!important}
-.entry-screen{height:100%;min-height:0;position:relative;isolation:isolate;display:flex;flex-direction:column;justify-content:space-between;overflow:hidden;background:#102b29;color:#fff1d0;padding:max(34px,env(safe-area-inset-top)) 24px max(24px,env(safe-area-inset-bottom))}
+/* Home is one composed scene (DESIGN.md "Home scene"): the next battle's place as the backdrop, the player's own gate and
+   unlocked troops on its ground as the focal point, the title in the sky. Only the words get a feathered scrim. */
+.entry-screen{--ink-scrim:6,22,24;--plate:max(100dvh,111.12vw);--copy:240px;--act:200px;--foot:min(calc((100dvh - var(--plate)) / 2 + .68 * var(--plate)),calc(100dvh - var(--act)));--room:calc(var(--foot) - var(--copy));height:100%;min-height:0;position:relative;isolation:isolate;display:flex;flex-direction:column;justify-content:space-between;overflow:hidden;background:#102b29;color:#fff1d0;padding:max(30px,env(safe-area-inset-top)) max(20px,env(safe-area-inset-right)) max(22px,env(safe-area-inset-bottom)) max(20px,env(safe-area-inset-left))}
 .entry-screen[hidden]{display:none}
-.entry-art{position:absolute;inset:0;z-index:-2;width:100%;height:100%;object-fit:cover;object-position:50% 50%}
-.entry-screen::before{content:"";position:absolute;inset:0;z-index:-1;background:linear-gradient(180deg,rgba(5,22,23,.66),rgba(7,24,25,.02) 40%,rgba(7,24,25,.18) 62%,rgba(7,24,25,.92))}
-.entry-copy{text-align:center;text-shadow:0 2px 12px #061b1bdd}
-.entry-kicker{font-size:10px;letter-spacing:.22em;font-weight:700;margin:0 0 12px}
-.entry-copy h1{font-family:var(--font-display,Georgia,serif);font-size:clamp(27px,8vw,42px);letter-spacing:.015em;line-height:1.1;margin:0 0 14px;color:#ffe9ad}
-#entry-chapter{font-size:17px;font-weight:700;margin:0 0 6px}
-#entry-subtitle{font-size:12px;line-height:1.5;margin:0}
-.entry-actions{width:min(100%,290px);margin-inline:auto;display:grid;gap:8px}
+.entry-art{position:absolute;inset:0;z-index:-3;width:100%;height:100%;object-fit:cover;object-position:50% 50%}
+/* Depth: the far edges and the foreground fall away into the dusk; the middle ground keeps its light. */
+.entry-screen::before{content:"";position:absolute;inset:0;z-index:-2;pointer-events:none;background:
+ radial-gradient(ellipse 95% 70% at 50% 62%,transparent 52%,rgba(var(--ink-scrim),.5) 100%),
+ linear-gradient(180deg,transparent 78%,rgba(var(--ink-scrim),.55) 100%)}
+.entry-copy{position:relative;z-index:1;text-align:center;text-shadow:0 1px 3px rgba(var(--ink-scrim),.9);max-width:34em;margin-inline:auto;padding:6px 18px 10px}
+.entry-copy::before{content:"";position:absolute;inset:-46px -64px -64px;z-index:-1;pointer-events:none;border-radius:50%;
+ background:radial-gradient(closest-side,rgba(var(--ink-scrim),.86) 0,rgba(var(--ink-scrim),.84) 64%,rgba(var(--ink-scrim),.55) 84%,rgba(var(--ink-scrim),0) 100%)}
+.entry-kicker{font-size:11px;letter-spacing:.22em;font-weight:700;margin:0 0 10px;color:#f3e3bb}
+:root[lang="ar"] .entry-kicker{letter-spacing:0;font-size:13px}
+.entry-copy h1{font-family:var(--font-display,Georgia,serif);font-size:clamp(30px,9vw,46px);letter-spacing:.015em;line-height:1.1;margin:0 0 12px;color:#ffe9ad}
+#entry-chapter{font-size:18px;font-weight:700;margin:0 0 4px}
+#entry-subtitle{font-size:13px;line-height:1.5;margin:0}
+/* The scene: one ground line shared by the gate and the company, drawn far to near. */
+/* The ground line is the plate's own: 68% down its courtyard, wherever cover puts the plate, above the actions. */
+.entry-stage{flex:1 1 auto;min-height:0;pointer-events:none}
+.entry-scene{position:absolute;z-index:0;left:50%;bottom:calc(100% - var(--foot));transform:translateX(-50%);width:min(100%,860px,calc(var(--room) * 2.1));aspect-ratio:2.1;container-type:inline-size}
+.entry-light{position:absolute;left:-8cqw;bottom:-12cqw;width:72cqw;height:56cqw;border-radius:50%;background:radial-gradient(closest-side,#ffd58a55,#ffb85a22 55%,transparent);mix-blend-mode:screen}
+.entry-gate{position:absolute;left:3cqw;bottom:-6cqw;width:48cqw;height:48cqw;object-fit:contain;filter:drop-shadow(0 .6cqw .4cqw #0b1a1488)}
+.entry-scene::before{content:"";position:absolute;left:5cqw;right:4cqw;bottom:-2cqw;height:4.4cqw;border-radius:50%;background:radial-gradient(closest-side,#120c08aa,#120c0800)}
+.entry-company{position:absolute;left:44cqw;right:0;bottom:0;display:flex;flex-direction:row;justify-content:flex-end;align-items:flex-end}
+.entry-troop{--h:22cqw;position:relative;display:block;height:var(--h);width:calc(var(--h) * var(--fw) / 192);margin-inline-start:calc(var(--h) * var(--fw) / 192 * -.4);background:var(--strip) 0 0/600% 100% no-repeat;transform-origin:50% 96%;animation:entry-breathe calc(3.1s + var(--i) * .47s) ease-in-out calc(var(--i) * -1.3s) infinite}
+.entry-troop:first-child{margin-inline-start:0}
+.entry-troop::after{content:"";position:absolute;left:18%;right:18%;bottom:1%;height:8%;z-index:-1;border-radius:50%;background:radial-gradient(closest-side,#120c08b0,#120c0800)}
+.entry-scene[data-troops="1"] .entry-company{right:8cqw}
+@keyframes entry-breathe{0%,100%{transform:scaleY(1)}50%{transform:scaleY(1.012) translateY(-.15%)}}
+[data-motion=reduced] .entry-troop{animation:none}
+.entry-actions{position:relative;z-index:1;width:min(100%,300px);margin-inline:auto;display:grid;gap:8px}
 .entry-actions .big-button{min-height:54px;width:100%;font-size:18px}
-.entry-settings{min-height:44px;background:linear-gradient(180deg,rgba(46,32,20,.86),rgba(28,19,12,.92));border:1px solid #d5ab6688;box-shadow:inset 0 1px 0 #ffe9ad26,0 4px 12px #00000044;border-radius:12px;color:#fff1d0;font:inherit;font-size:13px;font-weight:600;cursor:pointer}
+.entry-settings{min-height:44px;background:linear-gradient(180deg,rgba(46,32,20,.94),rgba(28,19,12,.97));border:1px solid #d5ab6688;box-shadow:inset 0 1px 0 #ffe9ad26,0 4px 12px #00000044;border-radius:12px;color:#fff1d0;font:inherit;font-size:14px;font-weight:600;cursor:pointer}
 .entry-actions button:focus-visible{outline:3px solid #fff5d6;outline-offset:3px}
 #app[data-entry="home"] .session-notice{position:absolute;bottom:0;inset-inline:0;z-index:2;height:auto;min-height:28px}
-#app[data-entry="home"][data-save-session="temporary"] .entry-screen{padding-bottom:calc(max(24px,env(safe-area-inset-bottom)) + 28px)}
+#app[data-entry="home"][data-save-session="temporary"] .entry-screen{padding-bottom:calc(max(22px,env(safe-area-inset-bottom)) + 28px)}
+/* A short phone on its side: words and actions share a column beside the scene. */
 @media(max-height:540px) and (orientation:landscape){
- .entry-screen{padding:18px 28px max(14px,env(safe-area-inset-bottom));display:grid;grid-template-columns:1fr minmax(180px,260px);align-items:center;gap:30px}
- .entry-copy{text-align:start}.entry-copy h1{font-size:32px}.entry-actions{align-self:end}.entry-kicker{font-size:9px}
- .entry-art{object-position:center 57%}
+ .entry-screen{padding:14px max(24px,env(safe-area-inset-right)) max(12px,env(safe-area-inset-bottom)) max(24px,env(safe-area-inset-left));display:grid;grid-template-columns:minmax(0,1fr) minmax(200px,280px);grid-template-rows:auto minmax(0,1fr);align-items:center;column-gap:24px}
+ .entry-copy{grid-column:2;grid-row:1;padding:2px 6px}.entry-copy h1{font-size:28px;margin-bottom:6px}.entry-kicker{font-size:10px;margin-bottom:6px}#entry-subtitle{display:none}
+ .entry-copy::before{inset:-24px -30px}
+ .entry-screen{--copy:0px;--act:0px}
+ .entry-scene{left:calc(50% - 150px);width:min(56vw,calc(var(--room) * 2.1))}
+ .entry-actions{grid-column:2;grid-row:2;align-self:end;width:100%}
+ .entry-stage{position:absolute;inset:0}
+}
+/* Tablets: the scene fills the screen and the type grows with it; never a phone column in a big frame. */
+@media(min-width:700px) and (min-height:700px){
+ .entry-screen{padding-top:max(56px,env(safe-area-inset-top));padding-bottom:max(44px,env(safe-area-inset-bottom))}
+ .entry-copy{padding:10px 28px 14px;max-width:min(100%,1000px)}
+ .entry-copy::before{inset:-80px -210px -90px}
+ .entry-kicker{font-size:15px;margin-bottom:16px}
+ :root[lang="ar"] .entry-kicker{font-size:18px}
+ .entry-copy h1{font-size:clamp(60px,7.4vw,92px);margin-bottom:18px}
+ #entry-chapter{font-size:28px;margin-bottom:8px}
+ #entry-subtitle{font-size:19px}
+ #entry-path{margin-top:16px;gap:8px}
+ .entry-copy .entry-path{gap:13px}.entry-copy .entry-path li{width:15px;height:15px;border-width:2px}
+ .entry-copy .entry-path-note{font-size:16px}
+ .entry-actions{width:min(100%,400px);gap:12px}
+ .entry-actions .big-button{min-height:66px;font-size:24px;border-radius:16px}
+ .entry-settings{min-height:54px;font-size:19px;border-radius:14px}
+ .entry-screen{--copy:360px;--act:270px}
 }
 @media(prefers-reduced-motion:reduce){.entry-screen *{animation:none!important;transition:none!important}}
 
@@ -57,7 +102,7 @@ html:has(#modal-layer:not([hidden])),body:has(#modal-layer:not([hidden])),
 .entry-path .path-done{background:#d9b27e;border-color:#d9b27e}
 .entry-path .path-here{background:#ffdc92;border-color:#fff1c8;box-shadow:0 0 10px #ffd18a}
 .entry-path .path-locked{border-style:dashed;opacity:.55}
-.entry-path-note{font:inherit;font-size:11px;color:#f3e3bb;background:none;border:0;padding:0 6px;min-height:28px}
+.entry-path-note{font:inherit;font-size:12.5px;color:#f3e3bb;background:none;border:0;padding:0 6px;min-height:28px}
 button.entry-path-note{min-height:44px;text-decoration:underline;text-underline-offset:3px;cursor:pointer}
 /* The postcard home: a quiet brass-edged line under the result, not a fourth big choice. */
 .result-postcard{display:block;margin:2px auto 10px;min-height:44px;padding:8px 18px;border:1px solid #c7a773;border-radius:22px;background:#c7a7731f;color:inherit;font:inherit;font-size:.9rem;font-weight:700;cursor:pointer;touch-action:manipulation}

@@ -127,11 +127,16 @@ jobs:
         if: steps.tests.outcome == 'success' && steps.build.outcome == 'success'
         continue-on-error: true
         run: npm run review:mastery
+      - name: Check Home contrast, tablet layout and the tablet field
+        id: home
+        if: steps.tests.outcome == 'success' && steps.build.outcome == 'success'
+        continue-on-error: true
+        run: npm run review:home
       - name: Require passing checks
         if: always()
         env:
           VERIFICATION_STEPS: ${{ toJSON(steps) }}
-          REQUIRED_CHECKS: tests build audio_browser upgrade_text offline_audio offline_game troop_unlock wave_help legacy_learning food_teaching card_learning formation_learning troop_status skill_cues regroup browser layering save_sessions mastery
+          REQUIRED_CHECKS: tests build audio_browser upgrade_text offline_audio offline_game troop_unlock wave_help legacy_learning food_teaching card_learning formation_learning troop_status skill_cues regroup browser layering save_sessions mastery home
         run: node scripts/require-verification.mjs
       - name: Trim failure evidence
         if: failure()

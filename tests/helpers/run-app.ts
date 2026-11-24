@@ -2,7 +2,7 @@ import { runInNewContext } from 'node:vm';
 import { createDomPort, type DomEnv } from '../../src/app/dom-port.ts';
 import { STORE_COMMANDS } from '../../src/app/store-flow.ts';
 import { clockTime, n, tr } from '../../src/ui/i18n.ts';
-import { journeyPathHtml } from '../../src/ui/entry-screen.ts';
+import { entryStageHtml, journeyPathHtml } from '../../src/ui/entry-screen.ts';
 
 /**
  * Runs extracted shell code in a stub context. Each app factory owns a state object (sessionState, navState,
@@ -25,6 +25,7 @@ export function runInApp(code: string, context: Record<string, unknown>): unknow
   context.clockTime ??= clockTime;
   // The entry's journey path, as on the web: everything owned, nothing locked.
   context.journeyPathHtml ??= journeyPathHtml;
+  context.entryStageHtml ??= entryStageHtml;
   context.ownsFullJourney ??= () => true;
   context.pressFeedback ??= () => {};
   // The page port runs over the same stubbed window, document and performance the harness provides.

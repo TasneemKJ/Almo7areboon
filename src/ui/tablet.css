@@ -1,0 +1,27 @@
+/* Tablets (iPad portrait and landscape): the field's words and controls grow with the screen, so the HUD reads at arm's
+   length and the tray is not a phone strip at the foot of a big frame. Phones are untouched (DESIGN.md "Home scene"). */
+@media (min-width:700px) and (min-height:700px){
+ #app[data-field-mode="field"] .stage{left:116px;right:116px}
+ #app[data-field-mode="field"] .stage h1{font-size:31px}
+ #app[data-field-mode="field"] .field-goal-pill{top:calc(env(safe-area-inset-top,0px) + 64px);font-size:16px;padding:5px 16px}
+ #app[data-field-mode="field"] .field-cue{font-size:19px;top:max(calc(env(safe-area-inset-top,0px) + 112px),13%);left:80px;right:80px}
+ #app[data-field-mode="field"] .field-tale{font-size:19px;left:96px;right:96px;top:calc(env(safe-area-inset-top,0px) + 16px)}
+ #app[data-field-mode="field"] .field-food{left:max(18px,env(safe-area-inset-left));top:max(18px,env(safe-area-inset-top));min-height:56px;max-width:84px;font-size:19px;border-radius:14px;padding:0 12px 0 6px}
+ #app[data-field-mode="field"] .field-food .icon{width:28px;height:28px}
+ #app[data-field-mode="field"] .field-chrome{right:max(18px,env(safe-area-inset-right));top:max(18px,env(safe-area-inset-top))}
+ #app[data-field-mode="field"] .field-chrome button{min-width:56px;min-height:56px;font-size:17px;border-radius:14px}
+ #app[data-field-mode="field"] .banner-plate{font-size:17px;padding:5px 12px 6px}
+ #app[data-field-mode="field"][data-entry="play"] .battle-view>.deployment{padding-top:14px;padding-bottom:max(16px,env(safe-area-inset-bottom))}
+ #app[data-field-mode="field"][data-entry="play"] .deployment .unit-cards{max-width:920px;gap:16px}
+ #app[data-field-mode="field"][data-entry="play"] .deployment .unit-card{height:86px!important;border-radius:43px 18px 18px 43px}
+ [dir="rtl"] #app[data-field-mode="field"][data-entry="play"] .deployment .unit-card{border-radius:18px 43px 43px 18px}
+ #app[data-field-mode="field"][data-entry="play"] .deployment .unit-card::before{top:8px;width:66px;height:66px}
+ #app[data-field-mode="field"][data-entry="play"] .deployment .unit-card img{top:4px!important;width:74px!important;height:66px!important}
+ html[lang] #app[data-field-mode="field"][data-entry="play"] .deployment .unit-card .unit-name{top:12px;left:84px;font-size:17px;letter-spacing:0;line-height:1.15}
+ #app[data-field-mode="field"][data-entry="play"] .deployment .unit-card .unit-price{left:84px;bottom:10px;height:24px;font-size:19px}
+ #app[data-field-mode="field"][data-entry="play"] .deployment .unit-card .unit-price .icon{width:22px;height:22px}
+ #app[data-field-mode="field"][data-entry="play"] .deployment .unit-card .unit-fill{left:80px;right:18px}
+ html[lang][dir="rtl"] #app[data-field-mode="field"][data-entry="play"] .deployment .unit-card .unit-name,
+ [dir="rtl"] #app[data-field-mode="field"][data-entry="play"] .deployment .unit-card .unit-price{left:4px;right:84px}
+ [dir="rtl"] #app[data-field-mode="field"][data-entry="play"] .deployment .unit-card .unit-fill{left:18px;right:80px}
+}

@@ -26,6 +26,9 @@ Ordered tasks. Tick a task when it is done and never delete finished tasks. This
 - [x] Touch check `npm run review:mobile-touch` (320-412 portrait, 844x390, 4x CPU, #158 tap orders to a result)
 
 ## Next
+- [x] Home is a composed scene of the player's own gate and unlocked troops; tablet Home and field type; iPad in the iOS project; new icon; `review:home` in Full verification (2026-11-24).
+- [ ] iPad 13" store screenshots of the new Home and field (needs the Simulator or a capture pass; the 2026-11-17 set on ios/taskit-1.3 shows the old Home).
+- [ ] Home on a real iPad in WKWebView (only Chromium and headless WebKit checked).
 - [x] 1.3: lead the company in the field: board-edge troop tokens, the company banner carries Hold/Advance (drag), momentum as banner cloth, Gather on the camp; scripted-player measurement in `docs/audits/2026-11-14-field-play.md`.
 - [ ] 1.3: on a physical iPhone, check the banner drag (no page scroll, no accidental order), VoiceOver reaching the hidden Advance/Hold proxies and the camp, and the board at the home-indicator safe area.
 - [ ] Port `scripts/mobile-touch-check.mjs` to the board tokens and the banner (it still taps the hidden pre-tray recruit targets).

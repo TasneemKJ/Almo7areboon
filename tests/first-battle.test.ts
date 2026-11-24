@@ -34,8 +34,8 @@ test('in the first battle the guide starts quiet briefly, and returns promptly a
   for (let t = 0; t < 1.2; t += .5) { g.step(.5); g.drainEvents(); assert.equal(quietGuidance(g, Math.min(t, IDLE_LINE_SECONDS - .2)), '', `quiet at ${t}s`); }
   assert.ok(g.deploymentStatus(0).allowed);
   const line = quietGuidance(g, IDLE_LINE_SECONDS);
-  assert.match(line, /^Tap the field/); assert.ok(line.length < 60, 'a short line');
-  setLang('ar'); try { assert.match(quietGuidance(g, IDLE_LINE_SECONDS), /^انقر على الساحة/); } finally { setLang('en'); }
+  assert.match(line, /^Tap a troop card/); assert.ok(line.length < 60, 'a short line');
+  setLang('ar'); try { assert.match(quietGuidance(g, IDLE_LINE_SECONDS), /^اختر بطاقة مقاتل/); } finally { setLang('en'); }
   assert.equal(fieldGuidance(g, 0.5), '', 'fieldGuidance follows the brief opening in the first battle');
   assert.equal(fieldGuidance(g, IDLE_LINE_SECONDS), line);
 });

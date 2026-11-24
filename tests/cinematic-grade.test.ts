@@ -59,8 +59,8 @@ test('key light rays stay faint, reach the lane and hold still under reduced mot
 
 test('team beacons use distinct cool and warm hues and brighten as a base weakens',()=>{
  const full=stageGlow(0,280,0,true,1,1),hurt=stageGlow(0,280,0,true,.1,1);
- const player=(marks:readonly {x:number;alpha:number;color:number}[])=>marks.filter(m=>m.x===39);
- const enemy=full.filter(m=>m.x===411);
+ const player=(marks:readonly {x:number;alpha:number;color:number}[])=>marks.filter(m=>m.x===54);
+ const enemy=full.filter(m=>m.x===396);
  assert.ok(player(full).length>=1&&enemy.length>=1);
  assert.notEqual(player(full)[0].color,enemy[0].color);
  assert.ok(player(hurt)[0].alpha>player(full)[0].alpha);

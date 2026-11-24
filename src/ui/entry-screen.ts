@@ -2,6 +2,7 @@ import type { Profile, BattleState } from '../game/types.ts';
 import { chapterLandscape, chapterPresentation } from './chapter-presentation.ts';
 import { n, tr } from './i18n.ts';
 import { FREE_AGES } from './app-bridge.ts';
+import { storybookArt } from '../view/storybook-art.ts';
 
 /** The page title in the current language (index.html carries the English one until boot). */
 export function documentTitle():string { return tr('Almo7areboon — Through the Levant','المحاربون — عبر بلاد الشام'); }
@@ -26,6 +27,7 @@ export function entryScreenHtml(profile:Profile):string {
  return `<section id="entry-screen" class="entry-screen" aria-labelledby="entry-title">
  <img id="entry-art" class="entry-art" src="${chapterLandscape(profile.enemyAge)}" alt=""/>
  <div class="entry-copy"><p class="entry-kicker">${tr('A LEVANTINE FOLKTALE','حكاية من بلاد الشام')}</p><h1 id="entry-title">${tr('Almohareboon','المحاربون')}</h1><p id="entry-chapter">${copy.chapter}</p><p id="entry-subtitle">${copy.subtitle}</p><div id="entry-path">${journeyPathHtml(profile.enemyAge,false)}</div></div>
+ <div id="entry-stage" class="entry-stage" aria-hidden="true">${entryStageHtml(profile)}</div>
  <div class="entry-actions"><button id="entry-play" class="big-button green" data-command="enter-world" disabled>${tr('Play','العب')}</button><button id="entry-secondary" class="entry-settings" data-command="home-camp" hidden disabled>${tr('Camp','المخيّم')}</button><button id="entry-settings" class="entry-settings" data-command="settings" disabled>${tr('Settings','الإعدادات')}</button></div>
  </section>`;
 }
@@ -43,4 +45,21 @@ export function journeyPathHtml(chapterIndex:number,locked:boolean):string {
   ?`<button class="entry-path-note" data-command="full-journey">${tr('Chapters 1–3 free · 4–6 with one purchase',`الفصول ${n('1–3')} مجّاناً · ${n('4–6')} بشراءٍ واحد`)}</button>`
   :`<span class="entry-path-note">${tr(`Chapter ${n(here+1)} of ${n(6)}`,`الفصل ${n(here+1)} من ${n(6)}`)}</span>`;
  return `<ol class="entry-path" aria-label="${label}">${dots}</ol>${note}`;
+}
+
+/**
+ * Home's scene is the player's own company as it stands now, drawn from the field's plates: the gate of the army's
+ * chapter (profile.age) on the ground of the next battle's place (enemyAge, the backdrop), with only the troops the
+ * player has unlocked standing at its door, facing the road to the rival. Read-only: it changes when the save does.
+ */
+export function entryStageParts(profile:Pick<Profile,'age'|'unlocked'>):{gate:string;troops:{role:string;strip:string;frame:number}[]} {
+ const art=storybookArt(Math.max(0,Math.min(5,Math.floor(Number.isFinite(profile.age)?profile.age:0))))??storybookArt(0)!;
+ const troops=art.roles.map(role=>({role,strip:`${art.folder}/${role}-strip.webp`,frame:art.frameWidth})).filter((_,i)=>profile.unlocked?.[i]===true||i===0);
+ return {gate:`${art.folder}/shelter-hd.webp`,troops};
+}
+export function entryStageHtml(profile:Pick<Profile,'age'|'unlocked'>):string {
+ const parts=entryStageParts(profile);
+ // Melee stands nearest the road; ranged and riders wait behind, toward the gate.
+ const troops=parts.troops.map((t,i)=>`<i class="entry-troop" data-role="${t.role}" style="--strip:url('${t.strip}');--fw:${t.frame};--i:${i}"></i>`).reverse().join('');
+ return `<div class="entry-scene" data-troops="${parts.troops.length}"><span class="entry-light"></span><img class="entry-gate" src="${parts.gate}" alt=""/><span class="entry-company">${troops}</span></div>`;
 }
