@@ -92,10 +92,12 @@ for(const c of cases){
   const lastWord=[...document.querySelectorAll('.entry-copy p,.entry-copy h1,.entry-copy .entry-path-note,.entry-copy ol')].filter(vis).reduce((m,e)=>Math.max(m,e.getBoundingClientRect().bottom),0);
   const firstAction=Math.min(...controls.filter(k=>k.closest('.entry-actions')).map(k=>k.getBoundingClientRect().top));
   const landscapeShort=innerHeight<=540&&innerWidth>innerHeight;
-  for(const art of [...document.querySelectorAll('.entry-gate,.entry-troop')].filter(vis)){const r=art.getBoundingClientRect(),head=art.classList.contains('entry-gate')?r.height*.08:r.height*.05;
+  for(const art of [...document.querySelectorAll('.entry-gate')].filter(vis)){const r=art.getBoundingClientRect(),head=r.height*.08;
    if(r.left<-1||r.right>innerWidth+1)problems.push(`scene art off screen (${art.className})`);
    if(!landscapeShort&&r.top+head<lastWord-1)problems.push(`scene art under the words (${art.className})`);
    if(!landscapeShort&&r.bottom-r.height*.13>firstAction+1)problems.push(`scene art under the actions (${art.className})`);}
+  // Owner trope call (2026-11-24): no troop or character sprite is drawn on Home, as an <img> or a background.
+  for(const e of document.querySelectorAll('#entry-screen *')){const src=(e.currentSrc||e.getAttribute?.('src')||'')+' '+getComputedStyle(e).backgroundImage;if(/-strip\.webp|-portrait\.webp/.test(src)&&vis(e))problems.push(`troop sprite on Home (${e.className||e.tagName})`);}
   const rtl=document.documentElement.dir==='rtl';if(rtl!==(document.documentElement.lang==='ar'))problems.push('dir does not follow lang');
   return problems;});
  for(const pr of layout)failures.push(`${label}: ${pr}`);

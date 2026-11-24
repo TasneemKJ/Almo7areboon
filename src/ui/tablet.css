@@ -24,4 +24,7 @@
  html[lang][dir="rtl"] #app[data-field-mode="field"][data-entry="play"] .deployment .unit-card .unit-name,
  [dir="rtl"] #app[data-field-mode="field"][data-entry="play"] .deployment .unit-card .unit-price{left:4px;right:84px}
  [dir="rtl"] #app[data-field-mode="field"][data-entry="play"] .deployment .unit-card .unit-fill{left:18px;right:80px}
+ /* Dialogs (pause, settings, results, store cards) keep their phone layout, scaled up as one piece so type and
+    targets read at tablet distance; the cap keeps a tall dialog inside the screen at the larger size. */
+ #modal-layer .dialog{zoom:1.28;max-height:calc((100dvh - 48px - env(safe-area-inset-top) - env(safe-area-inset-bottom)) / 1.28)}
 }

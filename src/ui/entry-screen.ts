@@ -48,18 +48,14 @@ export function journeyPathHtml(chapterIndex:number,locked:boolean):string {
 }
 
 /**
- * Home's scene is the player's own company as it stands now, drawn from the field's plates: the gate of the army's
- * chapter (profile.age) on the ground of the next battle's place (enemyAge, the backdrop), with only the troops the
- * player has unlocked standing at its door, facing the road to the rival. Read-only: it changes when the save does.
+ * Home's scene is the player's own gate as it stands now, drawn from the field's plates: the gate of the army's chapter
+ * (profile.age) on the ground of the next battle's place (enemyAge, the backdrop). No troop sprites (owner, 2026-11-24:
+ * the round-nosed figures are kept off the first screen). Read-only: it changes when the save does.
  */
-export function entryStageParts(profile:Pick<Profile,'age'|'unlocked'>):{gate:string;troops:{role:string;strip:string;frame:number}[]} {
+export function entryStageParts(profile:Pick<Profile,'age'>):{gate:string} {
  const art=storybookArt(Math.max(0,Math.min(5,Math.floor(Number.isFinite(profile.age)?profile.age:0))))??storybookArt(0)!;
- const troops=art.roles.map(role=>({role,strip:`${art.folder}/${role}-strip.webp`,frame:art.frameWidth})).filter((_,i)=>profile.unlocked?.[i]===true||i===0);
- return {gate:`${art.folder}/shelter-hd.webp`,troops};
+ return {gate:`${art.folder}/shelter-hd.webp`};
 }
-export function entryStageHtml(profile:Pick<Profile,'age'|'unlocked'>):string {
- const parts=entryStageParts(profile);
- // Melee stands nearest the road; ranged and riders wait behind, toward the gate.
- const troops=parts.troops.map((t,i)=>`<i class="entry-troop" data-role="${t.role}" style="--fw:${t.frame};--i:${i}"><img src="${t.strip}" alt=""/></i>`).reverse().join('');
- return `<div class="entry-scene" data-troops="${parts.troops.length}"><span class="entry-light"></span><img class="entry-gate" src="${parts.gate}" alt=""/><span class="entry-company">${troops}</span></div>`;
+export function entryStageHtml(profile:Pick<Profile,'age'>):string {
+ return `<div class="entry-scene"><span class="entry-light"></span><img class="entry-gate" src="${entryStageParts(profile).gate}" alt=""/></div>`;
 }

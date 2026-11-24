@@ -1,11 +1,41 @@
-# Next release (1.4): drafts for App Store Connect
+# Next release (1.6): drafts for App Store Connect
 
-The App Store copy lives in `ios/store/listing.json` (`app.version` 1.4); 1.3 below is the version in review.
+The App Store copy lives in `ios/store/listing.json` (`app.version` 1.6). 1.5 is live (builds up to 16); the 1.4
+drafts below shipped and stay for the record. `MARKETING_VERSION` is set by upload.sh, not here.
+
+## 1.6: what changed for the player
+
+- **Home is a scene of your own gate** (2026-11-24): the gate of your army's chapter on the ground of the next battle's
+  place, the title in the sky, a scrim only behind the words. No troop sprites on Home.
+- **iPad** (portrait, full screen) with tablet type on Home, the field HUD, the tray and the pause and other dialogs.
+- **A new icon:** the First Fires stone hut and the company's banner on teal.
+- **Fixed:** once the banner was ready, the goal line took the shell's `.ready` style and became a dark disc over part
+  of the field and the food count.
+
+## 1.6: screenshots
+
+Retaken 2026-11-24 from the real game build in Chromium with `ios/store/capture-web.py` (brought from ios/taskit-1.3
+6870080), run as the app (fake TasKit handler), gameplay first, the new Home last. No status bar (headless).
+- iPhone 6.9" (1320x2868): `ios/store/screenshots/{en,ar}/1-hold-the-gate.png`, `2-olive-terraces.png`,
+  `3-at-their-gate.png`, `4-home.png` (the 1.3 set showed the old Home and "Full Journey").
+- iPad 13" (2064x2752): `ios/store/screenshots-ipad/{en,ar}/` with the same four names.
+
+## 1.6: What's New
+
+**English (en-US)**
+
+> A new home screen: your own gate stands on the ground of your next battle. The game now plays on iPad, with larger
+> text and controls, and it has a new icon. Fixed: once the banner was ready, the goal line could cover part of the
+> field.
+
+**Arabic (ar-SA)**
+
+> شاشة بداية جديدة: بوّابتك قائمة على أرض معركتك القادمة. وصارت اللعبة تُلعب على iPad بنصوص وأزرار أكبر، ولها
+> أيقونة جديدة. وأُصلح خلل: حين تجهز الراية كان سطر الهدف قد يغطّي جزءاً من الساحة.
+
+# Earlier drafts (1.4, shipped)
 
 ## What changed for the player
-
-- **Home is a scene of your own company** (2026-11-24): your gate and unlocked troops on the next battle's ground; the
-  game runs on iPad (portrait) with tablet type on Home and the field; a new icon (the stone hut and banner on teal).
 
 - **The purchase is named for what it opens.** Full Journey / «الرحلة كاملة» is now **Chapters 4 to 6** /
   «الفصول من الرابع إلى السادس»: the same product (`Tas.Almo7areboon.fullGame`), the same price and the same gate
@@ -16,16 +46,13 @@ The App Store copy lives in `ios/store/listing.json` (`app.version` 1.4); 1.3 be
 
 **English (en-US)**
 
-> A new home screen: your own gate and the troops you have gathered stand on the ground of your next battle. The game
-> now plays on iPad too, with larger text and controls, and it has a new icon. The one-time purchase is now called by
-> what it opens: Chapters 4 to 6, with the harder timeline. If you already own it, nothing changes, and your save
-> carries on exactly where it was.
+> The one-time purchase is now called by what it opens: Chapters 4 to 6, with the harder timeline. If you already own
+> it, nothing changes, and your save carries on exactly where it was.
 
 **Arabic (ar-SA)**
 
-> شاشة بداية جديدة: بوّابتك والجنود الذين جمعتهم يقفون على أرض معركتك القادمة. وصارت اللعبة تُلعب على iPad أيضاً،
-> بنصوص وأزرار أكبر، ولها أيقونة جديدة. وصار الشراء لمرّةٍ واحدة يُسمّى بما يفتحه: «الفصول من الرابع إلى السادس»،
-> ومعها الخطّ الزمني الأصعب. وإن كان لك من قبل فلا يتغيّر شيء، ويبقى حفظك حيث تركته.
+> صار الشراء لمرّةٍ واحدة يُسمّى بما يفتحه: «الفصول من الرابع إلى السادس»، ومعها الخطّ الزمني الأصعب. وإن كان لك
+> من قبل فلا يتغيّر شيء، ويبقى حفظك حيث تركته.
 
 ## In-app purchase (App Store Connect)
 

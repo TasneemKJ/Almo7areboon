@@ -8,24 +8,22 @@ import { storybookArt } from '../src/view/storybook-art.ts';
 const css = readFileSync('src/ui/simple-entry.css', 'utf8');
 const tablet = readFileSync('src/ui/tablet.css', 'utf8');
 
-test('Home stands the player\'s own gate and only the troops they have unlocked on the next battle\'s ground', () => {
+test('Home stands the player\'s own gate (their army\'s chapter) on the next battle\'s ground', () => {
   const fresh = defaultProfile();
-  const first = entryStageParts(fresh);
-  assert.equal(first.gate, `${storybookArt(0)!.folder}/shelter-hd.webp`);
-  assert.deepEqual(first.troops.map(t => t.role), ['pathkeeper'], 'a new company is one troop at the door');
-  const grown = entryStageParts({ ...fresh, age: 2, unlocked: [true, true, true] });
-  assert.equal(grown.gate, '/art/storybook/harbor/shelter-hd.webp', 'the gate is the army\'s chapter, not the rival\'s');
-  assert.deepEqual(grown.troops.map(t => t.role), ['quay-guard', 'archer', 'quay-rider']);
-  assert.ok(grown.troops.every(t => t.strip.endsWith('-strip.webp') && t.frame === 224), 'the field\'s own strips, at the field\'s frame width');
-  assert.deepEqual(entryStageParts({ age: 99, unlocked: [true, false, false] }).gate, '/art/storybook/courtyards/shelter-hd.webp', 'a bad age clamps');
+  assert.equal(entryStageParts(fresh).gate, `${storybookArt(0)!.folder}/shelter-hd.webp`);
+  assert.equal(entryStageParts({ ...fresh, age: 2 }).gate, '/art/storybook/harbor/shelter-hd.webp', 'the gate is the army\'s chapter, not the rival\'s');
+  assert.equal(entryStageParts({ age: 99 }).gate, '/art/storybook/courtyards/shelter-hd.webp', 'a bad age clamps');
 });
 
-test('the scene is part of Home, decorative to assistive tech, and the melee troop stands nearest the road', () => {
-  const html = entryScreenHtml({ ...defaultProfile(), age: 1, unlocked: [true, true, false] });
+test('Home draws no troop sprite at any progress (owner trope call, 2026-11-24), and the scene is decorative', () => {
+  const html = entryScreenHtml({ ...defaultProfile(), age: 2, unlocked: [true, true, true] });
   assert.match(html, /<div id="entry-stage" class="entry-stage" aria-hidden="true">/);
-  const stage = entryStageHtml({ age: 1, unlocked: [true, true, false] });
-  assert.ok(stage.indexOf('data-role="slinger"') < stage.indexOf('data-role="fieldhand"'), 'drawn back to front: the melee troop last, on the right');
-  assert.match(stage, /data-troops="2"/);
+  for (let age = 0; age < 6; age++) {
+    const stage = entryStageHtml({ age });
+    assert.doesNotMatch(stage, /-strip\.webp|-portrait\.webp|entry-troop/, `chapter ${age + 1}`);
+  }
+  assert.doesNotMatch(html, /-strip\.webp|-portrait\.webp/);
+  assert.doesNotMatch(css, /\.entry-troop/);
 });
 
 test('Home keeps the scene live: navigation repaints it with the save', () => {
@@ -38,7 +36,6 @@ test('the scrim sits only behind the words, and the scene stands on the plate\'s
   assert.doesNotMatch(css, /\.entry-screen::before\{[^}]*linear-gradient\(180deg,rgba\(5,22,23,\.66\)/, 'the old full-height top veil is gone');
   assert.match(css, /--foot:min\(calc\(\(100dvh - var\(--plate\)\) \/ 2 \+ \.68 \* var\(--plate\)\),calc\(100dvh - var\(--act\)\)\)/);
   assert.match(css, /\.entry-art\{[^}]*object-position:50% 50%/, 'cover centred, so the 68% ground line holds');
-  assert.doesNotMatch(css, /\.entry-troop\{[^}]*animation/, 'no looping sine on the troops (nothing robotic)');
 });
 
 test('a tablet Home fills the screen with tablet type, never a phone column', () => {
@@ -51,10 +48,6 @@ test('a tablet Home fills the screen with tablet type, never a phone column', ()
 
 test('a tall tablet frame is the whole screen, so Home and the field (sized at 100dvh) are never cut off', () => {
   assert.match(readFileSync('src/style.css', 'utf8'), /@media\(min-width:600px\) and \(min-height:930px\) \{ #app \{height:100dvh;max-height:none;\}/);
-});
-
-test('Home troops are <img> frames that load with the gate, not late background images', () => {
-  assert.match(entryStageHtml({ age: 0, unlocked: [true, false, false] }), /<i class="entry-troop"[^>]*><img src="\/art\/storybook\/pathkeeper-strip\.webp" alt=""\/><\/i>/);
 });
 
 test('the field grows on a tablet: HUD, pause and tray type, loaded before the phone landscape rail', () => {
@@ -80,4 +73,8 @@ test('the iOS app runs on iPad in portrait, full screen', () => {
 test('the goal pill marks a ready banner with its own class, never the shell\'s .ready (which made it a screen-sized disc)', () => {
   assert.doesNotMatch(readFileSync('src/ui/world-play.css', 'utf8'), /\.field-goal-pill\.ready\b/);
   assert.doesNotMatch(readFileSync('src/ui/field-controller.ts', 'utf8'), /goal\.classList\.toggle\('ready'/);
+});
+
+test('dialogs grow on a tablet as one piece and stay inside the screen', () => {
+  assert.match(tablet, /#modal-layer \.dialog\{zoom:1\.28;max-height:calc\(\(100dvh - 48px[^}]*\/ 1\.28\)\}/);
 });
