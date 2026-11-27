@@ -18,7 +18,6 @@ test('a one-word troop name of ten letters or more takes the smaller face on pho
   assert.match(css, /@media \(min-width:360px\)\{html\[lang="en"\][^}]*\.unit-name\.long-name\{font-size:10px;letter-spacing:-\.4px\}\}/);
 });
 
-test('on a portrait phone the banner plates hang below its foot, and rise above it only while a finger carries it', () => {
-  assert.match(css, /@media \(orientation:portrait\)\{\.field-banner:not\(\.dragging\) \.banner-plate\{bottom:auto;top:calc\(100% \+ 4px\)\}\}/);
-  assert.match(css, /\.banner-plate\{position:absolute;bottom:calc\(100% \+ 6px\)/, 'the carried banner keeps them above, clear of the finger');
+test('the mid-screen banner plates are retired in favour of the tray order bar', () => {
+  assert.match(css, /\.deployment \.order-banner\{/);
 });

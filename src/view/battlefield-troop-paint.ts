@@ -10,6 +10,7 @@ import {paintFrost} from './frost-release.ts';
 import {sideRing,sideTint} from './side-identity.ts';
 import {battleAftermathPose} from './battle-aftermath.ts';
 import {lanePresentation,rankStagger,troopScale} from './lane-perspective.ts';
+import {ERAS} from '../game/data.ts';
 import type {ArmyHost,ArmyLayers} from './battlefield-army.ts';
 import type {createBattlefieldEffects} from './battlefield-effects.ts';
 import type {BattleState,Profile,Side,Unit} from '../game/types';
@@ -30,13 +31,13 @@ export interface TroopFrame {
 export function paintTroopGround(g:G,h:G,f:TroopFrame):void {
  const {unit,x,y,frozen,perspective}=f;
  if(frozen)paintFrost(h,x,y,f.state.freezeUntil,f.state.time,f.reduce);
- for(const mark of unitFocusMarks(unit.side,unit.lane,unit.kind,unit.hitFlash,frozen)){g.fillStyle(mark.color,mark.alpha);g.fillEllipse(x+mark.x,y+mark.y,mark.width,mark.height);}
- g.fillStyle(0x243c42,perspective.shadowAlpha);g.fillEllipse(x+3,y+3,perspective.shadowWidth,perspective.shadowHeight);
+ for(const mark of unitFocusMarks(unit.side,unit.lane,unit.kind,unit.hitFlash,frozen)){g.fillStyle(mark.color,mark.alpha*.45);g.fillEllipse(x+mark.x,y+mark.y,mark.width,mark.height);}
+ g.fillStyle(0x243c42,perspective.shadowAlpha);g.fillEllipse(x+2,y+2.5,perspective.shadowWidth*1.08,perspective.shadowHeight*1.05);
+ g.fillStyle(0x1b120a,Math.min(.42,perspective.shadowAlpha*2.0));g.fillEllipse(x+1.5,y+2.2,perspective.shadowWidth*.92,perspective.shadowHeight*.82);
  const halo=teamHalo(unit.side,unit.kind,perspective.scale,unit.hitFlash,frozen);
- h.fillStyle(halo.color,halo.alpha*.45);h.fillEllipse(x+halo.x,y+halo.y,halo.rx*2,halo.ry*2,12);
- h.fillStyle(halo.color,halo.alpha*.6);h.fillEllipse(x+halo.x,y+halo.y,halo.rx*1.2,halo.ry*1.1,10);
- g.fillStyle(0x2a4647,perspective.shadowAlpha*.82);g.fillEllipse(x+2,y+2,perspective.shadowWidth*.68,perspective.shadowHeight*.38);
- const ring=sideRing(unit.side,perspective.scale*(unit.kind===2?1.3:1),frozen);g.lineStyle(ring.width,ring.color,ring.alpha);g.strokeEllipse(x,y+2,ring.rx*2,ring.ry*2);
+ h.fillStyle(halo.color,halo.alpha*.24);h.fillEllipse(x+halo.x,y+halo.y,halo.rx*1.5,halo.ry*1.4,12);
+ g.fillStyle(0x120b06,Math.min(.52,perspective.shadowAlpha*2.4));g.fillEllipse(x+1,y+2,perspective.shadowWidth*.66,perspective.shadowHeight*.44);
+ const ring=sideRing(unit.side,perspective.scale*(unit.kind===2?1.25:1),frozen);g.lineStyle(ring.width,ring.color,ring.alpha);g.strokeEllipse(x,y+2,ring.rx*2,ring.ry*2);
 }
 
 /** Poses a troop sprite (image or vector fallback) from its frame; aftermath poses override the live pose. */
@@ -53,7 +54,7 @@ export function poseTroop(body:ImageOrFallback,f:TroopFrame):void {
    body.setAngle(pose.angle*direction+gesture.angle*direction+recoil.angle);body.setScale(scale*density*gesture.sx*arrival.sx,scale*density*gesture.sy*arrival.sy).setFlipX(direction<0);
    body.setPosition(x+recoil.x+(gesture.forward+arrival.forward)*direction,y-(state.paused?0:pose.lift)-gesture.lift-arrival.lift+recoil.y);
   }
-  if(unit.hitFlash>0)body.setTintFill(0xfff9db);else if(frozen)body.setTint(0x91e5f0);else if(unit.storyShadow)body.setTint((state.chronicle?.revealUntil??0)>state.time?0xd4e3bc:0xb8b8d1);else if(sideTint(unit.side)!==null)body.setTint(sideTint(unit.side)!);else body.clearTint();
+  if(unit.hitFlash>.105)body.setTintFill(0xfff9db);else if(unit.hitFlash>0)body.setTint(0xfff1cc);else if(frozen)body.setTint(0x91e5f0);else if(unit.storyShadow)body.setTint((state.chronicle?.revealUntil??0)>state.time?0xd4e3bc:0xb8b8d1);else if(sideTint(unit.side)!==null)body.setTint(sideTint(unit.side)!);else body.clearTint();
  }else{
   body.setPosition(verdict?x+recoil.x+verdict.forward*facingDirection:x+recoil.x+(gesture.forward+arrival.forward)*direction,verdict?y-verdict.lift+recoil.y:y-gesture.lift-arrival.lift+recoil.y).setScale(facingDirection*perspective.scale*(verdict?verdict.sx:gesture.sx*arrival.sx),perspective.scale*(verdict?verdict.sy:gesture.sy*arrival.sy)).setAngle(verdict?verdict.angle*facingDirection+recoil.angle:pose.angle*direction+gesture.angle*direction+recoil.angle);
   drawTroop(body,unit.age,unit.kind,unit.side,verdict?verdict.frame/7:reduce||frozen?0:state.time,verdict?verdict.mode==='triumph':unit.attacking,unit.hitFlash>0);
@@ -61,14 +62,15 @@ export function poseTroop(body:ImageOrFallback,f:TroopFrame):void {
 }
 
 /** The two waiting warriors shown before a battle starts. */
-export function paintIdleActors(g:G,idle:readonly ImageOrFallback[],state:BattleState,profile:Profile,groundY:number):void {
+export function paintIdleActors(g:G,idle:readonly ImageOrFallback[],state:BattleState,profile:Profile,groundY:number,clock=0,reduced=false):void {
 for(let i=0;i<idle.length;i++){
  const actor=idle[i],side=i===0?'player':'enemy',x=i===0?119:331,y=groundY+15;
  actor.setVisible(state.phase==='ready');
  if(state.phase!=='ready')continue;
  g.fillStyle(0x243e40,.2);g.fillEllipse(x,y+2,25,7);
  actor.setPosition(x,y).setDepth(y+.5);
- if(actor instanceof Phaser.GameObjects.Image){actor.setScale(.47*TROOP_FRAME.height/actor.height).setFlipX(i===1);if(i===1)actor.setTint(sideTint('enemy')!);}
+ const breath=reduced?0:.5+.5*Math.sin(clock*2.2+i*1.6);
+ if(actor instanceof Phaser.GameObjects.Image){const s=.47*TROOP_FRAME.height/actor.height;actor.setScale(s*(1-.008*breath),s*(1+.018*breath)).setFlipX(i===1);if(i===1)actor.setTint(sideTint('enemy')!);}
  else {actor.setScale(i===0?1:-1,1);drawTroop(actor,i===0?profile.age:profile.enemyAge,0,side,0,false);}
 }
 }
@@ -79,6 +81,7 @@ export interface TroopViewContext {
  sprite:(age:number,kind:Unit['kind'],side:Side)=>ImageOrFallback;g:G;h:G;
  aftermath:{phase:'won'|'lost';at:number}|null;aftermathElapsed:number;
  aftermathCounts:{triumph:number;withdraw:number;roles:number[];maxForward:number;maxLift:number;maxAngle:number};
+ dt?:number;
 }
 
 /** Creates, poses and retires one view per unit, accumulating aftermath evidence on the way. */
@@ -88,16 +91,24 @@ export function updateTroopViews(c:TroopViewContext):void {
  for(const unit of host.game.state.units){
   ids.add(unit.id);let view=units.get(unit.id);
   const x=xAt(unit.x),y=host.yAt(unit.lane)+rankStagger(unit.id),frozen=unit.side==='enemy'&&host.game.state.freezeUntil>host.game.state.time;
-  if(!view){const body=sprite(unit.age,unit.kind,unit.side);layers.armyLayer.add(body);view={body,x,y,lane:unit.lane,side:unit.side,dustAt:0};units.set(unit.id,view);}
-  const moving=Math.abs(view.x-x)>.001,perspective=lanePresentation(unit.lane,unit.kind),scale=troopScale(unit.kind,unit.lane)*(unit.storyBoss?1.35:1);
+  if(!view){const body=sprite(unit.age,unit.kind,unit.side);layers.armyLayer.add(body);view={body,x,renderX:x,moveUntil:0,y,lane:unit.lane,side:unit.side,dustAt:0};units.set(unit.id,view);}
+  const stepped=Math.abs(view.x-x)>.001;
+  if(stepped&&!unit.attacking)view.moveUntil=host.game.state.time+.09;
+  const moving=!unit.attacking&&(stepped||(view.moveUntil??0)>host.game.state.time);
+  const stepDt=c.dt??1/60,smooth=host.reduce()||host.game.state.paused||stepDt<=0?1:1-Math.exp(-stepDt*24);
+  const rx=view.renderX===undefined||Math.abs(x-view.renderX)>12?x:view.renderX+(x-view.renderX)*smooth;
+  view.renderX=rx;
+  const perspective=lanePresentation(unit.lane,unit.kind),scale=troopScale(unit.kind,unit.lane)*(unit.storyBoss?1.35:1);
   const direction=unit.side==='player'?1:-1;
-  const pose=troopPose(host.game.state.time+unit.id*.17,moving,unit.attacking,host.reduce()||frozen);
+  const interval=ERAS[unit.age]?.units[unit.kind]?.interval??1;
+  const attackProgress=unit.attacking?1-Math.max(0,Math.min(1,unit.attackTimer/Math.max(.1,interval))):undefined;
+  const pose=troopPose(host.game.state.time+unit.id*.17,moving,unit.attacking,host.reduce()||frozen,attackProgress,unit.kind);
   const gesture=characterGesture(unit.kind,host.game.state.time+unit.id*.17,moving,unit.attacking,host.reduce()||frozen);
   const verdict=aftermath?.phase===host.game.state.phase?battleAftermathPose({phase:aftermath.phase,side:unit.side,kind:unit.kind,elapsed:aftermathElapsed,reduced:host.reduce()}):null;
   const facingDirection=verdict?.facing==='home'?-direction:direction;
   if(verdict){aftermathCounts[verdict.mode]++;aftermathCounts.roles[unit.kind]++;aftermathCounts.maxForward=Math.max(aftermathCounts.maxForward,verdict.forward);aftermathCounts.maxLift=Math.max(aftermathCounts.maxLift,verdict.lift);aftermathCounts.maxAngle=Math.max(aftermathCounts.maxAngle,Math.abs(verdict.angle));}
   const recoil=verdict?stillReaction:hitReaction(unit.hitFlash,unit.side,unit.kind,host.reduce()||frozen);
-  const frame:TroopFrame={arrival:effects.arrivalFor(unit.id),unit,state:host.game.state,reduce:host.reduce(),x,y,frozen,scale,direction,facingDirection,pose,gesture,verdict,recoil,perspective};
+  const frame:TroopFrame={arrival:effects.arrivalFor(unit.id),unit,state:host.game.state,reduce:host.reduce(),x:rx,y,frozen,scale,direction,facingDirection,pose,gesture,verdict,recoil,perspective};
   paintTroopGround(g,h,frame);
   poseTroop(view.body,frame);
   // Troops win a same-baseline tie against the building and its damage marks.
@@ -105,7 +116,7 @@ export function updateTroopViews(c:TroopViewContext):void {
   if(moving&&!host.game.state.paused&&!frozen&&host.clock()-view.dustAt>.28){effects.emit(x,y+2,1,0xdfd4b1,true,.45,unit.lane);view.dustAt=host.clock();}
   view.x=x;view.y=y;view.lane=unit.lane;
  }
- if(aftermath?.phase===host.game.state.phase)host.canvas().dataset.battleAftermath=JSON.stringify({phase:aftermath.phase,elapsed:aftermathElapsed,triumph:aftermathCounts.triumph,withdraw:aftermathCounts.withdraw,roles:aftermathCounts.roles,maxForward:aftermathCounts.maxForward,maxLift:aftermathCounts.maxLift,maxAngle:aftermathCounts.maxAngle,reduced:host.reduce()});
+ if(navigator.webdriver&&aftermath?.phase===host.game.state.phase)host.canvas().dataset.battleAftermath=JSON.stringify({phase:aftermath.phase,elapsed:aftermathElapsed,triumph:aftermathCounts.triumph,withdraw:aftermathCounts.withdraw,roles:aftermathCounts.roles,maxForward:aftermathCounts.maxForward,maxLift:aftermathCounts.maxLift,maxAngle:aftermathCounts.maxAngle,reduced:host.reduce()});
  else delete host.canvas().dataset.battleAftermath;
  for(const [id,view]of units)if(!ids.has(id)){
   if(host.reduce())view.body.destroy();

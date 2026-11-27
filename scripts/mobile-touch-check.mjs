@@ -33,7 +33,7 @@ async function layout(page) {
     return {
       hScroll: document.documentElement.scrollWidth > innerWidth + 1,
       pageScroll: Math.max(document.documentElement.scrollHeight, document.body.scrollHeight) > innerHeight + 1,
-      small, recruits: [...document.querySelectorAll('[data-field-recruit]')].filter(visible).map(box),
+      small, recruits: [...document.querySelectorAll('#unit-cards [data-unit],[data-field-recruit]')].filter(visible).map(box),
       pause: (el => el && visible(el) ? box(el) : null)(document.querySelector('[data-command=field-pause]')),
       phase: document.getElementById('world')?.dataset.phase, title: document.getElementById('dialog-title')?.textContent ?? null,
     };
@@ -79,12 +79,12 @@ for (const [width, height, scale] of SIZES) {
   let orders = 0, result = null;
   const deadline = Date.now() + Number(process.env.RESULT_SECONDS ?? 300) * 1000; // software-rendered CI browsers at 4x throttle are slow
   for (let i = 0; Date.now() < deadline; i++) {
-    for (const unit of ['0', '1', '2']) await page.tap(`[data-field-recruit="${unit}"]:not([hidden])`, {timeout: 2000}).catch(() => {});
+    for (const unit of ['0', '1', '2']) await page.tap(`#unit-cards [data-unit="${unit}"]:not([disabled])`, {timeout: 2000}).catch(() => {});
     if (i === 3) {
       await page.screenshot({path: `${out}/${name}-running.png`});
       problems.push(...fieldProblems(await layout(page), width, height));
     }
-    const gate = page.locator('[data-field-gate][aria-disabled="false"]:not([hidden])').last();
+    const gate = page.locator('#order-banner [data-order="advance"]:not([disabled]), [data-field-gate][aria-disabled="false"]:not([hidden])').first();
     if (await gate.count()) { await gate.tap({timeout: 2000}).then(() => orders++, () => {}); }
     await page.waitForTimeout(700);
     const now = await layout(page);

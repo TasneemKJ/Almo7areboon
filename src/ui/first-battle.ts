@@ -22,8 +22,8 @@ export function isFirstBattle(p:Readonly<Profile>,s:Readonly<BattleState>):boole
 
 /** The guide in the first battle: silent, except one short line after 8 s with nothing sent and a soldier affordable. */
 export function quietGuidance(game:Game,idleSeconds:number):string {
- const s=game.state;
- if(s.phase!=='running'||s.paused||!(idleSeconds>=IDLE_LINE_SECONDS)||!game.deploymentStatus(0).allowed)return '';
+ const s=game.state,threshold=s.stats.deployed>0?8:IDLE_LINE_SECONDS;
+ if(s.phase!=='running'||s.paused||!(idleSeconds>=threshold)||!game.deploymentStatus(0).allowed)return '';
  return tr('Tap a troop card below to send a soldier.','اختر بطاقة مقاتل في الأسفل لترسل جندياً.');
 }
 

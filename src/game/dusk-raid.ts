@@ -59,9 +59,10 @@ export function duskSight(s: Readonly<Pick<BattleState, 'dusk'>>, x: number): nu
 /** The raid is over: the profile returns to what it was when the lamps were lit (preferences aside); nothing is paid. */
 export function settleDusk(p: Profile, s: BattleState, snapshot: string): void {
   if (!s.dusk || s.dusk.settled || (s.phase !== 'won' && s.phase !== 'lost')) return;
-  const before = JSON.parse(snapshot) as Profile, keep = { sound: p.sound, speed: p.speed, motion: p.motion, introPending: p.introPending };
+  const before = JSON.parse(snapshot) as Profile, keep = { sound: p.sound, speed: p.speed, motion: p.motion, marks: p.marks, introPending: p.introPending };
   for (const key of Object.keys(p) as (keyof Profile)[]) delete p[key];
   Object.assign(p, before, keep);
+  if (keep.marks === undefined) delete p.marks;
   if (keep.introPending === undefined) delete p.introPending;
   if (s.phase === 'won' && p.dusk) p.dusk = { ...p.dusk, kept: Math.min(999, (p.dusk.kept ?? 0) + 1) };
   s.earned = 0; s.dusk.settled = true;

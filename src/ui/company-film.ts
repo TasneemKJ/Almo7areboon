@@ -32,7 +32,7 @@ export function mountCompanyFilm(layer:HTMLElement,sound:boolean,volume:number):
   layer.querySelector<HTMLElement>('#dialog-title')!.textContent=copy.title;
   layer.querySelector<HTMLElement>('[data-film-description]')!.textContent=filmNote(ar()?'ar':'en');
   layer.querySelector<HTMLElement>('#film-transcript')!.textContent=copy.transcript;
-  layer.querySelector<HTMLElement>('[data-film-language-label]')!.textContent=ar()?'لغة الفيلم':'Film language / لغة الفيلم';
+  layer.querySelector<HTMLElement>('[data-film-language-label]')!.textContent=copy.picker;
   layer.querySelector<HTMLElement>('[data-command="close"]')!.textContent=copy.close;
   layer.querySelector<HTMLElement>('[data-film-focus-end]')!.setAttribute('aria-label',ar()?'عُد إلى أدوات الفيلم':'Return to film controls');
   revision++;actions.hidden=false;video.pause();video.removeAttribute('src');video.load();play.textContent=copy.play;video.setAttribute('aria-label',copy.video);message(FILM_COPY.en.ready,FILM_COPY.ar.ready);}

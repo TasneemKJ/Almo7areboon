@@ -87,7 +87,7 @@ for (const width of [320, 390]) {
   await enterWorld(winner);
   const deadline = Date.now() + 120000;
   while (await phase(winner) === 'running' && Date.now() < deadline) {
-    for (const kind of ['0', '1', '2']) await winner.tap(`[data-field-recruit="${kind}"]`, {timeout: 500}).catch(() => {});
+    for (const kind of ['0', '1', '2']) await winner.tap(`.deployment [data-unit="${kind}"]`, {timeout: 500, force: true}).catch(() => {});
     await winner.waitForTimeout(150);
   }
   await winner.waitForSelector('.result-dialog', {timeout: 15000}).catch(() => {});

@@ -101,15 +101,9 @@ export class Game implements GamePort {
 
   dispatch(action: Action): boolean {
     if(action.type==='rally'){const changed=toggleRally(this.profile,this.state);if(changed)this.events.push({type:'hit',storyCue:'rally',x:235,amount:0});return changed;}
-    if(action.type.startsWith('chronicle-')){
-      const plan=planChronicleAction(this.profile,this.state,action as ChronicleAction);
-      if(!plan)return false;
-      this.profile.chronicle=plan.chronicle;this.profile.enemyAge=plan.enemyAge;
-      if(plan.reset){this.profile.pendingVictory=null;this.state=this.newBattle();}
-      return true;
-    }
     if((this.profile.chronicle?.expedition||this.state.dusk)&&['next','prestige','select-battle','evolve'].includes(action.type))return false;
     if(this.state.dusk&&!this.state.dusk.settled&&!DUSK_ACTIONS.has(action.type))return false;
+    if(action.type.startsWith('chronicle-')){const plan=planChronicleAction(this.profile,this.state,action as ChronicleAction);if(!plan)return false;this.profile.chronicle=plan.chronicle;this.profile.enemyAge=plan.enemyAge;if(plan.reset){this.profile.pendingVictory=null;this.state=this.newBattle();}return true;}
     if (!Object.hasOwn(Game.ACTION_HANDLERS, action.type)) return false;
     // Each handler narrows its own action type; the table key guarantees the match.
     const changed = Game.ACTION_HANDLERS[action.type]!(this, action as never); settleDusk(this.profile, this.state, this.duskSnapshot); dropBlades(this.profile, this.state); return changed;
@@ -219,6 +213,7 @@ export class Game implements GamePort {
       enemyAge:0,furthestBattle:0,coins:0,age:0,foodLevel:0,baseLevel:0,
       unlocked:[true,false,false],
     });
+    delete this.profile.lossStreak; leaveField(this.profile);
     this.state = this.newBattle();
     return true;
   }
@@ -294,8 +289,10 @@ export class Game implements GamePort {
       this.state.stats.maxFreezeTargets = Math.max(this.state.stats.maxFreezeTargets,this.state.units.filter(unit=>unit.side === 'enemy' && unit.hp > 0).length);
       this.state.freezeUntil = this.state.time + legacyEffects(this.profile.legacy).freezeSeconds;
     }
+    let meteorDamage = 0;
     if (skill === 'meteor') {
       const damage = 36 * 1.65 ** this.profile.age * this.bonuses().damage;
+      meteorDamage = Math.round(damage);
       for (const unit of this.state.units) if (unit.side === 'enemy' && unit.hp > 0) {
         this.hurt(unit, damage);
         if (unit.hp === 0) this.state.stats.meteorKills++;
@@ -303,7 +300,7 @@ export class Game implements GamePort {
       this.state.units = this.state.units.filter(u => u.hp > 0);
     }
     chronicleSkill(this.profile,this.state,skill);
-    this.events.push({ type: 'skill', skill, ...(captainUsed?{storyCue:'captain' as const}:{}), amount: skill === 'food' ? (captainUsed?0:foodGain) : undefined });
+    this.events.push({ type: 'skill', skill, ...(captainUsed?{storyCue:'captain' as const}:{}), amount: skill === 'food' ? (captainUsed?0:foodGain) : skill === 'meteor' ? meteorDamage : undefined });
     return true;
   }
 
@@ -470,6 +467,7 @@ export class Game implements GamePort {
         this.state.chronicle.settled=true;
       }
       this.nextSpawn = this.schedule.length;
+      if (this.state.dusk) { this.events.push({ type: 'win' }); return true; }
       this.profile.wins++; delete this.profile.lossStreak;
       this.reward(Math.round(120 * (1 + this.profile.enemyAge * 0.4)), 910);
       this.profile.gems = Math.min(1e7, this.profile.gems + 10);

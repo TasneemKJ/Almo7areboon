@@ -54,15 +54,15 @@
 .mastery-mark-title { font-size:11px; min-width:0; overflow-wrap:anywhere; }
 .mastery-requirement,.mastery-remaining { display:block; font-size:11px; overflow-wrap:anywhere; line-height:1.45; margin-top:4px; }
 .mastery-remaining { color:var(--muted); }
-.result-mastery { padding:10px 0; border-block:1px solid var(--paper-edge); margin:12px 0; text-align:left; }
+.result-mastery { padding:10px 0; border-block:1px solid var(--paper-edge); margin:12px 0; text-align:start; }
 .result-mastery p { font-size:11px; line-height:1.5; margin:7px 0; }
 .result-mastery small { font-size:11px; color:var(--muted); }
-.chapter-scouting { margin:12px 0; padding:0 10px; border:1px solid var(--paper-edge); border-radius:10px; text-align:left; }
+.chapter-scouting { margin:12px 0; padding:0 10px; border:1px solid var(--paper-edge); border-radius:10px; text-align:start; }
 .chapter-scouting summary { min-height:44px; padding:12px 0; cursor:pointer; font-weight:700; font-size:.8125rem; overflow-wrap:break-word; }
 .chapter-scouting summary:focus-visible { outline:3px solid #edb755; outline-offset:2px; border-radius:4px; }
 .chapter-scouting p { margin:6px 0; font-size:.8125rem; line-height:1.5; }
 .chapter-scouting small { display:block; padding-bottom:12px; color:var(--muted); font-size:.75rem; line-height:1.5; }
-.village-voice { margin:12px 0; padding:10px 12px; border-inline-start:3px solid var(--paper-edge); text-align:left; font-family:Georgia,serif; font-size:.875rem; line-height:1.5; color:var(--ink); }
+.village-voice { margin:12px 0; padding:10px 12px; border-inline-start:3px solid var(--paper-edge); text-align:start; font-family:Georgia,serif; font-size:.875rem; line-height:1.5; color:var(--ink); }
 @media(forced-colors:active) { .chapter-scouting summary:focus-visible { outline-color:Highlight; } }
 .result-dialog .reward small { display:block; font-size:11px; line-height:1.5; overflow-wrap:anywhere; }
 .chapter-continuation { margin-top:16px; padding-top:12px; border-top:1px solid var(--paper-edge); }
@@ -73,8 +73,8 @@
 .battle-option .mastery-mark { padding:3px 5px; }
 .battle-option .mastery-mark-title { display:none; }
 /* Legacy lives in the existing manuscript dialogs and Evolution preparation. */
-.prestige-dialog { text-align:left; }
-.prestige-dialog h2 { font-size:26px; line-height:1.15; padding-right:22px; }
+.prestige-dialog { text-align:start; }
+.prestige-dialog h2 { font-size:26px; line-height:1.15; padding-inline-end:22px; }
 .prestige-values p,.legacy-preparation p,.prestige-reset li,.legacy-note { font-size:12px; line-height:1.5; overflow-wrap:anywhere; }
 .prestige-values small,.legacy-preparation small { display:block; font-size:11px; line-height:1.5; }
 .legacy-rank { padding:10px; border:1px solid var(--paper-edge); border-radius:8px; background:#e4ebd9; color:#294e36; }
@@ -90,10 +90,14 @@
 .prestige-reset { border-block:1px solid var(--paper-edge); margin-block:16px; padding-block:12px; }
 .prestige-reset summary { min-height:44px; cursor:pointer; font-weight:700; font-size:13px; }
 .prestige-reset h3 { font-size:13px; }
-.prestige-reset ul { padding-left:20px; }
+.prestige-reset ul { padding-inline-start:20px; }
 .prestige-dialog .big-button { width:100%; min-height:48px; white-space:normal; line-height:1.35; }
-.legacy-preparation { padding:14px; border:1px solid var(--paper-edge); border-radius:12px; background:var(--paper); margin-bottom:18px; }
-.legacy-preparation h3 { margin-top:0; }
+.legacy-preparation { max-width:680px; margin:0 auto 16px; padding:15px 16px; border:1px solid #c7a77355; border-radius:14px; background:rgba(18,42,46,.88); color:#f6ead0; box-shadow:0 4px 14px #06141866; }
+.legacy-preparation h3 { margin:0 0 8px; font-family:Georgia,'Palatino Linotype',serif; font-size:18px; color:#ffe8a8; }
+.legacy-preparation p,.legacy-preparation small { color:#dcd3bc; }
+.legacy-preparation .chapter-scouting { border-color:#c7a77344; background:rgba(12,28,32,.65); color:#f0ce87; border-radius:10px; padding:2px 12px; }
+.legacy-preparation .chapter-scouting summary { color:#f0ce87; }
+.legacy-preparation .chapter-scouting p { color:#cfc5ab; }
 @media(max-width:360px) {
  .result-dialog { padding:20px 14px; }
  .result-dialog .big-button { font-size:11px; }

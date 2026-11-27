@@ -89,7 +89,7 @@ test('with momentum ready and no order yet this battle, the drag lesson outranks
   setLang('en');
   const later = new Game(Object.assign(defaultProfile(), { wins: 1, enemyAge: 1, furthestBattle: 1 })); later.dispatch({ type: 'start' });
   later.step(.5); later.state.stats.deployed = 5; later.state.orders!.charge = 60;
-  assert.match(fieldGuidance(later), /Drag the banner forward to advance, back to hold/);
+  assert.match(fieldGuidance(later), /Choose Advance or Hold below/);
 });
 
 test('the drag lesson and the tactical hints share the line in six-second turns, so neither is hidden for the battle', async () => {

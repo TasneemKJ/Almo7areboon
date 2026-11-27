@@ -24,7 +24,20 @@ export function paintFieldCamp(host:ArmyHost,layers:ArmyLayers,campActors:readon
  if(hasTex){
   if(!sprite){sprite=host.scene.add.image(0,0,tex).setOrigin(.5,1);layers.armyLayer.add(sprite);suppliesByScene.set(host.scene,sprite);}
   const used=host.game.state.skillsUsed.includes('food');
-  sprite.setPosition(bx,by).setDepth(by+.1).setScale((48*k)/Math.max(1,sprite.width)).setAlpha(used?.55:1).setTint(used?0x9a8f7c:0xffffff).setVisible(true);
+  const tabletBoost=Math.max(1,Math.min(1.45,(host.scene.scale.width/host.pixelRatio)/540));
+  const w=72*tabletBoost;
+  g.setDepth(by+.05);
+  g.fillStyle(0x1a1210,used?.18:.32);
+  g.fillEllipse(bx,by-2*k,w*.88*k,13*tabletBoost*k);
+  if(!used){
+   const breathe=host.reduce()?1:.88+.12*Math.sin(host.clock()*2.6);
+   g.lineStyle(1.3*k,0xf0ce87,.42*breathe);
+   g.strokeEllipse(bx,by-2*k,w*.88*k,13*tabletBoost*k);
+   const h=layers.halos,hy=by-w*.36*k;
+   h.fillStyle(0xffd18a,.11*breathe);h.fillCircle(bx,hy,w*.72*k);
+   h.fillStyle(0xffd18a,.18*breathe);h.fillCircle(bx,hy,w*.42*k);
+  }
+  sprite.setPosition(bx,by).setDepth(by+.1).setScale((w*k)/Math.max(1,sprite.width)).setAlpha(used?.48:1).setTint(used?0x9a8f7c:0xffffff).setVisible(true);
   return;
  }
  g.setDepth(by+.1);

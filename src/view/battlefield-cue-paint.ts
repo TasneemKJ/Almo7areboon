@@ -12,12 +12,16 @@ type G=Phaser.GameObjects.Graphics;
 /** One mark of an attack cue (slash, muzzle flash, energy, smoke, dust or streak) at its projected position. */
 export function paintAttackMark(g:G,mark:ReturnType<typeof attackCueFrame>[number],x:number,y:number,forward:number,size:number):void {
   if(mark.kind==='slash'){
-   const a0=mark.angle-.72*forward,a1=mark.angle,a2=mark.angle+.72*forward;
-   const p0={x:x+Math.cos(a0)*size,y:y+Math.sin(a0)*size};
-   const p1={x:x+Math.cos(a1)*size*1.22,y:y+Math.sin(a1)*size*1.22};
-   const p2={x:x+Math.cos(a2)*size,y:y+Math.sin(a2)*size};
-   g.lineStyle(5,mark.color,mark.alpha*.18);g.lineBetween(p0.x,p0.y,p1.x,p1.y);g.lineBetween(p1.x,p1.y,p2.x,p2.y);
-   g.lineStyle(1.7,mark.color,mark.alpha);g.lineBetween(p0.x,p0.y,p1.x,p1.y);g.lineBetween(p1.x,p1.y,p2.x,p2.y);
+   const pts:Phaser.Types.Math.Vector2Like[]=[],inner:Phaser.Types.Math.Vector2Like[]=[];
+   for(let i=0;i<=5;i++){
+    const u=i/5,a=mark.angle+(.82*(u*2-1))*forward,taper=Math.sin(u*Math.PI);
+    const rOut=size*(1.02+.34*taper),rIn=size*(1.02-.16*taper);
+    pts.push({x:x+Math.cos(a)*rOut,y:y+Math.sin(a)*rOut});
+    inner.unshift({x:x+Math.cos(a)*rIn,y:y+Math.sin(a)*rIn});
+   }
+   g.fillStyle(mark.color,mark.alpha*.34);g.fillPoints([...pts,...inner],true);
+   g.lineStyle(2.2,0xfff6dc,mark.alpha*.95);
+   for(let i=0;i<pts.length-1;i++)g.lineBetween(pts[i].x,pts[i].y,pts[i+1].x,pts[i+1].y);
   }else if(mark.kind==='muzzle'||mark.kind==='flash'){
    g.fillStyle(mark.color,mark.alpha*.92);g.fillTriangle(x+forward*size,y,x-forward*size*.45,y-size*.58,x-forward*size*.45,y+size*.58);
    g.lineStyle(1.1,0xfff6d0,mark.alpha);g.lineBetween(x-forward*size*.4,y,x+forward*size*1.35,y);
@@ -71,14 +75,22 @@ export function paintBoltLight(glow:G,bolt:Bolt,shot:ReturnType<typeof projectil
   const light=projectileGlow(projectileStyle(bolt.age,bolt.heavy,bolt.meteor).shape,bolt.side);
   if(light.alpha>0){
    const tail=projectileTrailPoint(bolt.from,bolt.to,progress,bolt.arc);
-   if(light.trail>0){glow.lineStyle(light.radius*.7,light.color,light.alpha*light.trail*.35);glow.lineBetween(tail.x,tail.y,shot.tip.x,shot.tip.y);}
-   glow.fillStyle(light.color,light.alpha*.3);glow.fillCircle(shot.tip.x,shot.tip.y,light.radius);
-   glow.fillStyle(light.color,light.alpha*.6);glow.fillCircle(shot.tip.x,shot.tip.y,light.radius*.45);
+   if(light.trail>0){
+    glow.lineStyle(light.radius*1.45,0xf5c86e,light.alpha*light.trail*.11);glow.lineBetween(tail.x,tail.y,shot.tip.x,shot.tip.y);
+    glow.lineStyle(light.radius*1.05,light.color,light.alpha*light.trail*.22);glow.lineBetween(tail.x,tail.y,shot.tip.x,shot.tip.y);
+    glow.lineStyle(light.radius*.62,0xfff3d0,light.alpha*light.trail*.42);glow.lineBetween(tail.x,tail.y,shot.tip.x,shot.tip.y);
+   }
+   glow.fillStyle(light.color,light.alpha*.34);glow.fillCircle(shot.tip.x,shot.tip.y,light.radius*1.12);
+   glow.fillStyle(0xfff5d6,light.alpha*.65);glow.fillCircle(shot.tip.x,shot.tip.y,light.radius*.45);
   }
 }
 
 /** The glow of one flare, fading as its life runs out. */
 export function paintFlare(glow:G,flare:Flare):void {
   const k=Math.max(0,flare.life/flare.max),r=flare.radius*(1.15-k*.4);
-    glow.fillStyle(flare.color,k*.22);glow.fillCircle(flare.x,flare.y,r);glow.fillStyle(flare.color,k*.4);glow.fillCircle(flare.x,flare.y,r*.42);glow.fillStyle(0xffffff,k*.35);glow.fillCircle(flare.x,flare.y,r*.16);
+    glow.fillStyle(0xffd98a,k*.08);glow.fillCircle(flare.x,flare.y,r*1.75);
+    glow.fillStyle(flare.color,k*.13);glow.fillCircle(flare.x,flare.y,r*1.45);
+    glow.fillStyle(flare.color,k*.26);glow.fillCircle(flare.x,flare.y,r);
+    glow.fillStyle(flare.color,k*.42);glow.fillCircle(flare.x,flare.y,r*.44);
+    glow.fillStyle(0xfff8e6,k*.38);glow.fillCircle(flare.x,flare.y,r*.18);
 }

@@ -24,17 +24,18 @@ export function paintWaveArrival(graphics:WaveArrivalGraphics,frame:Readonly<Wav
  const x=Number.isFinite(anchor.x)?anchor.x:340,y=Number.isFinite(anchor.y)?anchor.y:267,lift=frame.clothLift;
  const cloth=frame.banner.points.map(point=>({x:x+point.x,y:y+point.y+lift}));
  graphics.lineStyle(2.2,0x3b352b,.88).lineBetween(x,y+1,x,y-76);
- graphics.fillStyle(frame.intent==='volley'?0xb97862:frame.intent==='bulwark'?0x88664e:0xa96350,.86).fillPoints(cloth,true);
+ graphics.fillStyle(0xf2d184,.95).fillCircle(x,y-76,2.2);
+ graphics.fillStyle(frame.intent==='volley'?0xe0a148:frame.intent==='bulwark'?0x5c7d8c:0xd95f43,.92).fillPoints(cloth,true);
  graphics.lineStyle(1.2,0x3b352b,.92);
  for(let index=0;index<cloth.length;index++){const a=cloth[index],b=cloth[(index+1)%cloth.length];graphics.lineBetween(a.x,a.y,b.x,b.y);}
  for(const knot of frame.countdownKnots){const kx=x+knot.x,ky=y+knot.y;graphics.lineStyle(1,0x3b352b,.82).strokeCircle(kx,ky,2.5);if(knot.filled)graphics.fillStyle(0xe1bf78,.9).fillCircle(kx,ky,1.55);}
  for(const mark of frame.roleMarks){const mx=x+mark.x,my=y+mark.y;
   if(mark.shape==='footprints'){
-   graphics.fillStyle(0x654d3b,mark.alpha).fillCircle(mx-1.7,my,1.8).fillCircle(mx+2,my-2.6,1.45);
+   graphics.fillStyle(0x8c563b,mark.alpha).fillCircle(mx-1.7,my,1.8).fillCircle(mx+2,my-2.6,1.45);
   }else if(mark.shape==='sling-stitches'){
-   graphics.lineStyle(1.35,0xc18467,mark.alpha).lineBetween(mx-3,my-2,mx+3,my+2).lineBetween(mx-3,my+2,mx+3,my-2);
+   graphics.lineStyle(1.35,0xf5c878,mark.alpha).lineBetween(mx-3,my-2,mx+3,my+2).lineBetween(mx-3,my+2,mx+3,my-2);
   }else{
-   graphics.fillStyle(0x5e4a3d,mark.alpha).fillRect(mx-3.5,my-2.6,7,5.2).lineStyle(1,0xd4ad78,mark.alpha).strokeRect(mx-3.5,my-2.6,7,5.2);
+   graphics.fillStyle(0x465c66,mark.alpha).fillRect(mx-3.5,my-2.6,7,5.2).lineStyle(1,0xe5c78b,mark.alpha).strokeRect(mx-3.5,my-2.6,7,5.2);
   }
  }
  return Object.freeze({banner:frame.banner.shape,roleShapes:Object.freeze(frame.roleMarks.map(mark=>mark.shape)),knots:frame.countdownKnots.length});

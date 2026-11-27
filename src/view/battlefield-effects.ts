@@ -40,6 +40,7 @@ export function createBattlefieldEffects(host:EffectsHost,layers:{fx:Phaser.Game
    const hp=targetSide==='player'?state.playerHp:state.enemyHp,maxHp=targetSide==='player'?state.playerMaxHp:state.enemyMaxHp;
    const critical=baseDamageStage(hp,maxHp)==='critical';
    emit(x,y,critical?(heavy?13:9):(heavy?9:6),palette.debris,true,critical?.5:.36);
+   emit(x,y-6,heavy?6:3,targetSide==='enemy'?0xffd27a:0x9de6ef,false,.32);
    ring(x,y,targetSide==='player'?0x8fe7f0:0xffbb8b,heavy?29:18);
    flare(x,y,heavy?34:22,targetSide==='player'?0x7fdcff:0xffa060,heavy?.34:.24);
    if(amount>0)floatText(x,y-17,compactNumber(amount),'#fff1c8',false,heavy);

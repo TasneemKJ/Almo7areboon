@@ -52,10 +52,16 @@ export function createBattlefieldAtmosphere(host:AtmosphereHost,layers:Atmospher
     const mood=host.villageMood?.()??quiet;
     const villageVerdict=aftermath?.phase===host.game.state.phase?villageVerdictFrame({phase:aftermath.phase,elapsed:Math.max(0,host.clock()-aftermath.at),reduced:host.reduce()}):null;
     const frame=villageFrame({age:host.game.profile.age,time:host.villageMood?mood.time:host.clock(),reduced:host.reduce(),restoration:host.game.profile.chronicle?.restoration??0,mood,viewport:host.villageViewport(),verdict:villageVerdict,watch:waveArrival,order:orderFrame?.answer,muster:musterFrame});
+    if(typeof g.fillGradientStyle==='function'){
+     const [skyC,skyA]=([[0x102036,.22],[0x172b28,.20],[0x0d2238,.22],[0x23142c,.23],[0x142428,.21],[0x091630,.24]] as const)[host.game.profile.age>=0&&host.game.profile.age<6?host.game.profile.age:0],gy=host.layout().groundY,lh=host.layout().height;
+     g.fillGradientStyle(skyC,skyC,skyC,skyC,skyA,skyA,0,0);g.fillRect(0,0,450,Math.max(96,gy-24));
+     if(lh>gy+48){g.fillGradientStyle(0x0b1218,0x0b1218,0x0b1218,0x0b1218,0,0,.32,.32);g.fillRect(0,gy+48,450,lh-gy-48);}
+    }
     paintStorybookDepth(g,host.storybookDepth(),host.villageMood?mood.time:host.clock(),host.reduce(),frame.lamps.map(lamp=>lamp.alpha));
     for(const resident of frame.residents)for(const pane of resident.panes){g.fillStyle(pane.color,pane.alpha);g.fillPoints(pane.points as Phaser.Types.Math.Vector2Like[],true);}
     for(const line of [...frame.verdictStrokes,...frame.watchStrokes,...frame.orderStrokes,...frame.musterStrokes,...frame.water]){g.lineStyle(line.width,line.color,line.alpha);g.lineBetween(line.from.x,line.from.y,line.to.x,line.to.y);}
     if(frame.bird)for(const shape of frame.bird){g.fillStyle(shape.color,shape.alpha);g.fillPoints(shape.points as Phaser.Types.Math.Vector2Like[],true);}
+    paintAmbientMarks(g,atmosphereFrame(host.game.profile.age,host.clock(),450,host.layout().groundY,host.reduce()));
     const lights=[...frame.lamps,...frame.restorationLights];
     for(let i=0;i<layers.stageLight.length;i++){
      const image=layers.stageLight.getAt(i) as Phaser.GameObjects.Image,mark=lights[i];

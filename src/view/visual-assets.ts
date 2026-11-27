@@ -12,6 +12,7 @@ export const foregroundTexture=(age:number)=>`foreground-${age}`;
 export const propTexture=(name:string)=>`prop-${name}`;
 export const PROP_ASSETS:readonly [string,string][]=[
  ['lantern','/art/storybook/props/lantern.webp'],
+ ['cat','/art/storybook/props/cat.webp'],
  ['spoils-coin','/art/storybook/props/spoils-coin.webp'],
  ['proj-stone','/art/storybook/props/proj-stone.webp'],
  ['proj-arrow','/art/storybook/props/proj-arrow.webp'],

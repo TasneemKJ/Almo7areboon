@@ -1,5 +1,4 @@
 import type { BattleState, Profile } from '../game/types.ts';
-import { campLampIllustration } from '../view/camp-illustrations.ts';
 import { battleClock } from './battle-clock.ts';
 import { chapterInBothLanguages, chapterLandscape } from './chapter-presentation.ts';
 
@@ -81,7 +80,7 @@ export async function sharePostcard(profile: Readonly<Profile>, state: Readonly<
   try {
     const lines = postcardLines(profile, state);
     await deps.fonts().catch(() => {});
-    const [plate, lamp] = await Promise.all([deps.image(chapterLandscape(profile.enemyAge)), deps.image(`data:image/svg+xml;charset=utf-8,${encodeURIComponent(campLampIllustration())}`)]);
+    const [plate, lamp] = await Promise.all([deps.image(chapterLandscape(profile.enemyAge)), deps.image('/art/storybook/props/lantern.webp')]);
     const canvas = deps.canvas(); canvas.width = POSTCARD.width; canvas.height = POSTCARD.height;
     const ctx = canvas.getContext('2d'); if (!ctx) return false;
     drawPostcard(ctx, { plate, lamp }, lines);

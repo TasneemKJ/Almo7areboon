@@ -49,3 +49,8 @@ export function cardIllustration(index:number):string {
  value=dataSvg(documentSvg(128,128,`${cardFrameSvg(rarity,color)}<g opacity=".1">${e(64,62,43,43,color)}</g><g data-layer="card-object">${object(index)}</g>`,defs));
  cache.set(index,value);return value;
 }
+/** Painted Illuminated Storybook Gouache card illustration (.webp). */
+export function cardArtSrc(index:number):string {
+ const i=Number.isInteger(index)&&index>=0&&index<30?index:0;
+ return `/art/storybook/cards/card-${String(i).padStart(2,'0')}.webp`;
+}

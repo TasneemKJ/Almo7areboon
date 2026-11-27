@@ -143,14 +143,14 @@ class Battlefield extends Phaser.Scene {
    this.glow=this.add.graphics().setBlendMode(Phaser.BlendModes.ADD);this.world.add(this.glow);
    this.bars=this.add.graphics();this.world.add(this.bars);
    for(let i=0;i<2;i++){
-    const text=this.add.text(0,0,'',{fontFamily:'Trebuchet MS, Arial, sans-serif',fontSize:'10px',fontStyle:'bold',color:'#fff5d8',stroke:'#203e4b',strokeThickness:2}).setOrigin(.5);
+    const text=this.add.text(0,0,'',{fontFamily:'"Almo Arabic", Georgia, "Times New Roman", serif',fontSize:'9.5px',fontStyle:'bold',color:'#fff6dc',stroke:'#13232e',strokeThickness:2.2,padding:{x:4,y:2},resolution:Math.min(3,Math.max(2,globalThis.devicePixelRatio||2))}).setOrigin(.5);
     this.baseText.push(text);this.world.add(text);
    }
    this.effects=createBattlefieldEffects({scene:this,game,world:()=>this.world,canvas:()=>this.game.canvas,layout:()=>this.layout,reduce:()=>this.reduce,clock:()=>this.clock},{fx:this.fx,glow:this.glow,groundFx:this.groundFx},this.marks);
    this.army=createBattlefieldArmy({scene:this,game,element,get pixelRatio(){return host.pixelRatio;},canvas:()=>this.game.canvas,layout:()=>this.layout,yAt:lane=>this.yAt(lane),reduce:()=>this.reduce,clock:()=>this.clock,aftermath:()=>this.aftermath,clearAftermath:()=>{this.aftermath=null;},waveArrival:()=>this.waveArrival},{shadows:this.shadows,halos:this.halos,armyLayer:this.armyLayer,arrivalSignal:this.arrivalSignal,baseDamage:this.baseDamage,groundFx:this.groundFx,campProps:this.campProps,chronicleView:this.chronicleView},this.effects);
    this.atmosphere=createBattlefieldAtmosphere({scene:this,game,canvas:()=>this.game.canvas,layout:()=>this.layout,clock:()=>this.clock,reduce:()=>this.reduce,aftermath:()=>this.aftermath,waveArrival:()=>this.waveArrival,orderFrame:()=>this.orderFrame,musterFrame:()=>this.musterFrame,villageViewport:()=>this.villageViewport,storybookDepth:()=>this.storybookDepth,villageMood:options.villageMood},{ambience:this.ambience,streak:this.streak,stars:this.stars,clouds:this.clouds,mist:this.mist,stageLight:this.stageLight});
    this.scale.on('resize',this.resize,this);
-   this.events.once('shutdown',()=>{delete this.game.canvas.dataset.waveArrival;delete this.game.canvas.dataset.battleAftermath;delete this.game.canvas.dataset.villageVerdict;delete this.game.canvas.dataset.villageWatchfire;delete this.game.canvas.dataset.villageOrderAnswer;delete this.game.canvas.dataset.villageMusterAnswer;delete this.game.canvas.dataset.battlefieldMemory;delete this.game.canvas.dataset.spoilsHomecoming;delete this.game.canvas.dataset.spoilsReward;delete this.game.canvas.dataset.battlefieldReviewFrameReady;this.aftermath=null;this.orderFrame=null;this.musterFrame=null;this.waveArrival=null;this.villageMuster=createVillageMuster();this.scale.off('resize',this.resize,this);this.effects.reset();this.army.forget();});
+   this.events.once('shutdown',()=>{delete this.game.canvas.dataset.waveArrival;delete this.game.canvas.dataset.battleAftermath;delete this.game.canvas.dataset.villageVerdict;delete this.game.canvas.dataset.villageWatchfire;delete this.game.canvas.dataset.villageOrderAnswer;delete this.game.canvas.dataset.villageMusterAnswer;delete this.game.canvas.dataset.battlefieldMemory;delete this.game.canvas.dataset.spoilsHomecoming;delete this.game.canvas.dataset.spoilsReward;delete this.game.canvas.dataset.battlefieldReviewFrameReady;this.aftermath=null;this.orderFrame=null;this.musterFrame=null;this.waveArrival=null;this.villageMuster=createVillageMuster();this.scale.off('resize',this.resize,this);this.effects.reset();this.army.forget();this.chronicleView.destroy();});
    this.resize();this.syncEra();host.loading.remove();
    if(this.failed)element.dispatchEvent(new CustomEvent('visual-fallback',{bubbles:true}));
   }
@@ -265,7 +265,7 @@ class Battlefield extends Phaser.Scene {
     }
     if(e.skill==='meteor'){
      const targets=[...this.army.units.values()].filter(v=>v.side==='enemy').slice(0,6);
-     const meteorDamage=Math.round(36*1.65**game.profile.age);
+     const meteorDamage=e.amount??Math.round(36*1.65**game.profile.age);
      if(this.reduce){this.effects.floatText(225,this.layout.groundY-85,tr('METEOR','النيزك'),'#ffd6a5',true);for(const v of targets){this.effects.meteorLanding(v.x,v.y-15);this.marks.remember({kind:'meteor',x:v.x,lane:v.lane,side:'player'});}return;}
      for(const v of targets.length?targets:[{x:310,y:this.layout.groundY,lane:1}]){const memory:BattlefieldMemoryInput={kind:'meteor',x:v.x,lane:v.lane,side:'player'};this.effects.pushBolt({from:{x:v.x-70,y:v.y-150},to:{x:v.x,y:v.y-15},life:.4,max:.4,arc:0,age:0,kind:2,side:'player',heavy:true,damage:targets.length?meteorDamage:0,meteor:true,memory:targets.length?memory:undefined},false);}
      this.effects.cameraKick(180,.0025,3);this.cameras.main.flash(180,255,190,120);
@@ -310,7 +310,7 @@ class Battlefield extends Phaser.Scene {
     }else paintGateLanterns(this.lanternBody,this.lanternGlow,plan);
     this.lanternsLit=true;
    }else if(this.lanternsLit){this.lanternBody.clear();this.lanternGlow.clear();for(const img of this.lanternSprites)img.setVisible(false);this.lanternsLit=false;}
-   this.atmosphere.draw();paintBaseDamage(this.baseDamage,game,this.layout,this.clock,this.reduce,side=>this.effects.baseHit(side));this.army.draw();paintOrders(this.shadows,this.orderFrame,()=>this.game.canvas,this.reduce);paintHealthBars(this.bars,this.baseText,game,this.layout,lane=>this.yAt(lane));this.effects.step(game.state.paused?0:dt);onFrame();
+   this.atmosphere.draw();paintBaseDamage(this.baseDamage,game,this.layout,this.clock,this.reduce,side=>this.effects.baseHit(side));this.army.draw(game.state.paused?0:dt);paintOrders(this.shadows,this.orderFrame,()=>this.game.canvas,this.reduce);paintHealthBars(this.bars,this.baseText,game,this.layout,lane=>this.yAt(lane),game.state.paused?0:dt);this.effects.step(game.state.paused?0:dt);onFrame();
   }
 }
 

@@ -24,7 +24,7 @@ export function entryCopy(profile:Profile,hasSavedProgress:boolean):{action:stri
 /** The entry is a quiet invitation, never an alternate progression or save owner. */
 export function entryScreenHtml(profile:Profile):string {
  const copy=entryCopy(profile,false);
- return `<section id="entry-screen" class="entry-screen" aria-labelledby="entry-title">
+ return `<section id="entry-screen" class="entry-screen" data-chapter="${profile.enemyAge}" aria-labelledby="entry-title">
  <img id="entry-art" class="entry-art" src="${chapterLandscape(profile.enemyAge)}" alt=""/>
  <div class="entry-copy"><p class="entry-kicker">${tr('A LEVANTINE FOLKTALE','حكاية من بلاد الشام')}</p><h1 id="entry-title">${tr('Almohareboon','المحاربون')}</h1><p id="entry-chapter">${copy.chapter}</p><p id="entry-subtitle">${copy.subtitle}</p><div id="entry-path">${journeyPathHtml(profile.enemyAge,false)}</div></div>
  <div id="entry-stage" class="entry-stage" aria-hidden="true">${entryStageHtml(profile)}</div>
@@ -42,7 +42,7 @@ export function journeyPathHtml(chapterIndex:number,locked:boolean):string {
  const dots=Array.from({length:6},(_,i)=>`<li class="${i<here?'path-done':i===here?'path-here':locked&&i>=FREE_AGES?'path-locked':'path-ahead'}"></li>`).join('');
  const label=tr(`Chapter ${here+1} of 6`,`الفصل ${here+1} من 6`);
  const note=locked
-  ?`<button class="entry-path-note" data-command="full-journey">${tr('Chapters 1–3 free · 4–6 with one purchase',`الفصول ${n('1–3')} مجّاناً · ${n('4–6')} بشراءٍ واحد`)}</button>`
+  ?`<button class="entry-path-note" data-command="full-journey">${tr('Chapters 1–3 free · 4–6 with one purchase',`الفصول ${n('\u200E1–3\u200E')} مجّاناً · ${n('\u200E4–6\u200E')} بشراءٍ واحد`)}</button>`
   :`<span class="entry-path-note">${tr(`Chapter ${n(here+1)} of ${n(6)}`,`الفصل ${n(here+1)} من ${n(6)}`)}</span>`;
  return `<ol class="entry-path" aria-label="${label}">${dots}</ol>${note}`;
 }

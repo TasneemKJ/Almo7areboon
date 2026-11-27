@@ -17,7 +17,10 @@ export function createBaseSprite(scene:Phaser.Scene,age:number,side:Side):ImageO
   const key=baseTexture(age,side);
   if(scene.textures.exists(key)){
     const image=scene.add.image(0,0,key).setOrigin(.5,140/160);
-    return image.setScale(.68*160/image.width).setFlipX(!!storybookArt(age)&&side==='enemy');
+    const targetW=storybookArt(age)?148:.68*160;
+    image.setScale(targetW/image.width).setFlipX(!!storybookArt(age)&&side==='enemy');
+    if(storybookArt(age)&&side==='enemy')image.setTint(0xdf9f88);
+    return image;
   }
   const graphic=scene.add.graphics();drawBase(graphic,age,side);return graphic;
 }

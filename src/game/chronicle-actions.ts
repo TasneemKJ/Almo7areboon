@@ -19,9 +19,9 @@ export function planChronicleAction(p:Profile,s:BattleState,a:ChronicleAction):C
     case 'chronicle-abandon':if(c.expedition)next=abandonExpedition(c);break;
     case 'chronicle-provision':
       if(c.expedition&&(a.provision==='supplies'||a.provision==='shelter'))next={...c,expedition:{...c.expedition,provision:a.provision}};
-      reset=false;break;
+      break;
     default:return null;
   }
-  if((s.phase==='won'||s.phase==='lost')&&['chronicle-captain','chronicle-tale','chronicle-preparation'].includes(a.type))reset=false;
+  if((s.phase==='won'||s.phase==='lost')&&['chronicle-captain','chronicle-tale','chronicle-preparation','chronicle-provision'].includes(a.type))reset=false;
   return next?{chronicle:next,enemyAge:chapter,reset}:null;
 }

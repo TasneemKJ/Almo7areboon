@@ -15,6 +15,7 @@ import {paintFieldCamp} from './battlefield-camp.ts';
 import {paintDuskLamps} from './gate-lanterns.ts';
 import {duskSight} from '../game/dusk-raid.ts';
 import { paintIdleActors, updateTroopViews } from './battlefield-troop-paint.ts';
+import {SIDE_COLOURS} from './side-identity.ts';
 import type {ChronicleView} from './chronicle-view.ts';
 import type {WaveArrivalFrame} from './wave-arrival.ts';
 import type {GamePort,Unit,Side} from '../game/types';
@@ -48,24 +49,32 @@ export function createBattlefieldArmy(host:ArmyHost,layers:ArmyLayers,effects:Re
  let playerBase!:ImageOrFallback,enemyBase!:ImageOrFallback;
  const sprite=(age:number,kind:Unit['kind'],side:Side):ImageOrFallback=>createTroopSprite(host.scene,age,kind,side);
  const createBase=(age:number,side:Side):ImageOrFallback=>createBaseSprite(host.scene,age,side);
- function draw():void {
+ function draw(dt=1/60):void {
    const g=layers.shadows,h=layers.halos;g.clear();h.clear();
    const {groundY}=host.layout();
    if(host.game.state.phase==='ready'||host.game.state.phase==='running')host.clearAftermath();const aftermath=host.aftermath();
    let aftermathElapsed=aftermath?Math.max(0,host.clock()-aftermath.at):0;aftermathElapsed=Math.min(1.3,aftermathElapsed);
    const aftermathCounts={triumph:0,withdraw:0,roles:[0,0,0],maxForward:0,maxLift:0,maxAngle:0};
    // A shared ground-plane sort lets rear-lane troops pass behind buildings.
-   playerBase.setPosition(54,groundY+12).setDepth(groundY+12);
-   enemyBase.setPosition(396,groundY+12).setDepth(groundY+12);
-   paintWaveSignal(host,layers.arrivalSignal,groundY);
+   const breathe=host.reduce()?1:.9+.1*Math.sin(host.clock()*2.2);
+   g.fillStyle(0x120b06,.32);
+   g.fillEllipse(70,groundY+15,134,21);
+   g.fillEllipse(380,groundY+15,134,21);
+   g.lineStyle(1.4,SIDE_COLOURS.player,.38);g.strokeEllipse(70,groundY+15,134,21);
+   g.lineStyle(1.4,SIDE_COLOURS.enemy,.42);g.strokeEllipse(380,groundY+15,134,21);
+   h.fillStyle(0xffd18a,.11*breathe);h.fillCircle(70,groundY-12,46);
+   h.fillStyle(0xff8a5b,.13*breathe);h.fillCircle(380,groundY-12,48);
+   playerBase.setPosition(70,groundY+15).setDepth(groundY+12);
+   enemyBase.setPosition(380,groundY+15).setDepth(groundY+12);
+   paintWaveSignal(host,layers.arrivalSignal,groundY,h,effects);
    layers.baseDamage.setDepth(groundY+12.1);
    for(let lane=0;lane<3;lane++)layers.groundFx[lane].clear().setDepth(groundEffectDepth(groundY,lane,host.layout().laneGap));
-   updateTroopViews({host,layers,effects,units,sprite,g,h,aftermath,aftermathElapsed,aftermathCounts});
+   updateTroopViews({host,layers,effects,units,sprite,g,h,aftermath,aftermathElapsed,aftermathCounts,dt});
    // The dusk raid: raiders show only inside lamplight (game/dusk-raid.ts); outside a raid every view is whole.
    for(const view of units.values())view.body.setAlpha(view.side==='enemy'?duskSight(host.game.state,view.x/.45):1);
-   if(host.game.state.dusk)paintDuskLamps(g,h,host.game.state.dusk.lamps,groundY,host.clock(),host.reduce());
+   if(host.game.state.dusk)paintDuskLamps(g,h,host.game.state.dusk.lamps,groundY,host.clock(),host.reduce(),host.game.state.phase==='ready');
    if(navigator.webdriver)host.canvas().dataset.battlefieldEnemyViews=String([...units.values()].filter(view=>view.side==='enemy').length);
-   paintIdleActors(g,idle,host.game.state,host.game.profile,groundY);
+   paintIdleActors(g,idle,host.game.state,host.game.profile,groundY,host.clock(),host.reduce());
    layers.chronicleView.update(host.game.profile,host.game.state,groundY,host.layout().laneGap,host.reduce());
    paintFieldCamp(host,layers,campActors);
    layers.armyLayer.sort('depth');
@@ -86,6 +95,6 @@ export function createBattlefieldArmy(host:ArmyHost,layers:ArmyLayers,effects:Re
   /** A replacement battle: drop every troop sprite. */
   clearUnits():void {for(const view of units.values())view.body.destroy();units.clear();},
   /** Scene shutdown: forget sprites without destroying them (Phaser owns them). */
-  forget():void {units.clear();idle=[];},
+  forget():void {units.clear();idle=[];campActors=[];},
  };
 }

@@ -3,6 +3,7 @@ import {baseDamageFrame} from './base-damage.ts';
 import {healthOffset,lanePresentation} from './lane-perspective.ts';
 import {storybookArt} from './storybook-art.ts';
 import {compactNumber} from '../game/format.ts';
+import {lang} from '../game/locale.ts';
 import type {orderPresentationFrame} from './order-presentation.ts';
 import type {GamePort,Side} from '../game/types';
 import {xAt,type Layout} from './battlefield-types.ts';
@@ -43,17 +44,29 @@ export function paintBaseDamage(g:Phaser.GameObjects.Graphics,game:GamePort,layo
    }
 }
 
+const ghostBaseRatio=[1,1],lastBaseHp=[-1,-1];
+let ghostLastState:unknown=null,lastBaseLang='';
+
 /** Base and troop health bars, optional role marks, and the freeze band. */
-export function paintHealthBars(bars:Phaser.GameObjects.Graphics,baseText:Phaser.GameObjects.Text[],game:GamePort,layout:Layout,yAt:(lane:number)=>number):void {
-   const g=bars,s=game.state;g.clear();
-   for(const [i,x,hp,max,color]of [[0,54,s.playerHp,s.playerMaxHp,0x68c9ee],[1,396,s.enemyHp,s.enemyMaxHp,0xf19d75]]){
+export function paintHealthBars(bars:Phaser.GameObjects.Graphics,baseText:Phaser.GameObjects.Text[],game:GamePort,layout:Layout,yAt:(lane:number)=>number,dt=1/60):void {
+   const g=bars,s=game.state,locale=lang();g.clear();
+   if(ghostLastState!==s){ghostLastState=s;ghostBaseRatio[0]=1;ghostBaseRatio[1]=1;lastBaseHp[0]=-1;lastBaseHp[1]=-1;lastBaseLang=locale;}
+   else if(lastBaseLang!==locale){lastBaseHp[0]=-1;lastBaseHp[1]=-1;lastBaseLang=locale;}
+   const decay=s.paused||dt<=0?0:1-Math.exp(-dt*7.5);
+   for(const [i,x,hp,max,color]of [[0,70,s.playerHp,s.playerMaxHp,0x68c9ee],[1,380,s.enemyHp,s.enemyMaxHp,0xf19d75]]){
     const age=i===0?game.profile.age:game.profile.enemyAge;
-    const y=layout.groundY-(storybookArt(age)?65:85),fill=59*Math.max(0,Math.min(1,hp/max));
-    g.fillStyle(0x132d3c,.88);g.fillRoundedRect(x-33,y-4,66,19,7);
-    g.lineStyle(1,0xd2d9ba,.5);g.strokeRoundedRect(x-33,y-4,66,19,7);
-    g.fillStyle(0x5a7477,1);g.fillRoundedRect(x-30,y+7,60,5,2);
-    if(fill>.1){g.fillStyle(color,1);g.fillRoundedRect(x-29.5,y+7,fill,4,2);}
-    baseText[i].setPosition(x,y+1).setText(compactNumber(hp));
+    const ratio=Math.max(0,Math.min(1,hp/Math.max(1,max)));
+    if(ratio>ghostBaseRatio[i])ghostBaseRatio[i]=ratio;else if(decay>0)ghostBaseRatio[i]+=(ratio-ghostBaseRatio[i])*decay;
+    const roofLift=([94,102,98,108,100,102] as const)[age]??98;
+    const y=storybookArt(age)?Math.max(46,layout.groundY-roofLift):layout.groundY-85,fill=65*ratio,ghostFill=65*ghostBaseRatio[i];
+    g.fillStyle(0x12232f,.92);g.fillRoundedRect(x-38,y-6,76,22,7);
+    g.lineStyle(1.15,ratio<.3?0xf19d75:0xd8b46c,.78);g.strokeRoundedRect(x-38,y-6,76,22,7);
+    g.fillStyle(0x283e47,1);g.fillRoundedRect(x-33,y+8,66,5,2);
+    if(ghostFill>fill+.4){g.fillStyle(0xf8edd0,.75);g.fillRoundedRect(x-32.5,y+8,ghostFill,4,2);}
+    if(fill>.1){g.fillStyle(color,1);g.fillRoundedRect(x-32.5,y+8,fill,4,2);}
+    baseText[i].setPosition(x,y+1);
+    const whole=Math.ceil(hp);
+    if(lastBaseHp[i]!==whole){lastBaseHp[i]=whole;baseText[i].setText(compactNumber(hp));}
    }
    for(const unit of s.units)if(unit.hp<unit.maxHp){
     const perspective=lanePresentation(unit.lane,unit.kind),x=xAt(unit.x),y=yAt(unit.lane)-healthOffset(unit.kind,unit.lane),w=(unit.kind===2?31:22)*perspective.scale;
@@ -70,7 +83,7 @@ export function paintHealthBars(bars:Phaser.GameObjects.Graphics,baseText:Phaser
     if(mine){g.fillStyle(0xf4f0d2,1);const q=r-1.6;if(unit.kind===1)g.fillTriangle(x,y-q-.4,x-q-.3,y+q*.7,x+q+.3,y+q*.7);else if(unit.kind===2)g.fillRect(x-q,y-q,q*2,q*2);else g.fillCircle(x,y,q);}
     if(unit.kind===1)g.strokeTriangle(x,y-r-.6,x-r-.4,y+r*.8,x+r+.4,y+r*.8);else if(unit.kind===2)g.strokeRect(x-r,y-r,r*2,r*2);else g.strokeCircle(x,y,r);
    }
-   if(s.freezeUntil>s.time){const y=layout.groundY+12;g.fillStyle(0xbff6ff,.1);g.fillEllipse(300,y,260,34,24);g.lineStyle(1.5,0xd6fbff,.55);g.strokeEllipse(300,y,250,30,24);}
+   if(s.freezeUntil>s.time){const y=layout.groundY+12;g.fillStyle(0xbff6ff,.1);g.fillEllipse(300,y,260,34,24);g.lineStyle(2.4,0x10242f,.25);g.strokeEllipse(300,y,252,31,24);g.lineStyle(1.4,0xd6fbff,.48);g.strokeEllipse(300,y,250,30,24);}
 }
 
 /** The advance/hold marks on the ground and the pennant; clears its review evidence when no order is shown. */

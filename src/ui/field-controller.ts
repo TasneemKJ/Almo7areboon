@@ -16,7 +16,6 @@ import {gateChoiceLabel,gateLabelLift} from './field-gate-label.ts';
 import {storybookArt} from '../view/storybook-art.ts';
 import {secondsShort} from './battle-hud.ts';
 import {tr} from './i18n.ts';
-import {bannerView} from './banner-gesture.ts';
 import {LAMP_REACH,duskSight} from '../game/dusk-raid.ts';
 import {worldTeaching} from './first-battle.ts';
 import {playHornAudio} from '../view/audio.ts';
@@ -62,17 +61,9 @@ function syncGates(gates:readonly HTMLButtonElement[],arena:ReturnType<typeof ar
  }
 }
 
-/** The planted company banner: its place, and momentum shown as lit cloth (see banner-gesture.ts). */
-function syncBanner(node:HTMLElement,rect:CampTarget,s:Game['state'],running:boolean):void {
- // After a raid turned back the banner stays a moment and settles back into the ground (the held breath).
- const settling=!!s.dusk&&s.phase==='won';node.hidden=!running&&!settling;node.classList.toggle('settling',settling);
- const view=bannerView(s),order=view.order??'none';
- if(node.dataset.ready!==String(view.ready))node.dataset.ready=String(view.ready);
- if(node.dataset.order!==order)node.dataset.order=order;
- const steps=String(view.steps);if(node.dataset.steps!==steps)node.dataset.steps=steps;
- // The drag offset lives on the inner .banner-carry, so rewriting the outer box never drops a finger's carry.
- const style=`left:${rect.x}px;top:${rect.y}px;width:${rect.width}px;height:${rect.height}px;--cloth:${view.cloth.toFixed(3)}`;
- if(node.getAttribute('style')!==style)node.setAttribute('style',style);
+/** The mid-screen company banner is retired in favour of the tray order bar. */
+function syncBanner(node:HTMLElement,_rect:CampTarget,_s:Game['state'],_running:boolean):void {
+ node.hidden=true;
 }
 
 /** The dusk raid's dark: a veil with a pool of light at each hung lamp (game/dusk-raid.ts), and its one line while lamps are hung. */
@@ -124,7 +115,7 @@ export function createFieldController(root:HTMLElement){
    syncGates(gates,arena,w,orders,running,{player:p.age,enemy:p.enemyAge});
    place(supplies,plan.supplies);
    // Gather lives on your own camp (the gate shelter on the left), where the gathered company waits.
-   {const size=Math.max(56,Math.min(96,80*arena.scale)),top=Math.max(0,arena.groundY*arena.scale-62*arena.scale);place(standard,{x:0,y:top,width:size,height:Math.max(56,Math.min(96,74*arena.scale))});}
+   {const size=Math.max(64,Math.min(116,108*arena.scale)),left=Math.max(0,70*arena.scale-size/2),top=Math.max(0,arena.groundY*arena.scale-72*arena.scale);place(standard,{x:left,y:top,width:size,height:Math.max(64,Math.min(116,100*arena.scale))});}
    syncBanner(banner,plan.banner,s,running);
    standard.hidden=!running||!s.chronicle?.enabled||s.stats.deployed===0;
    standard.setAttribute('aria-disabled',String(s.paused));standard.setAttribute('aria-pressed',String(s.chronicle?.rally??false));

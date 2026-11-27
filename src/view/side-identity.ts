@@ -10,10 +10,10 @@ export const SIDE_COLOURS = { player: 0x68c9ee, enemy: 0xf19d75 } as const;
 const FROST = 0x9feef2;
 
 /** Multiply tint for a painted troop; null keeps the painting untouched. */
-export function sideTint(side: Side): number | null { return side === 'enemy' ? 0xf06b48 : null; }
+export function sideTint(side: Side): number | null { return side === 'enemy' ? 0xebad9e : null; }
 
 /** The ground ring under a troop (an ellipse outline in world units). */
 export function sideRing(side: Side, scale: number, frozen: boolean): { color: number; alpha: number; rx: number; ry: number; width: number } {
   const s = Number.isFinite(scale) && scale > 0 ? scale : 1;
-  return { color: frozen ? FROST : SIDE_COLOURS[side], alpha: .72, rx: 17 * s, ry: 5 * s, width: 1.6 * s };
+  return { color: frozen ? FROST : SIDE_COLOURS[side], alpha: .62, rx: 13.5 * s, ry: 3.6 * s, width: 1.15 * s };
 }

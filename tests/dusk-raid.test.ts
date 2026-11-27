@@ -113,5 +113,5 @@ test('after a raid turned back: a held breath of 1.5 s, the banner settles, one 
   assert.equal(wonClimax({ pendingVictory: null }, { phase: 'won', dusk: { lamps: [] } }), false, 'a raid turned back owes no rating ask (1.3)');
   assert.match(lifecycle, /if\(batch\.some\(event=>event\.type==='lose'\)\)sessionState\.ratingDue=false;else if\(batch\.some\(event=>event\.type==='win'\)&&wonClimax\(sessionState\.game\.profile,sessionState\.game\.state\)\)sessionState\.ratingDue=true/, 'only a won climax just played');
   const controller = readFileSync(new URL('../src/ui/field-controller.ts', import.meta.url), 'utf8');
-  assert.match(controller, /const settling=!!s\.dusk&&s\.phase==='won';node\.hidden=!running&&!settling;/);
+  assert.match(controller, /node\.hidden=true;/);
 });

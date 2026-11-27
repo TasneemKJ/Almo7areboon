@@ -39,11 +39,21 @@ export interface LanternGraphics {
  * The dusk raid's three lamps (game/dusk-raid.ts), each on a short staff planted where the player hung it. The light
  * they cast on the raiders is game/dusk-raid.ts duskSight; this paints only the lamps.
  */
-export function paintDuskLamps(body: LanternGraphics, glow: LanternGraphics, lamps: readonly number[], groundY: number, time: number, reduced: boolean): void {
+export function paintDuskLamps(body: LanternGraphics, glow: LanternGraphics, lamps: readonly number[], groundY: number, time: number, reduced: boolean, ready = false): void {
+  if (ready && lamps.length < 3) {
+    const cuePulse = reduced ? 1 : .75 + .25 * Math.sin(time * 2.6);
+    for (const simX of [280, 500, 720]) {
+      if (lamps.some(l => Math.abs(l - simX) < 95)) continue;
+      const x = simX * .45;
+      glow.fillStyle(HALO, .08 * cuePulse); glow.fillCircle(x, groundY + 4, 24);
+      body.lineStyle(1.6, BRASS, .55 * cuePulse); body.lineBetween(x, groundY - 10, x, groundY + 4);
+      body.fillStyle(GLASS, .65 * cuePulse); body.fillCircle(x, groundY - 12, 2.5);
+    }
+  }
   for (const [index, simX] of lamps.entries()) {
     const x = simX * .45, top = groundY - 44, breathe = reduced ? 1 : .88 + .12 * Math.sin(time * 2.3 + index * 1.9);
     body.lineStyle(2.4, INK, .95); body.lineBetween(x, groundY + 4, x, top - 20);
-    for (const [radius, alpha] of [[70, .07], [44, .1]] as const) { glow.fillStyle(HALO, alpha * breathe); glow.fillCircle(x, groundY - 8, radius); }
+    for (const [radius, alpha] of [[76, .09], [48, .13], [24, .12]] as const) { glow.fillStyle(HALO, alpha * breathe); glow.fillCircle(x, groundY - 8, radius); }
     paintLantern(body, glow, { x, y: top, scale: 1.1, lit: 1, glow: breathe });
   }
 }

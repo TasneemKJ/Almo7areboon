@@ -21,7 +21,7 @@ export function fieldGuidance(game:Game,idleSeconds=0):string {
  if(s.stats.deployed===0)return tr(`Tap a troop card to send your first troop. ${ERAS[p.age].units[0].cost} food.`,`اختر بطاقة مقاتل لترسل جنديّك الأوّل. كلفته ${ERAS[p.age].units[0].cost} من المؤونة.`);
  // Orders are dragged (2026-11-15: a tap never orders). Until this battle's first order the drag lesson shares the
  // line with tactical hints, six seconds each, so neither goes unseen; danger and pause (above) still come first.
- const drag=tr('Momentum ready. Drag the banner forward to advance, back to hold.','الزخم جاهز. اسحب الراية إلى الأمام لتتقدّم، وإلى الخلف لتثبت.');
+ const drag=tr('Momentum ready. Choose Advance or Hold below.','الزخم جاهز. اختر تقدّم أو اثبُت أدناه.');
  if(orderStatus(s).canCast&&!((s.stats.ordersCast??0)>0)&&(!hint||dragTurn(s.time)))return drag;
  if(hint)return hint;
  if(status.reason==='food')return tr(`The camp needs food. Ready in ${Math.ceil(status.waitSeconds)}s.`,`المخيّم يحتاج إلى مؤونة. جاهز بعد ${secondsShort(Math.ceil(status.waitSeconds))}.`);

@@ -247,7 +247,7 @@ function paintLamps(c:FrameContext){
   const musterRank=[...plate.lamps.keys()].sort((a,b)=>plate.lamps[b][0]-plate.lamps[a][0]).indexOf(index),musterWave=musterProgress===null?0:Math.max(0,Math.min(1,musterProgress*1.45-musterRank*.12));
   const musterFactor=musters?1.24+.26*Math.sin(musterWave*Math.PI):1;
   const color=answers?(orderKind==='advance'?0xf2cf79:0xa9dfdc):age===5&&index>=2?0x8edfc9:0xffd08a;
-  const mark={center:project({x,y}),rx:rx*placement.scale,ry:ry*placement.scale,color,alpha:Math.max(0,Math.min(1,(.12+index*.008+(input.reduced?0:.018*Math.sin(time*2*Math.PI/(3.7+index*.9)+age+index*2)))*(1-.55*mix)*factor*watchFactor*orderFactor*musterFactor))};
+  const mark={center:project({x,y}),rx:rx*placement.scale,ry:ry*placement.scale,color,alpha:Math.max(0,Math.min(1,(.135+index*.008+(input.reduced?0:.018*Math.sin(time*2*Math.PI/(3.7+index*.9)+age+index*2)))*(1-.55*mix)*factor*watchFactor*orderFactor*musterFactor))};
   if(factor!==1)verdictLights.push(mark);if(answers)orderLights.push({...mark,center:{...mark.center}});if(musters)musterLights.push({...mark,center:{...mark.center}});return mark;
  });
  return {lamps,verdictLights,orderLights,musterLights,watchIndexes};

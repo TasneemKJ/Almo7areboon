@@ -33,6 +33,6 @@ test('actual staggered members are explained even while another future wave is p
  for(let n=0;n<1000&&g.state.time<.1+encounterForAge(5).waves[0].time;n++)g.step(1/60);
  const status=g.waveStatus();assert.equal(status.pendingEnemies,2);assert.equal(status.preview?.number,2);
  assert.match(waveInspectionHtml(status),/2 members are still incoming from an earlier wave/);
- for(let n=0;n<4000&&g.state.time<60.1;n++)g.step(1/60);
+ for(let n=0;n<4000&&g.state.time<64.1;n++)g.step(1/60);
  assert.equal(g.state.phase,'running');assert.equal(g.waveStatus().preview,null);assert.equal(g.waveStatus().pendingEnemies,1);assert.match(waveInspectionHtml(g.waveStatus()),/1 enemy still incoming/);
 });

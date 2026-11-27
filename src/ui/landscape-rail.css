@@ -22,9 +22,9 @@
  :root .deployment {
   grid-column:2; grid-row:1; min-height:0; overflow-y:auto; overscroll-behavior:contain;
   /* Center when the deck fits; never push commands above the scroll origin. */
-  display:flex; flex-direction:column; justify-content:flex-start; justify-content:safe center; border-top:0; border-left:2px solid #b3b99b;
+  display:flex; flex-direction:column; justify-content:flex-start; justify-content:safe center; border-top:0; border-left:2px solid #c9ad74; box-shadow:inset 1px 0 0 #fff3cf29;
  }
- :root .upgrades { grid-column:2; grid-row:2; border-left:2px solid #b3b99b; }
+ :root .upgrades { grid-column:2; grid-row:2; border-left:2px solid #c9ad74; box-shadow:inset 1px 0 0 #fff3cf29; }
  :root .bottom-nav {
   grid-row:2; position:relative; left:auto; bottom:auto; transform:none; width:auto;
   height:calc(52px + env(safe-area-inset-bottom,0px));
@@ -37,6 +37,8 @@
  :root .resources { left:max(12px,env(safe-area-inset-left,0px)); right:auto; }
  :root .world-tools, :root .battle-meta { right:max(10px,env(safe-area-inset-right,0px)); }
  /* The rail is short: compact the deck slightly; every control stays at least 44px. */
+ :root .order-banner { grid-template-columns:1fr 1fr; }
+ :root .order-charge { grid-column:1 / -1; }
  :root .unit-card { height:96px; --portrait-top:26px; --portrait-bottom:20px; }
  :root .world[data-phase="ready"] .stage { margin-top:calc(54px + env(safe-area-inset-top,0px)); }
  :root .world[data-phase="ready"] .ready { margin-bottom:8px; }
@@ -48,6 +50,7 @@
 /* While the battlefield renderer downloads, the shell is already usable; the world shows the same
    quiet loading plate the renderer uses until its first frame. */
 #battlefield[data-renderer="loading"]::before { content:'Preparing the battlefield…'; position:absolute; inset:0; display:grid; place-items:center; padding:48px; background:#214953; color:#fff1ca; font-size:14px; letter-spacing:.4px; }
+:root[lang="ar"] #battlefield[data-renderer="loading"]::before { content:'نُعدّ ساحة المعركة…'; }
 
 /* The incoming-wave label sits in the sky band under the chapter title, centred, so it never covers the army
    in the lane (it used to hang above the skill row, over the marching units on short screens). */

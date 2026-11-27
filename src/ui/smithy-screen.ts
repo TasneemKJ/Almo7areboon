@@ -53,7 +53,8 @@ export function fieldBladeHtml(id:number,kind:UnitKind):string {
 
 /** One hook per troop kind: tapping it hangs the next weapon of that kind from the wall, or takes the hung one down. */
 function hookHtml(p:Readonly<Profile>,kind:UnitKind):string {
- const hung=hungFor(p,kind),spare=wallBlades(p).find(b=>b.kind===kind),target=spare??hung;
+ const hung=hungFor(p,kind),spares=wallBlades(p).filter(b=>b.kind===kind);
+ const spare=hung?spares.find(b=>b.id<hung.id):spares[0],target=spare??hung;
  const name=unitPresentationName(p.age,kind);
  const now=hung?`${weaponName(hung)}. ${temperLine(p,hung)}.`:tr(`No weapon on the ${name}'s hook.`,`لا سلاح على خطّاف ${name}.`);
  const act=spare?tr(` Tap to hang the ${weaponName(spare)}.`,` انقر لتعلّق ${weaponName(spare)}.`):hung?tr(' Tap to take it down to the wall.',` انقر لتنزل${it(hung!.kind)} إلى الجدار.`):'';

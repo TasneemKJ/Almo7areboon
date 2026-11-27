@@ -4,6 +4,7 @@ import { beginIntroScore, endIntroScore, introScoreBeat } from '../view/audio.ts
 import type { Runtime } from './runtime.ts';
 import type { ShellApi } from './shell.ts';
 import { lang } from '../game/locale.ts';
+import { saveLanguage } from '../ui/i18n.ts';
 
 /** State owned by the intro module. Siblings see only whether it is playing. */
 export interface IntroState {
@@ -41,7 +42,7 @@ export function createIntro(deps: IntroDeps) {
   const { root, lifetime } = dom;
   const introState: IntroState = { playing: false, beat: 0, replay: false, wasPaused: false, timers: [], layer: null, camera: null, frame: 0, lastTick: 0 };
   // The tale opens in the game's language; its own Story picker can switch it for this session.
-  let language:'en'|'ar'='en',picked=false;
+  let language:'en'|'ar'='en',picked=false,languageChanged=false;
   const reduced = () => dom.rootElement().dataset.motion === 'reduced';
   const schedule = (ms: number, run: () => void) => { introState.timers.push(dom.setTimer(run, ms)); };
   const shell = () => root.querySelector<HTMLElement>('.game-shell');
@@ -89,7 +90,7 @@ export function createIntro(deps: IntroDeps) {
     stopCamera();
     if (!picked) language = lang();
     const layer = dom.createElement('div');
-    layer.id = 'intro-layer'; layer.className = 'intro-layer';layer.lang=language;
+    layer.id = 'intro-layer'; layer.className = 'intro-layer';layer.lang=language;layer.dir=language==='ar'?'rtl':'ltr';
     layer.setAttribute('role', 'dialog'); layer.setAttribute('aria-modal', 'true'); layer.setAttribute('aria-label', language==='ar'?'الحكاية الافتتاحية':'Opening tale');
     layer.innerHTML = introHtml(ports.sessionState.game.profile.enemyAge,language);
     // The tale owns its input: nothing below it hears these events.
@@ -100,8 +101,9 @@ export function createIntro(deps: IntroDeps) {
       if (target) { event.preventDefault(); finish(true); }
     });
     layer.querySelector('select')?.addEventListener('change',event=>{
-      language=(event.target as HTMLSelectElement).value==='ar'?'ar':'en';picked=true;layer.lang=language;(event.target as HTMLSelectElement).setAttribute('aria-label',language==='ar'?'لغة الحكاية':'Opening language');
+      language=(event.target as HTMLSelectElement).value==='ar'?'ar':'en';picked=true;if(saveLanguage(language))languageChanged=true;layer.lang=language;layer.dir=language==='ar'?'rtl':'ltr';(event.target as HTMLSelectElement).setAttribute('aria-label',language==='ar'?'لغة الحكاية':'Opening language');
       layer.setAttribute('aria-label',language==='ar'?'الحكاية الافتتاحية':'Opening tale');
+      const label=layer.querySelector<HTMLElement>('[data-intro-language-label]');if(label)label.textContent=language==='ar'?'الحكاية':'Story';
       const kicker=layer.querySelector<HTMLElement>('.intro-kicker');if(kicker){kicker.textContent=language==='ar'?'حكاية من بلاد الشام':'A LEVANTINE FOLKTALE';kicker.lang=language;}
       layer.querySelectorAll<HTMLElement>('.intro-line').forEach((line,index)=>{line.textContent=INTRO_BEATS[index][language];line.lang=language;line.dir=language==='ar'?'rtl':'ltr';});
       const skip=layer.querySelector<HTMLElement>('.intro-skip');if(skip)skip.textContent=language==='ar'?'تخطّ':'Skip';
@@ -145,6 +147,10 @@ export function createIntro(deps: IntroDeps) {
         ports.syncPause();
         if (ports.sessionState.game.state.phase === 'running') ports.showFieldPause();
       }
+    }
+    if (completed && languageChanged) {
+      languageChanged = false;
+      (dom as { reload?: () => void }).reload?.();
     }
     delete root.dataset.intro;
     const layer = introState.layer;
@@ -196,6 +202,7 @@ export function createIntro(deps: IntroDeps) {
     ports.syncPause();
     start(replay);
   }
+  (lifetime as { listen?: typeof lifetime.listen }).listen?.(root, 'session-lost', () => finish(false));
   lifetime.add(() => {
     dom.clearTimer(taleTimer);
     for (const timer of introState.timers) dom.clearTimer(timer);

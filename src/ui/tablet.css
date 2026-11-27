@@ -12,6 +12,7 @@
  #app[data-field-mode="field"] .field-chrome button{min-width:56px;min-height:56px;font-size:17px;border-radius:14px}
  #app[data-field-mode="field"] .banner-plate{font-size:17px;padding:5px 12px 6px}
  #app[data-field-mode="field"][data-entry="play"] .battle-view>.deployment{padding-top:14px;padding-bottom:max(16px,env(safe-area-inset-bottom))}
+ #app[data-field-mode="field"][data-entry="play"] .deployment .order-banner{max-width:920px}
  #app[data-field-mode="field"][data-entry="play"] .deployment .unit-cards{max-width:920px;gap:16px}
  #app[data-field-mode="field"][data-entry="play"] .deployment .unit-card{height:86px!important;border-radius:43px 18px 18px 43px}
  [dir="rtl"] #app[data-field-mode="field"][data-entry="play"] .deployment .unit-card{border-radius:18px 43px 43px 18px}
@@ -27,4 +28,5 @@
  /* Dialogs (pause, settings, results, store cards) keep their phone layout, scaled up as one piece so type and
     targets read at tablet distance; the cap keeps a tall dialog inside the screen at the larger size. */
  #modal-layer .dialog{zoom:1.28;max-height:calc((100dvh - 48px - env(safe-area-inset-top) - env(safe-area-inset-bottom)) / 1.28)}
+ #modal-layer .dialog.film-dialog{zoom:1;max-height:100dvh}
 }

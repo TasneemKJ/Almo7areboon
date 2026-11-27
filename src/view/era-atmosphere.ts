@@ -17,12 +17,12 @@ export interface AtmosphereMark {
 }
 
 export const ERA_ATMOSPHERE:readonly AtmosphereProfile[]=Object.freeze([
-  {kind:'firefly', color:0xffe58c, count:12, speed:.12, band:[.47,.78]},
-  {kind:'pollen', color:0xf4d58c, count:14, speed:.16, band:[.24,.73]},
+  {kind:'firefly', color:0xffe58c, count:15, speed:.12, band:[.47,.78]},
+  {kind:'pollen', color:0xf4d58c, count:16, speed:.16, band:[.24,.73]},
   {kind:'gull', color:0xf4f0d4, count:6, speed:.08, band:[.20,.48]},
-  {kind:'ember', color:0xffb16d, count:11, speed:.22, band:[.44,.76]},
+  {kind:'ember', color:0xffb16d, count:14, speed:.22, band:[.44,.76]},
   {kind:'leaf', color:0xb7c89f, count:10, speed:.18, band:[.30,.72]},
-  {kind:'starlight', color:0xaef8f3, count:16, speed:.05, band:[.08,.64]},
+  {kind:'starlight', color:0xaef8f3, count:20, speed:.05, band:[.08,.64]},
 ]);
 
 const fract=(value:number)=>value-Math.floor(value);

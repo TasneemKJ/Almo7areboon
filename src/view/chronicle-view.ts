@@ -5,6 +5,7 @@ import {chronicleFormationFrame,chronicleThreadDepth} from './chronicle-formatio
 import {paintChronicleFormation} from './chronicle-formation-paint.ts';
 import {chronicleRescueFrame,chronicleRescueRenderPlan} from './chronicle-rescue.ts';
 import {chronicleCatFrame,chronicleCatRenderPlan} from './chronicle-cat.ts';
+import {propTexture} from './visual-assets.ts';
 import {chronicleLandmarkStatus} from '../game/chronicle-combat.ts';
 import {chronicleLandmarkFrame,chronicleLandmarkRenderPlan} from './chronicle-landmark.ts';
 import {troopScale} from './lane-perspective.ts';
@@ -76,6 +77,7 @@ export class ChronicleView {
   private rescueGround:Phaser.GameObjects.Graphics;
   private catGround:Phaser.GameObjects.Graphics;
   private cat:Phaser.GameObjects.Graphics;
+  private catSprite:Phaser.GameObjects.Image;
   private marks:Phaser.GameObjects.Graphics;
   private label:Phaser.GameObjects.Text;
   constructor(private scene:Phaser.Scene,layer:Phaser.GameObjects.Container){
@@ -91,12 +93,13 @@ export class ChronicleView {
     this.rescueGround=scene.add.graphics();
     this.catGround=scene.add.graphics();
     this.cat=scene.add.graphics();
+    this.catSprite=scene.add.image(0,0,'__WHITE').setOrigin(.5,.92);
     this.marks=scene.add.graphics();
     this.label=scene.add.text(0,0,'',{fontFamily:'Trebuchet MS, Arial, sans-serif',fontSize:'10px',color:P.linen,stroke:P.ink,strokeThickness:3}).setOrigin(.5);
-    layer.add([...this.formation,this.landmarkGround,this.rescueGround,this.catGround,this.landmark,this.traveller,this.cat,this.cage,this.scout,this.scoutFallback,this.bell,this.marks,this.label]);
+    layer.add([...this.formation,this.landmarkGround,this.rescueGround,this.catGround,this.landmark,this.traveller,this.cat,this.catSprite,this.cage,this.scout,this.scoutFallback,this.bell,this.marks,this.label]);
   }
   update(p:Profile,s:BattleState,groundY:number,laneGap:number,reduced:boolean):void {
-    const c=s.chronicle;this.marks.clear();this.landmarkGround.clear();this.rescueGround.clear();this.catGround.clear();this.cat.clear().setVisible(false);this.scoutFallback.clear().setVisible(false);for(let lane=0;lane<3;lane++)this.formation[lane].clear().setDepth(chronicleThreadDepth(groundY,lane,lane,laneGap));for(const image of [this.landmark,this.traveller,this.cage,this.scout,this.bell])image.setVisible(false);this.label.setVisible(false);delete this.scene.game.canvas.dataset.chronicleRescue;delete this.scene.game.canvas.dataset.chronicleLandmark;delete this.scene.game.canvas.dataset.chronicleCat;
+    const c=s.chronicle;this.marks.clear();this.landmarkGround.clear();this.rescueGround.clear();this.catGround.clear();this.cat.clear().setVisible(false);this.catSprite.setVisible(false);this.scoutFallback.clear().setVisible(false);for(let lane=0;lane<3;lane++)this.formation[lane].clear().setDepth(chronicleThreadDepth(groundY,lane,lane,laneGap));for(const image of [this.landmark,this.traveller,this.cage,this.scout,this.bell])image.setVisible(false);this.label.setVisible(false);delete this.scene.game.canvas.dataset.chronicleRescue;delete this.scene.game.canvas.dataset.chronicleLandmark;delete this.scene.game.canvas.dataset.chronicleCat;
     if(!c?.enabled)return;
     const g=this.marks;g.setDepth(groundY+laneGap*2+3);
     paintChronicleFormation(this.formation,chronicleFormationFrame(s),groundY,laneGap);
@@ -134,13 +137,14 @@ export class ChronicleView {
         }
       }
       this.landmark.setTexture(`chronicle-${key}-ink-v1`).setVisible(true).setPosition(plan.x,groundY-8).setDisplaySize(key==='lantern'?58:61,key==='lantern'?65:49).setDepth(plan.propDepth).setAlpha(status.phase==='broken'?.35:1);
-      this.scene.game.canvas.dataset.chronicleLandmark=JSON.stringify({kind:status.kind,phase:status.phase,owner:status.owner,ownerShape:frame.ownerShape,capture:status.capture,threshold:status.threshold,progress:frame.progress,playerCount:status.playerCount,enemyCount:status.enemyCount,activeMarks:frame.marks.filter(mark=>mark.active).length,shapes:[...new Set(frame.marks.map(mark=>mark.shape))],x:plan.x,y:plan.y,groundDepth:plan.groundDepth,propDepth:plan.propDepth,actorFrontDepth:plan.actorFrontDepth});
+      if(navigator.webdriver)this.scene.game.canvas.dataset.chronicleLandmark=JSON.stringify({kind:status.kind,phase:status.phase,owner:status.owner,ownerShape:frame.ownerShape,capture:status.capture,threshold:status.threshold,progress:frame.progress,playerCount:status.playerCount,enemyCount:status.enemyCount,activeMarks:frame.marks.filter(mark=>mark.active).length,shapes:[...new Set(frame.marks.map(mark=>mark.shape))],x:plan.x,y:plan.y,groundDepth:plan.groundDepth,propDepth:plan.propDepth,actorFrontDepth:plan.actorFrontDepth});
     }
   }
   private updateEscort(p:Profile,s:BattleState,c:NonNullable<BattleState['chronicle']>,groundY:number,laneGap:number,reduced:boolean,g:Phaser.GameObjects.Graphics):void {
     if(c.objective==='escort'){
       this.traveller.setTexture('chronicle-cart-ink-v1').setVisible(true).setPosition(c.cart.x*.45,groundY+8).setDisplaySize(67,53).setDepth(chronicleActorDepth(groundY+8)).clearTint();
-      g.fillStyle(0x28383c,.9);g.fillRoundedRect(c.cart.x*.45-22,groundY-43,44,4,2);g.fillStyle(0xd6bd83,1);g.fillRoundedRect(c.cart.x*.45-21,groundY-42,42*c.cart.hp/c.cart.maxHp,2,1);
+      const fill=42*Math.max(0,Math.min(1,c.cart.hp/Math.max(1,c.cart.maxHp)));
+      g.fillStyle(0x28383c,.9);g.fillRoundedRect(c.cart.x*.45-22,groundY-43,44,4,2);if(fill>.1){g.fillStyle(0xd6bd83,1);g.fillRoundedRect(c.cart.x*.45-21,groundY-42,fill,2,1);}
     }
   }
   private updateRescue(p:Profile,s:BattleState,c:NonNullable<BattleState['chronicle']>,groundY:number,laneGap:number,reduced:boolean,g:Phaser.GameObjects.Graphics):void {
@@ -155,21 +159,25 @@ export class ChronicleView {
         if(plan.scoutMode==='painted')this.scout.setTexture(plan.scoutTexture,String(frame.scout.frame)).setVisible(true).setPosition(frame.scout.x,floor).setDepth(plan.scoutDepth).setScale(troopScale(1,1)*TROOP_FRAME.height/this.scout.height).setFlipX(true).clearTint();
         else{drawTroop(this.scoutFallback,p.age,1,'player',0,false);this.scoutFallback.setVisible(true).setPosition(frame.scout.x,floor).setDepth(plan.scoutDepth).setScale(-1,1);}
       }else this.scoutX=frame.cage.x;
-      this.scene.game.canvas.dataset.chronicleRescue=JSON.stringify({cage:{visible:this.cage.visible,x:this.cage.x,texture:this.cage.texture.key},scout:{visible:this.scout.visible||this.scoutFallback.visible,x:frame.scout?.x??null,frame:frame.scout?.frame??null,mode:plan.scoutMode,texture:this.scout.visible?this.scout.texture.key:null},groundDepth:this.rescueGround.depth,cageDepth:this.cage.depth,scoutDepth:frame.scout?(this.scout.visible?this.scout.depth:this.scoutFallback.depth):null});
+      if(navigator.webdriver)this.scene.game.canvas.dataset.chronicleRescue=JSON.stringify({cage:{visible:this.cage.visible,x:this.cage.x,texture:this.cage.texture.key},scout:{visible:this.scout.visible||this.scoutFallback.visible,x:frame.scout?.x??null,frame:frame.scout?.frame??null,mode:plan.scoutMode,texture:this.scout.visible?this.scout.texture.key:null},groundDepth:this.rescueGround.depth,cageDepth:this.cage.depth,scoutDepth:frame.scout?(this.scout.visible?this.scout.depth:this.scoutFallback.depth):null});
     }
   }
   private updateCat(p:Profile,s:BattleState,c:NonNullable<BattleState['chronicle']>,groundY:number,laneGap:number,reduced:boolean,g:Phaser.GameObjects.Graphics):void {
     const frame=chronicleCatFrame({discoveries:p.chronicle?.discoveries??0,route:p.chronicle?.route??'road',phase:s.phase,rescued:c.rescued,travellerX:c.cart.x,time:s.time,paused:s.paused,reduced});
     if(frame){
-      const plan=chronicleCatRenderPlan(groundY,frame),x=frame.x,y=plan.footY,face=frame.facing,cat=this.cat.setVisible(true).setDepth(plan.catDepth),ground=this.catGround.setDepth(plan.groundDepth);
+      const plan=chronicleCatRenderPlan(groundY,frame),x=frame.x,y=plan.footY,face=frame.facing,ground=this.catGround.setDepth(plan.groundDepth);
       for(const paw of frame.paws){ground.fillStyle(0x846446,paw.alpha);ground.fillEllipse(paw.x,paw.y+y,3.4,1.8);ground.fillCircle(paw.x+face*2,paw.y+y-1.4,1.1);}
       ground.fillStyle(0x28383c,.2);ground.fillEllipse(x,y+1,25,5);
-      const lift=frame.gait?1.2:0,bodyY=y-8-lift,headX=x+face*9;
+      const lift=frame.gait?1.2:0,catTex=propTexture('cat');
+      if(this.scene.textures.exists(catTex)){this.catSprite.setTexture(catTex).setVisible(true).setPosition(x,y-lift).setDisplaySize(32,32).setFlipX(face<0).setDepth(plan.catDepth);}
+      else{
+      const cat=this.cat.setVisible(true).setDepth(plan.catDepth),bodyY=y-8-lift,headX=x+face*9;
       cat.fillStyle(0x3a3730,.98);cat.fillEllipse(x,bodyY,20,10);cat.fillCircle(headX,bodyY-4,5.4);
       cat.fillTriangle(headX-face*4,bodyY-7,headX-face*2,bodyY-13,headX,bodyY-8);cat.fillTriangle(headX+face,bodyY-8,headX+face*3,bodyY-13,headX+face*5,bodyY-7);
       cat.fillStyle(0xc7985c,.9);cat.fillTriangle(headX-face*2.9,bodyY-8,headX-face*2,bodyY-11.1,headX-face*.8,bodyY-8.2);cat.fillCircle(headX+face*2,bodyY-4.4,1.1);
       cat.lineStyle(2.2,0x3a3730,.98);cat.lineBetween(x-face*8,bodyY-1,x-face*11,y);cat.lineBetween(x-face*1,bodyY-1,x+face*2,y);
       const tailX=x-face*10,tailY=bodyY-2,tailReach=face*-(10+Math.cos(frame.tailAngle)*3);cat.lineStyle(2.4,0x3a3730,.98);cat.beginPath();cat.moveTo(tailX,tailY);cat.lineTo(tailX+tailReach*.62,tailY-5-Math.sin(frame.tailAngle)*4);cat.lineTo(tailX+tailReach,tailY-10+Math.sin(frame.tailAngle)*5);cat.strokePath();
+      }
       if(navigator.webdriver)this.scene.game.canvas.dataset.chronicleCat=JSON.stringify({mode:frame.mode,x:frame.x,facing:frame.facing,gait:frame.gait,tailAngle:frame.tailAngle,paws:frame.paws.length,groundDepth:plan.groundDepth,catDepth:plan.catDepth,endpointDepth:plan.endpointDepth,reduced,paused:s.paused});
     }
   }
@@ -186,5 +194,5 @@ export class ChronicleView {
       if((u.breachedUntil??0)>s.time){g.lineStyle(1.4,0xd39a78,.9);g.lineBetween(x-5,y-17,x,y-11);g.lineBetween(x,y-11,x+5,y-18);}
     }
   }
-  destroy():void{delete this.scene.game.canvas.dataset.chronicleRescue;delete this.scene.game.canvas.dataset.chronicleLandmark;delete this.scene.game.canvas.dataset.chronicleCat;for(const object of [...this.formation,this.landmarkGround,this.rescueGround,this.catGround,this.landmark,this.traveller,this.cat,this.cage,this.scout,this.scoutFallback,this.bell,this.marks,this.label])object.destroy();}
+  destroy():void{delete this.scene.game.canvas.dataset.chronicleRescue;delete this.scene.game.canvas.dataset.chronicleLandmark;delete this.scene.game.canvas.dataset.chronicleCat;for(const object of [...this.formation,this.landmarkGround,this.rescueGround,this.catGround,this.landmark,this.traveller,this.cat,this.catSprite,this.cage,this.scout,this.scoutFallback,this.bell,this.marks,this.label])object.destroy();}
 }

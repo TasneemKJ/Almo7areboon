@@ -13,13 +13,11 @@
   linear-gradient(180deg,#6d4a2e 0,#5a3b23 45%,#452c19 100%);
  box-shadow:0 -6px 14px #0b1a1466,inset 0 2px 0 #f6dca81f;
 }
-/* The momentum bar, the food line and the Gather button are gone from the board: momentum is the banner's cloth, food
-   is the plate at the top-left of the field, Gather is your camp. */
+/* The momentum bar, the food line and the Gather button are gone from the board: food
+   is the plate at the top-left of the field, Gather is your camp, and #order-banner sits cleanly in the tray. */
 #app[data-field-mode="field"][data-entry="play"] .deployment .food-line,
 #app[data-field-mode="field"][data-entry="play"] .deployment .chronicle-command-row{display:none!important}
-#app[data-field-mode="field"][data-entry="play"] .deployment .order-banner{position:absolute!important;width:1px;height:1px;overflow:hidden;clip-path:inset(50%);white-space:nowrap;margin:0;padding:0;border:0;opacity:0;pointer-events:none}
-#app[data-field-mode="field"][data-entry="play"] .deployment .order-banner:not(:focus-within) *{opacity:0}
-#app[data-field-mode="field"][data-entry="play"] .deployment .order-banner:focus-within{width:auto;height:auto;overflow:visible;clip-path:none;left:12px;right:12px;bottom:calc(100% + 8px);display:flex;gap:8px;padding:6px;border-radius:10px;background:#16394bf2;z-index:20;opacity:1;pointer-events:auto}
+#app[data-field-mode="field"][data-entry="play"] .deployment .order-banner{padding-bottom:6px;max-width:640px;margin-inline:auto}
 
 /* Troop tokens: a painted medallion and the cost, on the board. */
 #app[data-field-mode="field"][data-entry="play"] .deployment .unit-cards{gap:8px;max-width:640px;margin-inline:auto}
@@ -56,7 +54,7 @@
 [dir="rtl"] #app[data-field-mode="field"][data-entry="play"] .deployment .unit-card .unit-name,[dir="rtl"] #app[data-field-mode="field"][data-entry="play"] .deployment .unit-card .unit-price{left:3px;right:53px}
 [dir="rtl"] #app[data-field-mode="field"][data-entry="play"] .deployment .unit-card .troop-mark{left:auto;right:2px}
 #app[data-field-mode="field"][data-entry="play"] .deployment .unit-card .troop-mark{position:absolute;top:2px;left:2px;right:auto;z-index:3}
-#app[data-field-mode="field"][data-entry="play"] .deployment .unit-card.affordable{border-color:#f0ce87;box-shadow:0 3px 0 #1c110a,0 0 0 1px #f0ce8755,0 0 12px #f0ce8740,inset 0 1px 0 #f3d9a64d;transition:transform .12s cubic-bezier(.2,1.4,.4,1),box-shadow .14s ease}
+#app[data-field-mode="field"][data-entry="play"] .deployment .unit-card.affordable{border-color:#f0ce87;box-shadow:0 3px 0 #1c110a,0 0 0 1px #f0ce8755,0 0 12px #f0ce8740,inset 0 0 10px #ffd28a38,inset 0 1px 0 #fff1c25c;transition:transform .12s cubic-bezier(.2,1.4,.4,1),box-shadow .14s ease}
 #app[data-field-mode="field"][data-entry="play"] .deployment .unit-card.affordable:active{transform:translateY(2px) scale(.96,.94)}
 #app[data-field-mode="field"][data-entry="play"] .deployment .unit-card.affordable::before{border-color:#f0ce87}
 #app[data-field-mode="field"][data-entry="play"] .deployment .unit-card:disabled:not(.locked){border-color:#7a6040}
@@ -109,7 +107,7 @@
 /* Your camp (the gate shelter on the left) takes the Gather tap; its name hangs on it like a small sign. */
 .camp-hit{border-radius:14px;transition:transform .08s ease-out}
 .camp-hit:active,.gate-hit:active{transform:scale(.96)}
-.camp-hit .world-target-name{opacity:1;bottom:-12px;top:auto;inset-inline-start:max(8px,env(safe-area-inset-left));transform:none;padding:2px 8px;border:1px solid #b7955f;background:#f5efdaee;color:#24414b;font:700 12px/1.3 Georgia,serif;box-shadow:0 2px 0 #1c110a55}
+.camp-hit .world-target-name{opacity:1;bottom:-16px;top:auto;left:50%;right:auto;transform:translateX(-50%);padding:3px 10px;border:1px solid #d5ab66aa;border-radius:999px;background:#142f2ce6;color:#ffe7ad;font:700 11.5px/1.3 Georgia,serif;box-shadow:0 2px 6px #07191599}
 [data-motion="reduced"] .camp-hit,[data-motion="reduced"] .gate-hit{transition:none}
 [data-motion="reduced"] .camp-hit:active,[data-motion="reduced"] .gate-hit:active{transform:none}
 @media(prefers-reduced-motion:reduce){.camp-hit,.gate-hit{transition:none}.camp-hit:active,.gate-hit:active{transform:none}}
@@ -159,6 +157,7 @@ body:has(.field-banner.hinting,.field-banner.dragging) #field-standard .world-ta
    Pathkeeper); on a tap or a want they now hang below its foot, over open ground. While a finger carries the banner
    they rise above it again, where the finger does not cover them. */
 @media (min-width:360px){html[lang="en"] #app[data-field-mode="field"][data-entry="play"] .deployment .unit-card .unit-name.long-name{font-size:10px;letter-spacing:-.4px}}
+@media (min-width:600px){html[lang="en"] #app[data-field-mode="field"][data-entry="play"] .deployment .unit-card .unit-name.long-name{font-size:15px;letter-spacing:0}}
 @media (orientation:portrait){.field-banner:not(.dragging) .banner-plate{bottom:auto;top:calc(100% + 4px)}}
 /* Card names sit on one line, clear of the portrait ring, with room below the line for the dots of a final ي
    (a clamped, overflow-hidden two-line box cut them off, so «الرامي» read «الرامى»). Phones up to 430 pt wide give

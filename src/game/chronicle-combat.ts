@@ -94,13 +94,20 @@ export function toggleRally(p:Profile,s:BattleState):boolean {
 }
 export function rallyPosition(s:BattleState,u:Unit):number|null {
   const c=s.chronicle;if(!c?.enabled||!c.rally||u.side!=='player')return null;
-  const index=c.gathered.indexOf(u.id);return index<0?null:240-Math.floor(index/3)*24;
+  if(!c.gathered.includes(u.id))return null;
+  let rank=0;
+  for(const id of c.gathered){
+    if(id===u.id)break;
+    const other=s.units.find(a=>a.id===id);
+    if(other&&other.lane===u.lane)rank++;
+  }
+  return 240-rank*24;
 }
 /** Automatic lane occupation, not another movement button on a small phone. */
 export function chronicleMovementLimit(s:BattleState,u:Unit):number|null {
   const assembly=rallyPosition(s,u);if(assembly!==null)return assembly;
   const c=s.chronicle;
-  if(c?.enabled&&c.objective==='light'&&c.lightSeconds<18&&u.side==='player'&&u.kind===0&&u.x>=430&&u.x<=520)return 480;
+  if(c?.enabled&&c.objective==='light'&&c.lightSeconds<18&&u.side==='player'&&u.kind===0&&u.x>=430&&u.x<=520&&!s.units.some(e=>e.side==='enemy'&&alive(e)&&e.x<=600))return 480;
   return null;
 }
 /** Shared authoritative relationship query for combat and presentation. */
@@ -128,7 +135,7 @@ export function chronicleDamage(p:Profile,s:BattleState,attacker:Unit,target:Uni
   if(!c.landmark.broken&&c.landmark.kind==='cover'&&c.landmark.owner===target.side&&Math.abs(target.x-c.landmark.x)<=65)factor*=timelineVariant(p.timeline).id==='overgrown'?0.7:0.8;
   const lit=c.revealUntil>s.time||c.landmark.kind==='lantern'&&c.landmark.owner==='player'&&Math.abs(target.x-c.landmark.x)<190;
   if(target.storyShadow&&lit)factor*=1.2;
-  if(attacker.storyShadow&&(c.revealUntil>s.time||c.landmark.owner==='player'&&Math.abs(attacker.x-c.landmark.x)<190))factor*=0.8;
+  if(attacker.storyShadow&&(c.revealUntil>s.time||c.landmark.kind==='lantern'&&c.landmark.owner==='player'&&Math.abs(attacker.x-c.landmark.x)<190))factor*=0.8;
   if(attacker.side==='player'&&attacker.chargeReady&&!secondary)factor*=1.3;
   return damage*factor;
 }

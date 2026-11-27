@@ -102,7 +102,8 @@ export function createNavigation(deps: NavigationDeps) {
     $('entry-play').dataset.command=failed?'reload-world':'enter-world';
     textIfChanged($('entry-chapter'),copy.chapter);
     textIfChanged($('entry-subtitle'),failed?tr('The battlefield could not load. Close the game and open it again; your saved progress is kept.','تعذّر تحميل ساحة المعركة. أغلق اللعبة وافتحها من جديد، وتقدّمك المحفوظ باقٍ.'):navState.entryWelcome??copy.subtitle);
-    const art=$('entry-art'),source=chapterLandscape(ports.sessionState.game.profile.enemyAge);
+    const enemyAge=ports.sessionState.game.profile.enemyAge,art=$('entry-art'),source=chapterLandscape(enemyAge);
+    if($('entry-screen').dataset.chapter!==String(enemyAge))$('entry-screen').dataset.chapter=String(enemyAge);
     if(art.dataset.source!==source){art.setAttribute('src',source);art.dataset.source=source;}
     const secondary=entrySecondary(ports.sessionState.game.profile,ports.sessionState.game.state),extra=$('entry-secondary');
     extra.hidden=failed||secondary===null;extra.dataset.command=secondary==='leave'?'leave-battle':'home-camp';
@@ -114,7 +115,7 @@ export function createNavigation(deps: NavigationDeps) {
     root!.dataset.fieldMode='field';
     navState.entryEntered=true;navState.entrySaved=true;navState.entryWelcome=null;syncEntry();
     ports.sessionState.manualPaused=false;
-    if(ports.sessionState.game.state.phase==='ready')ports.action({type:'start'});
+    if(ports.sessionState.game.state.phase==='ready'&&!fieldBlades(ports.sessionState.game.profile).length)ports.action({type:'start'});
     switchTab('battle');
     if(!navState.modal)$('world').focus({preventScroll:true});
   }

@@ -85,11 +85,10 @@ test('the banner is drawn in the world and the native Advance/Hold buttons remai
   assert.match(html, /id="field-standard" class="world-hit camp-hit" data-command="story-rally" aria-label="[^"]*camp/);
   const shell = readFileSync(new URL('../src/ui/app-shell.ts', import.meta.url), 'utf8');
   assert.match(shell, /data-order="advance"/); assert.match(shell, /data-order="hold"/);
+  const ctrl = readFileSync(new URL('../src/ui/field-controller.ts', import.meta.url), 'utf8');
+  assert.match(ctrl, /node\.hidden=true;/, 'mid-screen banner stays hidden');
   const css = readFileSync(new URL('../src/ui/field-board.css', import.meta.url), 'utf8');
-  assert.match(css, /\.order-banner\{position:absolute!important;width:1px;height:1px;overflow:hidden;clip-path:inset\(50%\)/, 'proxies are visually hidden, not display:none');
-  assert.match(css, /\.order-banner:focus-within\{/, 'keyboard focus shows them');
-  assert.match(css, /\.food-line,\n[^{]*\.chronicle-command-row\{display:none!important\}/);
-  assert.match(css, /\.field-banner\{[^}]*touch-action:none/);
+  assert.doesNotMatch(css, /\.order-banner\{position:absolute!important;width:1px;height:1px/, 'order bar is visible in the tray');
   assert.match(css, /\.unit-card\{\n height:62px!important;min-height:44px/);
 });
 
@@ -100,10 +99,10 @@ test('the banner drag goes through the same guarded order action as the buttons'
   assert.match(src, /ports\.navState\.entryEntered&&!ports\.navState\.modal&&ports\.navState\.activeTab==='battle'&&ports\.sessionState\.game\.state\.phase==='running'&&!ports\.sessionState\.game\.state\.paused&&ports\.playable\(\)/);
 });
 
-test('copy teaches the banner in both languages', async () => {
+test('copy teaches the order bar in both languages', async () => {
   const guidance = readFileSync(new URL('../src/ui/field-guidance.ts', import.meta.url), 'utf8');
-  assert.match(guidance, /Drag the banner forward to advance, back to hold\./);
-  assert.match(guidance, /اسحب الراية إلى الأمام لتتقدّم، وإلى الخلف لتثبت\./);
+  assert.match(guidance, /Choose Advance or Hold below\./);
+  assert.match(guidance, /اختر تقدّم أو اثبُت أدناه\./);
 });
 
 for (const [width, height] of [[320, 568], [390, 844], [390, 700], [412, 915], [844, 390], [667, 375], [568, 320]]) test(`the banner is a 44px+ target inside the field, clear of the supply basket, at ${width}x${height}`, async () => {

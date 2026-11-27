@@ -321,7 +321,7 @@ test('nominal launches expose delayed arrivals and freeze does not postpone them
 
 test('final delayed member blocks clearance and capacity rejection is consumed exactly once',()=>{
   const p=defaultProfile();p.enemyAge=1;p.unlocked=[true,true,false]; // the full chapter, not the lone-company ease
-  const g=new Game(p);g.dispatch({type:'start'});g.state.time=56;
+  const g=new Game(p);g.dispatch({type:'start'});g.state.time=59;
   g.state.units=Array.from({length:60},(_,i)=>({...unit(100+i,'enemy',800),attackTimer:100}));
   g.step(1/60);assert.equal(g.state.wave,5);assert.equal(g.waveStatus().pendingEnemies,1);
   g.state.units=[];assert.equal(g.waveStatus().cleared,false);
@@ -332,7 +332,7 @@ test('final delayed member blocks clearance and capacity rejection is consumed e
 
 test('early victory cancels arrivals while reconstructed victory reports completed waves',()=>{
   const p=defaultProfile();p.enemyAge=1;p.unlocked=[true,true,false];
-  const g=new Game(p);g.dispatch({type:'start'});g.state.time=56;
+  const g=new Game(p);g.dispatch({type:'start'});g.state.time=59;
   g.step(1/60);assert.equal(g.waveStatus().pendingEnemies,1);
   g.state.enemyHp=0;g.step(1/60);const before=JSON.stringify(g.state);advance(g,4);assert.equal(JSON.stringify(g.state),before);
   assert.equal(g.waveStatus().pendingEnemies,0);

@@ -97,7 +97,7 @@ export function createLifecycle(deps: LifecycleDeps) {
     const notice=$('session-notice');
     notice.hidden=status!=='starting'&&status!=='temporary';
     textIfChanged(notice,status==='temporary'?temporarySessionText():tr('Opening your saved game…','نفتح لعبتك المحفوظة…'));
-    if(status!=='active'&&status!=='temporary'){sessionState.sessionReady=false;ports.navState.campOwner=null;ports.navState.entryWelcome=null;ports.clearPrestigeContext();}
+    if(status!=='active'&&status!=='temporary'){sessionState.sessionReady=false;ports.navState.campOwner=null;ports.navState.entryWelcome=null;ports.clearPrestigeContext();root?.dispatchEvent?.(new CustomEvent('session-lost'));}
     if(status==='active'||status==='temporary')sessionState.retriedSession=false;
     const html=saveSessionDialogHtml(status,sessionState.retriedSession);
     if(html){ports.navState.pendingImport=null;ports.navState.evolutionFromResult=false;ports.showModal('session',html);}
@@ -172,6 +172,7 @@ export function createLifecycle(deps: LifecycleDeps) {
       if(a.type==='prestige'||sessionState.game.profile.weekly?.week!==weekId(localDay()))sessionState.game.dispatch({type:'weekly-sync',week:weekId(localDay())});
       persist();syncPause();rebuildArmy();update(true);if(ports.navState.activeTab!=='battle')ports.renderScreen(a.type==='select-legacy');
       if(a.type==='summon')playSummonAudio(sessionState.game.profile.sound&&playable()&&!dom.hidden()&&!sessionState.manualPaused&&ports.navState.activeTab==='cards'&&ports.navState.modal===null);
+      if((a.type==='upgrade'||a.type==='unlock'||a.type==='evolve'||a.type==='reforge')&&typeof playCombatEvents==='function'){const drained=sessionState.game.drainEvents();if(drained.length)playCombatEvents(drained,sessionState.game.profile.sound&&playable()&&!dom.hidden());}
     }
     return ok;
   }

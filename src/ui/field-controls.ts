@@ -1,4 +1,5 @@
 import {icon} from '../view/icons.ts';
+import {compactNumber} from '../game/format.ts';
 import {n,tr} from './i18n.ts';
 
 /** The food readout at the field's top-left edge: what every recruit tap spends. Food is stored up to 99. */
@@ -9,7 +10,8 @@ export function fieldFoodReadout(food:number):{text:string;label:string;full:boo
 
 export function fieldGoalSummary(coins:number,enemyHp:number,enemyMaxHp:number,momentumLabel:string):string {
  const hp=Math.max(0,Math.ceil(enemyHp)), max=Math.max(1,Math.ceil(enemyMaxHp));
- return tr(`Coins ${Math.floor(coins)} · Gate ${hp}/${max} · ${momentumLabel}`,`النقود ${Math.floor(coins)} · البوّابة ${hp}/${max} · ${momentumLabel}`);
+ const wholeCoins=Math.max(0,Math.floor(coins)), coinText=wholeCoins>=10000?compactNumber(wholeCoins):String(wholeCoins);
+ return tr(`Coins ${coinText} · Gate ${hp}/${max} · ${momentumLabel}`,`النقود \u2066${coinText}\u2069 · البوّابة \u2066${hp}/${max}\u2069 · ${momentumLabel}`);
 }
 
 /** Native semantic targets lie over the matching painted world objects. */

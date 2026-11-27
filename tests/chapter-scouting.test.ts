@@ -8,7 +8,7 @@ import { battleGuidance } from '../src/ui/battle-hud.ts';
 
 test('scouting names each actual opening and its first ranged/heavy threat', async()=>{
  const {chapterScouting}=await import('../src/ui/chapter-scouting.ts');
- const first=[3,4,3,4,3,4],warning=[24,27,26,16,28,29];
+ const first=[3,4,3,4,3,4],warning=[24,27,29,16,28,29];
  for(let chapter=0;chapter<6;chapter++){
   const view=chapterScouting(chapter);
   assert.equal(view.openingSeconds,first[chapter]);

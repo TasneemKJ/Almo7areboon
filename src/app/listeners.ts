@@ -291,8 +291,9 @@ export function installListeners(deps: ListenersDeps): void {
       if(!ports.guardAction())return;
       if(ports.navState.modal&&!button.closest('#modal-layer'))return;
       if(!ports.navState.entryEntered&&!ports.navState.modal&&command!=='enter-world'&&command!=='reload-world'&&command!=='settings'&&command!=='full-journey'&&command!=='home-camp'&&command!=='leave-battle')return;
-      if(ports.handleCampInput(button))return;
-      unlockAudio(ports.sessionState.game.profile.sound);pressFeedback({sound:ports.sessionState.game.profile.sound,kind:button.dataset.unit!==undefined?'deploy':'press'});
+      const feedbackAllowed=button.getAttribute?.('aria-disabled')!=='true';
+      if(ports.handleCampInput(button)){if(feedbackAllowed){unlockAudio(ports.sessionState.game.profile.sound);pressFeedback({sound:ports.sessionState.game.profile.sound,kind:'press'});}return;}
+      if(feedbackAllowed){unlockAudio(ports.sessionState.game.profile.sound);pressFeedback({sound:ports.sessionState.game.profile.sound,kind:button.dataset.unit!==undefined?'deploy':'press'});}
       if(command==='reload-world'){if(!ports.navState.entryEntered&&!ports.navState.modal&&$('battlefield').dataset.renderer==='failed')dom.reload();return;}
       if(command==='enter-world'){if(!ports.playIntro())ports.enterWorld();return;}
       if(command==='home'){ports.showHome();return;}
@@ -411,7 +412,7 @@ export function installListeners(deps: ListenersDeps): void {
   function listenKeys():void {
     lifetime.listen<KeyboardEvent>(dom.pageEvents(),'keydown',e=>{
       if(ports.navState.modal){
-        if(e.key==='Escape'){ports.dismissModal();e.preventDefault();}
+        if(e.key==='Escape'){if(!ports.handleStoreCommand('close'))ports.dismissModal();e.preventDefault();}
         if(e.key==='Tab'){
           // Let the native media shadow tree traverse its own seek/volume/fullscreen controls.
           // The surrounding film controls remain in the canonical modal boundary trap.
@@ -438,7 +439,7 @@ export function installListeners(deps: ListenersDeps): void {
     lifetime.listen(dom.viewEvents(),'focus',()=>{if(ports.sessionState.pagePresent)ports.sessionState.session.check();ports.syncPause();});
     lifetime.listen(dom.pageEvents(),'visibilitychange',()=>{
       if(dom.hidden()){ports.persist();ports.syncPause();suspendAudio();}
-      else{ports.sessionState.session.check();ports.syncPause();}
+      else{ports.sessionState.session.check();ports.syncPause();if(ports.sessionState.game.profile.sound&&ports.playable())unlockAudio(true);}
     });
     lifetime.listen(dom.viewEvents(),'pagehide',ports.suspendSession);
     lifetime.listen(dom.viewEvents(),'pageshow',()=>{

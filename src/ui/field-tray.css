@@ -9,5 +9,6 @@
 #app[data-field-mode="field"] .unit-cards{gap:8px}
 #app[data-field-mode="field"] .unit-card{min-height:56px}
 @media (max-height:700px){#app[data-field-mode="field"] .unit-card{height:80px}#app[data-field-mode="field"] .unit-card img{height:46px;bottom:16px}#app[data-field-mode="field"] .order-banner{padding-bottom:4px}}
-/* The select-enemy target over a rival troop shows itself: a dashed ember ring. */
-.enemy-hit::before{content:"";position:absolute;inset:4px;border:2px dashed #f19d75;border-radius:50%;opacity:.85;pointer-events:none}
+/* The select-enemy target over a rival troop shows itself: a grounded ember ring at the feet. */
+.enemy-hit::before{content:"";position:absolute;inset:auto 6px 1px;height:14px;border:1.5px solid #f19d75bb;border-radius:50%;box-shadow:0 0 10px #f19d7555;opacity:.88;pointer-events:none}
+.enemy-hit.selected::before{border-color:#ffe08a;box-shadow:0 0 14px #ffe08a99;opacity:1}

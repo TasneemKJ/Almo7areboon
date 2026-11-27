@@ -58,14 +58,25 @@ export function foregroundPlacement(width:number,height:number,groundY?:number) 
     height:FOREGROUND_SOURCE_HEIGHT*world.scale,
   };
 }
+const WALK_SEQ=[0,1,2,3,2,1] as const;
+
 /** All world actors and illustrated scenery preserve their authored proportions. */
-export function troopPose(time:number,moving:boolean,attacking:boolean,reduced:boolean) {
+export function troopPose(time:number,moving:boolean,attacking:boolean,reduced:boolean,attackProgress?:number,kind?:number) {
   if(reduced||(!moving&&!attacking))return {frame:0,lift:0,angle:0};
   const t=Number.isFinite(time)?Math.max(0,time):0;
-  if(attacking)return {frame:4+Math.floor(t*7)%2,lift:0,angle:Math.sin(t*14)*2};
-  // Four poses make one relaxed stride per simulation second.
-  const stride=Math.sin(t*Math.PI*2);
-  return {frame:Math.floor(t*4)%4,lift:Math.abs(stride)*1.1,angle:stride*1.1};
+  if(attacking){
+   if(typeof attackProgress==='number'&&Number.isFinite(attackProgress)){
+    const p=Math.max(0,Math.min(1,attackProgress));
+    if(p<.28){const k=1-p/.28;return {frame:5,lift:k*.9,angle:k*2.4};}
+    if(p<.62)return {frame:0,lift:0,angle:0};
+    const w=(p-.62)/.38;return {frame:4,lift:w*.5,angle:-w*2.2};
+   }
+   return {frame:4+Math.floor(t*6)%2,lift:0,angle:Math.sin(t*Math.PI*3)*1.1};
+  }
+  // Ping-pong stride weighted by troop role keeps feet grounded without snapping back to neutral idle.
+  const fps=kind===2?6:kind===1?7.2:7.8;
+  const stride=Math.sin(t*Math.PI*(fps/2));
+  return {frame:WALK_SEQ[Math.floor(t*fps)%6],lift:Math.abs(stride)*(kind===2?.55:.85),angle:stride*(kind===2?.55:.9)};
 }
 export function projectilePoint(from:{x:number;y:number},to:{x:number;y:number},progress:number,arc=0) {
  const t=Number.isFinite(progress)?Math.min(1,Math.max(0,progress)):0;
